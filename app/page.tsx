@@ -8,20 +8,7 @@ import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import { clearAccessToken, getCurrentSession, loginUser } from "@/lib/auth"
-
-function portalRoute(role?: string | null) {
-  const normalizedRole = (role || "").toUpperCase()
-
-  if (normalizedRole === "STUDENT") {
-    return "/student"
-  }
-
-  if (normalizedRole === "ADMIN") {
-    return "/admin"
-  }
-
-  return "/workspace"
-}
+import { getPortalRoute } from "@/lib/portal"
 
 export default function Page() {
   const router = useRouter()
@@ -46,6 +33,7 @@ export default function Page() {
 
         setSession({ user: currentSession.user })
         setStatusMessage(`Welcome back, ${currentSession.user.name}`)
+        router.replace(getPortalRoute(currentSession.user.role))
       } catch {
         clearAccessToken()
         if (active) {
@@ -75,7 +63,7 @@ export default function Page() {
       const currentSession = await loginUser(username, password)
       setSession({ user: currentSession.user })
       setStatusMessage(`Welcome, ${currentSession.user.name}`)
-      router.push(portalRoute(currentSession.user.role))
+      router.replace(getPortalRoute(currentSession.user.role))
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Unable to sign in")
     } finally {
@@ -176,7 +164,7 @@ export default function Page() {
 
               <div className="space-y-3">
                 <Button asChild className="w-full bg-white text-slate-950 hover:bg-slate-200">
-                  <Link href={portalRoute(session.user.role)}>
+                  <Link href={getPortalRoute(session.user.role)}>
                     Continue to portal
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>

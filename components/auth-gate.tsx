@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 import { clearAccessToken, getCurrentSession } from "@/lib/auth"
-import type { PortalArea } from "@/lib/portal"
-
-function normalizeRole(role: string | null | undefined) {
-  return (role || "").replace(/\s+/g, " ").trim().toUpperCase()
-}
+import { canAccessPortalArea, type PortalArea } from "@/lib/portal"
 
 type AuthGateProps = {
   area: PortalArea
@@ -27,15 +23,7 @@ export function AuthGate({ area, children }: AuthGateProps) {
       try {
         const session = await getCurrentSession()
 
-        const role = normalizeRole(session.user.role)
-        const isAllowed =
-          area === "admin"
-            ? role === "ADMIN"
-            : area === "student"
-              ? role === "ADMIN" || role === "STUDENT"
-              : role !== "STUDENT"
-
-        if (!isAllowed) {
+        if (!canAccessPortalArea(area, session.user.role)) {
           throw new Error("unauthorized")
         }
 
