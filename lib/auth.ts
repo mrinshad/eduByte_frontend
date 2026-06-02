@@ -101,6 +101,25 @@ export async function logoutUser() {
   clearAccessToken()
 }
 
+export async function getCurrentSession() {
+  const storedToken = getStoredAccessToken()
+
+  if (storedToken) {
+    const currentResponse = await authFetch("/api/auth/me")
+    const currentPayload = await currentResponse.json()
+
+    if (currentResponse.ok) {
+      return {
+        user: currentPayload.data.user,
+        accessToken: storedToken,
+      } as AuthSession
+    }
+  }
+
+  const refreshedSession = await refreshSession()
+  return refreshedSession
+}
+
 export async function authFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {})
   const storedToken = getStoredAccessToken()
