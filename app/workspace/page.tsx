@@ -1,5 +1,5 @@
-import { PortalPage } from "@/components/portal-page"
+import { redirect } from "next/navigation"
 
 export default function WorkspacePage() {
-  return <PortalPage area="workspace" />
+  redirect("/workspace/dashboard")
 }
