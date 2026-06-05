@@ -127,8 +127,6 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
 }
 
-export const currentAcademicYear = "2025 - 2026"
-
 const workspaceRoles = new Set(["ADMIN", "ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER"])
 
 export function normalizeRole(role?: string | null) {

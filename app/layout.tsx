@@ -1,6 +1,7 @@
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google"
 
 import "./globals.css"
+import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
@@ -27,6 +28,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <Toaster />
       </body>
     </html>
   )

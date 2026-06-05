@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import {
   AcademicYearSummary,
   createAcademicYear,
@@ -43,6 +44,7 @@ import {
   setDefaultAcademicYear,
   updateAcademicYear,
 } from "@/lib/services/academicYear"
+import { refreshCurrentAcademicYear } from "@/lib/academic-year-store"
 import {
   createClass,
   getClasses,
@@ -123,11 +125,27 @@ export default function Page() {
   const [editingFromOpen, setEditingFromOpen] = React.useState(false)
   const [editingToOpen, setEditingToOpen] = React.useState(false)
 
-  function openYearEdit(year: AcademicYearSummary) {
+  async function openYearEdit(year: AcademicYearSummary) {
     setEditingYearId(year.id)
-    setEditingYearNameDraft(year.name)
     setEditingFromOpen(false)
     setEditingToOpen(false)
+
+    try {
+      const details = await getAcademicYearById(year.id)
+
+      if (details) {
+        setEditingYearNameDraft(details.name)
+        setEditingYearStartDate(new Date(details.startDate))
+        setEditingYearEndDate(new Date(details.endDate))
+        return
+      }
+    } catch {
+      // fall back to the summary data already available in the row
+    }
+
+    setEditingYearNameDraft(year.name)
+    setEditingYearStartDate(undefined)
+    setEditingYearEndDate(undefined)
   }
 
   function closeYearEdit() {
@@ -140,14 +158,6 @@ export default function Page() {
     setEditingFromOpen(false)
     setEditingToOpen(false)
   }
-
-  // Simple toast for user feedback (bottom-right)
-  const [toastMessage, setToastMessage] = React.useState<string | null>(null)
-  React.useEffect(() => {
-    if (!toastMessage) return
-    const t = setTimeout(() => setToastMessage(null), 3500)
-    return () => clearTimeout(t)
-  }, [toastMessage])
 
   React.useEffect(() => {
     async function loadInitialData() {
@@ -166,7 +176,7 @@ export default function Page() {
           setSelectedClassId((current) => current || classList[0].id)
         }
       } catch (error) {
-        setToastMessage(error instanceof Error ? error.message : "Failed to load data")
+        toast.error(error instanceof Error ? error.message : "Failed to load data")
       }
     }
 
@@ -186,7 +196,7 @@ export default function Page() {
         setDivisions(divisionList)
         setSelectedDivisionId((current) => current || divisionList[0]?.id || "")
       } catch (error) {
-        setToastMessage(error instanceof Error ? error.message : "Failed to load divisions")
+        toast.error(error instanceof Error ? error.message : "Failed to load divisions")
       }
     }
 
@@ -199,7 +209,7 @@ export default function Page() {
         try {
           setAcademicYears(await getAcademicYears())
         } catch (error) {
-          setToastMessage(error instanceof Error ? error.message : "Failed to load academic years")
+          toast.error(error instanceof Error ? error.message : "Failed to load academic years")
         }
       })()
     }
@@ -353,7 +363,7 @@ export default function Page() {
                               </div>
 
                               <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => { closeYearEdit(); setToastMessage("Cancelled"); }}>
+                                <Button variant="ghost" size="icon" onClick={() => { closeYearEdit(); toast.message("Cancelled"); }}>
                                   <X className="h-4 w-4" />
                                 </Button>
 
@@ -367,10 +377,11 @@ export default function Page() {
                                       })
 
                                       setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
+                                        await refreshCurrentAcademicYear()
                                       closeYearEdit()
-                                      setToastMessage("Saved")
+                                      toast.success("Saved")
                                     } catch (error) {
-                                      setToastMessage(error instanceof Error ? error.message : "Failed to save academic year")
+                                      toast.error(error instanceof Error ? error.message : "Failed to save academic year")
                                     }
                                   })()
                                 }}>
@@ -389,7 +400,7 @@ export default function Page() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="icon-sm" className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")} onClick={() => openYearEdit(year)}>
+                              <Button variant="outline" size="icon-sm" className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")} onClick={() => { void openYearEdit(year) }}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
 
@@ -405,9 +416,10 @@ export default function Page() {
                                         await setDefaultAcademicYear(year.id)
                                         setAcademicYears((prev) => prev.map((item) => ({ ...item, isActive: item.id === year.id })))
                                         setDefaultAcademicYearName(year.name)
-                                        setToastMessage("Default academic year updated")
+                                        await refreshCurrentAcademicYear()
+                                        toast.success("Default academic year updated")
                                       } catch (error) {
-                                        setToastMessage(error instanceof Error ? error.message : "Failed to set default academic year")
+                                        toast.error(error instanceof Error ? error.message : "Failed to set default academic year")
                                       }
                                     })()
                                   }}
@@ -510,15 +522,16 @@ export default function Page() {
                               startDate: (fromDate || new Date()).toISOString(),
                               endDate: (toDate || new Date()).toISOString(),
                             })
+                            await refreshCurrentAcademicYear()
                             setYearDialogOpen(false)
                             setCreateYearOpen(false)
                             setYearNameDraft("")
                             setFromDate(undefined)
                             setToDate(undefined)
                             setAcademicYears(await getAcademicYears())
-                            setToastMessage("Academic year created")
+                            toast.success("Academic year created")
                           } catch (error) {
-                            setToastMessage(error instanceof Error ? error.message : "Failed to create academic year")
+                            toast.error(error instanceof Error ? error.message : "Failed to create academic year")
                           }
                         })()
                       }}
@@ -654,14 +667,6 @@ export default function Page() {
           </div>
         </div>
 
-        {toastMessage ? (
-          <div className="fixed right-6 bottom-6 z-50">
-            <div className="rounded-md bg-slate-900 text-white px-4 py-2 shadow-md">
-              {toastMessage}
-            </div>
-          </div>
-        ) : null}
-
         <Dialog open={classDialogOpen} onOpenChange={setClassDialogOpen}>
           <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
             <DialogHeader>
@@ -703,11 +708,11 @@ export default function Page() {
 
                       setClasses(await getClasses())
                       if (selectedClassId) {
-                        setToastMessage(classDialogMode === "add" ? "Class created" : "Class updated")
+                        toast.success(classDialogMode === "add" ? "Class created" : "Class updated")
                       }
                       closeClassDialog()
                     } catch (error) {
-                      setToastMessage(error instanceof Error ? error.message : "Failed to save class")
+                      toast.error(error instanceof Error ? error.message : "Failed to save class")
                     }
                   })()
                 }}
@@ -762,10 +767,10 @@ export default function Page() {
                       }
 
                       setDivisions(await getDivisions(selectedClassId))
-                      setToastMessage(divisionDialogMode === "add" ? "Division created" : "Division updated")
+                      toast.success(divisionDialogMode === "add" ? "Division created" : "Division updated")
                       closeDivisionDialog()
                     } catch (error) {
-                      setToastMessage(error instanceof Error ? error.message : "Failed to save division")
+                      toast.error(error instanceof Error ? error.message : "Failed to save division")
                     }
                   })()
                 }}
