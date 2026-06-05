@@ -1,9 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
 import {
-  CalendarIcon,
   Layers3,
   Pencil,
   Plus,
@@ -13,7 +11,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Card,
   CardContent,
@@ -31,7 +29,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -122,15 +119,9 @@ export default function Page() {
   const [editingYearNameDraft, setEditingYearNameDraft] = React.useState("")
   const [editingYearStartDate, setEditingYearStartDate] = React.useState<Date>()
   const [editingYearEndDate, setEditingYearEndDate] = React.useState<Date>()
-  const [editingFromDate, setEditingFromDate] = React.useState<Date>()
-  const [editingToDate, setEditingToDate] = React.useState<Date>()
-  const [editingFromOpen, setEditingFromOpen] = React.useState(false)
-  const [editingToOpen, setEditingToOpen] = React.useState(false)
 
   async function openYearEdit(year: AcademicYearSummary) {
     setEditingYearId(year.id)
-    setEditingFromOpen(false)
-    setEditingToOpen(false)
 
     try {
       const details = await getAcademicYearById(year.id)
@@ -155,10 +146,6 @@ export default function Page() {
     setEditingYearNameDraft("")
     setEditingYearStartDate(undefined)
     setEditingYearEndDate(undefined)
-    setEditingFromDate(undefined)
-    setEditingToDate(undefined)
-    setEditingFromOpen(false)
-    setEditingToOpen(false)
   }
 
   React.useEffect(() => {
@@ -309,48 +296,20 @@ export default function Page() {
                               <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                                  <Popover open={editingFromOpen} onOpenChange={setEditingFromOpen}>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {editingFromDate ? format(editingFromDate, "PPP") : "Select date"}
-                                      </Button>
-                                    </PopoverTrigger>
-
-                                    <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={editingYearStartDate || editingFromDate}
-                                        onSelect={(date) => {
-                                          setEditingYearStartDate(date)
-                                          setEditingFromOpen(false)
-                                        }}
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
+                                  <DatePicker
+                                    value={editingYearStartDate}
+                                    onChange={setEditingYearStartDate}
+                                    placeholder="Select date"
+                                  />
                                 </div>
 
                                 <div className="space-y-2">
                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                                  <Popover open={editingToOpen} onOpenChange={setEditingToOpen}>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {editingToDate ? format(editingToDate, "PPP") : "Select date"}
-                                      </Button>
-                                    </PopoverTrigger>
-
-                                    <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={editingYearEndDate || editingToDate}
-                                        onSelect={(date) => {
-                                          setEditingYearEndDate(date)
-                                          setEditingToOpen(false)
-                                        }}
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
+                                  <DatePicker
+                                    value={editingYearEndDate}
+                                    onChange={setEditingYearEndDate}
+                                    placeholder="Select date"
+                                  />
                                 </div>
                               </div>
 
@@ -364,8 +323,8 @@ export default function Page() {
                                     try {
                                       await updateAcademicYear(String(year.id), {
                                         name: editingYearNameDraft,
-                                        startDate: (editingYearStartDate || editingFromDate || new Date()).toISOString(),
-                                        endDate: (editingYearEndDate || editingToDate || new Date()).toISOString(),
+                                        startDate: (editingYearStartDate || new Date()).toISOString(),
+                                        endDate: (editingYearEndDate || new Date()).toISOString(),
                                       })
 
                                       setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
@@ -452,50 +411,12 @@ export default function Page() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-
-                        <Popover open={fromOpen} onOpenChange={setFromOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {fromDate ? format(fromDate, "PPP") : "Select date"}
-                            </Button>
-                          </PopoverTrigger>
-
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={fromDate}
-                              onSelect={(date) => {
-                                setFromDate(date)
-                                setFromOpen(false)
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                                  <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select date" />
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-
-                        <Popover open={toOpen} onOpenChange={setToOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {toDate ? format(toDate, "PPP") : "Select date"}
-                            </Button>
-                          </PopoverTrigger>
-
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={toDate}
-                              onSelect={(date) => {
-                                setToDate(date)
-                                setToOpen(false)
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <DatePicker value={toDate} onChange={setToDate} placeholder="Select date" />
                       </div>
                     </div>
                   </div>
