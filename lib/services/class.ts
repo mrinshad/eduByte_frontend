@@ -3,6 +3,7 @@ import { apiFetch } from "@/lib/api"
 export type SchoolClass = {
   id: string
   name: string
+  divisionCount: number
 }
 
 type ApiSuccess<T> = {

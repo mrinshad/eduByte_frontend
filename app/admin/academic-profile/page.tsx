@@ -94,7 +94,7 @@ export default function Page() {
   const [toOpen, setToOpen] = React.useState(false)
 
   const [classes, setClasses] = React.useState<SchoolClass[]>([])
-  const [divisions, setDivisions] = React.useState<Division[]>([])
+  const [divisionsByClassId, setDivisionsByClassId] = React.useState<Record<string, Division[]>>({})
   const [selectedClassId, setSelectedClassId] = React.useState("")
   const [selectedDivisionId, setSelectedDivisionId] = React.useState("")
   const [classDialogOpen, setClassDialogOpen] = React.useState(false)
@@ -110,9 +110,11 @@ export default function Page() {
   )
 
   const selectedDivision = React.useMemo(
-    () => divisions.find((entry) => entry.id === selectedDivisionId) ?? null,
-    [divisions, selectedDivisionId],
+    () => (divisionsByClassId[selectedClassId] ?? []).find((entry) => entry.id === selectedDivisionId) ?? null,
+    [divisionsByClassId, selectedClassId, selectedDivisionId],
   )
+
+  const selectedDivisions = divisionsByClassId[selectedClassId] ?? []
 
   const currentAcademicYear = academicYears.find((year) => year.isActive)?.name || defaultAcademicYearName || "Academic Year"
 
@@ -175,6 +177,11 @@ export default function Page() {
         if (classList.length > 0) {
           setSelectedClassId((current) => current || classList[0].id)
         }
+
+        const divisionEntries = await Promise.all(
+          classList.map(async (schoolClass) => [schoolClass.id, await getDivisions(schoolClass.id)] as const),
+        )
+        setDivisionsByClassId(Object.fromEntries(divisionEntries))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load data")
       }
@@ -184,24 +191,9 @@ export default function Page() {
   }, [])
 
   React.useEffect(() => {
-    if (!selectedClassId) {
-      setDivisions([])
-      setSelectedDivisionId("")
-      return
-    }
-
-    async function loadDivisions() {
-      try {
-        const divisionList = await getDivisions(selectedClassId)
-        setDivisions(divisionList)
-        setSelectedDivisionId((current) => current || divisionList[0]?.id || "")
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load divisions")
-      }
-    }
-
-    void loadDivisions()
-  }, [selectedClassId])
+    const currentDivisions = divisionsByClassId[selectedClassId] ?? []
+    setSelectedDivisionId(currentDivisions[0]?.id ?? "")
+  }, [divisionsByClassId, selectedClassId])
 
   React.useEffect(() => {
     if (yearDialogOpen) {
@@ -558,31 +550,47 @@ export default function Page() {
               </CardHeader>
 
               <CardContent className="space-y-2 pt-4">
-                {classes.map((schoolClass) => {
+                {classes.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No classes yet</p>
+                    <p className={`mt-1 text-sm ${supportingTextClass}`}>
+                      Click here to add classes before creating divisions.
+                    </p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
+                      Click here to add classes
+                    </Button>
+                  </div>
+                ) : (
+                  classes.map((schoolClass) => {
                   const isActive = schoolClass.id === selectedClassId
 
                   return (
-                    <button
+                    <div
                       key={schoolClass.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedClassId(schoolClass.id)}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all",
-                          isActive
-                            ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
-                            : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
-                        )}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault()
+                          setSelectedClassId(schoolClass.id)
+                        }
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
+                        isActive
+                          ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
+                          : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
+                      )}
                     >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Layers3 className={cn("h-4 w-4", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
-                          <span className="font-medium text-slate-950 dark:text-slate-100">{schoolClass.name}</span>
-                        </div>
+                      <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                        <Layers3 className={cn("h-4 w-4", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
+                        <span className="font-medium text-slate-950 dark:text-slate-100">{schoolClass.name}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                          {divisions.length} divisions
+                          {schoolClass.divisionCount} divisions
                         </span>
 
                         <Button
@@ -598,9 +606,10 @@ export default function Page() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </div>
-                    </button>
+                    </div>
                   )
-                })}
+                  })
+                )}
               </CardContent>
             </Card>
 
@@ -609,7 +618,11 @@ export default function Page() {
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Division</CardTitle>
                   <CardDescription className={`mt-1 ${supportingTextClass}`}>
-                    {selectedClass?.name ? `${selectedClass.name} divisions are shown here.` : "Select a class to see its divisions."}
+                    {!selectedClass
+                      ? "Select a class to see its divisions."
+                      : selectedDivisions.length === 0
+                        ? "No divisions yet."
+                        : `${selectedClass.name} divisions are shown here.`}
                   </CardDescription>
                 </div>
 
@@ -617,50 +630,74 @@ export default function Page() {
               </CardHeader>
 
               <CardContent className="space-y-3 pt-4">
-                {divisions.map((division) => {
-                  const isActive = division.id === selectedDivisionId
+                {!selectedClass ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No class selected</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
+                      Add class
+                    </Button>
+                  </div>
+                ) : selectedDivisions.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No divisions yet</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openDivisionDialog("add")}>
+                      Add division
+                    </Button>
+                  </div>
+                ) : (
+                  selectedDivisions.map((division) => {
+                    const isActive = division.id === selectedDivisionId
 
-                  return (
-                    <div
-                      key={`${selectedClass?.id}-${division.id}`}
-                      className={cn(
-                        "flex items-center justify-between rounded-2xl border px-4 py-3 transition-all",
-                        isActive
-                          ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
-                          : "border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5",
-                      )}
-                    >
-                      <button
-                        type="button"
+                    return (
+                      <div
+                        key={`${selectedClass?.id}-${division.id}`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedDivisionId(division.id)}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            setSelectedDivisionId(division.id)
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center justify-between rounded-2xl border px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
+                          isActive
+                            ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
+                            : "border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5",
+                        )}
                       >
-                        <span className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold",
-                          isActive ? "bg-amber-600 text-white dark:bg-amber-300 dark:text-slate-950" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
-                        )}>
-                          {division.name}
-                        </span>
+                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                          <span className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold",
+                            isActive ? "bg-amber-600 text-white dark:bg-amber-300 dark:text-slate-950" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
+                          )}>
+                            {division.name}
+                          </span>
 
-                        <div className="min-w-0">
-                          <p className="font-medium text-slate-950 dark:text-slate-100">Division {division.name}</p>
-                          <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
-                            {selectedClass?.name} - Division {division.name}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-950 dark:text-slate-100">Division {division.name}</p>
+                            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
+                              {selectedClass?.name} - Division {division.name}
+                            </p>
+                          </div>
                         </div>
-                      </button>
 
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className={editIconClass}
-                        onClick={() => openDivisionDialog("edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )
-                })}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className={editIconClass}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openDivisionDialog("edit")
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )
+                  })
+                )}
 
               </CardContent>
             </Card>
@@ -766,7 +803,14 @@ export default function Page() {
                         await updateDivision(selectedDivisionId, divisionNameDraft)
                       }
 
-                      setDivisions(await getDivisions(selectedClassId))
+                      const updatedClasses = await getClasses()
+                      const updatedDivisions = await getDivisions(selectedClassId)
+
+                      setClasses(updatedClasses)
+                      setDivisionsByClassId((current) => ({
+                        ...current,
+                        [selectedClassId]: updatedDivisions,
+                      }))
                       toast.success(divisionDialogMode === "add" ? "Division created" : "Division updated")
                       closeDivisionDialog()
                     } catch (error) {
