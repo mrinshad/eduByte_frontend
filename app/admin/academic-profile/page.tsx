@@ -9,9 +9,9 @@ import {
   Check,
   X,
 } from "lucide-react"
+import DatePicker from "react-datepicker"
 
 import { Button } from "@/components/ui/button"
-import { DatePicker } from "@/components/ui/date-picker"
 import {
   Card,
   CardContent,
@@ -60,6 +60,12 @@ const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,
 const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
 const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
+const datePickerClassName =
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
+const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950"
+const datePickerPopperClassName = "z-50"
+const datePickerMinDate = new Date(2020, 0, 1)
+const datePickerMaxDate = new Date(2050, 11, 31)
 
 function AddAction({ onAdd }: { onAdd: () => void }) {
   return (
@@ -297,18 +303,44 @@ export default function Page() {
                                 <div className="space-y-2">
                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
                                   <DatePicker
-                                    value={editingYearStartDate}
-                                    onChange={setEditingYearStartDate}
-                                    placeholder="Select date"
+                                    selected={editingYearStartDate}
+                                    onChange={(date: Date | null) => setEditingYearStartDate(date ?? undefined)}
+                                    placeholderText="Select date"
+                                    dateFormat="PPP"
+                                    className={datePickerClassName}
+                                    calendarClassName={datePickerCalendarClassName}
+                                    popperClassName={datePickerPopperClassName}
+                                    wrapperClassName="w-full"
+                                    showMonthDropdown
+                                    showYearDropdown
+                                    scrollableYearDropdown
+                                    yearDropdownItemNumber={30}
+                                    dropdownMode="select"
+                                    minDate={datePickerMinDate}
+                                    maxDate={datePickerMaxDate}
+                                    openToDate={editingYearStartDate ?? new Date()}
                                   />
                                 </div>
 
                                 <div className="space-y-2">
                                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
                                   <DatePicker
-                                    value={editingYearEndDate}
-                                    onChange={setEditingYearEndDate}
-                                    placeholder="Select date"
+                                    selected={editingYearEndDate}
+                                    onChange={(date: Date | null) => setEditingYearEndDate(date ?? undefined)}
+                                    placeholderText="Select date"
+                                    dateFormat="PPP"
+                                    className={datePickerClassName}
+                                    calendarClassName={datePickerCalendarClassName}
+                                    popperClassName={datePickerPopperClassName}
+                                    wrapperClassName="w-full"
+                                    showMonthDropdown
+                                    showYearDropdown
+                                    scrollableYearDropdown
+                                    yearDropdownItemNumber={30}
+                                    dropdownMode="select"
+                                    minDate={datePickerMinDate}
+                                    maxDate={datePickerMaxDate}
+                                    openToDate={editingYearEndDate ?? new Date()}
                                   />
                                 </div>
                               </div>
@@ -411,12 +443,46 @@ export default function Page() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                                  <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select date" />
+                                  <DatePicker
+                                    selected={fromDate}
+                                    onChange={(date: Date | null) => setFromDate(date ?? undefined)}
+                                    placeholderText="Select date"
+                                    dateFormat="PPP"
+                                    className={datePickerClassName}
+                                    calendarClassName={datePickerCalendarClassName}
+                                    popperClassName={datePickerPopperClassName}
+                                    wrapperClassName="w-full"
+                                    showMonthDropdown
+                                    showYearDropdown
+                                    scrollableYearDropdown
+                                    yearDropdownItemNumber={30}
+                                    dropdownMode="select"
+                                    minDate={datePickerMinDate}
+                                    maxDate={datePickerMaxDate}
+                                    openToDate={fromDate ?? new Date()}
+                                  />
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                        <DatePicker value={toDate} onChange={setToDate} placeholder="Select date" />
+                        <DatePicker
+                          selected={toDate}
+                          onChange={(date: Date | null) => setToDate(date ?? undefined)}
+                          placeholderText="Select date"
+                          dateFormat="PPP"
+                          className={datePickerClassName}
+                          calendarClassName={datePickerCalendarClassName}
+                          popperClassName={datePickerPopperClassName}
+                          wrapperClassName="w-full"
+                          showMonthDropdown
+                          showYearDropdown
+                          scrollableYearDropdown
+                          yearDropdownItemNumber={30}
+                          dropdownMode="select"
+                          minDate={datePickerMinDate}
+                          maxDate={datePickerMaxDate}
+                          openToDate={toDate ?? new Date()}
+                        />
                       </div>
                     </div>
                   </div>
