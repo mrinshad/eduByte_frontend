@@ -139,11 +139,11 @@ export function getPortalRoute(role?: string | null) {
   const normalizedRole = normalizeRole(role)
 
   if (normalizedRole === "STUDENT") {
-    return "/student"
+    return "/student/dashboard"
   }
 
   if (normalizedRole === "ADMIN") {
-    return "/admin"
+    return "/admin/dashboard"
   }
 
   return "/workspace/dashboard"
