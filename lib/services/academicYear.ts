@@ -57,7 +57,7 @@ export async function updateAcademicYear(id: string, input: AcademicYearInput) {
 }
 
 export async function getDefaultAcademicYear() {
-  const payload = (await apiFetch("/api/academicyear/get/default")) as ApiSuccess<{
+  const payload = (await apiFetch("/api/academicyear/default")) as ApiSuccess<{
     name: string
     startDate: string
     endDate: string
@@ -67,7 +67,7 @@ export async function getDefaultAcademicYear() {
 }
 
 export async function setDefaultAcademicYear(id: string) {
-  const payload = (await apiFetch("/api/academicyear/set/default", {
+  const payload = (await apiFetch("/api/academicyear/default", {
     method: "PUT",
     body: JSON.stringify({ id }),
   })) as ApiSuccess<null>

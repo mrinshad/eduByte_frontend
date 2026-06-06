@@ -12,7 +12,7 @@ type ApiSuccess<T> = {
 }
 
 export async function getDivisions(classId: string) {
-  const payload = (await apiFetch(`/api/divisions/${classId}`)) as ApiSuccess<Division[]>
+  const payload = (await apiFetch(`/api/divisions/class/${classId}`)) as ApiSuccess<Division[]>
   return payload.data ?? []
 }
 
