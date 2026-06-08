@@ -360,7 +360,7 @@ export default function Page() {
                                       })
 
                                       setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
-                                        await refreshCurrentAcademicYear()
+                                      await refreshCurrentAcademicYear()
                                       closeYearEdit()
                                       toast.success("Saved")
                                     } catch (error) {
@@ -443,24 +443,24 @@ export default function Page() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                                  <DatePicker
-                                    selected={fromDate}
-                                    onChange={(date: Date | null) => setFromDate(date ?? undefined)}
-                                    placeholderText="Select date"
-                                    dateFormat="PPP"
-                                    className={datePickerClassName}
-                                    calendarClassName={datePickerCalendarClassName}
-                                    popperClassName={datePickerPopperClassName}
-                                    wrapperClassName="w-full"
-                                    showMonthDropdown
-                                    showYearDropdown
-                                    scrollableYearDropdown
-                                    yearDropdownItemNumber={30}
-                                    dropdownMode="select"
-                                    minDate={datePickerMinDate}
-                                    maxDate={datePickerMaxDate}
-                                    openToDate={fromDate ?? new Date()}
-                                  />
+                        <DatePicker
+                          selected={fromDate}
+                          onChange={(date: Date | null) => setFromDate(date ?? undefined)}
+                          placeholderText="Select date"
+                          dateFormat="PPP"
+                          className={datePickerClassName}
+                          calendarClassName={datePickerCalendarClassName}
+                          popperClassName={datePickerPopperClassName}
+                          wrapperClassName="w-full"
+                          showMonthDropdown
+                          showYearDropdown
+                          scrollableYearDropdown
+                          yearDropdownItemNumber={30}
+                          dropdownMode="select"
+                          minDate={datePickerMinDate}
+                          maxDate={datePickerMaxDate}
+                          openToDate={fromDate ?? new Date()}
+                        />
                       </div>
 
                       <div className="space-y-2">
@@ -536,7 +536,17 @@ export default function Page() {
                 <AddAction onAdd={() => openClassDialog("add")} />
               </CardHeader>
 
-              <CardContent className="space-y-2 pt-4">
+              <CardContent
+                className="
+                space-y-2 pt-4 max-h-[200px] overflow-y-auto
+                scrollbar-thin
+                scrollbar-thumb-slate-300
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-slate-400
+                dark:scrollbar-thumb-slate-700
+                dark:hover:scrollbar-thumb-slate-600
+              "
+              >
                 {classes.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No classes yet</p>
@@ -549,52 +559,52 @@ export default function Page() {
                   </div>
                 ) : (
                   classes.map((schoolClass) => {
-                  const isActive = schoolClass.id === selectedClassId
+                    const isActive = schoolClass.id === selectedClassId
 
-                  return (
-                    <div
-                      key={schoolClass.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedClassId(schoolClass.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault()
-                          setSelectedClassId(schoolClass.id)
-                        }
-                      }}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
-                        isActive
-                          ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
-                          : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
-                      )}
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                        <Layers3 className={cn("h-4 w-4", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
-                        <span className="font-medium text-slate-950 dark:text-slate-100">{schoolClass.name}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                          {schoolClass.divisionCount} divisions
-                        </span>
-
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={(event) => {
-                            event.stopPropagation()
+                    return (
+                      <div
+                        key={schoolClass.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedClassId(schoolClass.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
                             setSelectedClassId(schoolClass.id)
-                            openClassDialog("edit")
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                          }
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
+                          isActive
+                            ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
+                            : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
+                        )}
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                          <Layers3 className={cn("h-4 w-4", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
+                          <span className="font-medium text-slate-950 dark:text-slate-100">{schoolClass.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
+                            {schoolClass.divisionCount} divisions
+                          </span>
+
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSelectedClassId(schoolClass.id)
+                              openClassDialog("edit")
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )
+                    )
                   })
                 )}
               </CardContent>
@@ -616,7 +626,17 @@ export default function Page() {
                 <AddAction onAdd={() => openDivisionDialog("add")} />
               </CardHeader>
 
-              <CardContent className="space-y-3 pt-4">
+              <CardContent
+                className="
+                space-y-2 pt-4 max-h-[200px] overflow-y-auto
+                scrollbar-thin
+                scrollbar-thumb-slate-300
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-slate-400
+                dark:scrollbar-thumb-slate-700
+                dark:hover:scrollbar-thumb-slate-600
+              "
+              >
                 {!selectedClass ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No class selected</p>
