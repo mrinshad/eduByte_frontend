@@ -156,6 +156,16 @@ export default function Page() {
   }, [])
 
   const [editingId, setEditingId] = useState<string | null>(null)
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      frequency: "",
+      incomeAccountId: "",
+    })
+
+    setEditingId(null)
+  }
   return (
     <section className="px-6 py-4">
       <div>
@@ -173,7 +183,14 @@ export default function Page() {
             </p>
           </div>
 
-          <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              resetForm()
+              setOpen(true)
+            }}
+          >
             <Plus className="h-4 w-4" />
             Create Fee Type
           </Button>
@@ -263,7 +280,16 @@ export default function Page() {
           </Table>
         </CardContent>
       </Card>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          setOpen(value)
+
+          if (!value) {
+            resetForm()
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -362,7 +388,10 @@ export default function Page() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                resetForm()
+                setOpen(false)
+              }}
             >
               Cancel
             </Button>
