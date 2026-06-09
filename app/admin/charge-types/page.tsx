@@ -47,47 +47,30 @@ export default function Page() {
     "Created At",
     "Actions"
   ]
-  const TABLEDATA = [
-    {
-      name: "tution fee",
-      frequency: "3 Monthly",
-      accountType: "income",
-      createdAt: "2024-06-01"
-    }, {
-      name: "library fee",
-      frequency: "monthly",
-      accountType: "income",
-      createdAt: "2024-06-01"
-    },
-    {
-      name: "sports fee",
-      frequency: "monthly",
-      accountType: "income",
-      createdAt: "2024-06-01"
-    },
-    {
-      name: "lab fee",
-      frequency: "monthly",
-      accountType: "income",
-      createdAt: "2024-06-01"
-    }
-  ]
 
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<accountName[]>([])
   useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        const data = await getAccountTypes()
-        setAccounts(data)
-      } catch (error) {
-        console.error("Failed to load accounts:", error)
-      }
+  const loadData = async () => {
+    try {
+      const chargeTypeData = await getChargeTypes()
+      setChargeTypes(chargeTypeData)
+    } catch (error) {
+      console.error(error)
     }
+  }
 
-    loadAccounts()
-  }, [])
-
+  loadData()
+}, [])
+  const loadAccounts = async () => {
+    try {
+      const data = await getAccountTypes()
+      setAccounts(data)
+    } catch (error) {
+      console.error("Failed to load accounts:", error)
+      toast.error("Failed to load accounts")
+    }
+  }
   const [formData, setFormData] = useState<chargeType>({
     name: "",
     frequency: "",
@@ -141,9 +124,6 @@ export default function Page() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const accountsData = await getAccountTypes()
-        setAccounts(accountsData)
-
         const chargeTypeData = await getChargeTypes()
         console.log(chargeTypeData)
         setChargeTypes(chargeTypeData)
@@ -186,8 +166,9 @@ export default function Page() {
           <Button
             size="sm"
             className="gap-2"
-            onClick={() => {
+            onClick={async () => {
               resetForm()
+              await loadAccounts()
               setOpen(true)
             }}
           >
@@ -250,7 +231,9 @@ export default function Page() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => {
+                        onClick={async () => {
+                          await loadAccounts()
+
                           setEditingId(data.id)
 
                           setFormData({
