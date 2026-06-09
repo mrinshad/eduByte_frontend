@@ -1,9 +1,7 @@
 export const freequencyOptions = [
-    "Monthly",
-    "Yearly",
-    "Daily",
-    "weekly",
-    "Four monthly",
-    "Three monthly",
-    "Six monthly"
+  { label: "Monthly", value: "MONTHLY" },
+  { label: "Quarterly", value: "QUARTERLY" },
+  { label: "Half Yearly", value: "HALF_YEARLY" },
+  { label: "Annual", value: "ANNUAL" },
+  { label: "One Time", value: "ONE_TIME" },
 ]

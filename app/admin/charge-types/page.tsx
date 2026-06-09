@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+
 import {
   Table,
   TableBody,
@@ -28,6 +28,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { freequencyOptions } from "@/lib/constant"
+import { getAccountTypes, type accountName } from "@/lib/services/accountTypes"
+import {
+  createChargeType,
+  getChargeTypes,
+  updateChargeType,
+  type chargeType,
+  type ChargeTypes,
+} from "@/lib/services/chargeTypes"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 export default function Page() {
   const TABLEHEADERS = [
     "id",
@@ -62,7 +72,90 @@ export default function Page() {
       createdAt: "2024-06-01"
     }
   ]
+
   const [open, setOpen] = useState(false)
+  const [accounts, setAccounts] = useState<accountName[]>([])
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const data = await getAccountTypes()
+        setAccounts(data)
+      } catch (error) {
+        console.error("Failed to load accounts:", error)
+      }
+    }
+
+    loadAccounts()
+  }, [])
+
+  const [formData, setFormData] = useState<chargeType>({
+    name: "",
+    frequency: "",
+    incomeAccountId: "",
+  })
+  const handleSave = async () => {
+    if (
+      !formData.name ||
+      !formData.frequency ||
+      !formData.incomeAccountId
+    ) {
+      toast.warning("Please fill all fields")
+      return
+    }
+
+    try {
+      if (editingId) {
+        await updateChargeType(editingId, formData)
+
+        toast.success("Charge Type Updated Successfully")
+      } else {
+        await createChargeType(formData)
+
+        toast.success("Charge Type Created Successfully")
+      }
+
+      await loadChargeTypes()
+
+      setFormData({
+        name: "",
+        frequency: "",
+        incomeAccountId: "",
+      })
+
+      setEditingId(null)
+      setOpen(false)
+    } catch (error) {
+      toast.error("Operation failed")
+    }
+  }
+  const [chargeTypes, setChargeTypes] = useState<ChargeTypes[]>([])
+  const loadChargeTypes = async () => {
+    try {
+      const data = await getChargeTypes()
+      setChargeTypes(data)
+    } catch (error) {
+      console.error("Failed to load charge types:", error)
+      toast.error("Failed to load charge types")
+    }
+  }
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const accountsData = await getAccountTypes()
+        setAccounts(accountsData)
+
+        const chargeTypeData = await getChargeTypes()
+        console.log(chargeTypeData)
+        setChargeTypes(chargeTypeData)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const [editingId, setEditingId] = useState<string | null>(null)
   return (
     <section className="px-6 py-4">
       <div>
@@ -108,7 +201,7 @@ export default function Page() {
             </TableHeader>
 
             <TableBody>
-              {TABLEDATA.map((data, index) => (
+              {chargeTypes.map((data, index) => (
                 <TableRow
                   key={data.name}
                   className=" transition-colors"
@@ -117,22 +210,22 @@ export default function Page() {
                     {index + 1}
                   </TableCell>
 
-                  <TableCell className="font-medium text-white dark:text-slate-50">
+                  <TableCell className="font-medium text-white">
                     {data.name}
                   </TableCell>
 
-                  <TableCell className="text-white dark:text-slate-50">
+                  <TableCell className="text-white">
                     {data.frequency}
                   </TableCell>
 
                   <TableCell>
                     <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                      {data.accountType}
+                      {data.incomeAccount?.name ?? "-"}
                     </span>
                   </TableCell>
 
-                  <TableCell className="text-white dark:text-slate-50">
-                    {data.createdAt}
+                  <TableCell className="text-white">
+                    {new Date(data.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="flex justify-end pr-4">
                     <div className="flex items-center gap-2">
@@ -140,6 +233,17 @@ export default function Page() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
+                        onClick={() => {
+                          setEditingId(data.id)
+
+                          setFormData({
+                            name: data.name,
+                            frequency: data.frequency,
+                            incomeAccountId: data.incomeAccount?.id ?? "",
+                          })
+
+                          setOpen(true)
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -162,7 +266,9 @@ export default function Page() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Create Fee Type</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Edit Fee Type" : "Create Fee Type"}
+            </DialogTitle>
             <DialogDescription>
               Add a new fee type and map it to an account.
             </DialogDescription>
@@ -174,61 +280,80 @@ export default function Page() {
               <input
                 className="w-full rounded-md border p-2 mt-1"
                 placeholder="Tuition Fee"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
               />
             </div>
 
             <div>
               <label className="text-sm font-medium">Frequency</label>
-              <Select>
+              <Select
+                value={formData.frequency}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    frequency: value,
+                  }))
+                }
+              >
                 <SelectTrigger className="w-full bg-[#5a6548] border-[#788164] text-[#d9dccf]">
                   <SelectValue placeholder="Select Frequency" />
                 </SelectTrigger>
 
-                <SelectContent className="bg-[#5a6548] border-[#788164]">
+                <SelectContent className="bg-white text-black border-[#788164]">
                   {freequencyOptions.map((option) => (
                     <SelectItem
-                    
-                    key={option}
-    value={option}
-                    className="text-black focus:bg-[#6b7656] focus:text-black"
-                  >
-                    {option}
-                  </SelectItem>
+                      key={option.value}
+                      value={option.value}
+                      className="
+                                  text-black
+                                  data-[highlighted]:bg-[#8a9770]
+                                  data-[highlighted]:text-black
+                                  data-[state=checked]:text-black
+                                "
+                    >
+                      {option.label}
+                    </SelectItem>
                   ))}
-                  
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <label className="text-sm font-medium">Income Account</label>
-              <Select>
+              <Select
+                value={formData.incomeAccountId}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    incomeAccountId: value,
+                  }))
+                }
+              >
                 <SelectTrigger className="w-full bg-[#5a6548] border-[#788164] text-[#d9dccf]">
                   <SelectValue placeholder="Select Income Account" />
                 </SelectTrigger>
 
-                <SelectContent className="bg-[#5a6548] border-[#788164] text-black [&_svg]:text-black">
-                  
-                  <SelectItem
-                    value="tuition"
-                    className="text-black focus:bg-[#6b7656] focus:text-black"
-                  >
-                    Tuition Fee Income
-                  </SelectItem>
-
-                  <SelectItem
-                    value="transport"
-                    className="text-black focus:bg-[#6b7656] focus:text-black"
-                  >
-                    Transport Fee Income
-                  </SelectItem>
-
-                  <SelectItem
-                    value="library"
-                    className="text-black focus:bg-[#6b7656] focus:text-black"
-                  >
-                    Library Fee Income
-                  </SelectItem>
+                <SelectContent className="bg-white border-[#788164] text-black">
+                  {accounts.map((account) => (
+                    <SelectItem
+                      key={account.id}
+                      value={account.id}
+                      className="
+                                  !text-black
+                                  data-[highlighted]:bg-[#8a9770]
+                                  data-[highlighted]:!text-black
+                                  data-[state=checked]:!text-black
+                                "
+                    >
+                      {account.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -242,8 +367,8 @@ export default function Page() {
               Cancel
             </Button>
 
-            <Button>
-              Save
+            <Button onClick={handleSave}>
+              {editingId ? "Update" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
