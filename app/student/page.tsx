@@ -1,5 +1,5 @@
-import { PortalPage } from "@/components/portal-page"
+import { redirect } from "next/navigation"
 
 export default function StudentPage() {
-  return <PortalPage area="student" />
+  redirect("/student/dashboard")
 }

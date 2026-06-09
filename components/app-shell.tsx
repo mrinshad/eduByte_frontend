@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Sidebar } from "@/components/sidebar"
 import { clearAccessToken, getCurrentSession, logoutUser } from "@/lib/auth"
-import { currentAcademicYear, getPortalNavGroups, normalizeRole, type PortalArea } from "@/lib/portal"
+import { getPortalNavGroups, normalizeRole, type PortalArea } from "@/lib/portal"
+import { useCurrentAcademicYear } from "@/lib/academic-year-store"
 
 type AppShellProps = {
   area: PortalArea
@@ -17,6 +18,7 @@ type AppShellProps = {
 
 export function AppShell({ area, title, subtitle, children }: AppShellProps) {
   const router = useRouter()
+  const currentAcademicYear = useCurrentAcademicYear()
   const [collapsed, setCollapsed] = React.useState(true)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [userLabel, setUserLabel] = React.useState<string | undefined>()
