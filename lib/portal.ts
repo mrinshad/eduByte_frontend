@@ -28,9 +28,7 @@ export type PortalNavGroup = {
 export const portalSections: PortalSection[] = [
   // --- ADMIN AREA ---
   { slug: "dashboard", label: "Dashboard", area: "admin", purpose: "Admin dashboard", roles: ["Admin"], group: "Admin" },
-  { slug: "academic-years", label: "Academic Years", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic Management" },
-  { slug: "classes", label: "Classes", area: "admin", purpose: "Manage classes", roles: ["Admin"], group: "Academic Management" },
-  { slug: "divisions", label: "Divisions", area: "admin", purpose: "Manage divisions", roles: ["Admin"], group: "Academic Management" },
+  { slug: "academic-profile", label: "Academic Profile", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic Management" },
   { slug: "student-promotion", label: "Student Promotion", area: "admin", purpose: "Promote students between classes", roles: ["Admin"], group: "Academic Management" },
 
   { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Student Management" },
@@ -129,8 +127,6 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
 }
 
-export const currentAcademicYear = "2025 - 2026"
-
 const workspaceRoles = new Set(["ADMIN", "ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER"])
 
 export function normalizeRole(role?: string | null) {
@@ -141,11 +137,11 @@ export function getPortalRoute(role?: string | null) {
   const normalizedRole = normalizeRole(role)
 
   if (normalizedRole === "STUDENT") {
-    return "/student"
+    return "/student/dashboard"
   }
 
   if (normalizedRole === "ADMIN") {
-    return "/admin"
+    return "/admin/dashboard"
   }
 
   return "/workspace/dashboard"

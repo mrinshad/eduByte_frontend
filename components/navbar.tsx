@@ -150,7 +150,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0">
-              <span className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+              <span className="truncate text-xs font-bold dark:text-slate-100">
                 {user?.username || user?.name || "User"}
               </span>
               <span className="truncate text-[11px] text-slate-400 dark:text-slate-500">
