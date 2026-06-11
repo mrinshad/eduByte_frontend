@@ -1,9 +1,14 @@
 "use client"
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { createVehicle, getVehicles, type Vehicle } from "@/lib/services/vehicle";
+import {
+  createVehicle,
+  getVehicles,
+  updateVehicle,
+  type Vehicle,
+} from "@/lib/services/vehicle";
 
-import { ArrowLeft, Plus, Bus, User, Hash, Pencil } from "lucide-react"
+import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,7 +21,7 @@ export default function Page() {
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [driverName, setDriverName] = useState("");
 
-  const handleCreateVehicle = async () => {
+  const handleSaveVehicle = async () => {
     if (!vehicleName.trim()) {
       toast.error("Please enter vehicle name");
       return;
@@ -31,7 +36,9 @@ export default function Page() {
       toast.error("Please enter driver name");
       return;
     }
-    setLoading(true)
+
+    setLoading(true);
+
     try {
       const payload = {
         vehicleName,
@@ -39,27 +46,36 @@ export default function Page() {
         driverName,
       };
 
-      console.log("Payload:", payload);
+      if (editingId) {
+        await updateVehicle(editingId, payload);
 
-      const response = await createVehicle(payload);
+        toast.success("Vehicle updated successfully");
+      } else {
+        await createVehicle(payload);
 
-      console.log("API Response:", response);
+        toast.success("Vehicle created successfully");
+      }
 
-      toast.success("Vehicle created successfully");
-
-      // Reset form
       setVehicleName("");
       setVehicleNumber("");
       setDriverName("");
+      setEditingId(null);
+
       setOpen(false);
+
+      loadVehicles();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create vehicle");
+
+      toast.error(
+        editingId
+          ? "Failed to update vehicle"
+          : "Failed to create vehicle"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
-
   const [loading, setLoading] = useState(false);
 
   const [open, setOpen] = useState(false);
@@ -78,6 +94,18 @@ export default function Page() {
       console.error(error);
     }
   };
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleEditClick = (vehicle: Vehicle) => {
+    setEditingId(vehicle.id);
+
+    setVehicleName(vehicle.vehicleName);
+    setVehicleNumber(vehicle.vehicleNumber);
+    setDriverName(vehicle.driverName);
+
+    setOpen(true);
+  };
   return (
     <section className="px-6 py-4">
       <div className="flex items-center space-x-4">
@@ -93,14 +121,20 @@ export default function Page() {
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button
+              onClick={() => {
+                setEditingId(null);
+                setVehicleName("");
+                setVehicleNumber("");
+                setDriverName("");
+              }}
               className="
-                      bg-[#556043]
-                      text-white
-                      hover:bg-[#4a533b]
-                      dark:bg-slate-100
-                      dark:text-slate-900
-                      dark:hover:bg-slate-200
-                    "
+                          bg-[#556043]
+                          text-white
+                          hover:bg-[#4a533b]
+                          dark:bg-slate-100
+                          dark:text-slate-900
+                          dark:hover:bg-slate-200
+                        "
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Vehicle
@@ -127,11 +161,13 @@ export default function Page() {
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-white">
-                  Create Vehicle
+                  {editingId ? "Edit Vehicle" : "Create Vehicle"}
                 </DialogTitle>
 
                 <DialogDescription className="text-slate-200">
-                  Add a new vehicle and assign driver information.
+                  {editingId
+                    ? "Update vehicle information."
+                    : "Add a new vehicle and assign driver information."}
                 </DialogDescription>
               </DialogHeader>
 
@@ -210,111 +246,121 @@ export default function Page() {
               </Button>
 
               <Button
-                onClick={handleCreateVehicle}
+                onClick={handleSaveVehicle}
                 disabled={loading}
                 className="rounded-full bg-white text-[#556043]"
               >
-                {loading ? "Saving..." : "Save"}
+                {loading
+                  ? "Saving..."
+                  : editingId
+                    ? "Update"
+                    : "Save"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
         {vehicles.map((vehicle) => (
           <div
             key={vehicle.id}
             className="
-                        group
-                        overflow-hidden
-                        rounded-2xl
-                        border
-                        border-slate-200
-                        bg-white
-                        dark:bg-slate-900
-                        dark:border-slate-800
-                        shadow-sm
-                        transition-all
-                        duration-300
-                        hover:-translate-y-1
-                        hover:shadow-lg
-                      "
+        group
+        relative
+        overflow-hidden
+        rounded-xl
+        border
+        border-slate-100
+        bg-white
+        p-3
+        shadow-sm
+        transition-all
+        duration-300
+        hover:-translate-y-0.5
+        hover:shadow-md
+        dark:border-slate-800/80
+        dark:bg-slate-900
+      "
           >
-            {/* Header */}
-            <div
-              className="
-                          px-4 py-3
-                          border-b
-                          bg-gradient-to-r
-                          from-[#556043]
-                          to-[#687556]
-                          dark:from-slate-900
-                          dark:to-slate-800
-                          dark:border-slate-800
-                        "
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/20">
-                    <Bus className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            {/* Decorative Top Accent Line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-400 to-amber-500 opacity-0 transition-opacity group-hover:opacity-100" />
+
+            <div className="flex flex-col gap-3">
+              {/* Header Content */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Compact Icon Badge */}
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+                    <Bus className="h-4 w-4" />
                   </div>
 
                   <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-white">
+                    <h3 className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                       {vehicle.vehicleName}
                     </h3>
-
-                    <p className="truncate text-xs text-slate-200 dark:text-slate-400">
+                    <p className="truncate text-xs font-medium text-slate-400 dark:text-slate-500">
                       {vehicle.vehicleNumber}
                     </p>
                   </div>
                 </div>
 
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="
-                              h-8 w-8
-                              rounded-lg
-                              text-white
-                              hover:bg-white/20
-                              hover:text-white
-                              dark:hover:bg-slate-700
-                            "
-                >
-                  <Pencil className="h-4 w-4 text-red" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="space-y-3 p-4">
-              {/* Driver */}
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-500/10">
-                  <User className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                </div>
-
+                {/* Sleek Action Button */}
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Driver
-                  </p>
-
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {vehicle.driverName}
-                  </p>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleEditClick(vehicle)}
+                    className="
+    h-7
+    w-7
+    shrink-0
+    rounded-md
+    text-slate-400
+    hover:bg-slate-50
+    hover:text-orange-600
+    dark:text-slate-500
+    dark:hover:bg-slate-800
+    dark:hover:text-orange-400
+  "
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="
+              h-7
+              w-7
+              shrink-0
+              rounded-md
+              text-slate-400
+              hover:bg-slate-50
+              hover:text-orange-600
+              dark:text-slate-500
+              dark:hover:bg-slate-800
+              dark:hover:text-orange-400
+            "
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
 
-              {/* Vehicle Number */}
-              <div className="rounded-xl bg-slate-50 dark:bg-slate-800 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  Vehicle Number
-                </p>
 
-                <p className="font-semibold text-slate-800 dark:text-slate-100">
-                  {vehicle.vehicleNumber}
-                </p>
+              {/* Divider */}
+              <div className="h-px bg-slate-100 dark:bg-slate-800/60" />
+
+              {/* Compact Driver Info */}
+              <div className="flex items-center gap-2 rounded-lg bg-slate-50/50 p-2 dark:bg-slate-800/40">
+                <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                <div className="min-w-0 flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                    Driver:
+                  </span>
+                  <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {vehicle.driverName}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
