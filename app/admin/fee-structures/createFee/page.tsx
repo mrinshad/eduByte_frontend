@@ -3,6 +3,7 @@
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getAcademicYears, type AcademicYearSummary } from "@/lib/services/academicYear";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -11,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { getChargeTypes, type ChargeTypes, } from "@/lib/services/chargeTypes";
-import { createFeeStructure, type CreateFeeStructureInput } from "@/lib/services/feeStructure";
+import { createFeeStructure, GetEditFeeStructure, EditFeeStructure, type CreateFeeStructureInput } from "@/lib/services/feeStructure";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner"
 import {
     Select,
@@ -21,10 +23,16 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 export default function Page() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const feeStructureId = searchParams.get("id");
+    const isEditMode = !!feeStructureId;
+
     const fieldClass =
         "bg-input border-border text-foreground placeholder:text-muted-foreground rounded-md";
 
     const [showFeeItems, setShowFeeItems] = useState(false);
+    const [isLoading, setIsLoading] = useState(isEditMode);
 
     const [feeItems, setFeeItems] = useState<
         {
@@ -95,20 +103,55 @@ export default function Page() {
                 setAcademicYears(academicYearData);
                 setChargeTypes(chargeTypeData);
 
-                const activeYear = academicYearData.find(
-                    (y) => y.isActive
-                );
+                // If in edit mode, load the fee structure data
+                if (isEditMode && feeStructureId) {
+                    const response = await GetEditFeeStructure(feeStructureId);
+                    const data = response.data;
+                    
+                    setName(data.name);
+                    setDescription(data.description || "");
+                    setIsActive(data.isActive);
+                    
+                    // Find academic year by name
+                    const academicYear = academicYearData.find(ay => ay.name === data.academicYearName);
+                    if (academicYear) {
+                        setSelectedAcademicYear(academicYear.id);
+                    }
+                    
+                    // Find class by name
+                    const classItem = classData.find(c => c.name === data.className);
+                    if (classItem) {
+                        setSelectedClass(classItem.id);
+                    }
+                    
+                    // Pre-populate fee items
+                    const items = data.items.map(item => ({
+                        chargeTypeId: chargeTypeData.find(ct => ct.name === item.chargeTypeName)?.id || "",
+                        amount: item.amount,
+                    }));
+                    setFeeItems(items);
+                    if (items.length > 0) {
+                        setShowFeeItems(true);
+                    }
+                } else {
+                    // Create mode - set active year as default
+                    const activeYear = academicYearData.find(
+                        (y) => y.isActive
+                    );
 
-                if (activeYear) {
-                    setSelectedAcademicYear(activeYear.id);
+                    if (activeYear) {
+                        setSelectedAcademicYear(activeYear.id);
+                    }
                 }
             } catch (error) {
                 console.error(error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
         loadData();
-    }, []);
+    }, [isEditMode, feeStructureId]);
 
     const handleCreateFeeStructure = async () => {
         if (!name.trim()) {
@@ -145,17 +188,23 @@ export default function Page() {
 
             console.log("Fee Structure Payload:", payload);
 
-            const response = await createFeeStructure(payload);
+            let response;
+            if (isEditMode && feeStructureId) {
+                response = await EditFeeStructure(feeStructureId, payload);
+                toast.success("Fee Structure updated successfully");
+            } else {
+                response = await createFeeStructure(payload);
+                toast.success("Fee Structure created successfully");
+            }
 
             console.log("API Response:", response);
 
-            toast.success("Fee Structure created successfully");
-
             resetForm();
+            router.push("/admin/fee-structures");
         } catch (error) {
             console.error(error);
 
-            toast.error("Failed to create fee structure");
+            toast.error(isEditMode ? "Failed to update fee structure" : "Failed to create fee structure");
         }
     };
     const resetForm = () => {
@@ -175,11 +224,28 @@ export default function Page() {
         setFeeItems([]);
         setShowFeeItems(false);
     };
+    if (isLoading) {
+        return (
+            <section className="px-6 py-4">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section className="px-6 py-4">
-            <div>
-                <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Create Fee Structure</h1>
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Set up fee components, assign charge types, and configure payment-related settings.</p>
+            <div className="flex items-center space-x-4">
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                    <h1 className="text-xl font-semibold text-slate-950 dark:text-white">
+                        {isEditMode ? "Edit Fee Structure" : "Create Fee Structure"}
+                    </h1>
+                    <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Set up fee components, assign charge types, and configure payment-related settings.</p>
+                </div>
             </div>
             <Card className="mt-6 border-slate-200 dark:border-slate-700">
                 <CardContent>
@@ -416,7 +482,7 @@ export default function Page() {
                 <CardFooter className="flex justify-end p-4">
                     <Button
                         variant="outline"
-                        onClick={resetForm}
+                        onClick={() => router.back()}
                     >
                         Cancel
                     </Button>
@@ -425,7 +491,7 @@ export default function Page() {
                         className="ml-2"
                         onClick={handleCreateFeeStructure}
                     >
-                        Create
+                        {isEditMode ? "Update" : "Create"}
                     </Button>
                 </CardFooter>
             </Card>

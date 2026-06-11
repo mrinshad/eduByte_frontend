@@ -70,10 +70,16 @@ export async function viewFeeStructure(id: string) {
     data: FeeStructureView;
   };
 }
-export async function GetEditFeeStructure(id:string){
+export async function GetEditFeeStructure(id: string) {
   const payload = await apiFetch(
     `/api/feestructure/edit/${id}`
-  )
+  );
+
+  return payload as {
+    success: boolean;
+    message: string;
+    data: FeeStructureView;
+  };
 }
 export async function EditFeeStructure(
   id: string,
