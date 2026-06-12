@@ -27,6 +27,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const getPageNumbers = (
+  current: number,
+  total: number
+): (number | "ellipsis")[] => {
+  if (total <= 0) return [];
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | "ellipsis")[] = [1];
+
+  if (current > 3) {
+    pages.push("ellipsis");
+  }
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (current < total - 2) {
+    pages.push("ellipsis");
+  }
+
+  pages.push(total);
+
+  return pages;
+};
+
 export default function Page() {
   const router = useRouter();
 
@@ -39,38 +71,62 @@ export default function Page() {
     "Actions",
   ];
 
-  const [students, setStudents] = useState<StudentListItem[]>([]);
+  // Full list of students matching the current search (unpaginated).
+  const [allStudents, setAllStudents] = useState<StudentListItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-
   const [limit, setLimit] = useState(10);
 
   const loadStudents = async () => {
     try {
+      setLoading(true);
+
       const response = await getStudents({
-        page: currentPage,
-        limit,
+        page: 1,
+        limit: 1000,
         search,
         sortBy: "admissionNumber",
         order: "desc",
       });
-      console.log(response)
 
-      setStudents(response.data);
-      setTotalPages(response.pagination.totalPages);
-      setTotalRecords(response.pagination.total);
+      setAllStudents(response.data ?? []);
     } catch (error) {
       console.error(error);
+      setAllStudents([]);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Refetch only when the search term changes (pagination/limit are
+  // handled entirely on the client below).
   useEffect(() => {
-    console.log("Current Page:", currentPage);
     loadStudents();
-  }, [currentPage, search, limit]);
-  const [totalRecords, setTotalRecords] = useState(0);
+  }, [search]);
+
+  // Reset to page 1 whenever the page size changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [limit]);
+
+  const totalRecords = allStudents.length;
+  const totalPages = Math.max(Math.ceil(totalRecords / limit), 1);
+
+  // Clamp current page if it becomes invalid (e.g. limit changed,
+  // or the last item on the last page was deleted).
+  const safePage = Math.min(currentPage, totalPages);
+  if (safePage !== currentPage) {
+    setCurrentPage(safePage);
+  }
+
+  const startIndex = (safePage - 1) * limit;
+  const students = allStudents.slice(startIndex, startIndex + limit);
+
+  const isFirstPage = safePage === 1;
+  const isLastPage = totalRecords === 0 || safePage === totalPages;
+
   return (
     <section className="px-6 py-4">
       <div className="flex items-center space-x-4">
@@ -161,10 +217,19 @@ export default function Page() {
             </TableHeader>
 
             <TableBody>
-              {students.length === 0 ? (
+              {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={TABLEHEADERS.length}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    Loading students...
+                  </TableCell>
+                </TableRow>
+              ) : students.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={TABLEHEADERS.length}
                     className="text-center py-8"
                   >
                     No students found
@@ -173,15 +238,14 @@ export default function Page() {
               ) : (
                 students.map(
                   (student, index) => {
-                    console.log("a", student)
                     return (
                       <TableRow
                         key={
-                          student.admissionNumber
+                          student.id
                         }
                       >
                         <TableCell>
-                          {index + 1}
+                          {startIndex + index + 1}
                         </TableCell>
 
                         <TableCell>
@@ -277,7 +341,7 @@ export default function Page() {
             <div className="flex items-center gap-6">
 
               <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                Page {safePage} of {totalPages}
               </p>
 
               <p className="text-sm font-medium">
@@ -289,40 +353,46 @@ export default function Page() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  disabled={currentPage === 1}
+                  disabled={isFirstPage}
                   onClick={() =>
-                    setCurrentPage((prev) => prev - 1)
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                {Array.from(
-                  { length: totalPages },
-                  (_, i) => i + 1
-                ).map((page) => (
-                  <Button
-                    key={page}
-                    variant={
-                      currentPage === page
-                        ? "default"
-                        : "ghost"
-                    }
-                    size="icon"
-                    onClick={() =>
-                      setCurrentPage(page)
-                    }
-                  >
-                    {page}
-                  </Button>
-                ))}
+                {getPageNumbers(safePage, totalPages).map((page, idx) =>
+                  page === "ellipsis" ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-2 text-sm text-muted-foreground"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={page}
+                      variant={
+                        safePage === page
+                          ? "default"
+                          : "ghost"
+                      }
+                      size="icon"
+                      onClick={() =>
+                        setCurrentPage(page)
+                      }
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  disabled={currentPage === totalPages}
+                  disabled={isLastPage}
                   onClick={() =>
-                    setCurrentPage((prev) => prev + 1)
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                 >
                   <ChevronRight className="h-4 w-4" />

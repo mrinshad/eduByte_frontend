@@ -31,7 +31,7 @@ import {
     getStudentById,
     StudentInput,
 } from "@/lib/services/student";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 
 const bloodGroups = [
     "A+",
@@ -60,7 +60,6 @@ export default function Page() {
   focus:ring-offset-0
 `;
 
-
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] =
@@ -77,6 +76,9 @@ export default function Page() {
             whatsappNumber: "",
             address: "",
         });
+
+    const searchParams = useSearchParams();
+    const id = searchParams.get("id");
 
     const handleSubmit = async () => {
         try {
@@ -99,8 +101,7 @@ export default function Page() {
             setLoading(false);
         }
     };
-    const searchParams = useSearchParams();
-    const id = searchParams.get("id");
+
     useEffect(() => {
         const loadStudent = async () => {
             if (!id) return;
@@ -128,6 +129,7 @@ export default function Page() {
 
         loadStudent();
     }, [id]);
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
@@ -136,9 +138,6 @@ export default function Page() {
             [e.target.name]: e.target.value,
         }));
     };
-
-    
-
 
     return (
         <section className="px-6 py-4">
@@ -158,128 +157,138 @@ export default function Page() {
                     </h1>
 
                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Add a new student record.
+                        {id
+                            ? "Update this student's record."
+                            : "Add a new student record."}
                     </p>
                 </div>
             </div>
 
             {/* Main Card */}
             <Card className="mt-6 border-slate-200 dark:border-slate-700">
-                <CardContent>
-                    <div className=" grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                                Student Details
-                            </h2>
+                <CardContent className="pt-6 space-y-8">
+                    {/* Basic Info */}
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                            Basic information
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="feeCode">
+                                <Label htmlFor="admissionNumber">
                                     Admission Number
                                 </Label>
                                 <Input
+                                    id="admissionNumber"
                                     name="admissionNumber"
                                     value={formData.admissionNumber}
                                     onChange={handleChange}
                                     placeholder="Admission Number"
+                                    className={fieldClass}
                                 />
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="feeCode">
+                                <Label htmlFor="studentName">
                                     Student Name
                                 </Label>
                                 <Input
+                                    id="studentName"
                                     name="studentName"
                                     value={formData.studentName}
                                     onChange={handleChange}
                                     placeholder="Student Name"
+                                    className={fieldClass}
                                 />
                             </div>
-                            <div className="flex flex-col md:flex-row gap-6">
-                                <div className="space-y-2 w-74">
-                                    <Label htmlFor="feeCode">
-                                        Gender
-                                    </Label>
-                                    <Select
-                                        value={formData.gender}
-                                        onValueChange={(value) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                gender: value as "Male" | "Female",
-                                            }))
-                                        }
-                                    >
-                                        <SelectTrigger className={`w-full ${fieldClass}`}>
-                                            <SelectValue placeholder="Select Gender" />
-                                        </SelectTrigger>
 
-                                        <SelectContent className="bg-white border-[#788164] rounded-3xl shadow-lg p-2">
-                                            <SelectItem
-                                                value="Male"
-                                                className="
-                                                                rounded-full
-                                                                text-black
-                                                                data-[highlighted]:bg-[#8a9770]
-                                                                data-[highlighted]:text-white
-                                                                data-[state=checked]:bg-[#8a9770]
-                                                                data-[state=checked]:text-white
-                                                            "
-                                            >
-                                                Male
-                                            </SelectItem>
+                            <div className="space-y-2">
+                                <Label htmlFor="gender">
+                                    Gender
+                                </Label>
+                                <Select
+                                    value={formData.gender}
+                                    onValueChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            gender: value as "Male" | "Female",
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger id="gender" className={`w-full ${fieldClass}`}>
+                                        <SelectValue placeholder="Select Gender" />
+                                    </SelectTrigger>
 
-                                            <SelectItem
-                                                value="Female"
-                                                className="
-                                                                rounded-full
-                                                                text-black
-                                                                data-[highlighted]:bg-[#8a9770]
-                                                                data-[highlighted]:text-white
-                                                                data-[state=checked]:bg-[#8a9770]
-                                                                data-[state=checked]:text-white
-                                                            "
-                                            >
-                                                Female
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2 w-74">
-                                    <Label htmlFor="feeCode">
-                                        Blood Group
-                                    </Label>
-                                    <Select
-                                        value={formData.bloodGroup}
-                                        onValueChange={(value) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                bloodGroup: value,
-                                            }))
-                                        }
-                                    >
-                                        <SelectTrigger className={`w-full ${fieldClass}`}>
-                                            <SelectValue placeholder="Select Blood " />
-                                        </SelectTrigger>
+                                    <SelectContent className="bg-white border-[#788164] rounded-3xl shadow-lg p-2">
+                                        <SelectItem
+                                            value="Male"
+                                            className="
+                                                rounded-full
+                                                text-black
+                                                data-[highlighted]:bg-[#8a9770]
+                                                data-[highlighted]:text-white
+                                                data-[state=checked]:bg-[#8a9770]
+                                                data-[state=checked]:text-white
+                                            "
+                                        >
+                                            Male
+                                        </SelectItem>
 
-                                        <SelectContent className="bg-white border-[#788164] rounded-3xl shadow-lg p-2">
-                                            {bloodGroups.map((group) => (
-                                                <SelectItem
-                                                    key={group}
-                                                    value={group}
-                                                    className="
-                                                                    rounded-full
-                                                                    text-black
-                                                                    data-[highlighted]:bg-[#8a9770]
-                                                                    data-[highlighted]:text-white
-                                                                    data-[state=checked]:bg-[#8a9770]
-                                                                    data-[state=checked]:text-white
-                                                                "
-                                                >
-                                                    {group}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                        <SelectItem
+                                            value="Female"
+                                            className="
+                                                rounded-full
+                                                text-black
+                                                data-[highlighted]:bg-[#8a9770]
+                                                data-[highlighted]:text-white
+                                                data-[state=checked]:bg-[#8a9770]
+                                                data-[state=checked]:text-white
+                                            "
+                                        >
+                                            Female
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="bloodGroup">
+                                    Blood Group
+                                </Label>
+                                <Select
+                                    value={formData.bloodGroup}
+                                    onValueChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            bloodGroup: value,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger id="bloodGroup" className={`w-full ${fieldClass}`}>
+                                        <SelectValue placeholder="Select Blood Group" />
+                                    </SelectTrigger>
+
+                                    <SelectContent className="bg-white border-[#788164] rounded-3xl shadow-lg p-2">
+                                        {bloodGroups.map((group) => (
+                                            <SelectItem
+                                                key={group}
+                                                value={group}
+                                                className="
+                                                    rounded-full
+                                                    text-black
+                                                    data-[highlighted]:bg-[#8a9770]
+                                                    data-[highlighted]:text-white
+                                                    data-[state=checked]:bg-[#8a9770]
+                                                    data-[state=checked]:text-white
+                                                "
+                                            >
+                                                {group}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label>Date Of Birth</Label>
 
@@ -309,89 +318,139 @@ export default function Page() {
                                                     dob: selectedDate.toISOString(),
                                                 }));
 
-                                                setOpen(false); // closes calendar
+                                                setOpen(false);
                                             }}
                                         />
                                     </PopoverContent>
                                 </Popover>
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="feeCode">
+                                <Label htmlFor="whatsappNumber">
                                     Whatsapp Number
                                 </Label>
                                 <Input
+                                    id="whatsappNumber"
                                     name="whatsappNumber"
                                     value={formData.whatsappNumber}
                                     onChange={handleChange}
                                     placeholder="Pls Enter whatsapp no..."
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="feeCode">
-                                    Address
-                                </Label>
-                                <Textarea
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    placeholder="Address"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                                Parent Details
-                            </h2>
-                            <div className="space-y-2">
-                                <Label htmlFor="feeCode">
-                                    Father Name
-                                </Label>
-                                <Input
-                                    name="fatherName"
-                                    value={formData.fatherName}
-                                    onChange={handleChange}
-                                    placeholder="Father Name"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="feeCode">
-                                    Father Phone no
-                                </Label>
-                                <Input
-                                    name="fatherMobile"
-                                    value={formData.fatherMobile}
-                                    onChange={handleChange}
-                                    placeholder="Father Mobile"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="feeCode">
-                                    Mother Name
-                                </Label>
-                                <Input
-                                    name="motherName"
-                                    value={formData.motherName}
-                                    onChange={handleChange}
-                                    placeholder="Mother Name"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="feeCode">
-                                    Mother Phone no
-                                </Label>
-                                <Input
-                                    name="motherMobile"
-                                    value={formData.motherMobile}
-                                    onChange={handleChange}
-                                    placeholder="Mother Mobile"
+                                    className={fieldClass}
                                 />
                             </div>
                         </div>
                     </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-slate-200 dark:border-slate-700" />
+
+                    {/* Parent Details */}
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                            Parent details
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div className="space-y-4">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Father
+                                </p>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="fatherName">
+                                        Father Name
+                                    </Label>
+                                    <Input
+                                        id="fatherName"
+                                        name="fatherName"
+                                        value={formData.fatherName}
+                                        onChange={handleChange}
+                                        placeholder="Father Name"
+                                        className={fieldClass}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="fatherMobile">
+                                        Father Phone no
+                                    </Label>
+                                    <Input
+                                        id="fatherMobile"
+                                        name="fatherMobile"
+                                        value={formData.fatherMobile}
+                                        onChange={handleChange}
+                                        placeholder="Father Mobile"
+                                        className={fieldClass}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Mother
+                                </p>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="motherName">
+                                        Mother Name
+                                    </Label>
+                                    <Input
+                                        id="motherName"
+                                        name="motherName"
+                                        value={formData.motherName}
+                                        onChange={handleChange}
+                                        placeholder="Mother Name"
+                                        className={fieldClass}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="motherMobile">
+                                        Mother Phone no
+                                    </Label>
+                                    <Input
+                                        id="motherMobile"
+                                        name="motherMobile"
+                                        value={formData.motherMobile}
+                                        onChange={handleChange}
+                                        placeholder="Mother Mobile"
+                                        className={fieldClass}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-slate-200 dark:border-slate-700" />
+
+                    {/* Address */}
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                            Address
+                        </h2>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="address">
+                                Address
+                            </Label>
+                            <Textarea
+                                id="address"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                placeholder="Address"
+                                className={`min-h-[120px] ${fieldClass}`}
+                            />
+                        </div>
+                    </div>
                 </CardContent>
-                <CardFooter className="flex justify-end  gap-2">
+
+                <CardFooter className="flex justify-end gap-2 border-t pt-4">
                     <Button
                         variant="outline"
+                        onClick={() => router.back()}
+                        disabled={loading}
                     >
                         Cancel
                     </Button>

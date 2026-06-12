@@ -1,7 +1,17 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, } from "@/components/ui/card"
+import {
+    ArrowLeft,
+    Cake,
+    Droplet,
+    MessageCircle,
+    User,
+    Phone,
+    MapPin,
+    Calendar,
+    Clock,
+} from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -25,34 +35,61 @@ export default function Page() {
 
     const loadStudent = async () => {
         try {
-            const response = await getStudentById(
-                studentId!
-            );
-
+            const response = await getStudentById(studentId!);
             setStudent(response);
         } catch (error) {
             console.error(error);
         }
     };
-    function InfoCard({
-        title,
+
+    function FactRow({
+        icon: Icon,
+        label,
         value,
     }: {
-        title: string;
+        icon: React.ElementType;
+        label: string;
         value: string;
     }) {
         return (
-            <div className="rounded-xl border p-5">
-                <p className="text-sm text-muted-foreground">
-                    {title}
-                </p>
-
-                <p className="mt-2 text-lg font-semibold">
-                    {value}
-                </p>
+            <div className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                </div>
+                <span className="text-sm font-medium">{value || "—"}</span>
             </div>
         );
     }
+
+    function ContactCard({
+        role,
+        name,
+        mobile,
+    }: {
+        role: string;
+        name: string;
+        mobile: string;
+    }) {
+        return (
+            <div className="flex items-center gap-4 rounded-xl border p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {name ? name.charAt(0) : "?"}
+                </div>
+                <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {role}
+                    </p>
+                    <p className="truncate font-semibold">{name || "—"}</p>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Phone className="h-3 w-3" />
+                        <span>{mobile || "—"}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <section className="px-6 py-4">
             {/* Header */}
@@ -71,157 +108,123 @@ export default function Page() {
                     </h1>
                 </div>
             </div>
+
             {student && (
-                <div className="mt-6 space-y-6">
-                    {/* Profile Card */}
-                    <Card className="border-0  text-white">
-                        <CardContent className="p-8">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-20 w-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold">
-                                        {student.studentName.charAt(0)}
-                                    </div>
-
-                                    <div>
-                                        <h2 className="text-3xl font-bold">
-                                            {student.studentName}
-                                        </h2>
-
-                                        <p className="text-white/80">
-                                            Admission No : {student.admissionNumber}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`rounded-full px-4 py-2 text-sm font-semibold ${student.status === "ACTIVE"
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
-                                        {student.status}
-                                    </span>
-
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Student Information */}
-                    <Card>
-                        <CardHeader>
-                            <h3 className="text-lg font-semibold">
-                                Student Information
-                            </h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                                <InfoCard
-                                    title="Gender"
-                                    value={student.gender}
-                                />
-
-                                <InfoCard
-                                    title="Date of Birth"
-                                    value={new Date(
-                                        student.dob
-                                    ).toLocaleDateString()}
-                                />
-
-                                <InfoCard
-                                    title="Blood Group"
-                                    value={student.bloodGroup}
-                                />
-
-                                <InfoCard
-                                    title="Whatsapp"
-                                    value={student.whatsappNumber}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Parents */}
-                    <Card>
-                        <CardHeader>
-                            <h3 className="text-lg font-semibold">
-                                Parent Information
-                            </h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <div className="rounded-xl border p-5">
-                                    <p className="text-sm text-muted-foreground">
-                                        Father
-                                    </p>
-
-                                    <h4 className="mt-2 text-lg font-semibold">
-                                        {student.fatherName}
-                                    </h4>
-
-                                    <p className="text-muted-foreground">
-                                        {student.fatherMobile}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-xl border p-5">
-                                    <p className="text-sm text-muted-foreground">
-                                        Mother
-                                    </p>
-
-                                    <h4 className="mt-2 text-lg font-semibold">
-                                        {student.motherName}
-                                    </h4>
-
-                                    <p className="text-muted-foreground">
-                                        {student.motherMobile}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Address */}
-                    <Card>
-                        <CardHeader>
-                            <h3 className="text-lg font-semibold">
-                                Address
-                            </h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <p>{student.address}</p>
-                        </CardContent>
-                    </Card>
-
-                    {/* Dates */}
-                    <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+                    {/* Left: Profile panel */}
+                    <div className="lg:sticky lg:top-4 lg:self-start">
                         <Card>
-                            <CardContent className="p-5">
-                                <p className="text-sm text-muted-foreground">
-                                    Created At
+                            <CardContent className="p-6 text-center">
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-3xl font-bold text-primary">
+                                    {student.studentName.charAt(0)}
+                                </div>
+
+                                <h2 className="mt-4 text-xl font-bold tracking-tight">
+                                    {student.studentName}
+                                </h2>
+
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Admission No: {student.admissionNumber}
                                 </p>
 
-                                <p className="mt-2 font-semibold">
-                                    {new Date(student.createdAt).toLocaleDateString()}
-                                </p>
+                                <span
+                                    className={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                                        student.status === "ACTIVE"
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-red-100 text-red-700"
+                                    }`}
+                                >
+                                    {student.status}
+                                </span>
+
+                                <div className="mt-6 divide-y border-t pt-2 text-left">
+                                    <FactRow icon={User} label="Gender" value={student.gender} />
+                                    <FactRow
+                                        icon={Cake}
+                                        label="Date of birth"
+                                        value={new Date(student.dob).toLocaleDateString()}
+                                    />
+                                    <FactRow icon={Droplet} label="Blood group" value={student.bloodGroup} />
+                                    <FactRow
+                                        icon={MessageCircle}
+                                        label="Whatsapp"
+                                        value={student.whatsappNumber}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Right: Details */}
+                    <div className="space-y-6">
+                        {/* Parents */}
+                        <Card>
+                            <CardHeader>
+                                <h3 className="text-lg font-semibold">Parent information</h3>
+                            </CardHeader>
+
+                            <CardContent>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <ContactCard
+                                        role="Father"
+                                        name={student.fatherName}
+                                        mobile={student.fatherMobile}
+                                    />
+                                    <ContactCard
+                                        role="Mother"
+                                        name={student.motherName}
+                                        mobile={student.motherMobile}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
+                        {/* Address */}
                         <Card>
-                            <CardContent className="p-5">
-                                <p className="text-sm text-muted-foreground">
-                                    Updated At
-                                </p>
+                            <CardHeader>
+                                <h3 className="text-lg font-semibold">Address</h3>
+                            </CardHeader>
 
-                                <p className="mt-2 font-semibold">
-                                    {new Date(
-                                        student.updatedAt
-                                    ).toLocaleDateString()}
-                                </p>
+                            <CardContent>
+                                <div className="flex items-start gap-2">
+                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                    <p className="text-sm leading-relaxed">{student.address}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Record metadata */}
+                        <Card>
+                            <CardHeader>
+                                <h3 className="text-lg font-semibold">Record details</h3>
+                            </CardHeader>
+
+                            <CardContent>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="flex items-center gap-3 rounded-xl border p-4">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Created at</p>
+                                            <p className="font-semibold">
+                                                {new Date(student.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 rounded-xl border p-4">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                            <Clock className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Updated at</p>
+                                            <p className="font-semibold">
+                                                {new Date(student.updatedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
