@@ -53,7 +53,7 @@ export interface StudentPagination {
 export interface StudentListResponse {
   success: boolean;
   message?: string;
-  data: StudentListItem[];
+  data: Student[];
   pagination: StudentPagination;
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Plus, View } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -143,7 +143,9 @@ export default function Page() {
                 </TableRow>
               ) : (
                 students.map(
-                  (student, index) => (
+                  (student, index) => {
+                    console.log("a",student)
+                    return(
                     <TableRow
                       key={
                         student.admissionNumber
@@ -185,12 +187,20 @@ export default function Page() {
                             variant="outline"
                             size="icon"
                             onClick={() =>
-                              router.push(`/admin/students/edit/${student.id}`)
+                              router.push(`/admin/students/createStudent?id=${student.id}`)
                             }
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-
+                          <Button
+                            variant="outline"
+                            size="icon"
+                             onClick={() =>
+                              router.push(`/admin/students/viewStudent?id=${student.id}`)
+                             }
+                          >
+                            <View className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="icon"
@@ -202,7 +212,7 @@ export default function Page() {
                       </TableCell>
                     </TableRow>
                   )
-                )
+})
               )}
             </TableBody>
           </Table>

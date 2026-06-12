@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react"
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
@@ -27,6 +27,8 @@ import {
 
 import {
     createStudent,
+    updateStudent,
+    getStudentById,
     StudentInput,
 } from "@/lib/services/student";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -58,6 +60,7 @@ export default function Page() {
   focus:ring-offset-0
 `;
 
+
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] =
@@ -79,9 +82,13 @@ export default function Page() {
         try {
             setLoading(true);
 
-            await createStudent(formData);
-
-            toast.success("Student created successfully");
+            if (id) {
+                await updateStudent(id, formData);
+                toast.success("Student updated successfully");
+            } else {
+                await createStudent(formData);
+                toast.success("Student created successfully");
+            }
 
             router.push("/admin/students");
         } catch (error) {
@@ -92,6 +99,35 @@ export default function Page() {
             setLoading(false);
         }
     };
+    const searchParams = useSearchParams();
+    const id = searchParams.get("id");
+    useEffect(() => {
+        const loadStudent = async () => {
+            if (!id) return;
+
+            const student = await getStudentById(id);
+
+            if (student) {
+                setFormData({
+                    admissionNumber: student.admissionNumber,
+                    studentName: student.studentName,
+                    gender: student.gender,
+                    dob: student.dob,
+                    bloodGroup: student.bloodGroup,
+                    fatherName: student.fatherName,
+                    fatherMobile: student.fatherMobile,
+                    motherName: student.motherName,
+                    motherMobile: student.motherMobile,
+                    whatsappNumber: student.whatsappNumber,
+                    address: student.address,
+                });
+
+                setDate(new Date(student.dob));
+            }
+        };
+
+        loadStudent();
+    }, [id]);
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
@@ -100,6 +136,8 @@ export default function Page() {
             [e.target.name]: e.target.value,
         }));
     };
+
+    
 
 
     return (
@@ -116,7 +154,7 @@ export default function Page() {
 
                 <div>
                     <h1 className="text-xl font-semibold text-slate-950 dark:text-white">
-                        Create Student
+                        {id ? "Edit Student" : "Create Student"}
                     </h1>
 
                     <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -362,7 +400,13 @@ export default function Page() {
                         onClick={handleSubmit}
                         disabled={loading}
                     >
-                        {loading ? "Saving..." : "Save"}
+                        {loading
+                            ? id
+                                ? "Updating..."
+                                : "Saving..."
+                            : id
+                                ? "Update"
+                                : "Save"}
                     </Button>
                 </CardFooter>
             </Card>
