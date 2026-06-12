@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Plus, View } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Plus, View, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -59,6 +60,7 @@ export default function Page() {
 
       setStudents(response.data);
       setTotalPages(response.pagination.totalPages);
+      setTotalRecords(response.pagination.total);
     } catch (error) {
       console.error(error);
     }
@@ -68,6 +70,7 @@ export default function Page() {
     console.log("Current Page:", currentPage);
     loadStudents();
   }, [currentPage, search, limit]);
+  const [totalRecords, setTotalRecords] = useState(0);
   return (
     <section className="px-6 py-4">
       <div className="flex items-center space-x-4">
@@ -90,18 +93,45 @@ export default function Page() {
             information.
           </p>
         </div>
+
       </div>
 
       <Card className="mt-6 border-slate-200 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between border-b">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Student List
-            </h2>
+          <div className="flex gap-20 items-center">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Student List
+              </h2>
 
-            <p className="text-sm text-muted-foreground">
-              Manage student records
-            </p>
+              <p className="text-sm text-muted-foreground">
+                Manage student records
+              </p>
+            </div>
+            <div className="relative w-full md:w-80">
+              <Search
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+
+              <Input
+                placeholder="Search students..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="
+                            h-8
+                            pl-10
+                            bg-white
+                            text-slate-700
+                            placeholder:text-slate-400
+                            dark:bg-slate-900
+                            dark:text-white
+                            dark:placeholder:text-slate-400
+                          "
+              />
+            </div>
           </div>
 
           <Button
@@ -112,7 +142,6 @@ export default function Page() {
             Create Student
           </Button>
         </CardHeader>
-
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -144,85 +173,86 @@ export default function Page() {
               ) : (
                 students.map(
                   (student, index) => {
-                    console.log("a",student)
-                    return(
-                    <TableRow
-                      key={
-                        student.admissionNumber
-                      }
-                    >
-                      <TableCell>
-                        {index + 1}
-                      </TableCell>
-
-                      <TableCell>
-                        {student.studentName}
-                      </TableCell>
-
-                      <TableCell>
-                        {
-                          student.whatsappNumber
+                    console.log("a", student)
+                    return (
+                      <TableRow
+                        key={
+                          student.admissionNumber
                         }
-                      </TableCell>
+                      >
+                        <TableCell>
+                          {index + 1}
+                        </TableCell>
 
-                      <TableCell>
-                        {student.address}
-                      </TableCell>
+                        <TableCell>
+                          {student.studentName}
+                        </TableCell>
 
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${student.status ===
-                            "ACTIVE"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-700"
-                            }`}
-                        >
-                          {student.status}
-                        </span>
-                      </TableCell>
+                        <TableCell>
+                          {
+                            student.whatsappNumber
+                          }
+                        </TableCell>
 
-                      <TableCell className="text-right pr-4">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() =>
-                              router.push(`/admin/students/createStudent?id=${student.id}`)
-                            }
+                        <TableCell>
+                          {student.address}
+                        </TableCell>
+
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${student.status ===
+                              "ACTIVE"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-slate-100 text-slate-700"
+                              }`}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                             onClick={() =>
-                              router.push(`/admin/students/viewStudent?id=${student.id}`)
-                             }
-                          >
-                            <View className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-})
+                            {student.status}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-right pr-4">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                router.push(`/admin/students/createStudent?id=${student.id}`)
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                router.push(`/admin/students/viewStudent?id=${student.id}`)
+                              }
+                            >
+                              <View className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
               )}
             </TableBody>
           </Table>
-          <div className="flex items-center justify-between border-t px-6 py-4">
-            <div className="flex gap-2 items-center">
-              <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-                {" • "}
-                {students.length} records
-              </p>
+          <div className="flex flex-col gap-4 border-t px-6 py-4 md:flex-row md:items-center md:justify-between">
+
+            {/* Left */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                Rows per page
+              </span>
+
               <Select
                 value={String(limit)}
                 onValueChange={(value) => {
@@ -230,7 +260,7 @@ export default function Page() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[90px]">
                   <SelectValue />
                 </SelectTrigger>
 
@@ -243,39 +273,62 @@ export default function Page() {
               </Select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                Previous
-              </Button>
+            {/* Right */}
+            <div className="flex items-center gap-6">
 
-              {Array.from(
-                { length: totalPages },
-                (_, i) => i + 1
-              ).map((page) => (
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
+
+              <p className="text-sm font-medium">
+                Total: {totalRecords}
+              </p>
+
+              <div className="flex items-center gap-1">
+
                 <Button
-                  key={page}
-                  variant={
-                    currentPage === page
-                      ? "default"
-                      : "outline"
+                  variant="ghost"
+                  size="icon"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage((prev) => prev - 1)
                   }
-                  onClick={() => setCurrentPage(page)}
                 >
-                  {page}
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-              ))}
 
-              <Button
-                variant="outline"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                Next
-              </Button>
+                {Array.from(
+                  { length: totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
+                  <Button
+                    key={page}
+                    variant={
+                      currentPage === page
+                        ? "default"
+                        : "ghost"
+                    }
+                    size="icon"
+                    onClick={() =>
+                      setCurrentPage(page)
+                    }
+                  >
+                    {page}
+                  </Button>
+                ))}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage((prev) => prev + 1)
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
             </div>
           </div>
         </CardContent>
