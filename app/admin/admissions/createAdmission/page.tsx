@@ -1,19 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { 
-    ArrowLeft, 
-    Check, 
-    ChevronsUpDown, 
-    Trash2, 
-    UserCircle2,
+import {
+    ArrowLeft,
+    Check,
+    ChevronsUpDown,
+    Trash2,
     User,
     Bus,
-    Receipt,
     Wallet,
-    MapPin
+    MapPin,
+    Loader2,
+    Layers,
+    GitBranch,
+    Binary
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,123 +43,60 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// Mock data
-// ---------------------------------------------------------------------------
+// ── Service API Imports (Updated Paths) ──
+import {
+    getStudentById,
+    getStudentAdmissionAndName,
+    StudentAdmissionAndName,
+    Student
+} from "@/lib/services/student";
+import { createStudentAdmission } from "@/lib/services/admissions";
+import { getVehicles, Vehicle } from "@/lib/services/vehicle";
+import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureView } from "@/lib/services/feeStructure";
+import { apiFetch } from "@/lib/api";
 
-const MOCK_STUDENTS = [
-    {
-        id: "1",
-        studentName: "Aarav Menon",
-        admissionNumber: "ADM2024001",
-        gender: "Male",
-        dob: "2014-05-12",
-        bloodGroup: "O+",
-        fatherName: "Suresh Menon",
-        fatherMobile: "+91 98765 11111",
-        motherName: "Anita Menon",
-        motherMobile: "+91 98765 11112",
-        whatsappNumber: "+91 98765 43210",
-        address: "Kochi, Kerala",
-        status: "ACTIVE",
-    },
-    {
-        id: "2",
-        studentName: "Diya Nair",
-        admissionNumber: "ADM2024002",
-        gender: "Female",
-        dob: "2015-08-22",
-        bloodGroup: "A+",
-        fatherName: "Ramesh Nair",
-        fatherMobile: "+91 98765 22221",
-        motherName: "Lakshmi Nair",
-        motherMobile: "+91 98765 22222",
-        whatsappNumber: "+91 98765 43211",
-        address: "Thrissur, Kerala",
-        status: "ACTIVE",
-    },
-    {
-        id: "3",
-        studentName: "Rohan Pillai",
-        admissionNumber: "ADM2024003",
-        gender: "Male",
-        dob: "2013-11-03",
-        bloodGroup: "B+",
-        fatherName: "Vinod Pillai",
-        fatherMobile: "+91 98765 33331",
-        motherName: "Geetha Pillai",
-        motherMobile: "+91 98765 33332",
-        whatsappNumber: "+91 98765 43212",
-        address: "Kozhikode, Kerala",
-        status: "INACTIVE",
-    },
-];
+// ── Structural Entity Types ──
+export type SchoolClass = {
+    id: string;
+    name: string;
+    divisionCount: number;
+};
 
-const MOCK_VEHICLES = [
-    { id: "v1", vehicleName: "Bus 01 - KL07AB1234" },
-    { id: "v2", vehicleName: "Bus 02 - KL07AB5678" },
-    { id: "v3", vehicleName: "Van 01 - KL07CD9012" },
-    { id: "v4", vehicleName: "Van 02 - KL07CD3456" },
-];
+export type Division = {
+    id: string;
+    name: string;
+};
 
-const MOCK_FEE_TEMPLATES = [
-    {
-        id: "t1",
-        name: "Standard Fee Structure",
-        items: [
-            { name: "Tuition Fee", amount: 5000 },
-            { name: "Library Fee", amount: 500 },
-            { name: "Sports Fee", amount: 300 },
-        ],
-    },
-    {
-        id: "t2",
-        name: "Transport Fee Structure",
-        items: [
-            { name: "Transport Fee", amount: 1500 },
-            { name: "Fuel Surcharge", amount: 200 },
-        ],
-    },
-    {
-        id: "t3",
-        name: "Annual Fee Structure",
-        items: [
-            { name: "Exam Fee", amount: 600 },
-            { name: "Lab Fee", amount: 800 },
-            { name: "Tuition Fee", amount: 5000 },
-            { name: "Annual Day Fee", amount: 400 },
-        ],
-    },
-    {
-        id: "t4",
-        name: "Hostel Fee Structure",
-        items: [
-            { name: "Hostel Rent", amount: 8000 },
-            { name: "Mess Fee", amount: 3000 },
-            { name: "Maintenance Fee", amount: 500 },
-        ],
-    },
-];
+interface ApiSuccessWrapper<T> {
+    success: boolean;
+    message: string;
+    data: T;
+}
 
-// ---------------------------------------------------------------------------
-// Step-based Sub-Components
-// ---------------------------------------------------------------------------
+// ── Dropdown API Functions ──
+export async function getClasses(): Promise<SchoolClass[]> {
+    const payload = (await apiFetch("/api/classes")) as ApiSuccessWrapper<SchoolClass[]>;
+    return payload?.data ?? [];
+}
 
-const StepSection = ({ stepNumber, title, description, icon: Icon, children }: any) => (
+export async function getDivisions(classId: string): Promise<Division[]> {
+    const payload = (await apiFetch(`/api/divisions/class/${classId}`)) as ApiSuccessWrapper<Division[]>;
+    return payload?.data ?? [];
+}
+
+// ── Step Section Component Frame ──
+const StepSection = ({ stepNumber, title, description, children }: any) => (
     <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
                 {stepNumber}
             </div>
             <div>
-                {/* Explicitly setting text-slate-900 and text-slate-500 to fix light mode visibility */}
                 <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
                 {description && <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>}
             </div>
         </div>
-        <div className="flex flex-col gap-6">
-            {children}
-        </div>
+        <div className="flex flex-col gap-6">{children}</div>
     </div>
 );
 
@@ -176,306 +115,595 @@ const InfoItem = ({ label, value, className }: { label: string; value?: string |
     </div>
 );
 
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
-
 const fieldClass = `
-  h-12
-  rounded-xl
-  border-slate-300
-  bg-white
-  text-slate-900
-  placeholder:text-slate-400
-  focus:ring-2
-  focus:ring-[#6D755F]
-  focus:border-transparent
-  dark:border-slate-700
-  dark:bg-slate-950
-  dark:text-white
-  dark:placeholder:text-slate-500
-  transition-all
+  h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+  focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
+  dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
 `;
 
 export default function Page() {
     const router = useRouter();
 
-    type FeeItem = {
-        id: string;
-        name: string;
-        amount: number | "";
-    };
+    // ── Dropdown List Arrays ──
+    const [studentsDropdown, setStudentsDropdown] = useState<StudentAdmissionAndName[]>([]);
+    const [classesDropdown, setClassesDropdown] = useState<SchoolClass[]>([]);
+    const [divisionsDropdown, setDivisionsDropdown] = useState<Division[]>([]);
+    const [vehiclesDropdown, setVehiclesDropdown] = useState<Vehicle[]>([]);
 
-    type FeeTemplate = {
-        id: string;
-        name: string;
-        items: { name: string; amount: number }[];
-    };
+    // Master collection of ALL fee structures loaded from your standard API
+    const [allFeeStructures, setAllFeeStructures] = useState<FeeStructureSummary[]>([]);
 
-    type SelectedFeeTemplate = {
-        templateId: string;
-        templateName: string;
-        items: FeeItem[];
-    };
+    // ── Target Selections States ──
+    const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+    const [fullStudentData, setFullStudentData] = useState<Student | null>(null);
 
-    type Student = {
-        id: string;
-        studentName: string;
-        admissionNumber: string;
-        gender: string;
-        dob: string;
-        bloodGroup: string;
-        fatherName: string;
-        fatherMobile: string;
-        motherName: string;
-        motherMobile: string;
-        whatsappNumber: string;
-        address: string;
-        status: string;
-    };
+    const [selectedClassId, setSelectedClassId] = useState<string>("");
+    const [selectedDivisionId, setSelectedDivisionId] = useState<string>("");
+    const [rollNumber, setRollNumber] = useState<string>("");
 
-    type Vehicle = {
-        id: string;
-        vehicleName: string;
-    };
-
-    const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-
-    const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
+    const [selectedFeeStructureId, setSelectedFeeStructureId] = useState<string>("");
+    const [fullFeeStructureData, setFullFeeStructureData] = useState<FeeStructureView | null>(null);
+
+    const [editableFeeItems, setEditableFeeItems] = useState<{
+        chargeTypeId: string;
+        name: string;
+        baseAmount: number;
+        amount: number | "";
+    }[]>([]);
+
+    // ── Popover Interactive Toggles ──
+    const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
+    const [classPopoverOpen, setClassPopoverOpen] = useState(false);
+    const [divisionPopoverOpen, setDivisionPopoverOpen] = useState(false);
+    const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [feePopoverOpen, setFeePopoverOpen] = useState(false);
-    const [selectedFeeTemplate, setSelectedFeeTemplate] = useState<SelectedFeeTemplate | null>(null);
 
-    const [loading, setLoading] = useState(false);
+    // ── Loading Spinners Indicators ──
+    const [submitting, setSubmitting] = useState(false);
+    const [loadingStudent, setLoadingStudent] = useState(false);
+    const [loadingFeeStructure, setLoadingFeeStructure] = useState(false);
 
-    const handleSelectTemplate = (template: FeeTemplate) => {
-        setSelectedFeeTemplate({
-            templateId: template.id,
-            templateName: template.name,
-            items: template.items.map((item, idx) => ({
-                id: `${template.id}-${idx}`,
-                name: item.name,
-                amount: item.amount,
-            })),
-        });
-        setFeePopoverOpen(false);
+    const [loadingStudentList, setLoadingStudentList] = useState(false);
+    const [loadingClassList, setLoadingClassList] = useState(false);
+    const [loadingDivisionList, setLoadingDivisionList] = useState(false);
+    const [loadingVehicleList, setLoadingVehicleList] = useState(false);
+    const [loadingFeeList, setLoadingFeeList] = useState(false);
+
+    // ── CLIENT-SIDE FILTER ──
+    const filteredFeeStructures = useMemo(() => {
+        if (!selectedClassId) return [];
+
+        // Directly match the selected class UUID with the structure's classId
+        return allFeeStructures.filter(
+            (structure) => (structure as any).classId === selectedClassId
+        );
+    }, [allFeeStructures, selectedClassId]);
+
+
+    // ── LAZY DROPDOWN FETCH HANDLERS ──
+
+    const handleStudentPopoverChange = async (open: boolean) => {
+        setStudentPopoverOpen(open);
+        if (open && studentsDropdown.length === 0) {
+            try {
+                setLoadingStudentList(true);
+                const listData = await getStudentAdmissionAndName();
+                if (Array.isArray(listData)) {
+                    setStudentsDropdown(listData);
+                } else if (listData && (listData as any).data) {
+                    setStudentsDropdown((listData as any).data);
+                }
+            } catch (error) {
+                console.error("Failed to load lightweight student layout lists:", error);
+            } finally {
+                setLoadingStudentList(false);
+            }
+        }
     };
 
-    const handleClearTemplate = () => {
-        setSelectedFeeTemplate(null);
+    const handleClassPopoverChange = async (open: boolean) => {
+        setClassPopoverOpen(open);
+        if (open && classesDropdown.length === 0) {
+            try {
+                setLoadingClassList(true);
+                const data = await getClasses();
+                setClassesDropdown(data);
+            } catch (error) {
+                console.error("Failed to extract active classes structure array:", error);
+            } finally {
+                setLoadingClassList(false);
+            }
+        }
     };
 
-    const handleRemoveItem = (itemId: string) => {
-        setSelectedFeeTemplate((prev) => {
-            if (!prev) return prev;
-            const items = prev.items.filter((item) => item.id !== itemId);
-            return items.length > 0 ? { ...prev, items } : null;
-        });
+    const handleDivisionPopoverChange = async (open: boolean) => {
+        setDivisionPopoverOpen(open);
+        if (open && selectedClassId) {
+            try {
+                setLoadingDivisionList(true);
+                const data = await getDivisions(selectedClassId);
+                setDivisionsDropdown(data);
+            } catch (error) {
+                console.error("Failed to fetch division routes nodes:", error);
+            } finally {
+                setLoadingDivisionList(false);
+            }
+        }
     };
 
-    const handleItemAmountChange = (itemId: string, value: string) => {
-        setSelectedFeeTemplate((prev) => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                items: prev.items.map((item) =>
-                    item.id === itemId
-                        ? { ...item, amount: value === "" ? "" : Number(value) }
-                        : item
-                ),
-            };
-        });
+    const handleVehiclePopoverChange = async (open: boolean) => {
+        setVehiclePopoverOpen(open);
+        if (open && vehiclesDropdown.length === 0) {
+            try {
+                setLoadingVehicleList(true);
+                const vehiclesData = await getVehicles();
+                setVehiclesDropdown(vehiclesData);
+            } catch (error) {
+                console.error("Failed to load vehicle dropdown selections:", error);
+            } finally {
+                setLoadingVehicleList(false);
+            }
+        }
     };
 
-    const totalAmount = (selectedFeeTemplate?.items ?? []).reduce(
-        (sum, item) => sum + (Number(item.amount) || 0),
-        0
-    );
+    // Loads the default complete structure lists pool onto the client environment
+    const handleFeePopoverChange = async (open: boolean) => {
+        setFeePopoverOpen(open);
+        if (open && allFeeStructures.length === 0) {
+            try {
+                setLoadingFeeList(true);
+                const feeStructuresData = await getFeeStructures();
+                setAllFeeStructures(feeStructuresData);
+            } catch (error) {
+                console.error("Failed to extract system accounting models:", error);
+            } finally {
+                setLoadingFeeList(false);
+            }
+        }
+    };
 
-    const handleSubmit = () => {
-        setLoading(true);
-        const payload = {
-            studentId: selectedStudent?.id ?? null,
-            vehicleId: selectedVehicle?.id ?? null,
-            feeTemplate: selectedFeeTemplate,
-            totalAmount,
+    // Reset dependent structures when class configuration targets alter
+    const handleClassSelect = (classId: string) => {
+        setSelectedClassId(classId);
+        setSelectedDivisionId("");
+        setDivisionsDropdown([]);
+
+        // Wipe prior fee assignments completely to handle changing boundaries securely
+        setSelectedFeeStructureId("");
+        setEditableFeeItems([]);
+    };
+
+    useEffect(() => {
+        if (!selectedStudentId) {
+            setFullStudentData(null);
+            return;
+        }
+
+        async function fetchFullStudent() {
+            try {
+                setLoadingStudent(true);
+                const completeRecord = await getStudentById(selectedStudentId);
+                setFullStudentData(completeRecord);
+            } catch (error) {
+                console.error("Error evaluating student data properties lookups:", error);
+            } finally {
+                setLoadingStudent(false);
+            }
+        }
+        fetchFullStudent();
+    }, [selectedStudentId]);
+
+    useEffect(() => {
+        if (!selectedFeeStructureId) {
+            setFullFeeStructureData(null);
+            setEditableFeeItems([]);
+            return;
+        }
+
+        async function fetchStructureDetails() {
+            try {
+                setLoadingFeeStructure(true);
+                const response = await viewFeeStructure(selectedFeeStructureId);
+                if (response.success && response.data) {
+                    setFullFeeStructureData(response.data);
+
+                    const itemsLayout = response.data.items.map((item) => ({
+                        chargeTypeId: item.chargeTypeId,
+                        name: item.chargeTypeName,
+                        baseAmount: Number(item.amount) || 0,
+                        amount: Number(item.amount) || 0,
+                    }));
+                    setEditableFeeItems(itemsLayout);
+                }
+            } catch (error) {
+                console.error("Error setting ledger templates parameters map:", error);
+            } finally {
+                setLoadingFeeStructure(false);
+            }
+        }
+        fetchStructureDetails();
+    }, [selectedFeeStructureId]);
+
+    const handleItemAmountChange = (chargeTypeId: string, value: string) => {
+        setEditableFeeItems((prev) =>
+            prev.map((item) =>
+                item.chargeTypeId === chargeTypeId
+                    ? { ...item, amount: value === "" ? "" : Number(value) }
+                    : item
+            )
+        );
+    };
+
+    const handleRemoveItem = (chargeTypeId: string) => {
+        setEditableFeeItems((prev) => prev.filter((item) => item.chargeTypeId !== chargeTypeId));
+    };
+
+    const totalAmount = useMemo(() => {
+        return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    }, [editableFeeItems]);
+
+const handleSubmit = async () => {
+    if (!selectedStudentId || !selectedClassId || !selectedDivisionId) {
+        alert("Ensure Student, Class, and Division targets are selected before running creation tasks.");
+        return;
+    }
+
+    try {
+        setSubmitting(true);
+
+        const chargeOverrides = editableFeeItems
+            .filter((item) => Number(item.amount) !== item.baseAmount)
+            .map((item) => ({
+                chargeTypeId: item.chargeTypeId,
+                finalAmount: Number(item.amount) || 0
+            }));
+
+        const targetPayload = {
+            studentId: selectedStudentId,
+            classId: selectedClassId, 
+            divisionId: selectedDivisionId, 
+            feeStructureId: selectedFeeStructureId || null,
+            rollNumber: rollNumber.trim() || null,
+            vehicleId: selectedVehicle?.id || null,
+            chargeOverrides: chargeOverrides,
+            // academicYearId is safely omitted here
         };
-        console.log("Create admission payload:", payload);
-        setTimeout(() => {
-            setLoading(false);
+
+        const result = await createStudentAdmission(targetPayload);
+        if (result.success) {
             router.back();
-        }, 600);
-    };
+        } else {
+            alert(result.message || "An operations error occurred during submission.");
+        }
+    } catch (error) {
+        console.error("Error processing operations command execution:", error);
+    } finally {
+        setSubmitting(false);
+    }
+};
 
     return (
         <div className="w-full min-h-screen p-6 md:p-8 space-y-8 animate-in fade-in duration-300">
-            
-            {/* Top Action Header */}
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center space-x-4">
                     <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl h-10 w-10 shadow-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                         <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            Create Admission
-                        </h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Create Admission</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Follow the steps below to link a student, transport, and structural fee schema.
+                            Link system database structural parameters directly to avoid transaction exceptions.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => router.back()} disabled={loading} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                    <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         Discard
                     </Button>
-                    <Button onClick={handleSubmit} disabled={loading || !selectedStudent} className="rounded-xl h-11 px-8 bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-md">
-                        {loading ? "Processing..." : "Confirm Admission"}
+                    <Button onClick={handleSubmit} disabled={submitting || !selectedStudentId || !selectedClassId || !selectedDivisionId} className="rounded-xl h-11 px-8 bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-md">
+                        {submitting ? "Processing Request..." : "Confirm Admission"}
                     </Button>
                 </div>
             </div>
 
             <div className="mx-auto max-w-5xl space-y-8 pb-12">
-                
-                {/* --- Step 1: Student Profile Section --- */}
-                <StepSection 
+
+                {/* ── Step 1: Student Choice Picker Dropdown Module ── */}
+                <StepSection
                     stepNumber="1"
-                    title="Select Student" 
-                    description="Search for the primary applicant to begin the admission process."
+                    title="Select Target Student Profile"
+                    description="Extract lightweight items from index directory list frames securely on-click."
                 >
-                    <div className="md:w-1/2">
-                        <Popover open={studentPopoverOpen} onOpenChange={setStudentPopoverOpen}>
+                    <div className="w-full">
+                        <Popover open={studentPopoverOpen} onOpenChange={handleStudentPopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={studentPopoverOpen}
-                                    className={`w-full justify-between font-normal shadow-sm ${fieldClass}`}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
                                 >
-                                    {selectedStudent ? selectedStudent.studentName : "Search student by name or ID..."}
+                                    {selectedStudentId ? (
+                                        (() => {
+                                            const matched = studentsDropdown.find(s => s.id === selectedStudentId);
+                                            return matched
+                                                ? `[${matched.admissionNumber}] - ${matched.studentName}`
+                                                : fullStudentData?.studentName || "Resolving schema attributes properties records..."
+                                        })()
+                                    ) : "Click to load student records registry options..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Type to search..." />
+                                    <CommandInput placeholder="Filter student registries entries..." />
                                     <CommandList>
-                                        <CommandEmpty>No student found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {MOCK_STUDENTS.map((student) => (
-                                                <CommandItem
-                                                    key={student.id}
-                                                    value={student.studentName}
-                                                    onSelect={() => {
-                                                        setSelectedStudent(student);
-                                                        setStudentPopoverOpen(false);
-                                                    }}
-                                                    className="py-3 cursor-pointer"
-                                                >
-                                                    <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStudent?.id === student.id ? "opacity-100" : "opacity-0")} />
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{student.studentName}</span>
-                                                        <span className="text-xs text-slate-500">{student.admissionNumber}</span>
-                                                    </div>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
+                                        {loadingStudentList ? (
+                                            <div className="flex items-center justify-center p-6 gap-2 text-slate-500">
+                                                <Loader2 className="h-4 w-4 animate-spin text-[#6D755F]" />
+                                                <span className="text-xs font-medium">Assembling file paths profiles indexes...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No matching registrations tracked.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {studentsDropdown.map((student) => (
+                                                        <CommandItem
+                                                            key={student.id}
+                                                            value={`${student.admissionNumber} ${student.studentName}`}
+                                                            onSelect={() => {
+                                                                setSelectedStudentId(student.id);
+                                                                setStudentPopoverOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStudentId === student.id ? "opacity-100" : "opacity-0")} />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{student.studentName}</span>
+                                                                <span className="text-xs text-slate-400">Admission No: {student.admissionNumber}</span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
                                     </CommandList>
                                 </Command>
                             </PopoverContent>
                         </Popover>
                     </div>
 
-                    {selectedStudent ? (
-                        <div className="mt-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                    {loadingStudent ? (
+                        <div className="flex items-center justify-center p-6 text-slate-500 gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
+                            <span className="text-sm">Fetching structural student profile properties...</span>
+                        </div>
+                    ) : fullStudentData && (
+                        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                             <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                                <User className="h-4 w-4 text-[#6D755F]" /> Record Details
+                                <User className="h-4 w-4 text-[#6D755F]" /> Verified Student Profile Details
                             </h3>
                             <InfoGrid>
-                                <InfoItem label="Admission No" value={selectedStudent.admissionNumber} />
-                                <InfoItem label="Status" value={
+                                <InfoItem label="Admission Number" value={fullStudentData.admissionNumber} />
+                                <InfoItem label="Status Allocation" value={
                                     <span className={cn(
                                         "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-                                        selectedStudent.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                        fullStudentData.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-slate-200 text-slate-800"
                                     )}>
-                                        {selectedStudent.status}
+                                        {fullStudentData.status}
                                     </span>
                                 } />
-                                <InfoItem label="Date of Birth" value={selectedStudent.dob} />
-                                <InfoItem label="Gender & Blood Group" value={`${selectedStudent.gender}, ${selectedStudent.bloodGroup}`} />
-                                
-                                <InfoItem label="Father's Name" value={selectedStudent.fatherName} />
-                                <InfoItem label="Father's Contact" value={selectedStudent.fatherMobile} />
-                                <InfoItem label="Mother's Name" value={selectedStudent.motherName} />
-                                <InfoItem label="Mother's Contact" value={selectedStudent.motherMobile} />
-                                
-                                <InfoItem label="WhatsApp Number" value={selectedStudent.whatsappNumber} />
-                                <InfoItem 
-                                    className="md:col-span-1 lg:col-span-3" 
-                                    label="Residential Address" 
+                                <InfoItem label="Date of Birth" value={fullStudentData.dob} />
+                                <InfoItem label="Gender & Blood Group" value={`${fullStudentData.gender}, ${fullStudentData.bloodGroup}`} />
+                                <InfoItem label="Father's Legal Name" value={fullStudentData.fatherName} />
+                                <InfoItem label="Father's Phone Contact" value={fullStudentData.fatherMobile} />
+                                <InfoItem label="Mother's Legal Name" value={fullStudentData.motherName} />
+                                <InfoItem label="Mother's Phone Contact" value={fullStudentData.motherMobile} />
+                                <InfoItem label="WhatsApp Identifier" value={fullStudentData.whatsappNumber} />
+                                <InfoItem
+                                    className="md:col-span-1 lg:col-span-3"
+                                    label="Registered Residential Address"
                                     value={
                                         <div className="flex items-center gap-2 mt-1">
                                             <MapPin className="h-4 w-4 text-slate-400" />
-                                            <span>{selectedStudent.address}</span>
+                                            <span>{fullStudentData.address}</span>
                                         </div>
-                                    } 
+                                    }
                                 />
                             </InfoGrid>
-                        </div>
-                    ) : (
-                        <div className="mt-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 py-12 text-center transition-all">
-                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800">
-                                <UserCircle2 className="h-6 w-6 text-slate-500" />
-                            </div>
-                            <h3 className="text-sm font-medium text-slate-900 dark:text-slate-200">Awaiting Student Selection</h3>
-                            <p className="mt-1 text-sm text-slate-500 max-w-sm">Use the search box above to find and attach a student to this record.</p>
                         </div>
                     )}
                 </StepSection>
 
-                {/* --- Step 2: Transport Section --- */}
-                <StepSection 
+                {/* ── Step 2: Class, Division, and Roll Number Configuration ── */}
+                <StepSection
                     stepNumber="2"
-                    title="Assign Transport (Optional)" 
-                    description="Link a vehicle route to this student's admission."
+                    title="Class & Placement Controls"
+                    description="Assign the explicit structural class and section division index targets to satisfy core transaction logic requirements."
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        {/* Class Picker */}
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Assigned School Class
+                            </span>
+                            <Popover open={classPopoverOpen} onOpenChange={handleClassPopoverChange}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={classPopoverOpen}
+                                        className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
+                                    >
+                                        {selectedClassId ? (
+                                            classesDropdown.find(c => c.id === selectedClassId)?.name || "Parsing allocated class entity..."
+                                        ) : "Choose active class..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Filter classes templates..." />
+                                        <CommandList>
+                                            {loadingClassList ? (
+                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Fetching lists...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <CommandEmpty>No classes recorded.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {classesDropdown.map((c) => (
+                                                            <CommandItem
+                                                                key={c.id}
+                                                                value={c.name}
+                                                                onSelect={() => {
+                                                                    handleClassSelect(c.id);
+                                                                    setClassPopoverOpen(false);
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            >
+                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedClassId === c.id ? "opacity-100" : "opacity-0")} />
+                                                                <span>{c.name}</span>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </>
+                                            )}
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Division Picker */}
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <GitBranch className="h-3.5 w-3.5 text-[#6D755F]" /> Specific Section Division
+                            </span>
+                            <Popover open={divisionPopoverOpen} onOpenChange={handleDivisionPopoverChange}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        disabled={!selectedClassId}
+                                        aria-expanded={divisionPopoverOpen}
+                                        className={cn("w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
+                                    >
+                                        {selectedDivisionId ? (
+                                            divisionsDropdown.find(d => d.id === selectedDivisionId)?.name || "Parsing allocated divisions..."
+                                        ) : selectedClassId ? "Choose active division..." : "Select Class target first..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Filter section tracks..." />
+                                        <CommandList>
+                                            {loadingDivisionList ? (
+                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Pulling down branch components...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <CommandEmpty>No matching divisions structural indexes tracked.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {divisionsDropdown.map((d) => (
+                                                            <CommandItem
+                                                                key={d.id}
+                                                                value={d.name}
+                                                                onSelect={() => {
+                                                                    setSelectedDivisionId(d.id);
+                                                                    setDivisionPopoverOpen(false);
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            >
+                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedDivisionId === d.id ? "opacity-100" : "opacity-0")} />
+                                                                <span>{d.name}</span>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </>
+                                            )}
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Manual Roll Input Control Field */}
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Binary className="h-3.5 w-3.5 text-[#6D755F]" /> Roll Number Designation
+                            </span>
+                            <Input
+                                placeholder="Enter manual layout roll sequencing identifier..."
+                                value={rollNumber}
+                                onChange={(e) => setRollNumber(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                    </div>
+                </StepSection>
+
+                {/* ── Step 3: Transport Assignment Configuration ── */}
+                <StepSection
+                    stepNumber="3"
+                    title="Assign Transport Fleet (Optional)"
+                    description="Link vehicle logistics scheduling routes directly to this student data grid page layout configuration."
                 >
                     <div className="md:w-1/2">
-                        <Popover open={vehiclePopoverOpen} onOpenChange={setVehiclePopoverOpen}>
+                        <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={vehiclePopoverOpen}
-                                    className={`w-full justify-between font-normal shadow-sm ${fieldClass}`}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
                                 >
-                                    {selectedVehicle ? selectedVehicle.vehicleName : "Search available vehicle routes..."}
+                                    {selectedVehicle ? `${selectedVehicle.vehicleName} (${selectedVehicle.vehicleNumber})` : "Click to view transport fleet choices..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Type to search vehicle..." />
+                                    <CommandInput placeholder="Search system routes tables..." />
                                     <CommandList>
-                                        <CommandEmpty>No vehicle found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {MOCK_VEHICLES.map((vehicle) => (
-                                                <CommandItem
-                                                    key={vehicle.id}
-                                                    value={vehicle.vehicleName}
-                                                    onSelect={() => {
-                                                        setSelectedVehicle(vehicle);
-                                                        setVehiclePopoverOpen(false);
-                                                    }}
-                                                    className="py-3 cursor-pointer"
-                                                >
-                                                    <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicle?.id === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                    <span className="text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
+                                        {loadingVehicleList ? (
+                                            <div className="flex items-center justify-center p-6 gap-2 text-slate-500">
+                                                <Loader2 className="h-4 w-4 animate-spin text-[#6D755F]" />
+                                                <span className="text-xs font-medium">Assembling route listings...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No matching fleet transport vehicle found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {vehiclesDropdown.map((vehicle) => (
+                                                        <CommandItem
+                                                            key={vehicle.id}
+                                                            value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
+                                                            onSelect={() => {
+                                                                setSelectedVehicle(vehicle);
+                                                                setVehiclePopoverOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicle?.id === vehicle.id ? "opacity-100" : "opacity-0")} />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
                                     </CommandList>
                                 </Command>
                             </PopoverContent>
@@ -484,116 +712,130 @@ export default function Page() {
 
                     {selectedVehicle && (
                         <div className="mt-2 animate-in fade-in slide-in-from-top-4 duration-300">
-                             <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                                <Bus className="h-4 w-4 text-[#6D755F]" /> Route Information
+                            <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                                <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                             </h3>
                             <InfoGrid>
-                                <InfoItem label="Assigned Vehicle ID" value={selectedVehicle.id.toUpperCase()} />
-                                <InfoItem className="md:col-span-1 lg:col-span-3" label="Route Details" value={selectedVehicle.vehicleName} />
+                                <InfoItem label="Vehicle Unique Reference" value={selectedVehicle.id.toUpperCase()} />
+                                <InfoItem label="Registration Plate" value={selectedVehicle.vehicleNumber} />
+                                <InfoItem label="Designated Operator/Driver" value={selectedVehicle.driverName} />
+                                <InfoItem label="Route/Vehicle Variant" value={selectedVehicle.vehicleName} />
                             </InfoGrid>
                         </div>
                     )}
                 </StepSection>
 
-                {/* --- Step 3: Fee Structure Section --- */}
-                <StepSection 
-                    stepNumber="3"
-                    title="Configure Fee Structure" 
-                    description="Select a base template and adjust individual line items if necessary."
+                {/* ── Step 4: Fee Matrix Compilation (With Client-Side Filtering) ── */}
+                <StepSection
+                    stepNumber="4"
+                    title="Configure Fee Structure Template"
+                    description="Load templates dynamically scoped to your selected class to eliminate structural conflicts."
                 >
                     <div className="md:w-1/2">
-                        <Popover open={feePopoverOpen} onOpenChange={setFeePopoverOpen}>
+                        <Popover open={feePopoverOpen} onOpenChange={handleFeePopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
+                                    disabled={!selectedClassId}
                                     aria-expanded={feePopoverOpen}
-                                    className={`w-full justify-between font-normal shadow-sm ${fieldClass}`}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
                                 >
-                                    {selectedFeeTemplate ? selectedFeeTemplate.templateName : "Select a base fee template..."}
+                                    {selectedFeeStructureId ? (
+                                        allFeeStructures.find(f => f.id === selectedFeeStructureId)?.name || "Parsing assigned fee matrix rules structure..."
+                                    ) : selectedClassId ? "Click to view structural configurations..." : "Select Class target in Step 2 first..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Search fee templates..." />
+                                    <CommandInput placeholder="Search system pricing schemas..." />
                                     <CommandList>
-                                        <CommandEmpty>No fee structure found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {MOCK_FEE_TEMPLATES.map((template) => {
-                                                const isSelected = selectedFeeTemplate?.templateId === template.id;
-                                                const templateTotal = template.items.reduce((sum, item) => sum + item.amount, 0);
-
-                                                return (
-                                                    <CommandItem
-                                                        key={template.id}
-                                                        value={template.name}
-                                                        onSelect={() => handleSelectTemplate(template)}
-                                                        className="py-3 cursor-pointer"
-                                                    >
-                                                        <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", isSelected ? "opacity-100" : "opacity-0")} />
-                                                        <div className="flex w-full flex-col gap-1">
-                                                            <div className="flex w-full items-center justify-between">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{template.name}</span>
-                                                                <span className="text-xs font-semibold text-[#6D755F]">₹{templateTotal.toLocaleString()}</span>
-                                                            </div>
-                                                            <span className="text-xs text-slate-500">{template.items.length} item{template.items.length > 1 ? "s" : ""}</span>
-                                                        </div>
-                                                    </CommandItem>
-                                                );
-                                            })}
-                                        </CommandGroup>
+                                        {loadingFeeList ? (
+                                            <div className="flex items-center justify-center p-6 gap-2 text-slate-500">
+                                                <Loader2 className="h-4 w-4 animate-spin text-[#6D755F]" />
+                                                <span className="text-xs font-medium">Downloading template structures...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* FIXED: Reading from client-filtered results array */}
+                                                <CommandEmpty>No templates configured for this class.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {filteredFeeStructures.map((template) => (
+                                                        <CommandItem
+                                                            key={template.id}
+                                                            value={template.name}
+                                                            onSelect={() => {
+                                                                setSelectedFeeStructureId(template.id);
+                                                                setFeePopoverOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedFeeStructureId === template.id ? "opacity-100" : "opacity-0")} />
+                                                            <span className="font-medium text-slate-900 dark:text-slate-100">{template.name}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
                                     </CommandList>
                                 </Command>
                             </PopoverContent>
                         </Popover>
                     </div>
 
-                    {!selectedFeeTemplate ? (
-                        <div className="mt-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 py-12 text-center transition-all">
+                    {loadingFeeStructure ? (
+                        <div className="flex items-center justify-center p-6 text-slate-500 gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
+                            <span className="text-sm">Assembling breakdown table layout items properties...</span>
+                        </div>
+                    ) : editableFeeItems.length === 0 ? (
+                        <div className="mt-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 py-12 text-center">
                             <Wallet className="h-6 w-6 text-slate-400 mb-3" />
-                            <p className="text-sm text-slate-500">No template assigned. Select a base structure to formulate admission charges.</p>
+                            <p className="text-sm text-slate-500">No billing layout mapped. Open the template picker selector tool above to link configuration properties.</p>
                         </div>
                     ) : (
                         <div className="mt-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-6 py-4">
                                 <div>
                                     <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 block">
-                                        {selectedFeeTemplate.templateName}
+                                        {allFeeStructures.find(f => f.id === selectedFeeStructureId)?.name || "Modified Layout Accounts"}
                                     </span>
-                                    <span className="text-xs text-slate-500">Active breakdown</span>
+                                    <span className="text-xs text-slate-500">Active layout parameters (Altered row amounts compile into the transaction overrides data frame)</span>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
-                                    onClick={handleClearTemplate}
+                                    onClick={() => setSelectedFeeStructureId("")}
                                 >
-                                    <Trash2 className="h-4 w-4 mr-2" /> Clear Template
+                                    <Trash2 className="h-4 w-4 mr-2" /> Unlink Template Layout
                                 </Button>
                             </div>
 
                             <div className="overflow-x-auto">
                                 <Table>
-                                    <TableHeader className="bg-transparent">
+                                    <TableHeader>
                                         <TableRow className="hover:bg-transparent">
-                                            <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500">Fee Particulars</TableHead>
-                                            <TableHead className="w-[280px] text-xs font-medium uppercase tracking-wider text-slate-500">Amount Allocation</TableHead>
+                                            <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500">Fee Particulars Name</TableHead>
+                                            <TableHead className="w-[280px] text-xs font-medium uppercase tracking-wider text-slate-500">Amount Override Modification</TableHead>
                                             <TableHead className="w-[100px] pr-6 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Remove</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {selectedFeeTemplate.items.map((item) => (
-                                            <TableRow key={item.id} className="border-slate-100 dark:border-slate-800">
-                                                <TableCell className="pl-6 font-medium text-slate-800 dark:text-slate-200">{item.name}</TableCell>
+                                        {editableFeeItems.map((item) => (
+                                            <TableRow key={item.chargeTypeId} className="border-slate-100 dark:border-slate-800">
+                                                <TableCell className="pl-6 font-medium text-slate-800 dark:text-slate-200">
+                                                    {item.name}
+                                                </TableCell>
                                                 <TableCell>
                                                     <div className="relative w-full max-w-[200px]">
                                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₹</span>
                                                         <Input
                                                             type="number"
                                                             value={item.amount}
-                                                            onChange={(e) => handleItemAmountChange(item.id, e.target.value)}
-                                                            className="h-10 w-full pl-8 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 focus-visible:ring-2 focus-visible:ring-[#6D755F] text-slate-900 dark:text-white"
+                                                            onChange={(e) => handleItemAmountChange(item.chargeTypeId, e.target.value)}
+                                                            className="h-10 w-full pl-8 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
                                                         />
                                                     </div>
                                                 </TableCell>
@@ -602,7 +844,7 @@ export default function Page() {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
-                                                        onClick={() => handleRemoveItem(item.id)}
+                                                        onClick={() => handleRemoveItem(item.chargeTypeId)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -613,11 +855,10 @@ export default function Page() {
                                 </Table>
                             </div>
 
-                            {/* Aggregated Total Footer */}
                             <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-[#6D755F] px-6 py-5">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-white/90">Gross Payable Amount</span>
-                                    <span className="text-xs text-white/70">Calculated sum of active particulars</span>
+                                    <span className="text-sm font-medium text-white/90">Gross Enrollment Ledger Total</span>
+                                    <span className="text-xs text-white/70">Calculated composite sum of particulars active layout row items values</span>
                                 </div>
                                 <span className="text-3xl font-bold tracking-tight text-white">
                                     ₹{totalAmount.toLocaleString()}
