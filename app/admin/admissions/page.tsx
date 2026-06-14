@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Search, 
@@ -10,7 +10,8 @@ import {
   Plus,
   GraduationCap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,28 +26,57 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { MOCK_STUDENTS } from "./_admissionData";
+// Import your new API function and Type definition
+import { getStudentAdmissions, BackendAdmission } from "@/lib/services/admissions"; 
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
   
+  // Real Data, Loading & Error States
+  const [students, setStudents] = useState<BackendAdmission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Dynamic UI States
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5); // Restored dynamic row state
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   
+  // Fetch data on component mount
+  useEffect(() => {
+    async function fetchAdmissions() {
+      try {
+        setIsLoading(true);
+        const data = await getStudentAdmissions();
+        setStudents(data);
+      } catch (err) {
+        console.error("Failed to load admissions:", err);
+        setError("Could not retrieve student admissions. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAdmissions();
+  }, []);
+
   // 1. Process client-side filtering + automatic pagination reset on query mutation
   const filteredStudents = useMemo(() => {
     setCurrentPage(1); // Auto-fallback to page 1 during filter operations
-    return MOCK_STUDENTS.filter((student) => {
+    return students.filter((student) => {
       const query = search.toLowerCase();
+      
+      // Defensively fallback to IDs or empty strings if relation strings aren't populated yet
+      const studentName = student.studentName || `ID: ${student.studentId.slice(0, 8)}`;
+      const admissionNumber = student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`;
+      const fatherMobile = student.fatherMobile || "";
+
       return (
-        student.studentName.toLowerCase().includes(query) ||
-        student.admissionNumber.toLowerCase().includes(query) ||
-        student.fatherMobile.includes(query)
+        studentName.toLowerCase().includes(query) ||
+        admissionNumber.toLowerCase().includes(query) ||
+        fatherMobile.includes(query)
       );
     });
-  }, [search]);
+  }, [search, students]);
 
   // 2. Compute dynamic mathematical bounds for pagination matrix
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
@@ -103,7 +133,6 @@ export default function StudentAdmissionListPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              {/* Forced Sage Green Header with Ivory Text */}
               <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
                 <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
                   Admission No.
@@ -127,7 +156,22 @@ export default function StudentAdmissionListPage() {
             </TableHeader>
             
             <TableBody>
-              {paginatedStudents.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-40 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
+                      <p className="text-sm">Fetching student records...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-40 text-center text-red-500">
+                    <p className="text-sm font-medium">{error}</p>
+                  </TableCell>
+                </TableRow>
+              ) : paginatedStudents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -139,23 +183,29 @@ export default function StudentAdmissionListPage() {
               ) : (
                 paginatedStudents.map((student) => (
                   <TableRow key={student.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                    {/* Explicitly Padded cells matching header layout perfectly */}
+                    
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
-                      {student.admissionNumber}
+                      {student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`}
                     </TableCell>
                     
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                      {student.studentName}
+                      {student.studentName || `ID: ${student.studentId.slice(0, 8)}`}
                     </TableCell>
                     
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {student.class} <span className="text-slate-300 mx-1.5 dark:text-slate-700">|</span> {student.division}
+                      {student.class || student.classId.slice(0, 6)} 
+                      <span className="text-slate-300 mx-1.5 dark:text-slate-700">|</span> 
+                      {student.division || student.divisionId.slice(0, 6)}
                     </TableCell>
                     
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       <div className="flex flex-col">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">{student.fatherName}</span>
-                        <span className="text-xs text-slate-400 mt-0.5">{student.fatherMobile}</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">
+                          {student.fatherName || "—"}
+                        </span>
+                        <span className="text-xs text-slate-400 mt-0.5">
+                          {student.fatherMobile || "No contact info"}
+                        </span>
                       </div>
                     </TableCell>
                     
@@ -173,7 +223,6 @@ export default function StudentAdmissionListPage() {
                     </TableCell>
                     
                     <TableCell className="px-6 py-4 text-right">
-                      {/* Permanently visible structural interactive button cluster */}
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -212,7 +261,7 @@ export default function StudentAdmissionListPage() {
           </Table>
         </div>
         
-        {/* ── Minimal Premium Pagination (Restored Row Select) ── */}
+        {/* ── Premium Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
           
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -223,14 +272,13 @@ export default function StudentAdmissionListPage() {
           
           <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
             
-            {/* Rows Selector Restored */}
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="text-xs font-medium">Rows per page:</span>
               <select
                 value={rowsPerPage}
                 onChange={(e) => {
                   setRowsPerPage(Number(e.target.value));
-                  setCurrentPage(1); // Safeguard index limits by forcing reset
+                  setCurrentPage(1);
                 }}
                 className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
               >
@@ -245,7 +293,7 @@ export default function StudentAdmissionListPage() {
                 className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1 || totalPages === 0}
+                disabled={currentPage === 1 || totalPages === 0 || isLoading}
               >
                 <ChevronLeft className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
                 Prev
@@ -259,7 +307,7 @@ export default function StudentAdmissionListPage() {
                 className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
               >
                 Next
                 <ChevronRight className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
