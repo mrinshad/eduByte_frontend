@@ -45,6 +45,43 @@ export interface CreateAdmissionResponse {
   message: string;
 }
 
+export interface CompleteEnrollmentRecord {
+  enrollmentId: string;
+  academicYear: string;
+  classId: string;
+  division: string;
+  feeStructureName: string;
+  vehicleName: string;
+  student: {
+    id: string;
+    studentName: string;
+    admissionNumber: string;
+    gender: string;
+    dob: string;
+    bloodGroup: string;
+    status: "ACTIVE" | "INACTIVE";
+    fatherName: string;
+    fatherMobile: string;
+    motherName: string;
+    motherMobile: string;
+    whatsappNumber: string;
+    address: string;
+  };
+  charges: {
+    id: string;
+    chargeType: string;
+    originalAmount: number;
+    finalAmount: number;
+    paidAmount: number;
+    balanceAmount: number;
+  }[];
+}
+
+export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentRecord> {
+  const payload = await apiFetch(`/api/stdenrollment/${id}`) as { success: boolean; data: CompleteEnrollmentRecord };
+  return payload.data;
+}
+
 export async function getStudentAdmissions() {
   const payload = (await apiFetch("/api/stdenrollment")) as ApiSuccess<BackendAdmission[]>;
   return payload.data ?? [];

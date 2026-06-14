@@ -23,33 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  MOCK_STUDENTS,
-  MOCK_ENROLLMENTS,
-  type Student,
-  type EnrollmentRecord,
-} from "../_admissionData";
-
-// ---------------------------------------------------------------------------
-// Build a mock enrollment from student data if not in MOCK_ENROLLMENTS
-// ---------------------------------------------------------------------------
-function buildFallbackEnrollment(student: Student): EnrollmentRecord {
-  return {
-    enrollmentId: `ENR${student.id.padStart(3, "0")}`,
-    student,
-    academicYear: "2026–2027",
-    classId: student.class,
-    division: student.division,
-    feeStructureName: "Standard fee structure",
-    vehicleName: "Bus 01 · KL07AB1234",
-    charges: [
-      { id: "c1", chargeType: "Tuition fee", originalAmount: 10000, finalAmount: 10000, paidAmount: 0, balanceAmount: 10000 },
-      { id: "c2", chargeType: "Transport fee", originalAmount: 2500, finalAmount: 1800, paidAmount: 0, balanceAmount: 1800 },
-      { id: "c3", chargeType: "Book fee", originalAmount: 2000, finalAmount: 2000, paidAmount: 0, balanceAmount: 2000 },
-    ],
-  };
-}
-
+import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -103,17 +77,23 @@ export default function ViewAdmissionPage() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "1";
 
-  const [enrollment, setEnrollment] = useState<EnrollmentRecord | null>(null);
+  const [enrollment, setEnrollment] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In production: fetch from API using enrollmentId or studentId
-    const student = MOCK_STUDENTS.find((s: any) => s.id === id);
-    if (!student) { setLoading(false); return; }
-
-    const record = MOCK_ENROLLMENTS[id] ?? buildFallbackEnrollment(student);
-    setEnrollment(record);
-    setLoading(false);
+    async function loadData() {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const data = await getEnrollmentById(id);
+        setEnrollment(data);
+      } catch (err) {
+        console.error("Failed to load enrollment view detail records:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, [id]);
 
   // ---------------------------------------------------------------------------
@@ -148,9 +128,9 @@ export default function ViewAdmissionPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button 
-            className="bg-background text-foreground hover:opacity-90 shadow-sm" 
-            size="icon" 
+          <Button
+            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+            size="icon"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -160,8 +140,7 @@ export default function ViewAdmissionPage() {
               {student.studentName}
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              {student.admissionNumber} ·{" "}
-              <span className="font-medium text-[#3B82F6]">{enrollment.enrollmentId}</span>
+              {student.admissionNumber}
             </p>
           </div>
         </div>
