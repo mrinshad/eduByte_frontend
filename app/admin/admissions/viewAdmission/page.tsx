@@ -86,6 +86,7 @@ export default function ViewAdmissionPage() {
       try {
         setLoading(true);
         const data = await getEnrollmentById(id);
+        console.log(data)
         setEnrollment(data);
       } catch (err) {
         console.error("Failed to load enrollment view detail records:", err);
@@ -203,9 +204,10 @@ export default function ViewAdmissionPage() {
             </div>
             <div className="flex gap-8">
               {[
-                { label: "Academic year", value: enrollment.academicYear },
+                { label: "Academic year", value: enrollment.academicYearName },
                 { label: "Class", value: enrollment.classId },
                 { label: "Division", value: enrollment.division },
+                { label: "Roll Number", value: enrollment.rollNumber },
               ].map(({ label, value }) => (
                 <div key={label} className="text-center">
                   <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -227,7 +229,7 @@ export default function ViewAdmissionPage() {
                 <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Assigned vehicle
                 </div>
-                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">{enrollment.vehicleName}</div>
+                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">{enrollment.vehicleName || "No Vehicle Assigned"}</div>
               </div>
             </div>
             <div className="flex items-center gap-4 px-4 py-4">

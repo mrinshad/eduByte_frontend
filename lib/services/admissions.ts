@@ -30,6 +30,7 @@ export interface ChargeOverride {
 }
 
 export interface CreateAdmissionPayload {
+  id?:string;
   studentId: string;
   academicYearId?: string;
   classId: string;
@@ -47,9 +48,10 @@ export interface CreateAdmissionResponse {
 
 export interface CompleteEnrollmentRecord {
   enrollmentId: string;
-  academicYear: string;
+  academicYearName: string;
   classId: string;
   division: string;
+  rollNumber: string;
   feeStructureName: string;
   vehicleName: string;
   student: {
@@ -92,6 +94,20 @@ export async function createStudentAdmission(
 ): Promise<CreateAdmissionResponse> {
   const response = await apiFetch("/api/stdenrollment", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return response as CreateAdmissionResponse;
+}
+export async function updateStudentAdmission(
+  enrollmentId: string,
+  payload: CreateAdmissionPayload
+): Promise<CreateAdmissionResponse> {
+  const response = await apiFetch(`/api/stdenrollment/${enrollmentId}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },

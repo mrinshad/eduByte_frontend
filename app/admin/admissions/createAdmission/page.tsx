@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner"
 import {
     ArrowLeft,
     Check,
@@ -50,10 +51,15 @@ import {
     StudentAdmissionAndName,
     Student
 } from "@/lib/services/student";
-import { createStudentAdmission } from "@/lib/services/admissions";
+import {
+    createStudentAdmission, updateStudentAdmission,
+    getEnrollmentById,
+} from "@/lib/services/admissions";
 import { getVehicles, Vehicle } from "@/lib/services/vehicle";
 import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureView } from "@/lib/services/feeStructure";
 import { apiFetch } from "@/lib/api";
+
+import { useSearchParams } from "next/navigation";
 
 // ── Structural Entity Types ──
 export type SchoolClass = {
@@ -122,7 +128,19 @@ const fieldClass = `
 `;
 
 export default function Page() {
+    const [isLoadingEditData, setIsLoadingEditData] = useState(false);
     const router = useRouter();
+
+    const searchParams = useSearchParams();
+    // __ edit mode __
+    const [loadingEnrollment, setLoadingEnrollment] = useState(false);
+
+
+    const enrollmentId = searchParams.get("id") ?? undefined;
+    console.log("enrollmentId =", enrollmentId);
+    console.log("isEditMode =", !!enrollmentId);
+
+    const isEditMode = !!enrollmentId;
 
     // ── Dropdown List Arrays ──
     const [studentsDropdown, setStudentsDropdown] = useState<StudentAdmissionAndName[]>([]);
@@ -325,6 +343,95 @@ export default function Page() {
         }
         fetchStructureDetails();
     }, [selectedFeeStructureId]);
+    useEffect(() => {
+        if (!isEditMode || !enrollmentId) return;
+
+        const id = enrollmentId;
+
+        async function loadEnrollment() {
+
+            try {
+                setLoadingEnrollment(true);
+
+                const enrollment = await getEnrollmentById(id);
+                console.log("ENROLLMENT DATA:", enrollment);
+
+                // Student
+                setSelectedStudentId(enrollment.student.id);
+
+                // Class
+                const classes = await getClasses();
+                setClassesDropdown(classes);
+
+                const selectedClass = classes.find(
+                    c => c.name === enrollment.classId
+                );
+
+                if (selectedClass) {
+                    setSelectedClassId(selectedClass.id);
+                }
+
+                // Division
+                if (selectedClass) {
+                    const divisions = await getDivisions(selectedClass.id);
+
+                    setDivisionsDropdown(divisions);
+
+                    const selectedDivision = divisions.find(
+                        d => d.name === enrollment.division
+                    );
+
+                    if (selectedDivision) {
+                        setSelectedDivisionId(selectedDivision.id);
+                    }
+                }
+
+
+                // Fee Structure
+                const feeStructures = await getFeeStructures();
+                setAllFeeStructures(feeStructures);
+
+                const selectedFee = feeStructures.find(
+                    (f) => f.name === enrollment.feeStructureName
+                );
+
+                if (selectedFee) {
+                    setSelectedFeeStructureId(selectedFee.id);
+                }
+
+                // Vehicle
+                const vehicles = await getVehicles();
+                setVehiclesDropdown(vehicles);
+
+                const vehicle = vehicles.find(
+                    (v) => v.vehicleName === enrollment.vehicleName
+                );
+
+                if (vehicle) {
+                    setSelectedVehicle(vehicle);
+                }
+
+                // Roll Number
+                setRollNumber(enrollment.rollNumber ?? "");
+
+                // Charges
+                setEditableFeeItems(
+                    enrollment.charges.map((charge) => ({
+                        chargeTypeId: charge.id,
+                        name: charge.chargeType,
+                        baseAmount: charge.originalAmount,
+                        amount: charge.finalAmount,
+                    }))
+                );
+            } catch (error) {
+                console.error("Failed to load enrollment", error);
+            } finally {
+                setLoadingEnrollment(false);
+            }
+        }
+
+        loadEnrollment();
+    }, [isEditMode, enrollmentId]);
 
     const handleItemAmountChange = (chargeTypeId: string, value: string) => {
         setEditableFeeItems((prev) =>
@@ -344,42 +451,88 @@ export default function Page() {
         return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     }, [editableFeeItems]);
 
-const handleSubmit = async () => {
+    const handleSubmit = async () => {
+    console.log("HANDLE SUBMIT CALLED");
+
     if (!selectedStudentId || !selectedClassId || !selectedDivisionId) {
-        alert("Ensure Student, Class, and Division targets are selected before running creation tasks.");
+        console.log("VALIDATION FAILED");
+        alert(
+            "Ensure Student, Class, and Division targets are selected before running creation tasks."
+        );
         return;
     }
 
     try {
         setSubmitting(true);
 
+        console.log("AFTER VALIDATION");
+
         const chargeOverrides = editableFeeItems
             .filter((item) => Number(item.amount) !== item.baseAmount)
             .map((item) => ({
                 chargeTypeId: item.chargeTypeId,
-                finalAmount: Number(item.amount) || 0
+                finalAmount: Number(item.amount) || 0,
             }));
 
         const targetPayload = {
             studentId: selectedStudentId,
-            classId: selectedClassId, 
-            divisionId: selectedDivisionId, 
+            classId: selectedClassId,
+            divisionId: selectedDivisionId,
             feeStructureId: selectedFeeStructureId || null,
             rollNumber: rollNumber.trim() || null,
             vehicleId: selectedVehicle?.id || null,
-            chargeOverrides: chargeOverrides,
-            // academicYearId is safely omitted here
+            chargeOverrides,
         };
 
-        const result = await createStudentAdmission(targetPayload);
-        if (result.success) {
+        console.log("================================");
+        console.log("isEditMode =", isEditMode);
+        console.log("enrollmentId =", enrollmentId);
+        console.log("PAYLOAD =", targetPayload);
+        console.log("================================");
+
+        console.log("BEFORE API");
+
+        let result;
+
+        if (isEditMode) {
+            console.log("CALLING updateStudentAdmission");
+
+            result = await updateStudentAdmission(
+                enrollmentId!,
+                targetPayload
+            );
+
+            console.log("updateStudentAdmission FINISHED");
+            toast.success("Admission updated successfully");
+        } else {
+            console.log("CALLING createStudentAdmission");
+
+            result = await createStudentAdmission(
+                targetPayload
+            );
+            toast.success("Admission created successfully");
+            console.log("createStudentAdmission FINISHED");
+        }
+
+        console.log("AFTER API");
+        console.log("RESULT =", result);
+
+        if (result?.success) {
+            console.log("SUCCESS - GOING BACK");
             router.back();
         } else {
-            alert(result.message || "An operations error occurred during submission.");
+            console.log("FAILED RESPONSE =", result);
+
+            alert(
+                result?.message ||
+                "An operations error occurred during submission."
+            );
         }
     } catch (error) {
-        console.error("Error processing operations command execution:", error);
+        toast.error("Failed to create Admission");
+        console.error("HANDLE SUBMIT ERROR =", error);
     } finally {
+        console.log("FINALLY BLOCK");
         setSubmitting(false);
     }
 };
@@ -393,7 +546,7 @@ const handleSubmit = async () => {
                         <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Create Admission</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{isEditMode ? "Edit Admission" : "Create Admission"}</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                             Link system database structural parameters directly to avoid transaction exceptions.
                         </p>
@@ -404,8 +557,14 @@ const handleSubmit = async () => {
                     <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         Discard
                     </Button>
+                    
                     <Button onClick={handleSubmit} disabled={submitting || !selectedStudentId || !selectedClassId || !selectedDivisionId} className="rounded-xl h-11 px-8 bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-md">
-                        {submitting ? "Processing Request..." : "Confirm Admission"}
+                        
+                        {submitting
+                            ? "Processing..."
+                            : isEditMode
+                                ? "Update Admission"
+                                : "Confirm Admission"}
                     </Button>
                 </div>
             </div>
