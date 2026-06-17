@@ -113,29 +113,23 @@ export default function StudentChargesListPage() {
       {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center space-x-4 mb-6">
+          <div className="flex items-center gap-4">
             <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => router.back()}
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Student Charges
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Manage and view all student fee charges.
-            </p>
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
+              size="icon"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Student Charge
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                Manage and view all student fee charges.
+              </p>
+            </div>
           </div>
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-            Student Charges
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Manage and view all student fee charges.
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
@@ -241,8 +235,8 @@ export default function StudentChargesListPage() {
 
                       <TableCell
                         className={`px-6 py-4 text-sm text-right font-semibold ${balance > 0
-                            ? "text-rose-600 dark:text-rose-400"
-                            : "text-emerald-600 dark:text-emerald-400"
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-emerald-600 dark:text-emerald-400"
                           }`}
                       >
                         {formatCurrency(balance)}
@@ -261,7 +255,7 @@ export default function StudentChargesListPage() {
                             size="icon"
                             className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
                             onClick={() =>
-                              
+
                               router.push(
                                 `/workspace/student-charges/student-charges/View-student-charge?id=${charge.enrollmentId}`
                               )
