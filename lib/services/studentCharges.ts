@@ -6,6 +6,7 @@ export interface StudentCharge {
   class: string;
   finalAmount?: number;
   paidAmount?: number;
+  enrollmentId:string;
   status: "PENDING" | "PARTIAL" | "PAID";
 }
 
