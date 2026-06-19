@@ -8,16 +8,19 @@ export interface FeeStructureView {
   id: string;
   name: string;
   description: string | null;
+  academicYearId: string;
   academicYearName: string;
   className: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   items: {
+    chargeTypeId: string;
     chargeTypeName: string;
     amount: string;
   }[];
 }
+
 export interface CreateFeeStructureInput {
   name: string;
   academicYearId: string;

@@ -71,6 +71,12 @@ export interface GetStudentsParams {
   order?: "asc" | "desc";
 }
 
+export interface StudentAdmissionAndName {
+  id: string;
+  admissionNumber: string;
+  studentName: string;
+}
+
 // Create Student
 export async function createStudent(
   input: StudentInput
@@ -122,4 +128,13 @@ export async function updateStudent(
     method: "PUT",
     body: JSON.stringify(input),
   });
+}
+
+// Get Student Admission Number and Name By Id
+export async function getStudentAdmissionAndName() {
+  const payload = (await apiFetch(
+    `/api/students/admission-name/`
+  )) as ApiSuccess<StudentAdmissionAndName>;
+
+  return payload.data ?? null;
 }
