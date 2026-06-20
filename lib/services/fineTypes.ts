@@ -1,8 +1,14 @@
 import { apiFetch } from "@/lib/api"
 export type FineStatus = "PENDING" | "PAID" | "PARTIAL" | string
- 
+ type ApiSuccess<T> = {
+  success: boolean
+  message?: string
+  data?: T
+}
 export type StudentFine = {
   id: string
+  enrollmentId:string,
+  fineId:string,
   admissionNumber: string
   student: string
   fine: string
@@ -24,6 +30,35 @@ export type GetStudentFinesResult = {
   data: StudentFine[]
   meta: StudentFinesMeta | null
 }
+ export interface StudentAdmissionAndName {
+  id: string;
+  enrollmentId: string;
+  admissionNumber: string;
+  studentName: string;
+}
+export type StudentFineDetail = {
+  id: string;
+  enrollmentId: string;
+  admissionNumber: string;
+  student: string;
+  class: string | null;
+  division: string | null;
+  rollNumber: number | string | null;
+  fineId: string;
+  fine: string;
+  reason: string;
+  isReversed: boolean;
+  reversalReason: string | null;
+  amount: string;
+  paidAmount: string;
+  balanceAmount: string;
+  status: string;
+};
+ 
+export async function getStudentFineById(id: string) {
+  const payload = await apiFetch(`/api/stdfines/${id}`)
+  return payload.data
+}
  
 export async function getStudentFines(params?: {
   search?: string
@@ -31,12 +66,9 @@ export async function getStudentFines(params?: {
   limit?: number
 }): Promise<GetStudentFinesResult> {
   const query = new URLSearchParams()
-  if (params?.search) query.set("search", params.search)
-  if (params?.page) query.set("page", String(params.page))
-  if (params?.limit) query.set("limit", String(params.limit))
  
   const qs = query.toString()
-  const payload = (await apiFetch(`/api/stdfines${qs ? `?${qs}` : ""}`)) as {
+  const payload = (await apiFetch(`/api/stdfines`)) as {
     success: boolean
     message?: string
     data?: StudentFine[]
@@ -64,15 +96,23 @@ type FineTypeInput = {
 type BulkFineTypeInput = {
   names: string[]
 }
+export interface StudentFineInput  {
+    enrollmentId: string;
+    fineTypeId: string;
+    amount: number;
+    reason: string;
+}
  
-export async function getFineTypes(params?: { search?: string; page?: number; limit?: number }) {
-  const query = new URLSearchParams()
-  if (params?.search) query.set("search", params.search)
-  if (params?.page) query.set("page", String(params.page))
-  if (params?.limit) query.set("limit", String(params.limit))
+export function createStudentFine(input: StudentFineInput) {
+  return apiFetch("/api/stdfines", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
  
-  const qs = query.toString()
-  const payload = (await apiFetch(`/api/finetypes${qs ? `?${qs}` : ""}`)) as {
+export async function getFineTypes() {
+ 
+  const payload = (await apiFetch(`/api/finetypes`)) as {
     success: boolean
     message?: string
     data?: FineType[]
@@ -92,4 +132,31 @@ export function updateFineType(id: string, input: FineTypeInput) {
     method: "PUT",
     body: JSON.stringify(input),
   })
+}
+export async function getStudentAdmissionAndName() {
+  const payload = (await apiFetch(
+    `/api/stdfines/stdenid-name`
+  )) as ApiSuccess<StudentAdmissionAndName[]>;
+
+  return payload.data ?? [];
+}
+export function updateStudentFine(
+  id:string,
+  input:StudentFineInput
+){
+  return apiFetch(`/api/stdfines/${id}`,{
+    method:"PUT",
+    body:JSON.stringify(input),
+  });
+}
+export function reverseStudentFine(
+  id: string,
+  reversalReason: string
+) {
+  return apiFetch(`/api/stdfines/reversed/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      reversalReason,
+    }),
+  });
 }

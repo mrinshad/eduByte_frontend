@@ -1,10 +1,22 @@
 "use client"
- 
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X, Search, Loader2, Eye, CreditCard } from "lucide-react"
- 
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+  Search,
+  Loader2,
+  Eye,
+  CreditCard,
+} from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
- 
 import {
   Table,
   TableBody,
@@ -24,8 +35,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
- 
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
@@ -33,39 +43,136 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
- 
-import { createFineTypes, updateFineType, getFineTypes, type FineType } from "@/lib/services/fineTypes"
-import { getStudentFines, type StudentFine } from "@/lib/services/fineTypes"
- 
+
+import {
+  createFineTypes,
+  updateFineType,
+  getFineTypes,
+  getStudentFines,
+  getStudentAdmissionAndName,
+  createStudentFine,
+  updateStudentFine,
+  type FineType,
+  type StudentFine,
+  type StudentAdmissionAndName,
+} from "@/lib/services/fineTypes"
+
 export default function Page() {
   const router = useRouter()
- 
+
+  // ---------------------------------------------------------------------
+  // Fine Types (list + create/edit dialog)
+  // ---------------------------------------------------------------------
   const [fineTypesOpen, setFineTypesOpen] = useState(false)
   const [fineTypes, setFineTypes] = useState<FineType[]>([])
   const [loading, setLoading] = useState(false)
- 
- 
-  const [editingFineType, setEditingFineType] = useState<FineType | null>(null)
- 
+
   const [createOpen, setCreateOpen] = useState(false)
+  const [editingFineType, setEditingFineType] = useState<FineType | null>(null)
   const [names, setNames] = useState<string[]>([""])
   const [submitting, setSubmitting] = useState(false)
- 
-  // ---- Student fines table state ----
+
+  async function loadFineTypes() {
+    setLoading(true)
+    try {
+      const data = await getFineTypes()
+      setFineTypes(data)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load fine types")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (fineTypesOpen) {
+      void loadFineTypes()
+    } else {
+      setEditingFineType(null)
+    }
+  }, [fineTypesOpen])
+
+  function openEdit(fineType: FineType) {
+    setEditingFineType(fineType)
+    setNames([fineType.name])
+    setCreateOpen(true)
+  }
+
+  function resetAndCloseCreate() {
+    setNames([""])
+    setEditingFineType(null)
+    setCreateOpen(false)
+  }
+
+  function updateNameAt(index: number, value: string) {
+    setNames((prev) => prev.map((item, i) => (i === index ? value : item)))
+  }
+
+  async function handleCreate() {
+    const cleaned = names.map((n) => n.trim()).filter(Boolean)
+
+    if (cleaned.length === 0) {
+      toast.error("Enter at least one fine type name")
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      if (editingFineType) {
+        await updateFineType(editingFineType.id, {
+          name: cleaned[0],
+        })
+
+        setFineTypes((prev) =>
+          prev.map((item) =>
+            item.id === editingFineType.id ? { ...item, name: cleaned[0] } : item
+          )
+        )
+
+        toast.success("Fine Type Updated")
+      } else {
+        await createFineTypes({
+          names: cleaned,
+        })
+
+        toast.success("Created Fine Type")
+
+        await loadFineTypes()
+      }
+
+      resetAndCloseCreate()
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : editingFineType
+            ? "Failed to update fine type"
+            : "Failed to create fine type"
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Student Fines table (search, pagination, fetch)
+  // ---------------------------------------------------------------------
   const [fines, setFines] = useState<StudentFine[]>([])
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
- 
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
- 
+
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(5)
+
   // Filled in only if the API ever returns pagination meta. Until then we
   // paginate client-side off of `fines.length`.
   const [serverTotal, setServerTotal] = useState<number | null>(null)
   const [serverTotalPages, setServerTotalPages] = useState<number | null>(null)
- 
+
   // Debounce search input -> search term, and reset to page 1 on new search
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -74,12 +181,13 @@ export default function Page() {
     }, 350)
     return () => clearTimeout(handle)
   }, [searchInput])
- 
+
   async function loadFines() {
     setIsLoading(true)
     setError(null)
     try {
       const result = await getStudentFines({ search: search || undefined, page, limit })
+      console.log(result)
       setFines(result.data)
       if (result.meta) {
         setServerTotal(result.meta.total)
@@ -95,129 +203,125 @@ export default function Page() {
       setIsLoading(false)
     }
   }
- 
+
   useEffect(() => {
     void loadFines()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, page, limit])
- 
+
   // If backend already paginates (meta present), `fines` is just the current
   // page. Otherwise treat `fines` as the full filtered list and slice here.
   const usingServerPagination = serverTotal !== null && serverTotalPages !== null
- 
+
   const total = usingServerPagination ? serverTotal! : fines.length
   const totalPages = usingServerPagination
     ? Math.max(serverTotalPages!, 1)
     : Math.max(Math.ceil(fines.length / limit), 1)
- 
+
   const visibleFines = usingServerPagination
     ? fines
     : fines.slice((page - 1) * limit, (page - 1) * limit + limit)
- 
+
   const startEntry = total === 0 ? 0 : (page - 1) * limit + 1
   const endEntry = usingServerPagination
     ? Math.min(page * limit, total)
     : Math.min((page - 1) * limit + visibleFines.length, total)
- 
+
   // Clamp page if it goes out of range (e.g. after search shrinks results)
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages)
     }
   }, [totalPages, page])
- 
-  async function loadFineTypes(searchTerm?: string) {
-    setLoading(true)
+
+  // ---------------------------------------------------------------------
+  // New Fine dialog (student picker, fine type, amount, reason)
+  // ---------------------------------------------------------------------
+  // Edit
+
+  const [editingFineId, setEditingFineId] = useState<string | null>(null)
+  // Create
+  const [newFineOpen, setNewFineOpen] = useState(false)
+  const [students, setStudents] = useState<StudentAdmissionAndName[]>([])
+  const [studentSearch, setStudentSearch] = useState("")
+
+  const [fineForm, setFineForm] = useState({
+    studentId: "",
+    fineTypeId: "",
+    amount: "",
+    reason: "",
+  })
+
+  const resetFineForm = () => {
+    setEditingFineId(null)
+
+    setFineForm({
+      studentId: "",
+      fineTypeId: "",
+      amount: "",
+      reason: "",
+    })
+
+    setStudentSearch("")
+  }
+
+  async function loadStudents() {
     try {
-      const data = await getFineTypes({ search: searchTerm })
-      setFineTypes(data)
+      const data = await getStudentAdmissionAndName()
+      console.log("Students API", data)
+      setStudents(data)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load fine types")
-    } finally {
-      setLoading(false)
+      toast.error("Failed to load students")
     }
   }
- 
+
   useEffect(() => {
-    if (fineTypesOpen) {
+    if (newFineOpen) {
+      void loadStudents()
       void loadFineTypes()
-    } else {
-      setEditingFineType(null)
     }
-  }, [fineTypesOpen])
- 
-  function openEdit(fineType: FineType) {
-    setEditingFineType(fineType)
-    setNames([fineType.name])
-    setCreateOpen(true)
-  }
- 
- 
- 
- 
- 
-  function resetAndCloseCreate() {
-    setNames([""])
-    setEditingFineType(null)
-    setCreateOpen(false)
-  }
- 
-  function updateNameAt(index: number, value: string) {
-    setNames((prev) => prev.map((item, i) => (i === index ? value : item)))
-  }
- 
- 
- 
-  async function handleCreate() {
-    const cleaned = names.map((n) => n.trim()).filter(Boolean)
- 
-    if (cleaned.length === 0) {
-      toast.error("Enter at least one fine type name")
-      return
-    }
- 
-    setSubmitting(true)
- 
+  }, [newFineOpen])
+
+  const handleSaveFine = async () => {
     try {
-      if (editingFineType) {
-        await updateFineType(editingFineType.id, {
-          name: cleaned[0],
-        })
- 
-        setFineTypes((prev) =>
-          prev.map((item) =>
-            item.id === editingFineType.id
-              ? { ...item, name: cleaned[0] }
-              : item
-          )
-        )
- 
-        toast.success("Fine Type Updated")
-      } else {
-        await createFineTypes({
-          names: cleaned,
-        })
- 
-        toast.success("Created Fine Type")
- 
-        await loadFineTypes()
+      const payload = {
+        enrollmentId: fineForm.studentId,
+        fineTypeId: fineForm.fineTypeId,
+        amount: Number(fineForm.amount),
+        reason: fineForm.reason,
       }
- 
-      resetAndCloseCreate()
+
+      if (editingFineId) {
+        await updateStudentFine(editingFineId, payload)
+        toast.success("Updated Student Fine")
+      } else {
+        await createStudentFine(payload)
+        toast.success("Created Student Fine")
+      }
+
+      resetFineForm()
+      setEditingFineId(null)
+      setNewFineOpen(false)
+
+      await loadFines()
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : editingFineType
-            ? "Failed to update fine type"
-            : "Failed to create fine type"
+          : "Failed to save student fine"
       )
-    } finally {
-      setSubmitting(false)
     }
   }
- 
- 
+
+  const filteredStudents = students.filter(
+    (student) =>
+      student.studentName?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      student.admissionNumber?.toLowerCase().includes(studentSearch.toLowerCase())
+  )
+
+  // ---------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------
   return (
     <section className="w-full px-6 py-4 space-y-6">
       {/* Header */}
@@ -248,7 +352,7 @@ export default function Page() {
           Fine Types
         </Button>
       </div>
- 
+
       {/* Fine Types Dialog */}
       <Dialog open={fineTypesOpen} onOpenChange={setFineTypesOpen}>
         <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50">
@@ -264,44 +368,40 @@ export default function Page() {
               </Button>
             </div>
           </DialogHeader>
- 
+
           <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto">
             {loading && (
-              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                Loading...
+              </p>
             )}
- 
+
             {!loading && fineTypes.length === 0 && (
               <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 No fine types yet. Add one to get started.
               </p>
             )}
- 
+
             {!loading &&
               fineTypes.map((fineType) => (
                 <div
                   key={fineType.id}
                   className={cn(
                     "flex items-center justify-between rounded-2xl border p-2 transition-colors",
-                    "border-black/5 bg-white dark:border-white/10 dark:bg-white/5",
+                    "border-black/5 bg-white dark:border-white/10 dark:bg-white/5"
                   )}
                 >
-                  <>
-                    <h3 className="font-semibold text-slate-950 dark:text-slate-100 ">
-                      {fineType.name}
-                    </h3>
- 
-                    <Button
-                      className="text-red"
-                      size="icon-sm"
-                      onClick={() => openEdit(fineType)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </>
+                  <h3 className="font-semibold text-slate-950 dark:text-slate-100">
+                    {fineType.name}
+                  </h3>
+
+                  <Button className="text-red" size="icon-sm" onClick={() => openEdit(fineType)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
           </div>
- 
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setFineTypesOpen(false)} className="text-white">
               Close
@@ -309,9 +409,12 @@ export default function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
- 
-      {/* Create Fine Type Dialog */}
-      <Dialog open={createOpen} onOpenChange={(next) => (next ? setCreateOpen(next) : resetAndCloseCreate())}>
+
+      {/* Create / Edit Fine Type Dialog */}
+      <Dialog
+        open={createOpen}
+        onOpenChange={(next) => (next ? setCreateOpen(next) : resetAndCloseCreate())}
+      >
         <DialogContent className="sm:max-w-lg text-slate-950 dark:text-slate-50" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-white">
@@ -319,7 +422,7 @@ export default function Page() {
             </DialogTitle>
             <DialogDescription>Create a new fine type, or add several at once.</DialogDescription>
           </DialogHeader>
- 
+
           <div className="space-y-3 py-2">
             {names.map((name, index) => (
               <div key={index} className="space-y-2">
@@ -335,14 +438,11 @@ export default function Page() {
                     placeholder="e.g. Library Fine"
                     className="flex-1"
                   />
- 
                 </div>
               </div>
             ))}
- 
- 
           </div>
- 
+
           <DialogFooter>
             <Button className="text-white" variant="outline" onClick={resetAndCloseCreate}>
               <X className="h-4 w-4" />
@@ -360,10 +460,12 @@ export default function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Student Fines table */}
       <div>
-        <div className="flex flex-col  sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end">
-          {/* Enhanced High-Visibility Search Bar */}
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl ">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end">
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search by name, ID, or phone..."
@@ -372,14 +474,16 @@ export default function Page() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
+
           <Button
             className="shrink-0 gap-2 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-semibold tracking-tight h-10 px-4 rounded-xl"
-            onClick={() => router.push('/workspace/fine-management/student-fines/create-fines')}
+            onClick={() => setNewFineOpen(true)}
           >
             <Plus className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
             New Fine
           </Button>
         </div>
+
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -408,7 +512,7 @@ export default function Page() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
- 
+
               <TableBody>
                 {isLoading ? (
                   <TableRow>
@@ -455,12 +559,12 @@ export default function Page() {
                       <TableCell className="px-6 py-4">
                         <span
                           className={cn(
-                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                            "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
                             row.status === "PAID"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400"
+                              ? "bg-green-100 text-green-700 border border-green-200"
                               : row.status === "PARTIAL"
-                                ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-400"
-                                : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                                ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                                : "bg-red-100 text-red-700 border border-red-200"
                           )}
                         >
                           {row.status}
@@ -471,20 +575,35 @@ export default function Page() {
                           <Button
                             variant="ghost"
                             size="icon"
+                             onClick={() =>
+                              router.push(`/workspace/fine-management/student-fines/view-student-fines?id=${row.id}`)
+                            }
                             className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
                             title="View Fine"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
- 
+
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setEditingFineId(row.id)
+                              setFineForm({
+                                studentId: row.enrollmentId ?? "",
+                                fineTypeId: row.fineId ?? "",
+                                amount: row.amount ?? "",
+                                reason: row.reason ?? "",
+
+                              })
+                              setNewFineOpen(true)
+                            }}
                             className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
                             title="Edit Fine"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -493,7 +612,7 @@ export default function Page() {
                           >
                             <CreditCard className="h-4 w-4" />
                           </Button>
- 
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -508,11 +627,10 @@ export default function Page() {
                   ))
                 )}
               </TableBody>
- 
             </Table>
           </div>
- 
-          {/* Pagination footer — matches "Showing X to Y of Z entries" style */}
+
+          {/* Pagination footer — "Showing X to Y of Z entries" */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 px-6 py-3 dark:border-slate-800/50">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {total === 0 ? (
@@ -525,7 +643,7 @@ export default function Page() {
                 </>
               )}
             </p>
- 
+
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-500 dark:text-slate-400">Rows per page:</span>
@@ -547,7 +665,7 @@ export default function Page() {
                   </SelectContent>
                 </Select>
               </div>
- 
+
               <Button
                 variant="outline"
                 size="sm"
@@ -558,11 +676,11 @@ export default function Page() {
                 <ChevronLeft className="h-4 w-4" />
                 Prev
               </Button>
- 
+
               <span className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap">
                 Page {page}
               </span>
- 
+
               <Button
                 variant="outline"
                 size="sm"
@@ -577,6 +695,138 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      {/* New Fine Dialog */}
+      <Dialog
+        open={newFineOpen}
+        onOpenChange={(value) => {
+          setNewFineOpen(value)
+
+          if (!value) {
+            resetFineForm()
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingFineId ? "Edit Student Fine" : "Create Student Fine"}
+            </DialogTitle>
+            <DialogDescription>Create a fine and assign it to a student.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Student Dropdown */}
+            <div>
+              <label className="text-sm font-medium">Student</label>
+              <Select
+                value={fineForm.studentId}
+                onValueChange={(value) =>
+                  setFineForm((prev) => ({
+                    ...prev,
+                    studentId: value,
+                  }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Student" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search Student..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                    />
+                  </div>
+
+                  {filteredStudents.map((student) => (
+                    <SelectItem key={student.id} value={student.enrollmentId}>
+                      {student.admissionNumber} - {student.studentName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Fine Type Dropdown */}
+            <div>
+              <label className="text-sm font-medium">Fine Type</label>
+              <Select
+                value={fineForm.fineTypeId}
+                onValueChange={(value) =>
+                  setFineForm((prev) => ({
+                    ...prev,
+                    fineTypeId: value,
+                  }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Fine Type" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {fineTypes.map((fine) => (
+                    <SelectItem key={fine.id} value={fine.id}>
+                      {fine.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label className="text-sm font-medium">Amount</label>
+              <Input
+                type="number"
+                className="appearance-none"
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="Enter Amount"
+                value={fineForm.amount}
+                onChange={(e) =>
+                  setFineForm((prev) => ({
+                    ...prev,
+                    amount: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Reason */}
+            <div>
+              <label className="text-sm font-medium">Reason</label>
+              <Input
+                placeholder="Enter Reason"
+                value={fineForm.reason}
+                onChange={(e) =>
+                  setFineForm((prev) => ({
+                    ...prev,
+                    reason: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetFineForm()
+                setNewFineOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button onClick={handleSaveFine}>
+              {editingFineId ? "Update Fine" : "Create Fine"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }
