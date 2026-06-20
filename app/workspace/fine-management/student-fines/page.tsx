@@ -463,7 +463,7 @@ export default function Page() {
 
       {/* Student Fines table */}
       <div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end mb-5">
           {/* Search Bar */}
           <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
@@ -476,17 +476,17 @@ export default function Page() {
           </div>
 
           <Button
-            className="shrink-0 gap-2 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-semibold tracking-tight h-10 px-4 rounded-xl"
+            className="shrink-0 gap-1.5 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-medium tracking-tight h-8 px-3 rounded-lg text-xs"
             onClick={() => setNewFineOpen(true)}
           >
-            <Plus className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+            <Plus className="h-3.5 w-3.5 text-[oklch(0.98_0.01_95)]" />
             New Fine
           </Button>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden ">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
                   <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
@@ -507,7 +507,7 @@ export default function Page() {
                   <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
                     Status
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -564,7 +564,9 @@ export default function Page() {
                               ? "bg-green-100 text-green-700 border border-green-200"
                               : row.status === "PARTIAL"
                                 ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                                : "bg-red-100 text-red-700 border border-red-200"
+                                : row.status === "REVERSED"
+                                  ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                  : "bg-red-100 text-red-700 border border-red-200"
                           )}
                         >
                           {row.status}
@@ -575,7 +577,7 @@ export default function Page() {
                           <Button
                             variant="ghost"
                             size="icon"
-                             onClick={() =>
+                            onClick={() =>
                               router.push(`/workspace/fine-management/student-fines/view-student-fines?id=${row.id}`)
                             }
                             className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
