@@ -1,5 +1,5 @@
 "use client";
- 
+
 import * as React from "react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
     GitBranch,
     Binary
 } from "lucide-react";
- 
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,7 +43,7 @@ import {
     CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
- 
+
 import {
     getStudentById,
     getStudentAdmissionAndName,
@@ -58,36 +58,36 @@ import {
 import { getVehicles, Vehicle } from "@/lib/services/vehicle";
 import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureView } from "@/lib/services/feeStructure";
 import { apiFetch } from "@/lib/api";
- 
+
 import { useSearchParams } from "next/navigation";
- 
+
 export type SchoolClass = {
     id: string;
     name: string;
     divisionCount: number;
 };
- 
+
 export type Division = {
     id: string;
     name: string;
 };
- 
+
 interface ApiSuccessWrapper<T> {
     success: boolean;
     message: string;
     data: T;
 }
- 
+
 export async function getClasses(): Promise<SchoolClass[]> {
     const payload = (await apiFetch("/api/classes")) as ApiSuccessWrapper<SchoolClass[]>;
     return payload?.data ?? [];
 }
- 
+
 export async function getDivisions(classId: string): Promise<Division[]> {
     const payload = (await apiFetch(`/api/divisions/class/${classId}`)) as ApiSuccessWrapper<Division[]>;
     return payload?.data ?? [];
 }
- 
+
 interface EditableFeeItem {
     id?: string;
     chargeTypeId: string;
@@ -97,7 +97,7 @@ interface EditableFeeItem {
     dueDay: number | "";
     description: string;
 }
- 
+
 const StepSection = ({ stepNumber, title, description, children }: any) => (
     <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
@@ -112,7 +112,7 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
         <div className="flex flex-col gap-6">{children}</div>
     </div>
 );
- 
+
 const InfoGrid = ({ children }: { children: React.ReactNode }) => (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-slate-200 dark:bg-slate-800 gap-[1px]">
@@ -120,33 +120,33 @@ const InfoGrid = ({ children }: { children: React.ReactNode }) => (
         </div>
     </div>
 );
- 
+
 const InfoItem = ({ label, value, className }: { label: string; value?: string | React.ReactNode; className?: string }) => (
     <div className={cn("p-4 flex flex-col space-y-1.5 bg-slate-50 dark:bg-slate-950/50 transition-colors hover:bg-white dark:hover:bg-slate-900", className)}>
         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</span>
         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{value || "-"}</span>
     </div>
 );
- 
+
 const fieldClass = `
   h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
 `;
- 
+
 export default function Page() {
     const router = useRouter();
     const searchParams = useSearchParams();
- 
+
     const enrollmentId = searchParams.get("id") ?? undefined;
     const isEditMode = !!enrollmentId;
- 
+
     const [studentsDropdown, setStudentsDropdown] = useState<StudentAdmissionAndName[]>([]);
     const [classesDropdown, setClassesDropdown] = useState<SchoolClass[]>([]);
     const [divisionsDropdown, setDivisionsDropdown] = useState<Division[]>([]);
     const [vehiclesDropdown, setVehiclesDropdown] = useState<Vehicle[]>([]);
     const [allFeeStructures, setAllFeeStructures] = useState<FeeStructureSummary[]>([]);
- 
+
     const [selectedStudentId, setSelectedStudentId] = useState<string>("");
     const [fullStudentData, setFullStudentData] = useState<Student | null>(null);
     const [selectedClassId, setSelectedClassId] = useState<string>("");
@@ -156,13 +156,13 @@ export default function Page() {
     const [selectedFeeStructureId, setSelectedFeeStructureId] = useState<string>("");
     const [fullFeeStructureData, setFullFeeStructureData] = useState<FeeStructureView | null>(null);
     const [editableFeeItems, setEditableFeeItems] = useState<EditableFeeItem[]>([]);
- 
+
     const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
     const [classPopoverOpen, setClassPopoverOpen] = useState(false);
     const [divisionPopoverOpen, setDivisionPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [feePopoverOpen, setFeePopoverOpen] = useState(false);
- 
+
     const [submitting, setSubmitting] = useState(false);
     const [loadingStudent, setLoadingStudent] = useState(false);
     const [loadingFeeStructure, setLoadingFeeStructure] = useState(false);
@@ -172,24 +172,24 @@ export default function Page() {
     const [loadingVehicleList, setLoadingVehicleList] = useState(false);
     const [loadingFeeList, setLoadingFeeList] = useState(false);
     const [loadingEnrollment, setLoadingEnrollment] = useState(false);
- 
+
     // When true, the fee-structure-details effect must NOT overwrite editableFeeItems.
     // Set to true at the very start of loadEnrollment() and cleared only after
     // editableFeeItems has been populated with the real saved charges.
     const isLoadingEnrollmentRef = useRef(false);
- 
+
     // Tracks which enrollmentId was last fully loaded so we never re-run
     // loadEnrollment for the same id (e.g. after a React strict-mode double
     // render) while also re-running correctly when the id changes.
     const lastLoadedEnrollmentIdRef = useRef<string | null>(null);
- 
+
     const filteredFeeStructures = useMemo(() => {
         if (!selectedClassId) return [];
         return allFeeStructures.filter(
             (structure) => (structure as any).classId === selectedClassId
         );
     }, [allFeeStructures, selectedClassId]);
- 
+
     const handleStudentPopoverChange = async (open: boolean) => {
         setStudentPopoverOpen(open);
         if (open && studentsDropdown.length === 0) {
@@ -208,7 +208,7 @@ export default function Page() {
             }
         }
     };
- 
+
     const handleClassPopoverChange = async (open: boolean) => {
         setClassPopoverOpen(open);
         if (open && classesDropdown.length === 0) {
@@ -223,7 +223,7 @@ export default function Page() {
             }
         }
     };
- 
+
     const handleDivisionPopoverChange = async (open: boolean) => {
         setDivisionPopoverOpen(open);
         if (open && selectedClassId) {
@@ -238,7 +238,7 @@ export default function Page() {
             }
         }
     };
- 
+
     const handleVehiclePopoverChange = async (open: boolean) => {
         setVehiclePopoverOpen(open);
         if (open && vehiclesDropdown.length === 0) {
@@ -253,7 +253,7 @@ export default function Page() {
             }
         }
     };
- 
+
     const handleFeePopoverChange = async (open: boolean) => {
         setFeePopoverOpen(open);
         if (open && allFeeStructures.length === 0) {
@@ -268,7 +268,7 @@ export default function Page() {
             }
         }
     };
- 
+
     const handleClassSelect = (classId: string) => {
         setSelectedClassId(classId);
         setSelectedDivisionId("");
@@ -276,7 +276,7 @@ export default function Page() {
         setSelectedFeeStructureId("");
         setEditableFeeItems([]);
     };
- 
+
     // ── Student detail fetch ──────────────────────────────────────────────────
     useEffect(() => {
         if (!selectedStudentId) {
@@ -296,11 +296,8 @@ export default function Page() {
         }
         fetchFullStudent();
     }, [selectedStudentId]);
- 
+
     // ── Fee structure detail fetch ────────────────────────────────────────────
-    // This effect fires whenever selectedFeeStructureId changes — including when
-    // loadEnrollment() sets it. The ref guard ensures we never overwrite the real
-    // saved charges with blank template defaults while loadEnrollment is in flight.
     useEffect(() => {
         if (!selectedFeeStructureId) {
             setFullFeeStructureData(null);
@@ -309,20 +306,27 @@ export default function Page() {
             }
             return;
         }
- 
+
+        // Skip populating fee items from template if enrollment is loading —
+        // loadEnrollment() will set them directly from saved charges.
+        if (isLoadingEnrollmentRef.current) {
+            // Still fetch the structure metadata (for display name etc.)
+            // but do NOT touch editableFeeItems.
+            viewFeeStructure(selectedFeeStructureId).then((response) => {
+                if (response.success && response.data) {
+                    setFullFeeStructureData(response.data);
+                }
+            }).catch(console.error);
+            return;   // ← early return before the async function that overwrites items
+        }
+
         async function fetchStructureDetails() {
             try {
                 setLoadingFeeStructure(true);
                 const response = await viewFeeStructure(selectedFeeStructureId);
                 if (response.success && response.data) {
                     setFullFeeStructureData(response.data);
- 
-                    // If loadEnrollment() is still running, it owns editableFeeItems.
-                    // Don't reset to blank template defaults.
-                    if (isLoadingEnrollmentRef.current) {
-                        return;
-                    }
- 
+
                     const itemsLayout: EditableFeeItem[] = response.data.items.map((item) => ({
                         chargeTypeId: item.chargeTypeId,
                         name: item.chargeTypeName,
@@ -339,27 +343,27 @@ export default function Page() {
                 setLoadingFeeStructure(false);
             }
         }
- 
+
         fetchStructureDetails();
     }, [selectedFeeStructureId]);
- 
+
     // ── Edit mode: load existing enrollment ───────────────────────────────────
     useEffect(() => {
         if (!isEditMode || !enrollmentId) return;
- 
+
         // Skip if we already loaded this exact enrollment (e.g. strict-mode double render).
         if (lastLoadedEnrollmentIdRef.current === enrollmentId) return;
- 
+
         const id = enrollmentId;
- 
+
         async function loadEnrollment() {
             try {
                 setLoadingEnrollment(true);
- 
+
                 // Set the guard BEFORE any state mutations so the fee-structure
                 // effect can never slip in and overwrite editableFeeItems.
                 isLoadingEnrollmentRef.current = true;
- 
+
                 // Reset all form state so stale values from a previous edit
                 // session never bleed into this one.
                 setSelectedStudentId("");
@@ -372,18 +376,18 @@ export default function Page() {
                 setSelectedFeeStructureId("");
                 setFullFeeStructureData(null);
                 setEditableFeeItems([]);
- 
+
                 const enrollment = await getEnrollmentById(id);
- 
+
                 setSelectedStudentId(enrollment.student.id);
- 
+
                 const classes = await getClasses();
                 setClassesDropdown(classes);
                 const selectedClass = classes.find(c => c.name === enrollment.classId);
                 if (selectedClass) {
                     setSelectedClassId(selectedClass.id);
                 }
- 
+
                 if (selectedClass) {
                     const divisions = await getDivisions(selectedClass.id);
                     setDivisionsDropdown(divisions);
@@ -392,23 +396,23 @@ export default function Page() {
                         setSelectedDivisionId(selectedDivision.id);
                     }
                 }
- 
+
                 const feeStructures = await getFeeStructures();
                 setAllFeeStructures(feeStructures);
                 const selectedFee = feeStructures.find(f => f.name === enrollment.feeStructureName);
                 if (selectedFee) {
                     setSelectedFeeStructureId(selectedFee.id);
                 }
- 
+
                 const vehicles = await getVehicles();
                 setVehiclesDropdown(vehicles);
                 const vehicle = vehicles.find(v => v.vehicleName === enrollment.vehicleName);
                 if (vehicle) {
                     setSelectedVehicle(vehicle);
                 }
- 
+
                 setRollNumber(enrollment.rollNumber ?? "");
- 
+
                 // Populate fee items with real saved charges — this must be the
                 // last write before clearing the guard so it always wins.
                 setEditableFeeItems(
@@ -422,7 +426,7 @@ export default function Page() {
                         description: charge.description ?? "",
                     }))
                 );
- 
+
                 // Mark this enrollment as fully loaded.
                 lastLoadedEnrollmentIdRef.current = id;
             } catch (error) {
@@ -433,10 +437,10 @@ export default function Page() {
                 isLoadingEnrollmentRef.current = false;
             }
         }
- 
+
         loadEnrollment();
     }, [isEditMode, enrollmentId]);
- 
+
     // ── Fee item change handlers ──────────────────────────────────────────────
     const handleItemAmountChange = (chargeTypeId: string, value: string) => {
         setEditableFeeItems((prev) =>
@@ -447,7 +451,7 @@ export default function Page() {
             )
         );
     };
- 
+
     const handleItemDueDateChange = (chargeTypeId: string, value: string) => {
         setEditableFeeItems((prev) =>
             prev.map((item) =>
@@ -457,7 +461,7 @@ export default function Page() {
             )
         );
     };
- 
+
     const handleItemDescriptionChange = (chargeTypeId: string, value: string) => {
         setEditableFeeItems((prev) =>
             prev.map((item) =>
@@ -467,27 +471,27 @@ export default function Page() {
             )
         );
     };
- 
+
     const handleRemoveItem = (chargeTypeId: string) => {
         setEditableFeeItems((prev) => prev.filter((item) => item.chargeTypeId !== chargeTypeId));
     };
- 
+
     const totalAmount = useMemo(() => {
         return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     }, [editableFeeItems]);
- 
+
     // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         if (!selectedStudentId || !selectedClassId || !selectedDivisionId) {
             alert("Ensure Student, Class, and Division targets are selected before submitting.");
             return;
         }
- 
+
         try {
             setSubmitting(true);
- 
+
             let result;
- 
+
             if (isEditMode) {
                 const enrollmentCharges = editableFeeItems.map((item) => ({
                     ...(item.id ? { id: item.id } : {}),
@@ -498,7 +502,7 @@ export default function Page() {
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
                 }));
- 
+
                 result = await updateStudentAdmission(enrollmentId!, {
                     classId: selectedClassId,
                     divisionId: selectedDivisionId,
@@ -507,7 +511,7 @@ export default function Page() {
                     vehicleId: selectedVehicle?.id || null,
                     enrollmentCharges,
                 });
- 
+
                 toast.success("Admission updated successfully");
             } else {
                 const chargeOverrides = editableFeeItems.map((item) => ({
@@ -518,7 +522,7 @@ export default function Page() {
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
                 }));
- 
+
                 result = await createStudentAdmission({
                     studentId: selectedStudentId,
                     classId: selectedClassId,
@@ -528,10 +532,10 @@ export default function Page() {
                     vehicleId: selectedVehicle?.id || null,
                     chargeOverrides,
                 });
- 
+
                 toast.success("Admission created successfully");
             }
- 
+
             if (result?.success) {
                 router.back();
             } else {
@@ -544,10 +548,10 @@ export default function Page() {
             setSubmitting(false);
         }
     };
- 
+
     return (
         <div className="w-full min-h-screen p-6 md:p-8 space-y-8 animate-in fade-in duration-300">
- 
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center space-x-4">
                     <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl h-10 w-10 shadow-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
@@ -560,7 +564,7 @@ export default function Page() {
                         </p>
                     </div>
                 </div>
- 
+
                 <div className="flex items-center gap-3">
                     <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         Discard
@@ -570,7 +574,7 @@ export default function Page() {
                     </Button>
                 </div>
             </div>
- 
+
             {loadingEnrollment ? (
                 <div className="flex items-center justify-center py-24 gap-3 text-slate-500">
                     <Loader2 className="h-6 w-6 animate-spin text-[#6D755F]" />
@@ -578,7 +582,7 @@ export default function Page() {
                 </div>
             ) : (
                 <div className="mx-auto max-w-5xl space-y-8 pb-12">
- 
+
                     {/* Step 1: Student Selection */}
                     <StepSection
                         stepNumber="1"
@@ -643,7 +647,7 @@ export default function Page() {
                                 </PopoverContent>
                             </Popover>
                         </div>
- 
+
                         {loadingStudent ? (
                             <div className="flex items-center justify-center p-6 text-slate-500 gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
@@ -685,7 +689,7 @@ export default function Page() {
                             </div>
                         )}
                     </StepSection>
- 
+
                     {/* Step 2: Class, Division, Roll Number */}
                     <StepSection
                         stepNumber="2"
@@ -745,7 +749,7 @@ export default function Page() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
- 
+
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <GitBranch className="h-3.5 w-3.5 text-[#6D755F]" /> Specific Section Division
@@ -799,7 +803,7 @@ export default function Page() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
- 
+
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <Binary className="h-3.5 w-3.5 text-[#6D755F]" /> Roll Number Designation
@@ -813,7 +817,7 @@ export default function Page() {
                             </div>
                         </div>
                     </StepSection>
- 
+
                     {/* Step 3: Transport */}
                     <StepSection
                         stepNumber="3"
@@ -871,7 +875,7 @@ export default function Page() {
                                 </PopoverContent>
                             </Popover>
                         </div>
- 
+
                         {selectedVehicle && (
                             <div className="mt-2 animate-in fade-in slide-in-from-top-4 duration-300">
                                 <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
@@ -886,7 +890,7 @@ export default function Page() {
                             </div>
                         )}
                     </StepSection>
- 
+
                     {/* Step 4: Fee Structure */}
                     <StepSection
                         stepNumber="4"
@@ -944,7 +948,7 @@ export default function Page() {
                                 </PopoverContent>
                             </Popover>
                         </div>
- 
+
                         {loadingFeeStructure ? (
                             <div className="flex items-center justify-center p-6 text-slate-500 gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
@@ -973,7 +977,7 @@ export default function Page() {
                                         <Trash2 className="h-4 w-4 mr-2" /> Unlink Template
                                     </Button>
                                 </div>
- 
+
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
@@ -1005,7 +1009,7 @@ export default function Page() {
                                                                 </span>
                                                             )}
                                                         </TableCell>
- 
+
                                                         <TableCell className="pt-4">
                                                             <div className="flex items-center h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 min-w-[110px] max-w-[130px]">
                                                                 <span className="text-slate-400 text-sm font-medium mr-1">₹</span>
@@ -1014,7 +1018,7 @@ export default function Page() {
                                                                 </span>
                                                             </div>
                                                         </TableCell>
- 
+
                                                         <TableCell className="pt-4">
                                                             <div className="relative min-w-[130px] max-w-[150px]">
                                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₹</span>
@@ -1030,7 +1034,7 @@ export default function Page() {
                                                                 />
                                                             </div>
                                                         </TableCell>
- 
+
                                                         <TableCell className="pt-4">
                                                             <div className="relative min-w-[100px] max-w-[120px]">
                                                                 <Input
@@ -1044,7 +1048,7 @@ export default function Page() {
                                                                 />
                                                             </div>
                                                         </TableCell>
- 
+
                                                         <TableCell className="pt-4">
                                                             <Input
                                                                 type="text"
@@ -1054,7 +1058,7 @@ export default function Page() {
                                                                 className="h-10 min-w-[180px] rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400"
                                                             />
                                                         </TableCell>
- 
+
                                                         <TableCell className="text-right pr-6 pt-4">
                                                             <Button
                                                                 variant="ghost"
@@ -1071,7 +1075,7 @@ export default function Page() {
                                         </TableBody>
                                     </Table>
                                 </div>
- 
+
                                 <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-[#6D755F] px-6 py-5">
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium text-white/90">Gross Enrollment Ledger Total</span>
@@ -1084,7 +1088,7 @@ export default function Page() {
                             </div>
                         )}
                     </StepSection>
- 
+
                 </div>
             )}
         </div>

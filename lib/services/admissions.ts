@@ -74,6 +74,7 @@ interface RawEnrollmentCharge {
   id: string;
   enrollmentId: string;
   chargeTypeId: string;
+  chargeType?: { name: string };
   description: string | null;
   originalAmount: string;
   discountAmount: string;
@@ -155,7 +156,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
     return {
       id: c.id,
       chargeTypeId: c.chargeTypeId,
-      chargeType: c.description || "Charge",
+      chargeType: c.chargeType?.name || "Charge",
       description: c.description,
       originalAmount,
       discountAmount,
