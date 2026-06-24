@@ -113,12 +113,23 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
     </div>
 );
 
-const InfoGrid = ({ children }: { children: React.ReactNode }) => (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-slate-200 dark:bg-slate-800 gap-[1px]">
-            {children}
-        </div>
+const InfoGrid = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <div
+      className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-slate-200 dark:bg-slate-800 gap-[1px]",
+        className
+      )}
+    >
+      {children}
     </div>
+  </div>
 );
 
 const InfoItem = ({ label, value, className }: { label: string; value?: string | React.ReactNode; className?: string }) => (
@@ -881,8 +892,8 @@ export default function Page() {
                                 <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                                     <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                                 </h3>
-                                <InfoGrid>
-                                    <InfoItem label="Vehicle Unique Reference" value={selectedVehicle.id.toUpperCase()} />
+                                <InfoGrid className="md:grid-cols-3 lg:grid-cols-3">
+                                    
                                     <InfoItem label="Registration Plate" value={selectedVehicle.vehicleNumber} />
                                     <InfoItem label="Designated Driver" value={selectedVehicle.driverName} />
                                     <InfoItem label="Vehicle Name" value={selectedVehicle.vehicleName} />
