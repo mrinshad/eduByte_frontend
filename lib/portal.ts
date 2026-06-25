@@ -41,6 +41,7 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "discount-types", label: "Discount Types", area: "admin", purpose: "Define discounts", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fine-types", label: "Fine Types", area: "admin", purpose: "Fine type configuration", roles: ["Admin"], group: "Fee Configuration" },
+  { slug: "payment-account", label: "Account Type", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", roles: ["Admin"], group: "Transport Management" },
   { slug: "student-vehicle-assignments", label: "Student Vehicle Assignments", area: "admin", purpose: "Assign vehicles to students", roles: ["Admin"], group: "Transport Management" },

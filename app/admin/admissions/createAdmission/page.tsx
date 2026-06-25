@@ -893,7 +893,6 @@ export default function Page() {
                                     <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                                 </h3>
                                 <InfoGrid className="md:grid-cols-3 lg:grid-cols-3">
-                                    
                                     <InfoItem label="Registration Plate" value={selectedVehicle.vehicleNumber} />
                                     <InfoItem label="Designated Driver" value={selectedVehicle.driverName} />
                                     <InfoItem label="Vehicle Name" value={selectedVehicle.vehicleName} />
