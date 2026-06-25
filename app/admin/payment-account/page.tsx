@@ -1,12 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2, Eye } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
     ACCOUNT_TYPES,
     type AccountType,
-    type AccountDetail,
 } from "@/lib/services/accounts"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -33,44 +32,39 @@ import {
     getAllAccounts,
     createAccount,
     updateAccount,
-    getAccountById,
     type Account,
     type AccountInput,
 } from "@/lib/services/accounts"
 
-const tableHeaders = ["Id", "Account Name", "Account Type", "Actions"]
+const tableHeaders = [
+    "Id",
+    "Account Name",
+    "Account Type",
+    "Description",
+    "Status",
+    "Actions",
+]
 
 const EMPTY_FORM: AccountInput = {
     name: "",
     type: "Asset",
     description: "",
-    active: true,
+    isActive: true,
 }
 
 export default function Page() {
     const router = useRouter()
 
-    // ── Data state ──────────────────────────────────────────────────────────────
     const [accounts, setAccounts] = useState<Account[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    // ── Create / Edit dialog ────────────────────────────────────────────────────
     const [formOpen, setFormOpen] = useState(false)
-    const [isFormLoading, setIsFormLoading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [formData, setFormData] = useState<AccountInput>({ ...EMPTY_FORM })
 
-    // ── View dialog ─────────────────────────────────────────────────────────────
-    const [viewOpen, setViewOpen] = useState(false)
-    const [viewData, setViewData] = useState<AccountDetail | null>(null)
-    const [isViewLoading, setIsViewLoading] = useState(false)
-
-    // ── Load accounts ─────────────────────────────────────────────────────────
-    useEffect(() => {
-        loadAccounts()
-    }, [])
+    useEffect(() => { loadAccounts() }, [])
 
     async function loadAccounts() {
         try {
@@ -86,7 +80,6 @@ export default function Page() {
         }
     }
 
-    // ── Form helpers ──────────────────────────────────────────────────────────
     function resetForm() {
         setFormData({ ...EMPTY_FORM })
         setEditingId(null)
@@ -97,30 +90,17 @@ export default function Page() {
         setFormOpen(true)
     }
 
-    // Fetch full detail so description & active are always populated
-    async function openEdit(id: string) {
-        resetForm()
-        setEditingId(id)
+    // Pre-fill directly from the list row — no extra API call needed
+    // since GET /api/accounts already returns description & isActive
+    function openEdit(account: Account) {
+        setEditingId(account.id)
+        setFormData({
+            name: account.name,
+            type: account.type,
+            description: account.description ?? "",
+            isActive: account.isActive ?? true,
+        })
         setFormOpen(true)
-        try {
-            setIsFormLoading(true)
-            const detail = await getAccountById(id)
-            if (detail) {
-                setFormData({
-                    name: detail.name,
-                    type: detail.type,
-                    description: detail.description ?? "",
-                    active: detail.isActive ?? true,
-                })
-            }
-        } catch (err) {
-            console.error(err)
-            toast.error("Failed to load account details")
-            setFormOpen(false)
-            resetForm()
-        } finally {
-            setIsFormLoading(false)
-        }
     }
 
     async function handleSave() {
@@ -148,24 +128,6 @@ export default function Page() {
         }
     }
 
-    // ── View helpers ──────────────────────────────────────────────────────────
-    async function openView(id: string) {
-        setViewData(null)
-        setViewOpen(true)
-        try {
-            setIsViewLoading(true)
-            const data = await getAccountById(id)
-            setViewData(data)
-        } catch (err) {
-            console.error(err)
-            toast.error("Failed to load account details")
-            setViewOpen(false)
-        } finally {
-            setIsViewLoading(false)
-        }
-    }
-
-    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <section className="w-full px-6 py-4 space-y-6">
 
@@ -201,14 +163,15 @@ export default function Page() {
             {/* Table */}
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <Table className="table-fixed w-full">
+                    <Table className="w-full">
                         <TableHeader>
                             <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
                                 {tableHeaders.map((header) => (
                                     <TableHead
                                         key={header}
-                                        className={`px-8 py-4 text-sm font-semibold tracking-wide text-[oklch(0.98_0.01_95)] whitespace-nowrap ${header === "Actions" ? "text-right" : ""
-                                            } ${header === "Id" ? "w-20" : ""}`}
+                                        className={`px-4 h-10 text-xs font-semibold uppercase tracking-wider text-[oklch(0.98_0.01_95)] whitespace-nowrap ${
+                                            header === "Actions" ? "text-right w-24" : ""
+                                        } ${header === "Id" ? "w-12" : ""}`}
                                     >
                                         {header}
                                     </TableHead>
@@ -219,25 +182,25 @@ export default function Page() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-40 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                                            <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
-                                            <p className="text-sm">Loading accounts...</p>
+                                    <TableCell colSpan={6} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
+                                            <Loader2 className="h-6 w-6 animate-spin text-[oklch(0.46_0.04_125)]" />
+                                            <p className="text-xs">Loading accounts...</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-40 text-center text-red-500">
-                                        <p className="text-sm font-medium">{error}</p>
+                                    <TableCell colSpan={6} className="h-32 text-center">
+                                        <p className="text-xs font-medium text-red-500">{error}</p>
                                     </TableCell>
                                 </TableRow>
                             ) : accounts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-40 text-center text-slate-500">
-                                        <div className="flex flex-col items-center justify-center gap-2">
-                                            <Building2 className="h-8 w-8 text-slate-300" />
-                                            <p className="text-sm">No accounts found. Create one to get started.</p>
+                                    <TableCell colSpan={6} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-1.5">
+                                            <Building2 className="h-6 w-6 text-slate-300" />
+                                            <p className="text-xs text-slate-400">No accounts found. Create one to get started.</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -245,50 +208,54 @@ export default function Page() {
                                 accounts.map((account, index) => (
                                     <TableRow
                                         key={account.id}
-                                        className="h-16 border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/40"
+                                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
                                     >
-                                        <TableCell className="px-8 py-4 text-sm font-medium text-slate-500">
+                                        <TableCell className="px-4 py-2.5 w-12 text-xs text-slate-400 dark:text-slate-500 tabular-nums">
                                             {index + 1}
                                         </TableCell>
-                                        <TableCell className="px-8 py-4 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+
+                                        <TableCell className="px-4 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100">
                                             {account.name}
                                         </TableCell>
 
-                                        <TableCell className="px-8 py-4">
-                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        <TableCell className="px-4 py-2.5">
+                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
                                                 {account.type}
                                             </span>
                                         </TableCell>
 
-                                        <TableCell className="px-8 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
-                                                    title="Edit Account"
-                                                    onClick={() => openEdit(account.id)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
+                                        <TableCell className="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
+                                            {account.description || "—"}
+                                        </TableCell>
 
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
-                                                    title="View Account"
-                                                    onClick={() => openView(account.id)}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
+                                        <TableCell className="px-4 py-2.5">
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+                                                account.isActive
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
+                                                    : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
+                                            }`}>
+                                                {account.isActive ? "Active" : "Inactive"}
+                                            </span>
+                                        </TableCell>
 
+                                        <TableCell className="px-4 py-2.5 w-24 text-right">
+                                            <div className="flex items-center justify-end gap-0.5">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                                    title="Delete Account"
+                                                    className="h-7 w-7 rounded-md text-slate-400 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10"
+                                                    title="Edit"
+                                                    onClick={() => openEdit(account)}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -318,179 +285,85 @@ export default function Page() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* Show spinner while fetching full detail for edit */}
-                    {isFormLoading ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500">
-                            <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
-                            <p className="text-sm">Loading account details...</p>
+                    <div className="space-y-4 py-2">
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium">Account Name</label>
+                            <Input
+                                placeholder="Enter account name"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                            />
                         </div>
-                    ) : (
-                        <div className="space-y-4 py-2">
 
-                            {/* Account Name */}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Account Name</label>
-                                <Input
-                                    placeholder="Enter account name"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({ ...prev, name: e.target.value }))
-                                    }
-                                />
-                            </div>
-
-                            {/* Account Type */}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Account Type</label>
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            type: e.target.value as AccountType,
-                                        }))
-                                    }
-                                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                >
-                                    {ACCOUNT_TYPES.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Description */}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Description</label>
-                                <Input
-                                    placeholder="Enter description"
-                                    value={formData.description}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({ ...prev, description: e.target.value }))
-                                    }
-                                />
-                            </div>
-
-                            {/* Active */}
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    checked={formData.active}
-                                    onCheckedChange={(checked) =>
-                                        setFormData((prev) => ({ ...prev, active: checked === true }))
-                                    }
-                                />
-                                <label className="text-sm font-medium">Active</label>
-                            </div>
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium">Account Type</label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        type: e.target.value as AccountType,
+                                    }))
+                                }
+                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                                {/* Include the current type even if it's not in the preset list */}
+                                {[
+                                    ...ACCOUNT_TYPES,
+                                    ...(formData.type && !ACCOUNT_TYPES.includes(formData.type as typeof ACCOUNT_TYPES[number])
+                                        ? [formData.type]
+                                        : []),
+                                ].map((type) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
                         </div>
-                    )}
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium">Description</label>
+                            <Input
+                                placeholder="Enter description"
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                                }
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                checked={formData.isActive}
+                                onCheckedChange={(checked) =>
+                                    // ✅ fixed: was updating `active`, now correctly updates `isActive`
+                                    setFormData((prev) => ({ ...prev, isActive: checked === true }))
+                                }
+                            />
+                            <label className="text-sm font-medium">Active</label>
+                        </div>
+                    </div>
 
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={() => {
-                                resetForm()
-                                setFormOpen(false)
-                            }}
-                            disabled={isSaving || isFormLoading}
+                            onClick={() => { resetForm(); setFormOpen(false) }}
+                            disabled={isSaving}
                         >
                             Cancel
                         </Button>
                         <Button
                             className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90"
                             onClick={handleSave}
-                            disabled={isSaving || isFormLoading}
+                            disabled={isSaving}
                         >
                             {isSaving ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     {editingId ? "Updating..." : "Saving..."}
                                 </>
-                            ) : editingId ? (
-                                "Update Account"
-                            ) : (
-                                "Save Account"
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* ── View Dialog ── */}
-            <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-                <DialogContent className="sm:max-w-[460px]">
-                    <DialogHeader>
-                        <DialogTitle>Account Details</DialogTitle>
-                        <DialogDescription>Full details for this account.</DialogDescription>
-                    </DialogHeader>
-
-                    {isViewLoading ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500">
-                            <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
-                            <p className="text-sm">Loading details...</p>
-                        </div>
-                    ) : viewData ? (
-                        <div className="space-y-0 divide-y divide-slate-100 dark:divide-slate-800">
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Account Name</span>
-                                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{viewData.name}</span>
-                            </div>
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Account Type</span>
-                                <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400">
-                                    {viewData.type}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Description</span>
-                                <span className="text-sm text-slate-700 dark:text-slate-300 text-right max-w-[60%]">
-                                    {viewData.description || "—"}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Status</span>
-                                <span
-                                    className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium border ${viewData.isActive
-                                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400"
-                                        : "bg-slate-100 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
-                                        }`}
-                                >
-                                    {viewData.isActive ? "Active" : "Inactive"}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Created At</span>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">
-                                    {new Date(viewData.createdAt).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                    })}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-3">
-                                <span className="text-sm text-slate-500 dark:text-slate-400">Updated At</span>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">
-                                    {new Date(viewData.updatedAt).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                    })}
-                                </span>
-                            </div>
-
-                        </div>
-                    ) : null}
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setViewOpen(false)}>
-                            Close
+                            ) : editingId ? "Update Account" : "Save Account"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

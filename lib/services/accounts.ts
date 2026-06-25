@@ -14,7 +14,7 @@ export interface AccountInput {
   name: string
   type: AccountType
   description: string
-  active: boolean
+  isActive: boolean
 }
 
 // List item — returned by GET /api/accounts
@@ -23,7 +23,7 @@ export interface Account {
   name: string
   type: AccountType
   description: string
-  active: boolean
+  isActive: boolean
 }
 
 // Detail item — returned by GET /api/accounts/:id
