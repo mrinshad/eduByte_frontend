@@ -344,11 +344,11 @@ export default function Page() {
           </div>
         </div>
         <Button
-          className="shrink-0 gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
+          className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm"
           size="sm"
           onClick={() => setFineTypesOpen(true)}
         >
-          <Plus className="h-3.5 w-3.5 text-foreground" />
+          <Plus className="h-3.5 w-3.5 text-white dark:text-slate-900" />
           Fine Types
         </Button>
       </div>
@@ -479,7 +479,7 @@ export default function Page() {
             className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-8 px-3 rounded-lg text-xs"
             onClick={() => setNewFineOpen(true)}
           >
-            <Plus className="h-3.5 w-3.5 text-[oklch(0.98_0.01_95)]" />
+            <Plus className="h-3.5 w-3.5 text-white dark:text-slate-900" />
             New Fine
           </Button>
         </div>
@@ -669,7 +669,7 @@ export default function Page() {
               </div>
 
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg" 
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
@@ -683,7 +683,7 @@ export default function Page() {
               </span>
 
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg" 
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg"
                 size="sm"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
