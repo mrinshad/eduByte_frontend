@@ -316,8 +316,8 @@ export default function Page() {
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6 max-w-7xl mx-auto">
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex justify-between">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <Button
             className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
             size="icon"
@@ -325,9 +325,10 @@ export default function Page() {
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="whitespace-nowrap text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 Student Fines
               </h1>
 
@@ -338,22 +339,43 @@ export default function Page() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setFineTypesOpen(true)}
-                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
                     >
-                      <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#556043]" />
+                      <Settings2 className="h-5 w-5 text-[#556043]" />
                     </Button>
                   </TooltipTrigger>
 
-                  <TooltipContent side="top" sideOffset={8}>
+                  <TooltipContent side="top">
                     Fine Types
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
 
-            <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 whitespace-nowrap text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               Manage and view all student fines.
             </p>
+          </div>
+        </div>
+        <div className="flex w-full justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+              <Input
+                placeholder="Search by name, ID, or phone..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
+            <Button
+              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs justify-center w-full sm:w-auto"
+              onClick={() => setNewFineOpen(true)}
+            >
+              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
+              New Fine
+            </Button>
           </div>
         </div>
 
@@ -466,27 +488,7 @@ export default function Page() {
       {/* Controls & Tables Container */}
       <div className="space-y-4">
         {/* Table Filter Panel Actions */}
-        <div className="flex w-full justify-end">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-              <Input
-                placeholder="Search by name, ID, or phone..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-            </div>
 
-            <Button
-              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs justify-center w-full sm:w-auto"
-              onClick={() => setNewFineOpen(true)}
-            >
-              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
-              New Fine
-            </Button>
-          </div>
-        </div>
 
         {/* Global Responsive Responsive Table Wrapper */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
