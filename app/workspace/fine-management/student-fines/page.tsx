@@ -317,7 +317,7 @@ export default function Page() {
     <section className="w-full px-4 sm:px-6 py-4 space-y-6 max-w-7xl mx-auto">
 
       {/* Header Panel — title/description on left, search + button on right */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
@@ -355,9 +355,9 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Search + Add Button — right side, same line as title */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative hidden sm:block w-56 lg:w-80 shadow-sm rounded-xl">
+        {/* Search + Add Button — stacked on mobile, inline on desktop */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full sm:w-auto">
+          <div className="relative w-full sm:w-56 lg:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search by name, ID, or phone..."
@@ -367,7 +367,7 @@ export default function Page() {
             />
           </div>
           <Button
-            className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs"
+            className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs w-full sm:w-auto"
             onClick={() => setNewFineOpen(true)}
           >
             <Plus className="h-4 w-4 text-white dark:text-slate-900" />
