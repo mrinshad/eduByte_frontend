@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +21,7 @@ import {
   Loader2,
   Eye,
   CreditCard,
+  Settings2
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -168,12 +175,9 @@ export default function Page() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(5)
 
-  // Filled in only if the API ever returns pagination meta. Until then we
-  // paginate client-side off of `fines.length`.
   const [serverTotal, setServerTotal] = useState<number | null>(null)
   const [serverTotalPages, setServerTotalPages] = useState<number | null>(null)
 
-  // Debounce search input -> search term, and reset to page 1 on new search
   useEffect(() => {
     const handle = setTimeout(() => {
       setSearch(searchInput.trim())
@@ -187,7 +191,6 @@ export default function Page() {
     setError(null)
     try {
       const result = await getStudentFines({ search: search || undefined, page, limit })
-      console.log(result)
       setFines(result.data)
       if (result.meta) {
         setServerTotal(result.meta.total)
@@ -209,8 +212,6 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, page, limit])
 
-  // If backend already paginates (meta present), `fines` is just the current
-  // page. Otherwise treat `fines` as the full filtered list and slice here.
   const usingServerPagination = serverTotal !== null && serverTotalPages !== null
 
   const total = usingServerPagination ? serverTotal! : fines.length
@@ -227,7 +228,6 @@ export default function Page() {
     ? Math.min(page * limit, total)
     : Math.min((page - 1) * limit + visibleFines.length, total)
 
-  // Clamp page if it goes out of range (e.g. after search shrinks results)
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages)
@@ -237,10 +237,7 @@ export default function Page() {
   // ---------------------------------------------------------------------
   // New Fine dialog (student picker, fine type, amount, reason)
   // ---------------------------------------------------------------------
-  // Edit
-
   const [editingFineId, setEditingFineId] = useState<string | null>(null)
-  // Create
   const [newFineOpen, setNewFineOpen] = useState(false)
   const [students, setStudents] = useState<StudentAdmissionAndName[]>([])
   const [studentSearch, setStudentSearch] = useState("")
@@ -254,21 +251,18 @@ export default function Page() {
 
   const resetFineForm = () => {
     setEditingFineId(null)
-
     setFineForm({
       studentId: "",
       fineTypeId: "",
       amount: "",
       reason: "",
     })
-
     setStudentSearch("")
   }
 
   async function loadStudents() {
     try {
       const data = await getStudentAdmissionAndName()
-      console.log("Students API", data)
       setStudents(data)
     } catch (error) {
       toast.error("Failed to load students")
@@ -302,13 +296,10 @@ export default function Page() {
       resetFineForm()
       setEditingFineId(null)
       setNewFineOpen(false)
-
       await loadFines()
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to save student fine"
+        error instanceof Error ? error.message : "Failed to save student fine"
       )
     }
   }
@@ -323,53 +314,70 @@ export default function Page() {
   // Render
   // ---------------------------------------------------------------------
   return (
-    <section className="w-full px-6 py-4 space-y-6">
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+    <section className="w-full px-4 sm:px-6 py-4 space-y-6 max-w-7xl mx-auto">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
-            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
             size="icon"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Student Fines
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Student Fines
+              </h1>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="lg"
+                      onClick={() => setFineTypesOpen(true)}
+                      // Kept h-auto so the button container expands naturally with the icon
+                      className="h-auto p-2 bg-transparent text-[#556043] dark:text-slate-200 transition-all duration-200 self-start sm:self-auto w-full sm:w-auto justify-center hover:bg-transparent"
+                    >
+                      {/* Increased to h-14/w-14 (56px) on mobile and h-16/w-16 (64px) on tablet+ */}
+                      <Settings2 className="h-14 w-14 sm:h-16 sm:w-16" />
+                    </Button>
+                  </TooltipTrigger>
+
+                  <TooltipContent side="top"
+                    
+                    align="center">
+                    <p>Fine Types</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               Manage and view all student fines.
             </p>
           </div>
         </div>
-        <Button
-          className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm"
-          size="sm"
-          onClick={() => setFineTypesOpen(true)}
-        >
-          <Plus className="h-3.5 w-3.5 text-white dark:text-slate-900" />
-          Fine Types
-        </Button>
+
       </div>
 
-      {/* Fine Types Dialog */}
+      {/* Fine Types Management Dialog */}
       <Dialog open={fineTypesOpen} onOpenChange={setFineTypesOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50">
+        <DialogContent showCloseButton={false} className="w-[92vw] sm:max-w-2xl text-slate-950 dark:text-slate-50 rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <DialogTitle className="text-xl font-semibold text-white">Fine Types</DialogTitle>
-                <DialogDescription>View and manage all fine types.</DialogDescription>
+                <DialogTitle className="text-lg sm:text-xl font-semibold text-white">Fine Types</DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm">View and manage all fine types.</DialogDescription>
               </div>
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
+              <Button size="sm" onClick={() => setCreateOpen(true)} className="h-9">
+                <Plus className="h-4 w-4 mr-1" />
                 Add
               </Button>
             </div>
           </DialogHeader>
 
-          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 py-2 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pr-1">
             {loading && (
               <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 Loading...
@@ -387,40 +395,40 @@ export default function Page() {
                 <div
                   key={fineType.id}
                   className={cn(
-                    "flex items-center justify-between rounded-2xl border p-2 transition-colors",
+                    "flex items-center justify-between rounded-2xl border p-3 transition-colors gap-2",
                     "border-black/5 bg-white dark:border-white/10 dark:bg-white/5"
                   )}
                 >
-                  <h3 className="font-semibold text-slate-950 dark:text-slate-100">
+                  <h3 className="font-semibold text-sm sm:text-base text-slate-950 dark:text-slate-100 truncate">
                     {fineType.name}
                   </h3>
 
-                  <Button className="text-red" size="icon-sm" onClick={() => openEdit(fineType)}>
+                  <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFineTypesOpen(false)} className="text-white">
+          <DialogFooter className="mt-4 flex-row justify-end gap-2">
+            <Button variant="outline" onClick={() => setFineTypesOpen(false)} className="text-white w-full sm:w-auto">
               Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create / Edit Fine Type Dialog */}
+      {/* Create / Edit Fine Type Inline Form Dialog */}
       <Dialog
         open={createOpen}
         onOpenChange={(next) => (next ? setCreateOpen(next) : resetAndCloseCreate())}
       >
-        <DialogContent className="sm:max-w-lg text-slate-950 dark:text-slate-50" showCloseButton={false}>
+        <DialogContent className="w-[90vw] sm:max-w-lg text-slate-950 dark:text-slate-50 rounded-2xl p-4 sm:p-6" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-white">
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-white">
               {editingFineType ? "Edit Fine Type" : "Create Fine Type"}
             </DialogTitle>
-            <DialogDescription>Create a new fine type, or add several at once.</DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">Create a new fine type, or add several at once.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2">
@@ -436,78 +444,77 @@ export default function Page() {
                     value={name}
                     onChange={(e) => updateNameAt(index, e.target.value)}
                     placeholder="e.g. Library Fine"
-                    className="flex-1"
+                    className="flex-1 rounded-xl"
                   />
                 </div>
               </div>
             ))}
           </div>
 
-          <DialogFooter>
-            <Button className="text-white" variant="outline" onClick={resetAndCloseCreate}>
-              <X className="h-4 w-4" />
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button className="text-white w-full sm:w-auto" variant="outline" onClick={resetAndCloseCreate}>
+              <X className="h-4 w-4 mr-1.5" />
               Cancel
             </Button>
-            <Button onClick={() => void handleCreate()} disabled={submitting}>
+            <Button onClick={() => void handleCreate()} disabled={submitting} className="w-full sm:w-auto">
               {submitting
-                ? editingFineType
-                  ? "Updating..."
-                  : "Creating..."
-                : editingFineType
-                  ? "Update"
-                  : "Create"}
+                ? editingFineType ? "Updating..." : "Creating..."
+                : editingFineType ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Student Fines table */}
-      <div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end mb-5">
-          {/* Search Bar */}
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search by name, ID, or phone..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-          </div>
+      {/* Controls & Tables Container */}
+      <div className="space-y-4">
+        {/* Table Filter Panel Actions */}
+        <div className="flex w-full justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+              <Input
+                placeholder="Search by name, ID, or phone..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
 
-          <Button
-            className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-8 px-3 rounded-lg text-xs"
-            onClick={() => setNewFineOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5 text-white dark:text-slate-900" />
-            New Fine
-          </Button>
+            <Button
+              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs justify-center w-full sm:w-auto"
+              onClick={() => setNewFineOpen(true)}
+            >
+              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
+              New Fine
+            </Button>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden ">
-          <div className="overflow-x-auto">
-            <Table className="table-fixed w-full">
+        {/* Global Responsive Responsive Table Wrapper */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+            <Table className="w-full min-w-[800px]">
               <TableHeader>
                 <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                  <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-[15%]">
                     Admission No
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[20%]">
                     Name
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[15%]">
                     Fine
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
                     Amount
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
-                    PaidAmount
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
+                    Paid Amount
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[11%]">
                     Status
                   </TableHead>
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center">
+                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center w-[15%]">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -541,25 +548,25 @@ export default function Page() {
                       key={row.id}
                       className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                     >
-                      <TableCell className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {row.admissionNumber}
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[180px] truncate">
                         {row.student}
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
                         {row.fine}
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {row.amount}
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {row.paidAmount}
                       </TableCell>
-                      <TableCell className="px-6 py-4">
+                      <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <span
                           className={cn(
-                            "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
                             row.status === "PAID"
                               ? "bg-green-100 text-green-700 border border-green-200"
                               : row.status === "PARTIAL"
@@ -572,8 +579,8 @@ export default function Page() {
                           {row.status}
                         </span>
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-0.5">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -596,7 +603,6 @@ export default function Page() {
                                 fineTypeId: row.fineId ?? "",
                                 amount: row.amount ?? "",
                                 reason: row.reason ?? "",
-
                               })
                               setNewFineOpen(true)
                             }}
@@ -632,9 +638,9 @@ export default function Page() {
             </Table>
           </div>
 
-          {/* Pagination footer — "Showing X to Y of Z entries" */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 px-6 py-3 dark:border-slate-800/50">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+          {/* Fluid Breakout Responsive Footer Panel */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-t border-slate-200 px-4 sm:px-6 py-4 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20">
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center lg:text-left order-2 lg:order-1">
               {total === 0 ? (
                 "No entries"
               ) : (
@@ -646,9 +652,9 @@ export default function Page() {
               )}
             </p>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500 dark:text-slate-400">Rows per page:</span>
+            <div className="flex flex-col sm:flex-row items-center gap-4 order-1 lg:order-2 w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-2 justify-center w-full sm:w-auto">
+                <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">Rows per page:</span>
                 <Select
                   value={String(limit)}
                   onValueChange={(value) => {
@@ -656,7 +662,7 @@ export default function Page() {
                     setPage(1)
                   }}
                 >
-                  <SelectTrigger className="h-8 w-[70px] rounded-lg">
+                  <SelectTrigger className="h-8 w-[70px] rounded-lg bg-white dark:bg-slate-950">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -668,57 +674,58 @@ export default function Page() {
                 </Select>
               </div>
 
-              <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Prev
-              </Button>
+              <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
+                <Button
+                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Prev
+                </Button>
 
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                Page {page}
-              </span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap px-2">
+                  Page {page} of {totalPages}
+                </span>
 
-              <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <Button
+                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* New Fine Dialog */}
+      {/* New / Edit Fine Primary Form Dialog */}
       <Dialog
         open={newFineOpen}
         onOpenChange={(value) => {
           setNewFineOpen(value)
-
           if (!value) {
             resetFineForm()
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[92vw] sm:max-w-[500px] rounded-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {editingFineId ? "Edit Student Fine" : "Create Student Fine"}
             </DialogTitle>
-            <DialogDescription>Create a fine and assign it to a student.</DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">Create a fine and assign it to a student.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Student Dropdown */}
-            <div>
-              <label className="text-sm font-medium">Student</label>
+          <div className="space-y-4 py-3">
+            {/* Student Dropdown Container */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
               <Select
                 value={fineForm.studentId}
                 onValueChange={(value) =>
@@ -728,31 +735,36 @@ export default function Page() {
                   }))
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select Student" />
                 </SelectTrigger>
 
-                <SelectContent>
-                  <div className="p-2">
+                <SelectContent className="max-h-[300px]">
+                  <div className="p-2 sticky top-0 bg-background z-10">
                     <Input
                       placeholder="Search Student..."
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
+                      className="rounded-lg h-9"
                     />
                   </div>
 
-                  {filteredStudents.map((student) => (
-                    <SelectItem key={student.id} value={student.enrollmentId}>
-                      {student.admissionNumber} - {student.studentName}
-                    </SelectItem>
-                  ))}
+                  {filteredStudents.length === 0 ? (
+                    <p className="p-4 text-center text-xs text-muted-foreground">No students found</p>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <SelectItem key={student.id} value={student.enrollmentId}>
+                        {student.admissionNumber} - {student.studentName}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Fine Type Dropdown */}
-            <div>
-              <label className="text-sm font-medium">Fine Type</label>
+            {/* Fine Type Dropdown Container */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Fine Type</label>
               <Select
                 value={fineForm.fineTypeId}
                 onValueChange={(value) =>
@@ -762,7 +774,7 @@ export default function Page() {
                   }))
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select Fine Type" />
                 </SelectTrigger>
 
@@ -776,12 +788,12 @@ export default function Page() {
               </Select>
             </div>
 
-            {/* Amount */}
-            <div>
-              <label className="text-sm font-medium">Amount</label>
+            {/* Amount Field */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Amount</label>
               <Input
                 type="number"
-                className="appearance-none"
+                className="appearance-none rounded-xl"
                 onWheel={(e) => e.currentTarget.blur()}
                 placeholder="Enter Amount"
                 value={fineForm.amount}
@@ -794,9 +806,9 @@ export default function Page() {
               />
             </div>
 
-            {/* Reason */}
-            <div>
-              <label className="text-sm font-medium">Reason</label>
+            {/* Reason Field */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Reason</label>
               <Input
                 placeholder="Enter Reason"
                 value={fineForm.reason}
@@ -806,13 +818,15 @@ export default function Page() {
                     reason: e.target.value,
                   }))
                 }
+                className="rounded-xl"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
+              className="w-full sm:w-auto rounded-xl"
               onClick={() => {
                 resetFineForm()
                 setNewFineOpen(false)
@@ -821,7 +835,7 @@ export default function Page() {
               Cancel
             </Button>
 
-            <Button onClick={handleSaveFine}>
+            <Button onClick={handleSaveFine} className="w-full sm:w-auto rounded-xl">
               {editingFineId ? "Update Fine" : "Create Fine"}
             </Button>
           </DialogFooter>
