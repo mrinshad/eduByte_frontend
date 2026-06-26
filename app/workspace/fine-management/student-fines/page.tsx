@@ -338,9 +338,9 @@ export default function Page() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setFineTypesOpen(true)}
-                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
-                      <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#556043]" />
+                      <Settings2 className="size-6 sm:size-6 text-[#556043]" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="top" sideOffset={8}>
