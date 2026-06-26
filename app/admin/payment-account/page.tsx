@@ -152,7 +152,7 @@ export default function Page() {
                 </div>
 
                 <Button
-                    className="shrink-0 gap-2 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-semibold tracking-tight h-9 px-4 rounded-xl"
+                    className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                     onClick={openCreate}
                 >
                     <Plus className="h-4 w-4" />
@@ -165,11 +165,11 @@ export default function Page() {
                 <div className="overflow-x-auto">
                     <Table className="w-full">
                         <TableHeader>
-                            <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
+                            <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
                                 {tableHeaders.map((header) => (
                                     <TableHead
                                         key={header}
-                                        className={`px-4 h-10 text-xs font-semibold uppercase tracking-wider text-[oklch(0.98_0.01_95)] whitespace-nowrap ${
+                                        className={`px-4 h-10 text-xs font-semibold uppercase tracking-wider text-white dark:text-foreground whitespace-nowrap ${
                                             header === "Actions" ? "text-right w-24" : ""
                                         } ${header === "Id" ? "w-12" : ""}`}
                                     >
@@ -184,7 +184,7 @@ export default function Page() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
-                                            <Loader2 className="h-6 w-6 animate-spin text-[oklch(0.46_0.04_125)]" />
+                                            <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
                                             <p className="text-xs">Loading accounts...</p>
                                         </div>
                                     </TableCell>
@@ -243,7 +243,7 @@ export default function Page() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7 rounded-md text-slate-400 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10"
+                                                    className="h-7 w-7 rounded-md text-slate-400  hover:text-[#556043] hover:bg-[#556043]/10"
                                                     title="Edit"
                                                     onClick={() => openEdit(account)}
                                                 >
@@ -354,7 +354,7 @@ export default function Page() {
                             Cancel
                         </Button>
                         <Button
-                            className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90"
+                            className="bg-[#556043] text-white hover:bg-[#4a533b]"
                             onClick={handleSave}
                             disabled={isSaving}
                         >

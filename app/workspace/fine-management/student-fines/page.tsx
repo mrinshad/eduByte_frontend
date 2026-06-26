@@ -476,7 +476,7 @@ export default function Page() {
           </div>
 
           <Button
-            className="shrink-0 gap-1.5 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-medium tracking-tight h-8 px-3 rounded-lg text-xs"
+            className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-8 px-3 rounded-lg text-xs"
             onClick={() => setNewFineOpen(true)}
           >
             <Plus className="h-3.5 w-3.5 text-[oklch(0.98_0.01_95)]" />
@@ -488,8 +488,8 @@ export default function Page() {
           <div className="overflow-x-auto">
             <Table className="table-fixed w-full">
               <TableHeader>
-                <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
-                  <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                  <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                     Admission No
                   </TableHead>
                   <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
@@ -518,7 +518,7 @@ export default function Page() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-40 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                        <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
+                        <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
                         <p className="text-sm">Fetching student fines...</p>
                       </div>
                     </TableCell>
@@ -580,7 +580,7 @@ export default function Page() {
                             onClick={() =>
                               router.push(`/workspace/fine-management/student-fines/view-student-fines?id=${row.id}`)
                             }
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                             title="View Fine"
                           >
                             <Eye className="h-4 w-4" />
@@ -600,7 +600,7 @@ export default function Page() {
                               })
                               setNewFineOpen(true)
                             }}
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                             title="Edit Fine"
                           >
                             <Pencil className="h-4 w-4" />
@@ -609,7 +609,7 @@ export default function Page() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                             title="Pay Fine"
                           >
                             <CreditCard className="h-4 w-4" />
@@ -669,9 +669,8 @@ export default function Page() {
               </div>
 
               <Button
-                variant="outline"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg" 
                 size="sm"
-                className="rounded-lg gap-1"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
               >
@@ -684,9 +683,8 @@ export default function Page() {
               </span>
 
               <Button
-                variant="outline"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 rounded-lg" 
                 size="sm"
-                className="rounded-lg gap-1"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               >

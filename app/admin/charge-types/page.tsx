@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Plus, RefreshCw, Pencil, Trash2 } from "lucide-react"
+import { Plus, RefreshCw, Pencil, Trash2, ArrowLeft, } from "lucide-react"
+import { Badge } from "@/components/ui/badge"; // ✅ Correct
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -38,6 +39,7 @@ import {
 } from "@/lib/services/chargeTypes"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 export default function Page() {
   const TABLEHEADERS = [
     "id",
@@ -51,17 +53,17 @@ export default function Page() {
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<accountName[]>([])
   useEffect(() => {
-  const loadData = async () => {
-    try {
-      const chargeTypeData = await getChargeTypes()
-      setChargeTypes(chargeTypeData)
-    } catch (error) {
-      console.error(error)
+    const loadData = async () => {
+      try {
+        const chargeTypeData = await getChargeTypes()
+        setChargeTypes(chargeTypeData)
+      } catch (error) {
+        console.error(error)
+      }
     }
-  }
 
-  loadData()
-}, [])
+    loadData()
+  }, [])
   const loadAccounts = async () => {
     try {
       const data = await getAccountTypes()
@@ -136,6 +138,7 @@ export default function Page() {
   }, [])
 
   const [editingId, setEditingId] = useState<string | null>(null)
+  const router = useRouter();
 
   const resetForm = () => {
     setFormData({
@@ -147,122 +150,80 @@ export default function Page() {
     setEditingId(null)
   }
   return (
-    <section className="px-6 py-4">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Charge Types</h1>
-        <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Manage charge types and related settings.</p>
+    <section className="w-full px-6 py-4 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center gap-4">
+        <Button size="icon" className="bg-background text-foreground hover:opacity-90 shadow-sm" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 text-foreground" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Charge Types</h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage charge types and account mappings.</p>
+        </div>
       </div>
-      <Card className="mt-6 border-slate-200 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b">
-          <div>
-            <h2 className="text-lg font-semibold text-white dark:text-slate-50">
-              Fee Types
-            </h2>
-            <p className="text-sm text-slate-400">
-              Manage fee types and account mappings.
-            </p>
-          </div>
+      <Button
+        className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+        onClick={async () => { resetForm(); await loadAccounts(); setOpen(true); }}
+      >
+        <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+        Create Fee Type
+      </Button>
+    </div>
 
-          <Button
-            size="sm"
-            className="gap-2"
-            onClick={async () => {
-              resetForm()
-              await loadAccounts()
-              setOpen(true)
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Create Fee Type
-          </Button>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50 ">
-                {TABLEHEADERS.map((header) => (
-                  <TableHead
-                    key={header}
-                    className={
-                      header === "Actions"
-                        ? "pr-4 text-right font-semibold text-slate-700"
-                        : header === "id"
-                          ? "pl-4 font-semibold text-slate-700"
-                          : "font-semibold text-slate-700"
-                    }
-                  >
-                    {header}
-                  </TableHead>
-                ))}
+    {/* Table */}
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">ID</TableHead>
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Fee Type</TableHead>
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Frequency</TableHead>
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Account Type</TableHead>
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Created At</TableHead>
+              <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {chargeTypes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                  <p className="text-sm">No charge types found.</p>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {chargeTypes.map((data, index) => (
-                <TableRow
-                  key={data.name}
-                  className=" transition-colors"
-                >
-                  <TableCell className="font-medium text-white dark:text-slate-50 pl-4">
-                    {index + 1}
+            ) : (
+              chargeTypes.map((data, index) => (
+                <TableRow key={data.name} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
+                  <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">{index + 1}</TableCell>
+                  <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{data.name}</TableCell>
+                  <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{data.frequency}</TableCell>
+                  <TableCell className="px-6 py-4">
+                    <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium">
+                      {data.incomeAccount?.name ?? "—"}
+                    </Badge>
                   </TableCell>
-
-                  <TableCell className="font-medium text-white">
-                    {data.name}
-                  </TableCell>
-
-                  <TableCell className="text-white">
-                    {data.frequency}
-                  </TableCell>
-
-                  <TableCell>
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                      {data.incomeAccount?.name ?? "-"}
-                    </span>
-                  </TableCell>
-
-                  <TableCell className="text-white">
+                  <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                     {new Date(data.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="flex justify-end pr-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={async () => {
-                          await loadAccounts()
-
-                          setEditingId(data.id)
-
-                          setFormData({
-                            name: data.name,
-                            frequency: data.frequency,
-                            incomeAccountId: data.incomeAccount?.id ?? "",
-                          })
-
-                          setOpen(true)
-                        }}
-                      >
+                  <TableCell className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon"
+                        className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                        onClick={async () => { await loadAccounts(); setEditingId(data.id); setFormData({ name: data.name, frequency: data.frequency, incomeAccountId: data.incomeAccount?.id ?? "" }); setOpen(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
       <Dialog
         open={open}
         onOpenChange={(value) => {
