@@ -326,34 +326,32 @@ export default function Page() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div>
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 Student Fines
               </h1>
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="lg"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setFineTypesOpen(true)}
-                      // Kept h-auto so the button container expands naturally with the icon
-                      className="h-auto p-2 bg-transparent text-[#556043] dark:text-slate-200 transition-all duration-200 self-start sm:self-auto w-full sm:w-auto justify-center hover:bg-transparent"
+                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
-                      {/* Increased to h-14/w-14 (56px) on mobile and h-16/w-16 (64px) on tablet+ */}
-                      <Settings2 className="h-14 w-14 sm:h-16 sm:w-16" />
+                      <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#556043]" />
                     </Button>
                   </TooltipTrigger>
 
-                  <TooltipContent side="top"
-                    
-                    align="center">
-                    <p>Fine Types</p>
+                  <TooltipContent side="top" sideOffset={8}>
+                    Fine Types
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
 
-            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               Manage and view all student fines.
             </p>
           </div>

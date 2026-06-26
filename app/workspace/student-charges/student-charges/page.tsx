@@ -121,11 +121,12 @@ export default function StudentChargesListPage() {
             >
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-slate-950 dark:text-white break-words">
                 Student Charge
               </h1>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+
+              <p className="mt-1 text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">
                 Manage and view all student fee charges.
               </p>
             </div>
