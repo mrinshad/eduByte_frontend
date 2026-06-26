@@ -315,9 +315,10 @@ export default function Page() {
   // ---------------------------------------------------------------------
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6 max-w-7xl mx-auto">
-      {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
+
+      {/* Header Panel — title/description on left, search + button on right */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
             size="icon"
@@ -325,12 +326,11 @@ export default function Page() {
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 sm:gap-3">
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 Student Fines
               </h1>
-
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -343,20 +343,37 @@ export default function Page() {
                       <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#556043]" />
                     </Button>
                   </TooltipTrigger>
-
                   <TooltipContent side="top" sideOffset={8}>
                     Fine Types
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-
             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               Manage and view all student fines.
             </p>
           </div>
         </div>
 
+        {/* Search + Add Button — right side, same line as title */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="relative hidden sm:block w-56 lg:w-80 shadow-sm rounded-xl">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+            <Input
+              placeholder="Search by name, ID, or phone..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+          </div>
+          <Button
+            className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs"
+            onClick={() => setNewFineOpen(true)}
+          >
+            <Plus className="h-4 w-4 text-white dark:text-slate-900" />
+            New Fine
+          </Button>
+        </div>
       </div>
 
       {/* Fine Types Management Dialog */}
@@ -400,7 +417,6 @@ export default function Page() {
                   <h3 className="font-semibold text-sm sm:text-base text-slate-950 dark:text-slate-100 truncate">
                     {fineType.name}
                   </h3>
-
                   <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -463,240 +479,214 @@ export default function Page() {
         </DialogContent>
       </Dialog>
 
-      {/* Controls & Tables Container */}
-      <div className="space-y-4">
-        {/* Table Filter Panel Actions */}
-        <div className="flex w-full justify-end">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-              <Input
-                placeholder="Search by name, ID, or phone..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-            </div>
+      {/* Table */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+          <Table className="w-full min-w-[800px]">
+            <TableHeader>
+              <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-[15%]">
+                  Admission No
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[20%]">
+                  Name
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[15%]">
+                  Fine
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
+                  Amount
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
+                  Paid Amount
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[11%]">
+                  Status
+                </TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center w-[15%]">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-            <Button
-              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs justify-center w-full sm:w-auto"
-              onClick={() => setNewFineOpen(true)}
-            >
-              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
-              New Fine
-            </Button>
-          </div>
-        </div>
-
-        {/* Global Responsive Responsive Table Wrapper */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
-            <Table className="w-full min-w-[800px]">
-              <TableHeader>
-                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                  <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-[15%]">
-                    Admission No
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[20%]">
-                    Name
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[15%]">
-                    Fine
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
-                    Amount
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[12%]">
-                    Paid Amount
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[11%]">
-                    Status
-                  </TableHead>
-                  <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center w-[15%]">
-                    Actions
-                  </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-40 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
+                      <p className="text-sm">Fetching student fines...</p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-40 text-center text-red-500">
+                    <p className="text-sm font-medium">{error}</p>
+                  </TableCell>
+                </TableRow>
+              ) : visibleFines.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-40 text-center text-slate-500">
+                    No data found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                visibleFines.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
+                  >
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {row.admissionNumber}
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[180px] truncate">
+                      {row.student}
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
+                      {row.fine}
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {row.amount}
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {row.paidAmount}
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                          row.status === "PAID"
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : row.status === "PARTIAL"
+                              ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                              : row.status === "REVERSED"
+                                ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                : "bg-red-100 text-red-700 border border-red-200"
+                        )}
+                      >
+                        {row.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            router.push(`/workspace/fine-management/student-fines/view-student-fines?id=${row.id}`)
+                          }
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          title="View Fine"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
 
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-40 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                        <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
-                        <p className="text-sm">Fetching student fines...</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingFineId(row.id)
+                            setFineForm({
+                              studentId: row.enrollmentId ?? "",
+                              fineTypeId: row.fineId ?? "",
+                              amount: row.amount ?? "",
+                              reason: row.reason ?? "",
+                            })
+                            setNewFineOpen(true)
+                          }}
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          title="Edit Fine"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          title="Pay Fine"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          title="Delete Fine"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-40 text-center text-red-500">
-                      <p className="text-sm font-medium">{error}</p>
-                    </TableCell>
-                  </TableRow>
-                ) : visibleFines.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-40 text-center text-slate-500">
-                      No data found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  visibleFines.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
-                    >
-                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        {row.admissionNumber}
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[180px] truncate">
-                        {row.student}
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
-                        {row.fine}
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        {row.amount}
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        {row.paidAmount}
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                            row.status === "PAID"
-                              ? "bg-green-100 text-green-700 border border-green-200"
-                              : row.status === "PARTIAL"
-                                ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                                : row.status === "REVERSED"
-                                  ? "bg-purple-100 text-purple-700 border border-purple-200"
-                                  : "bg-red-100 text-red-700 border border-red-200"
-                          )}
-                        >
-                          {row.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              router.push(`/workspace/fine-management/student-fines/view-student-fines?id=${row.id}`)
-                            }
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                            title="View Fine"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setEditingFineId(row.id)
-                              setFineForm({
-                                studentId: row.enrollmentId ?? "",
-                                fineTypeId: row.fineId ?? "",
-                                amount: row.amount ?? "",
-                                reason: row.reason ?? "",
-                              })
-                              setNewFineOpen(true)
-                            }}
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                            title="Edit Fine"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                            title="Pay Fine"
-                          >
-                            <CreditCard className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            title="Delete Fine"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Fluid Breakout Responsive Footer Panel */}
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-t border-slate-200 px-4 sm:px-6 py-4 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20">
-            <p className="text-sm text-slate-500 dark:text-slate-400 text-center lg:text-left order-2 lg:order-1">
-              {total === 0 ? (
-                "No entries"
-              ) : (
-                <>
-                  Showing <span className="font-medium text-slate-700 dark:text-slate-200">{startEntry}</span> to{" "}
-                  <span className="font-medium text-slate-700 dark:text-slate-200">{endEntry}</span> of{" "}
-                  <span className="font-medium text-slate-700 dark:text-slate-200">{total}</span> entries
-                </>
+                ))
               )}
-            </p>
+            </TableBody>
+          </Table>
+        </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 order-1 lg:order-2 w-full sm:w-auto justify-end">
-              <div className="flex items-center gap-2 justify-center w-full sm:w-auto">
-                <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">Rows per page:</span>
-                <Select
-                  value={String(limit)}
-                  onValueChange={(value) => {
-                    setLimit(Number(value))
-                    setPage(1)
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[70px] rounded-lg bg-white dark:bg-slate-950">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Pagination Footer */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-t border-slate-200 px-4 sm:px-6 py-4 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20">
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center lg:text-left order-2 lg:order-1">
+            {total === 0 ? (
+              "No entries"
+            ) : (
+              <>
+                Showing <span className="font-medium text-slate-700 dark:text-slate-200">{startEntry}</span> to{" "}
+                <span className="font-medium text-slate-700 dark:text-slate-200">{endEntry}</span> of{" "}
+                <span className="font-medium text-slate-700 dark:text-slate-200">{total}</span> entries
+              </>
+            )}
+          </p>
 
-              <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
-                <Button
-                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Prev
-                </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-4 order-1 lg:order-2 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2 justify-center w-full sm:w-auto">
+              <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">Rows per page:</span>
+              <Select
+                value={String(limit)}
+                onValueChange={(value) => {
+                  setLimit(Number(value))
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px] rounded-lg bg-white dark:bg-slate-950">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap px-2">
-                  Page {page} of {totalPages}
-                </span>
+            <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
+              <Button
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
 
-                <Button
-                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap px-2">
+                Page {page} of {totalPages}
+              </span>
+
+              <Button
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 h-9 disabled:opacity-40 rounded-lg px-3 flex-1 sm:flex-none"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -721,22 +711,18 @@ export default function Page() {
           </DialogHeader>
 
           <div className="space-y-4 py-3">
-            {/* Student Dropdown Container */}
+            {/* Student Dropdown */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
               <Select
                 value={fineForm.studentId}
                 onValueChange={(value) =>
-                  setFineForm((prev) => ({
-                    ...prev,
-                    studentId: value,
-                  }))
+                  setFineForm((prev) => ({ ...prev, studentId: value }))
                 }
               >
                 <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select Student" />
                 </SelectTrigger>
-
                 <SelectContent className="max-h-[300px]">
                   <div className="p-2 sticky top-0 bg-background z-10">
                     <Input
@@ -746,7 +732,6 @@ export default function Page() {
                       className="rounded-lg h-9"
                     />
                   </div>
-
                   {filteredStudents.length === 0 ? (
                     <p className="p-4 text-center text-xs text-muted-foreground">No students found</p>
                   ) : (
@@ -760,22 +745,18 @@ export default function Page() {
               </Select>
             </div>
 
-            {/* Fine Type Dropdown Container */}
+            {/* Fine Type Dropdown */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Fine Type</label>
               <Select
                 value={fineForm.fineTypeId}
                 onValueChange={(value) =>
-                  setFineForm((prev) => ({
-                    ...prev,
-                    fineTypeId: value,
-                  }))
+                  setFineForm((prev) => ({ ...prev, fineTypeId: value }))
                 }
               >
                 <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select Fine Type" />
                 </SelectTrigger>
-
                 <SelectContent>
                   {fineTypes.map((fine) => (
                     <SelectItem key={fine.id} value={fine.id}>
@@ -786,7 +767,7 @@ export default function Page() {
               </Select>
             </div>
 
-            {/* Amount Field */}
+            {/* Amount */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Amount</label>
               <Input
@@ -796,25 +777,19 @@ export default function Page() {
                 placeholder="Enter Amount"
                 value={fineForm.amount}
                 onChange={(e) =>
-                  setFineForm((prev) => ({
-                    ...prev,
-                    amount: e.target.value,
-                  }))
+                  setFineForm((prev) => ({ ...prev, amount: e.target.value }))
                 }
               />
             </div>
 
-            {/* Reason Field */}
+            {/* Reason */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Reason</label>
               <Input
                 placeholder="Enter Reason"
                 value={fineForm.reason}
                 onChange={(e) =>
-                  setFineForm((prev) => ({
-                    ...prev,
-                    reason: e.target.value,
-                  }))
+                  setFineForm((prev) => ({ ...prev, reason: e.target.value }))
                 }
                 className="rounded-xl"
               />
@@ -832,7 +807,6 @@ export default function Page() {
             >
               Cancel
             </Button>
-
             <Button onClick={handleSaveFine} className="w-full sm:w-auto rounded-xl">
               {editingFineId ? "Update Fine" : "Create Fine"}
             </Button>
