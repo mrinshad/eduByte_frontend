@@ -34,7 +34,7 @@ export interface FeeStructureSummary {
   id: string;
   name: string;
   className: string;
-  academicYear: string;
+  academicYearName: string;
   description: string | null;
   isActive: boolean;
   createdAt: string;

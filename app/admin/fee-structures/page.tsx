@@ -49,7 +49,7 @@ export default function Page() {
     const q = search.toLowerCase();
     return (
       item.name?.toLowerCase().includes(q) ||
-      item.academicYear?.toLowerCase().includes(q) ||
+      item.academicYearName?.toLowerCase().includes(q) ||
       item.className?.toLowerCase().includes(q)
     );
   });
@@ -138,7 +138,7 @@ export default function Page() {
                 paginated.map((item, index) => (
                   <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">{(currentPage - 1) * rowsPerPage + index + 1}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYear}</TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYearName}</TableCell>
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.className}</TableCell>
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{item.name}</TableCell>
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.description ?? "—"}</TableCell>
