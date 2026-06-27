@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+import { toast } from "sonner";
+import { getFeeStructures,  type FeeStructureSummary } from "@/lib/services/feeStructure";
 
 export default function Page() {
   const router = useRouter();
@@ -29,6 +32,7 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -44,6 +48,22 @@ export default function Page() {
     }
     load();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this fee structure? This action cannot be undone.");
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(id);
+      
+      setFeeStructures((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Fee structure deleted successfully");
+    } catch (err) {
+      toast.error("Failed to delete fee structure. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filtered = feeStructures.filter((item) => {
     const q = search.toLowerCase();
@@ -150,11 +170,41 @@ export default function Page() {
                       </Badge>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon"
-                        className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                        onClick={() => router.push(`/admin/fee-structures/viewFee?id=${item.id}`)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {/* View */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          onClick={() => router.push(`/admin/fee-structures/viewFee?id=${item.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        {/* Edit */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:bg-blue-950/40"
+                          onClick={() => router.push(`/admin/fee-structures/createFee?id=${item.id}`)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        {/* Delete */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/40"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                        >
+                          {deletingId === item.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Trash2 className="h-4 w-4" />
+                          }
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
