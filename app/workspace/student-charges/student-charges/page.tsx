@@ -121,11 +121,12 @@ export default function StudentChargesListPage() {
             >
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-slate-950 dark:text-white break-words">
                 Student Charge
               </h1>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+
+              <p className="mt-1 text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">
                 Manage and view all student fee charges.
               </p>
             </div>
@@ -152,29 +153,29 @@ export default function StudentChargesListPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+              <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Admission No.
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Student Name
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Class & Div
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Final Amount
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Paid Amount
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Balance
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -185,7 +186,7 @@ export default function StudentChargesListPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                      <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
+                      <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
                       <p className="text-sm">Fetching student charges...</p>
                     </div>
                   </TableCell>
@@ -253,7 +254,7 @@ export default function StudentChargesListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                             onClick={() =>
 
                               router.push(
@@ -305,12 +306,12 @@ export default function StudentChargesListPage() {
 
             <div className="flex items-center gap-4">
               <Button
-                className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1 || totalPages === 0 || isLoading}
               >
-                <ChevronLeft className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+                <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
                 Prev
               </Button>
 
@@ -319,13 +320,13 @@ export default function StudentChargesListPage() {
               </div>
 
               <Button
-                className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || totalPages === 0 || isLoading}
               >
                 Next
-                <ChevronRight className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+                <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
               </Button>
             </div>
 

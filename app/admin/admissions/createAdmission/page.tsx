@@ -114,22 +114,22 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
 );
 
 const InfoGrid = ({
-  children,
-  className,
+    children,
+    className,
 }: {
-  children: React.ReactNode;
-  className?: string;
+    children: React.ReactNode;
+    className?: string;
 }) => (
-  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-    <div
-      className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-slate-200 dark:bg-slate-800 gap-[1px]",
-        className
-      )}
-    >
-      {children}
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div
+            className={cn(
+                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-slate-200 dark:bg-slate-800 gap-[1px]",
+                className
+            )}
+        >
+            {children}
+        </div>
     </div>
-  </div>
 );
 
 const InfoItem = ({ label, value, className }: { label: string; value?: string | React.ReactNode; className?: string }) => (
@@ -580,8 +580,32 @@ export default function Page() {
                     <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         Discard
                     </Button>
-                    <Button onClick={handleSubmit} disabled={submitting || !selectedStudentId || !selectedClassId || !selectedDivisionId} className="rounded-xl h-11 px-8 bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-md">
-                        {submitting ? "Processing..." : isEditMode ? "Update Admission" : "Confirm Admission"}
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={
+                            submitting ||
+                            !selectedStudentId ||
+                            !selectedClassId ||
+                            !selectedDivisionId
+                        }
+                        className="
+    rounded-xl
+    h-11
+    px-8
+    bg-[#6D755F]
+    text-white
+    hover:bg-[#5b624f]
+    shadow-md
+    dark:bg-slate-100
+    dark:text-slate-900
+    dark:hover:bg-slate-200
+  "
+                    >
+                        {submitting
+                            ? "Processing..."
+                            : isEditMode
+                                ? "Update Admission"
+                                : "Confirm Admission"}
                     </Button>
                 </div>
             </div>
@@ -893,7 +917,6 @@ export default function Page() {
                                     <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                                 </h3>
                                 <InfoGrid className="md:grid-cols-3 lg:grid-cols-3">
-                                    
                                     <InfoItem label="Registration Plate" value={selectedVehicle.vehicleNumber} />
                                     <InfoItem label="Designated Driver" value={selectedVehicle.driverName} />
                                     <InfoItem label="Vehicle Name" value={selectedVehicle.vehicleName} />

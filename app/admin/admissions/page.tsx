@@ -101,7 +101,8 @@ export default function StudentAdmissionListPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <Button
-            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+            variant="outline"
+
             size="icon"
             onClick={() => router.back()}
           >
@@ -129,10 +130,10 @@ export default function StudentAdmissionListPage() {
             />
           </div>
           <Button
-            className="shrink-0 gap-2 bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm font-semibold tracking-tight h-10 px-4 rounded-xl"
+            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push('/admin/admissions/createAdmission')}
           >
-            <Plus className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
             New Admission
           </Button>
         </div>
@@ -143,23 +144,23 @@ export default function StudentAdmissionListPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)] border-none">
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+              <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Admission No.
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Student Name
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Class & Div
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Parent Contact
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
-                <TableHead className="px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -300,12 +301,13 @@ export default function StudentAdmissionListPage() {
 
             <div className="flex items-center gap-4">
               <Button
-                className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1 || totalPages === 0 || isLoading}
               >
-                <ChevronLeft className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+
+                <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
                 Prev
               </Button>
 
@@ -314,13 +316,13 @@ export default function StudentAdmissionListPage() {
               </div>
 
               <Button
-                className="bg-[oklch(0.46_0.04_125)] text-[oklch(0.98_0.01_95)] hover:opacity-90 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || totalPages === 0 || isLoading}
               >
                 Next
-                <ChevronRight className="h-4 w-4 text-[oklch(0.98_0.01_95)]" />
+                <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
               </Button>
             </div>
 
