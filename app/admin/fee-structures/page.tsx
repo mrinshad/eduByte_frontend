@@ -29,7 +29,18 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { getFeeStructures,  type FeeStructureSummary } from "@/lib/services/feeStructure";
+import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      {label}
+      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
 
 export default function Page() {
   const router = useRouter();
@@ -51,6 +62,13 @@ export default function Page() {
     total: 0,
     totalPages: 1,
   });
+
+  // Accumulated option lists — NOT derived solely from the current filtered
+  // page. This prevents a selected filter value from "disappearing" (and
+  // rendering as an empty SelectValue) once the fetched list narrows down
+  // to a subset that no longer contains every option.
+  const [classOptions, setClassOptions] = useState<string[]>([]);
+  const [academicYearOptions, setAcademicYearOptions] = useState<string[]>([]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -75,6 +93,17 @@ export default function Page() {
         });
         setFeeStructures(response.items);
         setPagination(response.pagination);
+
+        setClassOptions((prev) =>
+          Array.from(
+            new Set([...prev, ...response.items.map((i) => i.className).filter(Boolean)])
+          )
+        );
+        setAcademicYearOptions((prev) =>
+          Array.from(
+            new Set([...prev, ...response.items.map((i) => i.academicYearName).filter(Boolean)])
+          )
+        );
       } catch (err) {
         setError("Could not load fee structures. Please try again.");
       } finally {
@@ -90,7 +119,7 @@ export default function Page() {
 
     try {
       setDeletingId(id);
-      
+
       setFeeStructures((prev) => prev.filter((item) => item.id !== id));
       toast.success("Fee structure deleted successfully");
     } catch (err) {
@@ -100,30 +129,18 @@ export default function Page() {
     }
   };
 
-  const classOptions = useMemo(
-    () => Array.from(new Set(feeStructures.map((item) => item.className).filter(Boolean))),
-    [feeStructures]
-  );
-
-  const academicYearOptions = useMemo(
-    () => Array.from(new Set(feeStructures.map((item) => item.academicYearName).filter(Boolean))),
-    [feeStructures]
-  );
-
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const start = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const end = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
-  const activeFilterLabels = useMemo(() => {
-    const labels: string[] = [];
-    if (classFilter !== "all") labels.push(`Class: ${classFilter}`);
-    if (academicYearFilter !== "all") labels.push(`Year: ${academicYearFilter}`);
-    if (statusFilter !== "all") labels.push(`Status: ${statusFilter}`);
-    if (search.trim()) labels.push(`Search: ${search}`);
-    return labels;
-  }, [classFilter, academicYearFilter, statusFilter, search]);
-
-  const hasActiveFilters = activeFilterLabels.length > 0;
+  const hasActiveFilters = useMemo(
+    () =>
+      classFilter !== "all" ||
+      academicYearFilter !== "all" ||
+      statusFilter !== "all" ||
+      search.trim().length > 0,
+    [classFilter, academicYearFilter, statusFilter, search]
+  );
 
   const clearAllFilters = () => {
     setSearchInput("");
@@ -138,119 +155,132 @@ export default function Page() {
     <section className="w-full px-6 py-4 space-y-6">
 
       {/* Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-            <div className="flex items-start gap-3">
-              <Button size="icon" className="mt-0.5 bg-background text-foreground hover:opacity-90 shadow-sm" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4 text-foreground" />
+          {/* Title row */}
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-3">
+              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Fee Structures</h1>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Manage templates using search and filters, then jump directly to create new structures.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Manage fee structure templates for each class and academic year.
                 </p>
               </div>
             </div>
 
             <Button
-              className="w-full lg:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => router.push("/admin/fee-structures/createFee")}
             >
-              <Plus className="mr-2 h-4 w-4 text-white dark:text-slate-900" />
+              <Plus className="mr-2 h-4 w-4" />
               Create Fee Structure
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <div className="relative md:col-span-2 xl:col-span-2">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
+          {/* Search + filters row */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1 lg:max-w-xs">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Search by name, class, or academic year..."
+                placeholder="Search by name, class, or year..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-10 rounded-xl border-slate-300 bg-white pl-10 text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
               />
             </div>
 
-            <Select
-              value={classFilter}
-              onValueChange={(value) => {
-                setClassFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 rounded-xl border-slate-300">
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classOptions.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={academicYearFilter}
-              onValueChange={(value) => {
-                setAcademicYearFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 rounded-xl border-slate-300">
-                <SelectValue placeholder="All Years" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {academicYearOptions.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 rounded-xl border-slate-300">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Selected Filters:</span>
-              {hasActiveFilters ? (
-                activeFilterLabels.map((label) => (
-                  <Badge key={label} variant="outline" className="rounded-full border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    {label}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-sm text-slate-500 dark:text-slate-400">None</span>
+              <Select
+                value={classFilter}
+                onValueChange={(value) => {
+                  setClassFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {classOptions.map((item) => (
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={academicYearFilter}
+                onValueChange={(value) => {
+                  setAcademicYearFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
+                  <SelectValue placeholder="All Years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {academicYearOptions.map((item) => (
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[130px] rounded-lg border-slate-300">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+                  onClick={clearAllFilters}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Clear
+                </Button>
               )}
             </div>
-
-            <Button
-              variant="outline"
-              className="h-9 w-full sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              onClick={clearAllFilters}
-              disabled={!hasActiveFilters}
-            >
-              <X className="mr-1.5 h-4 w-4" />
-              Clear Filters
-            </Button>
           </div>
+
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <span className="text-xs font-medium text-slate-400">Filters:</span>
+              {classFilter !== "all" && (
+                <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
+              )}
+              {academicYearFilter !== "all" && (
+                <FilterChip label={`Year: ${academicYearFilter}`} onRemove={() => { setAcademicYearFilter("all"); setCurrentPage(1); }} />
+              )}
+              {statusFilter !== "all" && (
+                <FilterChip label={`Status: ${statusFilter}`} onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }} />
+              )}
+              {search.trim() && (
+                <FilterChip
+                  label={`Search: ${search}`}
+                  onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
