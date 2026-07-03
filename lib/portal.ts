@@ -77,11 +77,13 @@ export const portalSections: PortalSection[] = [
   { slug: "fees/payment-history", label: "Payment History", area: "student", purpose: "Payment history", roles: ["Student"], group: "Fees" },
   { slug: "fees/receipts", label: "Receipts", area: "student", purpose: "Receipts", roles: ["Student"], group: "Fees" },
   { slug: "fees/refund-history", label: "Refund History", area: "student", purpose: "Refunds", roles: ["Student"], group: "Fees" },
-
+  
   { slug: "transport/assigned-vehicle", label: "Assigned Vehicle", area: "student", purpose: "Transport assignment", roles: ["Student"], group: "Transport" },
   { slug: "transport/transport-fee-details", label: "Transport Fee Details", area: "student", purpose: "Transport fees", roles: ["Student"], group: "Transport" },
-
+  
   { slug: "notifications/fee-reminders", label: "Fee Reminders", area: "student", purpose: "Fee reminders", roles: ["Student"], group: "Notifications" },
+  
+  // --- WORKSPACE AREA ---
   { slug: "dashboard", label: "Dashboard", area: "workspace", purpose: "Quick overview of collections, expenses, and pending fees", roles: ["Admin", "Accountant", "Principal"], group: "Overview" },
   { slug: "academic-year", label: "Academic Year", area: "workspace", purpose: "Manage active academic years", roles: ["Admin"], group: "Academic Setup" },
   { slug: "classes-divisions", label: "Classes & Divisions", area: "workspace", purpose: "Create classes and divisions", roles: ["Admin"], group: "Academic Setup" },
@@ -91,6 +93,7 @@ export const portalSections: PortalSection[] = [
   { slug: "attendance-student", label: "Attendance (Student)", area: "workspace", purpose: "Record student attendance", roles: ["Teachers", "Office Staff"], group: "Academic Setup" },
   { slug: "attendance-staff", label: "Attendance (Staff)", area: "workspace", purpose: "Record staff attendance", roles: ["Admin", "Office Staff"], group: "Academic Setup" },
   { slug: "transport-assignment", label: "Transport Assignment", area: "workspace", purpose: "Assign vehicle and transport fee", roles: ["Admin", "Office Staff"], group: "Academic Setup" },
+  
   { slug: "fee-management", label: "Overview", area: "workspace", purpose: "Overview of fee operations and billing modules", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
   { slug: "fee-management/fee-types", label: "Fee Types", area: "workspace", purpose: "Configure term fee and similar charge types", roles: ["Admin"], group: "Finance", subgroup: "Fee Management" },
   { slug: "fee-management/fee-structures", label: "Fee Structures", area: "workspace", purpose: "Define fee templates", roles: ["Admin"], group: "Finance", subgroup: "Fee Management" },
@@ -108,11 +111,12 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-management/payroll", label: "Payroll", area: "workspace", purpose: "Generate and track salaries", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/staff-deductions", label: "Staff Deductions", area: "workspace", purpose: "Manage recoveries and deductions", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/late-fee-reminders", label: "Late Fee Reminders", area: "workspace", purpose: "Send payment reminders", roles: ["Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
+  { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
+
   { slug: "reports", label: "Reports", area: "workspace", purpose: "View reports", roles: ["Admin", "Principal", "Accountant"], group: "Overview" },
   { slug: "audit-logs", label: "Audit Logs", area: "workspace", purpose: "View system activity history", roles: ["Admin"], group: "Overview" },
   { slug: "student-charges/student-charges", label: "Student Charge", area: "workspace", purpose: "Show fees owed by students", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
-  { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-
+  
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
