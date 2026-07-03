@@ -13,6 +13,7 @@ import {
   Search,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,92 +114,142 @@ export default function Page() {
   const start = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const end = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (classFilter !== "all") labels.push(`Class: ${classFilter}`);
+    if (academicYearFilter !== "all") labels.push(`Year: ${academicYearFilter}`);
+    if (statusFilter !== "all") labels.push(`Status: ${statusFilter}`);
+    if (search.trim()) labels.push(`Search: ${search}`);
+    return labels;
+  }, [classFilter, academicYearFilter, statusFilter, search]);
+
+  const hasActiveFilters = activeFilterLabels.length > 0;
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setClassFilter("all");
+    setAcademicYearFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
+
   return (
     <section className="w-full px-6 py-4 space-y-6">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button size="icon" className="bg-background text-foreground hover:opacity-90 shadow-sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Fee Structures</h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">View, manage, and organize fee structures.</p>
-          </div>
-        </div>
-
-        <div className="flex w-full flex-col gap-3">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative w-full shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search fee structures..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+            <div className="flex items-start gap-3">
+              <Button size="icon" className="mt-0.5 bg-background text-foreground hover:opacity-90 shadow-sm" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 text-foreground" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Fee Structures</h1>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Manage templates using search and filters, then jump directly to create new structures.
+                </p>
+              </div>
             </div>
+
             <Button
-              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="w-full lg:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => router.push("/admin/fee-structures/createFee")}
             >
-              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              <Plus className="mr-2 h-4 w-4 text-white dark:text-slate-900" />
               Create Fee Structure
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="relative md:col-span-2 xl:col-span-2">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
+              <Input
+                placeholder="Search by name, class, or academic year..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="h-10 rounded-xl border-slate-300 bg-white pl-10 text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
             <Select
-            value={classFilter}
-            onValueChange={(value) => {
-              setClassFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
-              <SelectValue placeholder="All Classes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Classes</SelectItem>
-              {classOptions.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
-              ))}
-            </SelectContent>
+              value={classFilter}
+              onValueChange={(value) => {
+                setClassFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 rounded-xl border-slate-300">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classOptions.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
+
             <Select
-            value={academicYearFilter}
-            onValueChange={(value) => {
-              setAcademicYearFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
-              <SelectValue placeholder="All Years" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
-              {academicYearOptions.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
-              ))}
-            </SelectContent>
+              value={academicYearFilter}
+              onValueChange={(value) => {
+                setAcademicYearFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 rounded-xl border-slate-300">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {academicYearOptions.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
+
             <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 rounded-xl border-slate-300">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Selected Filters:</span>
+              {hasActiveFilters ? (
+                activeFilterLabels.map((label) => (
+                  <Badge key={label} variant="outline" className="rounded-full border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    {label}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-slate-500 dark:text-slate-400">None</span>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              className="h-9 w-full sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+            >
+              <X className="mr-1.5 h-4 w-4" />
+              Clear Filters
+            </Button>
           </div>
         </div>
       </div>

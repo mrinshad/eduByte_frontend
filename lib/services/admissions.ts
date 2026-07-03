@@ -37,8 +37,9 @@ export interface BackendAdmission {
  
 export interface ChargeOverride {
   chargeTypeId: string;
-  frequency: string;
-  originalAmount: number;
+  frequency?: string;
+  currentAmount?: number;
+  originalAmount?: number;
   finalAmount: number;
   discountAmount: number;
   description: string | null;
@@ -162,9 +163,13 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
   const raw = payload.data;
  
   const charges = (raw.enrollmentCharges ?? []).map((c) => {
-    const originalAmount = Number(c.originalAmount) || 0;
+    const originalAmountRaw = Number(c.originalAmount) || 0;
     const discountAmount = Number(c.discountAmount) || 0;
     const finalAmount = Number(c.finalAmount) || 0;
+    const originalAmount =
+      originalAmountRaw > 0
+        ? originalAmountRaw
+        : Math.max(finalAmount + discountAmount, 0);
  
     return {
       id: c.id,

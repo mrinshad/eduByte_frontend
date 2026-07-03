@@ -442,7 +442,7 @@ export default function Page() {
                         chargeTypeId: charge.chargeTypeId,
                         name: charge.chargeType,
                         originalAmount: charge.originalAmount,
-                        baseAmount: charge.finalAmount,
+                        baseAmount: charge.originalAmount,
                         amount: charge.finalAmount,
                         dueDay: charge.dueDay ?? "",
                         description: charge.description ?? "",
@@ -538,7 +538,8 @@ export default function Page() {
             } else {
                 const chargeOverrides = editableFeeItems.map((item) => ({
                     chargeTypeId: item.chargeTypeId,
-                    currentAmount: item.originalAmount,
+                    originalAmount: item.originalAmount,
+                    frequency: item.frequency,
                     finalAmount: Number(item.amount) || 0,
                     discountAmount: item.originalAmount - (Number(item.amount) || 0),
                     description: item.description.trim() !== "" ? item.description.trim() : null,
@@ -1038,7 +1039,7 @@ export default function Page() {
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
                                                 <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Fee Particulars</TableHead>
-                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">Current Amount</TableHead>
+                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">Original Amount</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Override Amount</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">Due Date (Days)</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[200px]">Description</TableHead>
