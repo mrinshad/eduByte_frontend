@@ -34,11 +34,20 @@ export interface CreateFeeStructureInput {
 export interface FeeStructureSummary {
   id: string;
   name: string;
+  classId: string;
   className: string;
+  academicYearId: string;
   academicYearName: string;
   description: string | null;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface FeeStructureListPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 type ApiSuccess<T> = {
@@ -47,12 +56,39 @@ type ApiSuccess<T> = {
   data?: T;
 };
 
-export async function getFeeStructures() {
-  const payload = (await apiFetch(
-    "/api/feestructure"
-  )) as ApiSuccess<FeeStructureSummary[]>;
+export async function getFeeStructures(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  className?: string;
+  academicYear?: string;
+  status?: "all" | "active" | "inactive";
+}) {
+  const query = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 10),
+    search: params?.search ?? "",
+    className: params?.className ?? "",
+    academicYear: params?.academicYear ?? "",
+    status: params?.status ?? "all",
+  });
 
-  return payload.data ?? [];
+  const payload = (await apiFetch(
+    `/api/feestructure?${query.toString()}`
+  )) as ApiSuccess<{
+    items: FeeStructureSummary[];
+    pagination: FeeStructureListPagination;
+  }>;
+
+  return {
+    items: payload.data?.items ?? [],
+    pagination: payload.data?.pagination ?? {
+      page: 1,
+      limit: params?.limit ?? 10,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 }
 
 export async function createFeeStructure(

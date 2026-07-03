@@ -28,23 +28,23 @@ export type PortalNavGroup = {
 export const portalSections: PortalSection[] = [
   // --- ADMIN AREA ---
   { slug: "dashboard", label: "Dashboard", area: "admin", purpose: "Admin dashboard", roles: ["Admin"], group: "Admin" },
-  { slug: "academic-profile", label: "Academic Profile", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic Management" },
-  { slug: "student-promotion", label: "Student Promotion", area: "admin", purpose: "Promote students between classes", roles: ["Admin"], group: "Academic Management" },
+  { slug: "academic-profile", label: "Academics", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic" },
+  { slug: "student-promotion", label: "Promotions", area: "admin", purpose: "Promote students between classes", roles: ["Admin"], group: "Academic" },
 
   { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Student Management" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", roles: ["Admin"], group: "Student Management" },
   { slug: "enrollments", label: "Enrollments", area: "admin", purpose: "Manage enrollments", roles: ["Admin"], group: "Student Management" },
-  { slug: "student-withdrawal", label: "Student Withdrawal", area: "admin", purpose: "Process withdrawals", roles: ["Admin"], group: "Student Management" },
+  { slug: "student-withdrawal", label: "Withdrawals", area: "admin", purpose: "Process withdrawals", roles: ["Admin"], group: "Student Management" },
   { slug: "alumni", label: "Alumni", area: "admin", purpose: "Alumni records", roles: ["Admin"], group: "Student Management" },
 
   { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "discount-types", label: "Discount Types", area: "admin", purpose: "Define discounts", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fine-types", label: "Fine Types", area: "admin", purpose: "Fine type configuration", roles: ["Admin"], group: "Fee Configuration" },
-  { slug: "payment-account", label: "Account Type", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
+  { slug: "payment-account", label: "Accounts", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", roles: ["Admin"], group: "Transport Management" },
-  { slug: "student-vehicle-assignments", label: "Student Vehicle Assignments", area: "admin", purpose: "Assign vehicles to students", roles: ["Admin"], group: "Transport Management" },
+  { slug: "student-vehicle-assignments", label: "Vehicle Assignments", area: "admin", purpose: "Assign vehicles to students", roles: ["Admin"], group: "Transport" },
 
   { slug: "staff", label: "Staff", area: "admin", purpose: "Manage staff", roles: ["Admin"], group: "Staff Management" },
   { slug: "departments", label: "Departments", area: "admin", purpose: "Manage departments", roles: ["Admin"], group: "Staff Management" },
@@ -54,10 +54,10 @@ export const portalSections: PortalSection[] = [
   { slug: "roles", label: "Roles", area: "admin", purpose: "Role management", roles: ["Admin"], group: "User Management" },
   { slug: "permissions", label: "Permissions", area: "admin", purpose: "Permission sets", roles: ["Admin"], group: "User Management" },
 
-  { slug: "admission-numbers", label: "Admission Numbers", area: "admin", purpose: "Admission numbering", roles: ["Admin"], group: "Numbering Settings" },
-  { slug: "receipt-numbers", label: "Receipt Numbers", area: "admin", purpose: "Receipt numbering", roles: ["Admin"], group: "Numbering Settings" },
-  { slug: "expense-numbers", label: "Expense Numbers", area: "admin", purpose: "Expense numbering", roles: ["Admin"], group: "Numbering Settings" },
-  { slug: "transaction-numbers", label: "Transaction Numbers", area: "admin", purpose: "Transaction numbering", roles: ["Admin"], group: "Numbering Settings" },
+  { slug: "admission-numbers", label: "Admission Nos.", area: "admin", purpose: "Admission numbering", roles: ["Admin"], group: "Numbering" },
+  { slug: "receipt-numbers", label: "Receipt Nos.", area: "admin", purpose: "Receipt numbering", roles: ["Admin"], group: "Numbering" },
+  { slug: "expense-numbers", label: "Expense Nos.", area: "admin", purpose: "Expense numbering", roles: ["Admin"], group: "Numbering" },
+  { slug: "transaction-numbers", label: "Transaction Nos.", area: "admin", purpose: "Transaction numbering", roles: ["Admin"], group: "Numbering" },
 
   { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "System audit logs", roles: ["Admin"], group: "Admin" },
 
@@ -134,7 +134,7 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
 }
 
-const workspaceRoles = new Set(["ADMIN", "ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER"])
+const workspaceRoles = new Set(["ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER"])
 
 export function normalizeRole(role?: string | null) {
   return (role || "").replace(/\s+/g, " ").trim().toUpperCase()

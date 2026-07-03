@@ -3,11 +3,12 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { viewFeeStructure, type FeeStructureView } from "@/lib/services/feeStructure"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { formatDateOnly } from "@/lib/utils"
 export default function Page() {
     const router = useRouter()
     const [feeStructure, setFeeStructure] =
@@ -123,9 +124,7 @@ export default function Page() {
                                 </p>
 
                                 <p className="mt-2 text-lg font-semibold">
-                                    {new Date(
-                                        feeStructure.createdAt
-                                    ).toLocaleDateString()}
+                                    {formatDateOnly(feeStructure.createdAt)}
                                 </p>
                             </CardContent>
                         </Card>
@@ -137,9 +136,7 @@ export default function Page() {
                                 </p>
 
                                 <p className="mt-2 text-lg font-semibold">
-                                    {new Date(
-                                        feeStructure.updatedAt
-                                    ).toLocaleDateString()}
+                                    {formatDateOnly(feeStructure.updatedAt)}
                                 </p>
                             </CardContent>
                         </Card>

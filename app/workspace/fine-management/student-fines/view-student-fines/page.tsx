@@ -175,6 +175,11 @@ export default function ViewStudentFinePage() {
     );
   }
 
+  const amount = Number(fine.amount) || 0;
+  const paidAmount = Number(fine.paidAmount) || 0;
+  const balanceAmount = Number(fine.balanceAmount);
+  const safeBalanceAmount = Number.isFinite(balanceAmount) ? balanceAmount : amount - paidAmount;
+
   return (
     <section className="w-full px-6 py-4">
       {/* Header */}
@@ -267,7 +272,7 @@ export default function ViewStudentFinePage() {
                 Fine amount
               </div>
               <div className="text-lg text-slate-950 dark:text-slate-100">
-                ₹{Number(fine.amount).toLocaleString()}
+                ₹{amount.toLocaleString()}
               </div>
             </div>
             <div className="px-5 py-4 text-center">
@@ -275,7 +280,7 @@ export default function ViewStudentFinePage() {
                 Paid
               </div>
               <div className="text-lg text-emerald-600 dark:text-emerald-400">
-                ₹{Number(fine.paidAmount).toLocaleString()}
+                ₹{paidAmount.toLocaleString()}
               </div>
             </div>
             <div className="px-5 py-4 text-center">
@@ -283,7 +288,7 @@ export default function ViewStudentFinePage() {
                 Balance
               </div>
               <div className="text-lg text-slate-950 dark:text-slate-100">
-                ₹{Number(fine.balanceAmount).toLocaleString()}
+                ₹{safeBalanceAmount.toLocaleString()}
               </div>
             </div>
           </div>

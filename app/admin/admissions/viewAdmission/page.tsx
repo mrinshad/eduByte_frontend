@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
  
 import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
+import { formatDateOnly } from "@/lib/utils";
  
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -69,9 +70,7 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
 }
  
 function formatDob(dob: string) {
-  const d = new Date(dob);
-  if (Number.isNaN(d.getTime())) return dob;
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDateOnly(dob);
 }
  
 function ChargeStatusBadge({ status }: { status: string }) {
@@ -148,7 +147,7 @@ export default function ViewAdmissionPage() {
   const totalDiscount = charges.reduce((a, c) => a + c.discountAmount, 0);
   const totalFinal = charges.reduce((a, c) => a + c.finalAmount, 0);
   const totalPaid = charges.reduce((a, c) => a + c.paidAmount, 0);
-  const totalBalance = charges.reduce((a, c) => a + c.balanceAmount, 0);
+  const totalBalance = charges.reduce((a, c) => a + Math.max(c.finalAmount - c.paidAmount, 0), 0);
  
   return (
     <section className="w-full px-6 py-4">
@@ -314,6 +313,7 @@ export default function ViewAdmissionPage() {
             <TableBody>
               {charges.map((charge) => {
                 const isModified = charge.finalAmount !== charge.originalAmount;
+                const computedBalance = Math.max(charge.finalAmount - charge.paidAmount, 0);
                 return (
                   <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
                     <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
@@ -354,7 +354,7 @@ export default function ViewAdmissionPage() {
  
                     <TableCell className="text-right">
                       <span className="inline-flex items-center rounded-full bg-[#3B82F6]/10 px-2.5 py-1 text-xs font-semibold text-[#3B82F6] dark:bg-[#3B82F6]/20 dark:text-[#60A5FA]">
-                        ₹{charge.balanceAmount.toLocaleString()}
+                        ₹{computedBalance.toLocaleString()}
                       </span>
                     </TableCell>
  

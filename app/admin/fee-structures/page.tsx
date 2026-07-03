@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Eye,
@@ -18,6 +18,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
@@ -29,17 +36,44 @@ export default function Page() {
   const [feeStructures, setFeeStructures] = useState<FeeStructureSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
+  const [academicYearFilter, setAcademicYearFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 1,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     async function load() {
       try {
         setIsLoading(true);
-        const data = await getFeeStructures();
-        setFeeStructures(data);
+        const response = await getFeeStructures({
+          page: currentPage,
+          limit: rowsPerPage,
+          search,
+          className: classFilter === "all" ? "" : classFilter,
+          academicYear: academicYearFilter === "all" ? "" : academicYearFilter,
+          status: statusFilter as "all" | "active" | "inactive",
+        });
+        setFeeStructures(response.items);
+        setPagination(response.pagination);
       } catch (err) {
         setError("Could not load fee structures. Please try again.");
       } finally {
@@ -47,7 +81,7 @@ export default function Page() {
       }
     }
     load();
-  }, []);
+  }, [currentPage, rowsPerPage, search, classFilter, academicYearFilter, statusFilter]);
 
   const handleDelete = async (id: string) => {
     const confirmed = window.confirm("Are you sure you want to delete this fee structure? This action cannot be undone.");
@@ -65,19 +99,19 @@ export default function Page() {
     }
   };
 
-  const filtered = feeStructures.filter((item) => {
-    const q = search.toLowerCase();
-    return (
-      item.name?.toLowerCase().includes(q) ||
-      item.academicYearName?.toLowerCase().includes(q) ||
-      item.className?.toLowerCase().includes(q)
-    );
-  });
+  const classOptions = useMemo(
+    () => Array.from(new Set(feeStructures.map((item) => item.className).filter(Boolean))),
+    [feeStructures]
+  );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-  const start = filtered.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const end = Math.min(currentPage * rowsPerPage, filtered.length);
+  const academicYearOptions = useMemo(
+    () => Array.from(new Set(feeStructures.map((item) => item.academicYearName).filter(Boolean))),
+    [feeStructures]
+  );
+
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const start = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const end = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
@@ -94,23 +128,78 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+        <div className="flex w-full flex-col gap-3">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search fee structures..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
+            </div>
+            <Button
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={() => router.push("/admin/fee-structures/createFee")}
+            >
+              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              Create Fee Structure
+            </Button>
           </div>
-          <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push("/admin/fee-structures/createFee")}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value);
+              setCurrentPage(1);
+            }}
           >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Create Fee Structure
-          </Button>
+            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+            </Select>
+            <Select
+            value={academicYearFilter}
+            onValueChange={(value) => {
+              setAcademicYearFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
+              <SelectValue placeholder="All Years" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {academicYearOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+            </Select>
+            <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full h-10 rounded-xl border-slate-300">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -145,7 +234,7 @@ export default function Page() {
                     <p className="text-sm font-medium">{error}</p>
                   </TableCell>
                 </TableRow>
-              ) : paginated.length === 0 ? (
+              ) : feeStructures.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -155,10 +244,10 @@ export default function Page() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginated.map((item, index) => (
+                feeStructures.map((item, index) => (
                   <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">{(currentPage - 1) * rowsPerPage + index + 1}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYearName}</TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYearName || "-"}</TableCell>
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.className}</TableCell>
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{item.name}</TableCell>
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.description ?? "—"}</TableCell>
@@ -218,7 +307,7 @@ export default function Page() {
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{start}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{end}</span> of{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{filtered.length}</span> entries
+            <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -235,7 +324,7 @@ export default function Page() {
               <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" /> Prev
             </Button>
             <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[4rem] text-center">
-              Page {currentPage}
+              Page {currentPage} of {totalPages}
             </div>
             <Button className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
               size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>

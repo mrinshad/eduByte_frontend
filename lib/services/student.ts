@@ -28,6 +28,9 @@ export interface Student {
   whatsappNumber: string;
   address: string;
   status: "ACTIVE" | "ALUMNI";
+  className?: string | null;
+  divisionName?: string | null;
+  admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +44,9 @@ export interface StudentListItem {
   whatsappNumber: string;
   address: string;
   status: string;
+  className?: string | null;
+  divisionName?: string | null;
+  admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
 }
 
 export interface StudentPagination {
@@ -53,7 +59,7 @@ export interface StudentPagination {
 export interface StudentListResponse {
   success: boolean;
   message?: string;
-  data: Student[];
+  data: StudentListItem[];
   pagination: StudentPagination;
 }
 
@@ -103,9 +109,23 @@ export async function getStudents({
     order,
   });
 
-  return (await apiFetch(
+  const payload = (await apiFetch(
     `/api/students?${params.toString()}`
-  )) as StudentListResponse;
+  )) as ApiSuccess<{
+    items: StudentListItem[];
+    pagination: StudentPagination;
+  }>;
+
+  return {
+    success: true,
+    data: payload.data?.items ?? [],
+    pagination: payload.data?.pagination ?? {
+      page,
+      limit,
+      total: 0,
+      totalPages: 1,
+    },
+  } as StudentListResponse;
 }
 
 // Get Student By Id
@@ -131,10 +151,15 @@ export async function updateStudent(
 }
 
 // Get Student Admission Number and Name By Id
-export async function getStudentAdmissionAndName() {
-  const payload = (await apiFetch(
-    `/api/students/admission-name/`
-  )) as ApiSuccess<StudentAdmissionAndName>;
+export async function getStudentAdmissionAndName(params?: { page?: number; limit?: number }) {
+  const query = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 200),
+  });
 
-  return payload.data ?? null;
+  const payload = (await apiFetch(
+    `/api/students/admission-name?${query.toString()}`
+  )) as ApiSuccess<StudentAdmissionAndName[]>;
+
+  return payload.data ?? [];
 }

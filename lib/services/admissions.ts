@@ -5,6 +5,13 @@ type ApiSuccess<T> = {
   message?: string
   data?: T
 }
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
  
 export interface BackendAdmission {
   id: string;
@@ -23,6 +30,9 @@ export interface BackendAdmission {
   fatherMobile?: string;
   class?: string;
   division?: string;
+  feeStructureName?: string;
+  vehicleName?: string | null;
+  vehicleNumber?: string | null;
 }
  
 export interface ChargeOverride {
@@ -189,9 +199,31 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
   };
 }
  
-export async function getStudentAdmissions() {
-  const payload = (await apiFetch("/api/stdenrollment")) as ApiSuccess<BackendAdmission[]>;
-  return payload.data ?? [];
+export async function getStudentAdmissions(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
+  const query = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 10),
+    search: params?.search ?? "",
+  });
+
+  const payload = (await apiFetch(`/api/stdenrollment?${query.toString()}`)) as ApiSuccess<{
+    items: BackendAdmission[];
+    pagination: PaginationMeta;
+  }>;
+
+  return {
+    items: payload.data?.items ?? [],
+    pagination: payload.data?.pagination ?? {
+      page: 1,
+      limit: params?.limit ?? 10,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 }
  
 export async function createStudentAdmission(
