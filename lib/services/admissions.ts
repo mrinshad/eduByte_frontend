@@ -27,7 +27,8 @@ export interface BackendAdmission {
  
 export interface ChargeOverride {
   chargeTypeId: string;
-  currentAmount: number;
+  frequency: string;
+  originalAmount: number;
   finalAmount: number;
   discountAmount: number;
   description: string | null;
@@ -74,6 +75,7 @@ interface RawEnrollmentCharge {
   id: string;
   enrollmentId: string;
   chargeTypeId: string;
+  frequency: string;
   chargeType?: { name: string };
   description: string | null;
   originalAmount: string;
@@ -126,6 +128,7 @@ export interface CompleteEnrollmentRecord {
   charges: {
     id: string;
     chargeTypeId: string;
+    frequency: string;
     chargeType: string;
     description: string | null;
     originalAmount: number;
@@ -158,6 +161,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
       chargeTypeId: c.chargeTypeId,
       chargeType: c.chargeType?.name || "Charge",
       description: c.description,
+      frequency: c.frequency,
       originalAmount,
       discountAmount,
       finalAmount,

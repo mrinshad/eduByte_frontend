@@ -91,6 +91,7 @@ export async function getDivisions(classId: string): Promise<Division[]> {
 interface EditableFeeItem {
     id?: string;
     chargeTypeId: string;
+    frequency: string;
     name: string;
     baseAmount: number;
     amount: number | "";
@@ -340,6 +341,7 @@ export default function Page() {
 
                     const itemsLayout: EditableFeeItem[] = response.data.items.map((item) => ({
                         chargeTypeId: item.chargeTypeId,
+                        frequency: item.frequency,
                         name: item.chargeTypeName,
                         baseAmount: Number(item.amount) || 0,
                         amount: Number(item.amount) || 0,
@@ -429,6 +431,7 @@ export default function Page() {
                 setEditableFeeItems(
                     enrollment.charges.map((charge) => ({
                         id: charge.id,
+                        frequency: charge.frequency,
                         chargeTypeId: charge.chargeTypeId,
                         name: charge.chargeType,
                         baseAmount: charge.originalAmount,
@@ -527,7 +530,8 @@ export default function Page() {
             } else {
                 const chargeOverrides = editableFeeItems.map((item) => ({
                     chargeTypeId: item.chargeTypeId,
-                    currentAmount: item.baseAmount,
+                    frequency: item.frequency,
+                    originalAmount: item.baseAmount,
                     finalAmount: Number(item.amount) || 0,
                     discountAmount: item.baseAmount - (Number(item.amount) || 0),
                     description: item.description.trim() !== "" ? item.description.trim() : null,

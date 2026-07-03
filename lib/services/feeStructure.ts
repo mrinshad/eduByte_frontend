@@ -17,6 +17,7 @@ export interface FeeStructureView {
   items: {
     chargeTypeId: string;
     chargeTypeName: string;
+    frequency: string;
     amount: string;
   }[];
 }
