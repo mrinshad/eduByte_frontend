@@ -58,9 +58,13 @@ export async function updateAcademicYear(id: string, input: AcademicYearInput) {
 
 export async function getDefaultAcademicYear() {
   const payload = (await apiFetch("/api/academicyear/default")) as ApiSuccess<{
+    id?: string
     name: string
     startDate: string
     endDate: string
+    isActive?: boolean
+    createdAt?: string
+    updatedAt?: string
   }>
 
   return payload.data ?? null
