@@ -20,9 +20,9 @@ export interface EnrollmentDetails {
   division: string;
   rollNumber: string;
   feeStructureName: string;
-  vehicleName: string;
-  vehicleNumber: string;
-  driverName: string;
+  vehicleName: string | null;
+  vehicleNumber: string | null;
+  driverName: string | null;
   student: Student;
   enrollmentCharges: EnrollmentCharge[];
 }
@@ -31,7 +31,7 @@ export interface Student {
   id: string;
   studentName: string;
   admissionNumber: string;
-  gender: "MALE" | "FEMALE";
+  gender: "MALE" | "FEMALE" | string;
   dob: string;
   bloodGroup: string;
   status: "ACTIVE" | "INACTIVE";
@@ -48,12 +48,12 @@ export interface EnrollmentCharge {
   enrollmentId: string;
   chargeTypeId: string;
   description: string;
-  frequency: "MONTHLY" | "YEARLY" | "ONE_TIME";
+  frequency: "MONTHLY" | "YEARLY" | "ONE_TIME" | "QUARTERLY";
   generationStartAcademicMonth: number;
   isActive: boolean;
-  originalAmount: number;
-  discountAmount: number;
-  finalAmount: number;
+  originalAmount: number | string;
+  discountAmount: number | string;
+  finalAmount: number | string;
   dueDay: number;
   createdAt: string;
   updatedAt: string;
@@ -63,7 +63,7 @@ export interface EnrollmentCharge {
 export interface ChargeType {
   id: string;
   name: string;
-  frequency: "MONTHLY" | "YEARLY" | "ONE_TIME";
+  frequency: "MONTHLY" | "YEARLY" | "ONE_TIME" | "QUARTERLY";
 }
 
 //get all feecollection for table
@@ -82,4 +82,93 @@ export async function getStudentFeeCollection() {
         data?: studentFeeCollection[];
     };
     return payload.data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Outstanding Charges / Fines / Collect Payment
+// ---------------------------------------------------------------------------
+
+export interface StudentCharge {
+  id: string;
+  chargeTypeId: string;
+  chargeType: string;
+  frequency: "MONTHLY" | "YEARLY" | "ONE_TIME" | "QUARTERLY";
+  description: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paidAmount: number;
+  balance: number;
+  dueDay: number;
+  dueDate: string;
+  periodMonth: number | null;
+  periodYear: number | null;
+  status: "PAID" | "PARTIALLY_PAID" | "PENDING" | string;
+  canCollect: boolean;
+  createdAt: string;
+}
+
+export interface Fine {
+  id: string;
+  fineTypeId: string;
+  fineType: string;
+  reason: string;
+  amount: number;
+  paidAmount: number;
+  balance: number;
+  status: "PAID" | "PARTIALLY_PAID" | "PENDING" | string;
+  canCollect: boolean;
+  createdAt: string;
+}
+
+export async function getStudentCharges(enrollmentId: string) {
+  const payload = (await apiFetch(
+    `/api/feecollection/${enrollmentId}/charges`
+  )) as { success: boolean; count: number; data: StudentCharge[] };
+  return payload.data ?? [];
+}
+
+export async function getStudentFines(enrollmentId: string) {
+  const payload = (await apiFetch(
+    `/api/feecollection/${enrollmentId}/fines`
+  )) as { success: boolean; count: number; data: Fine[] };
+  return payload.data ?? [];
+}
+
+export interface CollectPaymentLine {
+  accountId: string;
+  amount: number;
+}
+
+export interface CollectAllocation {
+  studentChargeId?: string;
+  fineId?: string;
+  amount: number;
+}
+
+export interface CollectFeePayload {
+  enrollmentId: string;
+  payments: CollectPaymentLine[];
+  allocations: CollectAllocation[];
+}
+
+export interface CollectFeeResponse {
+  success: boolean;
+  data: {
+    id: string;
+    transactionNumber: string;
+    transactionDate: string;
+    totalAmount: number;
+    status: string;
+    lines: unknown[];
+    allocations: unknown[];
+  };
+}
+
+export async function collectFee(payload: CollectFeePayload) {
+  const response = (await apiFetch(`/api/feecollection/${payload.enrollmentId}/collect`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })) as CollectFeeResponse;
+  return response.data;
 }
