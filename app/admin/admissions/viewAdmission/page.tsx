@@ -100,7 +100,7 @@ function ChargeStatusBadge({ status }: { status: string }) {
 export default function ViewAdmissionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = searchParams.get("id") ?? "1";
+  const id = searchParams.get("id");
  
   const [enrollment, setEnrollment] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);

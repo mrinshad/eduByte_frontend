@@ -221,7 +221,7 @@ export default function FeeCollectionPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          
+                          onClick={() => router.push(`/workspace/fee-management/collection/viewCollection?id=${student.enrollmentId}`)}
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
