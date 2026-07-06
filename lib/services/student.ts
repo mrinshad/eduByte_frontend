@@ -103,9 +103,31 @@ export async function getStudents({
     order,
   });
 
-  return (await apiFetch(
+  const payload = (await apiFetch(
     `/api/students?${params.toString()}`
-  )) as StudentListResponse;
+  )) as {
+    success: boolean;
+    message?: string;
+    data?: {
+      items?: Student[];
+      pagination?: StudentPagination;
+    };
+  };
+
+  const listItems = Array.isArray(payload.data?.items) ? payload.data.items : [];
+  const pagination = payload.data?.pagination;
+
+  return {
+    success: payload.success,
+    message: payload.message,
+    data: listItems,
+    pagination: pagination ?? {
+      page,
+      limit,
+      total: 0,
+      totalPages: 1,
+    },
+  } as StudentListResponse;
 }
 
 // Get Student By Id

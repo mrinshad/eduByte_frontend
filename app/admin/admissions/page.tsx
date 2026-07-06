@@ -63,7 +63,9 @@ export default function StudentAdmissionListPage() {
   // 1. Process client-side filtering + automatic pagination reset on query mutation
   const filteredStudents = useMemo(() => {
     setCurrentPage(1); // Auto-fallback to page 1 during filter operations
-    return students.filter((student) => {
+    const safeStudents = Array.isArray(students) ? students : [];
+
+    return safeStudents.filter((student) => {
       const query = search.toLowerCase();
 
       // Defensively fallback to IDs or empty strings if relation strings aren't populated yet

@@ -186,8 +186,22 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
 }
  
 export async function getStudentAdmissions() {
-  const payload = (await apiFetch("/api/stdenrollment")) as ApiSuccess<BackendAdmission[]>;
-  return payload.data ?? [];
+  const payload = (await apiFetch("/api/stdenrollment")) as ApiSuccess<{
+    items?: BackendAdmission[];
+    pagination?: unknown;
+  }>;
+
+  const data = payload.data;
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && typeof data === "object" && Array.isArray(data.items)) {
+    return data.items;
+  }
+
+  return [];
 }
  
 export async function createStudentAdmission(

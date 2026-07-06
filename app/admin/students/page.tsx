@@ -54,7 +54,9 @@ export default function Page() {
   const filteredStudents = useMemo(() => {
     setCurrentPage(1);
     const q = search.toLowerCase();
-    return allStudents.filter(
+    const safeStudents = Array.isArray(allStudents) ? allStudents : [];
+
+    return safeStudents.filter(
       (s) =>
         s.studentName?.toLowerCase().includes(q) ||
         s.whatsappNumber?.toLowerCase().includes(q) ||
