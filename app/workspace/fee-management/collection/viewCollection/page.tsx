@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, User, Loader2, Bus, Wallet, Receipt, Plus, X, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import {
   getStudentDetails,
   getStudentCharges,
@@ -215,6 +216,22 @@ export default function Page() {
 
   const difference = totalOutstanding - totalPayments
 
+  const displayCharges = useMemo(() => {
+    return [...charges].sort((a, b) => {
+      if (a.canCollect !== b.canCollect) {
+        return a.canCollect ? -1 : 1
+      }
+
+      const periodA = (a.periodYear ?? 0) * 100 + (a.periodMonth ?? 0)
+      const periodB = (b.periodYear ?? 0) * 100 + (b.periodMonth ?? 0)
+      if (periodA !== periodB) {
+        return periodB - periodA
+      }
+
+      return 0
+    })
+  }, [charges])
+
   // ---- Payment line handlers ----
   function addPaymentLine() {
     const unused = paymentAccounts.find(
@@ -265,6 +282,7 @@ export default function Page() {
       })
 
       setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
+      toast.success(`Fee collected successfully. Txn ${result.transactionNumber} for ${formatCurrency(result.totalAmount)}.`)
       setSelected({})
       setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
 
@@ -395,7 +413,7 @@ export default function Page() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                      {charges.map((charge) => {
+                      {displayCharges.map((charge) => {
                         const key = chargeKey(charge.id)
                         const isSelected = key in selected
                         const disabled = !charge.canCollect || charge.balance <= 0
@@ -564,7 +582,7 @@ export default function Page() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 gap-1 text-xs text-[#556043] hover:bg-[#556043]/10"
+                      className="h-7 gap-1 text-xs text-[#556043] hover:bg-[#556043] hover:text-white"
                       onClick={addPaymentLine}
                       disabled={payments.length >= paymentAccounts.length || paymentAccounts.length === 0}
                     >

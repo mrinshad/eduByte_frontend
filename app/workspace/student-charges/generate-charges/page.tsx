@@ -75,8 +75,12 @@ export default function FeeGenerationPage() {
     return preview.warnings.filter((item): item is string => typeof item === "string");
   }, [preview?.warnings]);
 
+  const generationWindowAllowed =
+    preview?.validation?.generationWindowAllowed !== false;
   const readyToGenerate = Boolean(preview?.validation?.readyToGenerate);
-  const hasPendingGeneration = Boolean(preview && preview.summary.chargesToGenerate > 0 && readyToGenerate);
+  const hasPendingGeneration = Boolean(
+    preview && generationWindowAllowed && preview.summary.chargesToGenerate > 0 && readyToGenerate
+  );
 
   const estimatedByType = useMemo(() => {
     if (!preview) return [];
@@ -180,7 +184,12 @@ export default function FeeGenerationPage() {
         latestReadyToGenerate && latestPreview.summary.chargesToGenerate > 0;
 
       if (!latestHasPendingGeneration) {
-        toast.warning("No new charges to generate for this month. Please refresh preview.");
+        const blockedByWindow = latestPreview.validation?.generationWindowAllowed === false;
+        toast.warning(
+          blockedByWindow
+            ? "Generation is currently locked to this month and next month only."
+            : "No new charges to generate for this month. Please refresh preview."
+        );
         setConfirmOpen(false);
         return;
       }
@@ -211,7 +220,11 @@ export default function FeeGenerationPage() {
     }
 
     if (!hasPendingGeneration) {
-      toast.warning("No pending charges to generate for this month.");
+      if (!generationWindowAllowed) {
+        toast.warning("Generation is currently locked to this month and next month only.");
+      } else {
+        toast.warning("No pending charges to generate for this month.");
+      }
       return;
     }
 
@@ -242,7 +255,7 @@ export default function FeeGenerationPage() {
             <Button
               className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={openGenerateDialog}
-              disabled={!preview || isLoadingPreview || isGenerating}
+              disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
             >
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Generate Charges
