@@ -165,6 +165,40 @@ export interface CollectFeeResponse {
   };
 }
 
+export interface PaymentMethodAccount {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  isActive: boolean;
+}
+
+export async function getPaymentMethodAccounts() {
+  const payload = (await apiFetch(
+    "/api/accounts?type=PAYMENT_METHOD&isActive=true"
+  )) as { success: boolean; data?: PaymentMethodAccount[] };
+
+  return payload.data ?? [];
+}
+
+export async function createPaymentMethodAccount(input: {
+  name: string;
+  description?: string | null;
+  isActive?: boolean;
+}) {
+  const payload = (await apiFetch("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      type: "PAYMENT_METHOD",
+      description: input.description ?? null,
+      isActive: input.isActive ?? true,
+    }),
+  })) as { success: boolean; data?: PaymentMethodAccount; message?: string };
+
+  return payload.data ?? null;
+}
+
 export async function collectFee(payload: CollectFeePayload) {
   const response = (await apiFetch(`/api/feecollection/${payload.enrollmentId}/collect`, {
     method: "POST",

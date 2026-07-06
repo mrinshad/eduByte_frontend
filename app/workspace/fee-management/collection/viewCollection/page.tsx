@@ -7,21 +7,14 @@ import {
   getStudentDetails,
   getStudentCharges,
   getStudentFines,
+  getPaymentMethodAccounts,
   collectFee,
   type EnrollmentDetails,
   type StudentCharge,
   type Fine,
   type CollectAllocation,
+  type PaymentMethodAccount,
 } from "@/lib/services/feeCollection"
-
-// ---------------------------------------------------------------------------
-// TEMP: payment methods — replace with a real accounts API once available
-// ---------------------------------------------------------------------------
-const PAYMENT_METHODS = [
-  { accountId: "cash-account-id", label: "Cash" },
-  { accountId: "upi-account-id", label: "UPI" },
-  { accountId: "bank-account-id", label: "Bank Transfer" },
-];
 
 const formatCurrency = (n: number) =>
   `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -95,6 +88,7 @@ export default function Page() {
   // Charges / Fines
   const [charges, setCharges] = useState<StudentCharge[]>([])
   const [fines, setFines] = useState<Fine[]>([])
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([])
   const [chargesLoading, setChargesLoading] = useState(true)
   const [chargesError, setChargesError] = useState<string | null>(null)
 
@@ -102,9 +96,7 @@ export default function Page() {
   const [selected, setSelected] = useState<Record<string, number>>({})
 
   // Payment lines
-  const [payments, setPayments] = useState<{ accountId: string; amount: number }[]>([
-    { accountId: PAYMENT_METHODS[0].accountId, amount: 0 },
-  ])
+  const [payments, setPayments] = useState<{ accountId: string; amount: number }[]>([])
 
   // Submit state
   const [submitting, setSubmitting] = useState(false)
@@ -133,12 +125,20 @@ export default function Page() {
       try {
         setChargesLoading(true)
         setChargesError(null)
-        const [chargesData, finesData] = await Promise.all([
+        const [chargesData, finesData, paymentAccountsData] = await Promise.all([
           getStudentCharges(enrollmentId),
           getStudentFines(enrollmentId),
+          getPaymentMethodAccounts(),
         ])
         setCharges(chargesData)
         setFines(finesData)
+        setPaymentAccounts(paymentAccountsData)
+
+        if (paymentAccountsData.length > 0) {
+          setPayments([{ accountId: paymentAccountsData[0].id, amount: 0 }])
+        } else {
+          setPayments([])
+        }
       } catch (err) {
         console.error("Charges/Fines API Error:", err)
         setChargesError(err instanceof Error ? err.message : "Failed to load outstanding charges.")
@@ -217,11 +217,11 @@ export default function Page() {
 
   // ---- Payment line handlers ----
   function addPaymentLine() {
-    const unused = PAYMENT_METHODS.find(
-      (m) => !payments.some((p) => p.accountId === m.accountId)
+    const unused = paymentAccounts.find(
+      (m) => !payments.some((p) => p.accountId === m.id)
     )
     if (!unused) return
-    setPayments((prev) => [...prev, { accountId: unused.accountId, amount: 0 }])
+    setPayments((prev) => [...prev, { accountId: unused.id, amount: 0 }])
   }
 
   function removePaymentLine(index: number) {
@@ -241,6 +241,7 @@ export default function Page() {
     totalOutstanding > 0 &&
     difference === 0 &&
     payments.every((p) => p.amount > 0) &&
+    payments.length > 0 &&
     !submitting
 
   async function handleSubmit() {
@@ -265,7 +266,7 @@ export default function Page() {
 
       setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
       setSelected({})
-      setPayments([{ accountId: PAYMENT_METHODS[0].accountId, amount: 0 }])
+      setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
 
       // Refresh charges/fines to reflect updated balances
       const [chargesData, finesData] = await Promise.all([
@@ -565,12 +566,18 @@ export default function Page() {
                       size="sm"
                       className="h-7 gap-1 text-xs text-[#556043] hover:bg-[#556043]/10"
                       onClick={addPaymentLine}
-                      disabled={payments.length >= PAYMENT_METHODS.length}
+                      disabled={payments.length >= paymentAccounts.length || paymentAccounts.length === 0}
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Add method
                     </Button>
                   </div>
+
+                  {paymentAccounts.length === 0 ? (
+                    <p className="mb-3 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      No active payment method accounts found. Seed or create payment accounts first.
+                    </p>
+                  ) : null}
 
                   <div className="space-y-2">
                     {payments.map((p, index) => (
@@ -580,13 +587,13 @@ export default function Page() {
                           onChange={(e) => updatePaymentAccount(index, e.target.value)}
                           className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
                         >
-                          {PAYMENT_METHODS.map((m) => (
+                          {paymentAccounts.map((m) => (
                             <option
-                              key={m.accountId}
-                              value={m.accountId}
-                              disabled={payments.some((pp, i) => i !== index && pp.accountId === m.accountId)}
+                              key={m.id}
+                              value={m.id}
+                              disabled={payments.some((pp, i) => i !== index && pp.accountId === m.id)}
                             >
-                              {m.label}
+                              {m.name}
                             </option>
                           ))}
                         </select>
