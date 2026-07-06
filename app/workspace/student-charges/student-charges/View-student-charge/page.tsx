@@ -28,6 +28,7 @@ import {
   type StudentEnrollmentCharges,
   type EnrollmentCharge,
 } from "@/lib/services/studentCharges"; // adjust to wherever this service actually lives
+import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
  
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -113,6 +114,7 @@ export default function ViewAdmissionPage() {
   const id = searchParams.get("id") ?? "";
  
   const [enrollment, setEnrollment] = useState<StudentEnrollmentCharges | null>(null);
+  const [enrollmentDetails, setEnrollmentDetails] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
  
   useEffect(() => {
@@ -120,9 +122,13 @@ export default function ViewAdmissionPage() {
       if (!id) return;
       try {
         setLoading(true);
-        const data = await getStudentChargesByEnrollmentId(id);
-        console.log(data)
-        setEnrollment(data);
+        const [studentChargeData, enrollmentData] = await Promise.all([
+          getStudentChargesByEnrollmentId(id),
+          getEnrollmentById(id),
+        ]);
+
+        setEnrollment(studentChargeData);
+        setEnrollmentDetails(enrollmentData);
       } catch (err) {
         console.error("Failed to load enrollment view detail records:", err);
       } finally {
@@ -163,11 +169,22 @@ export default function ViewAdmissionPage() {
   const { studentDetails, charges } = enrollment;
  
   const sortedCharges = charges;
+
+  const enrollmentChargesTemplate = enrollmentDetails?.charges ?? [];
   
  
   const totalFinal = charges.reduce((sum, c) => sum + parseFloat(c.finalAmount || "0"), 0);
   const totalPaid = charges.reduce((sum, c) => sum + parseFloat(c.paidAmount || "0"), 0);
   const totalBalance = totalFinal - totalPaid;
+
+  const configuredAcademicYearTotal = enrollmentChargesTemplate.reduce(
+    (sum, c) => sum + (c.finalAmount || 0),
+    0
+  );
+
+  const academicYearPayable = totalFinal;
+  const academicYearPaid = totalPaid;
+  const academicYearBalance = totalBalance;
  
   return (
     <section className="w-full px-6 py-4">
@@ -230,6 +247,86 @@ export default function ViewAdmissionPage() {
  
         {/* ── Student charges (table) ── */}
         <InfoSection icon={Receipt} title="Student Charges">
+          <div className="grid grid-cols-2 border-b border-slate-200 bg-background/5 dark:border-slate-800/50 dark:bg-background/5 md:grid-cols-4">
+            {[
+              {
+                label: "Configured fee structure",
+                value: formatCurrency(configuredAcademicYearTotal),
+                cls: "text-slate-950 dark:text-slate-100",
+              },
+              {
+                label: "Academic year payable",
+                value: formatCurrency(academicYearPayable),
+                cls: "text-slate-950 dark:text-slate-100",
+              },
+              {
+                label: "Academic year paid",
+                value: formatCurrency(academicYearPaid),
+                cls: "text-emerald-600 dark:text-emerald-400",
+              },
+              {
+                label: "Academic year balance",
+                value: formatCurrency(academicYearBalance),
+                cls: "text-slate-950 dark:text-slate-100",
+              },
+            ].map(({ label, value, cls }) => (
+              <div key={label} className="px-5 py-4 text-center">
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {label}
+                </div>
+                <div className={`text-lg ${cls}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-b border-slate-200 dark:border-slate-800/50">
+            <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Enrollment Fee Structure (from Enrollment Charges)
+            </div>
+            {enrollmentChargesTemplate.length === 0 ? (
+              <div className="px-4 pb-4 text-sm text-slate-500 dark:text-slate-400">
+                No enrollment charge structure found.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50 dark:hover:bg-slate-950/50">
+                    <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Charge Type
+                    </TableHead>
+                    <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Frequency
+                    </TableHead>
+                    <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Final Amount
+                    </TableHead>
+                    <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Due Day
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {enrollmentChargesTemplate.map((charge) => (
+                    <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                      <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                        {charge.chargeType}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                        {charge.frequency}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-slate-950 dark:text-slate-100">
+                        {formatCurrency(charge.finalAmount)}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                        {charge.dueDay ?? "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50 dark:hover:bg-slate-950/50">

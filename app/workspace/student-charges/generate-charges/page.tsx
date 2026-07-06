@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, RefreshCw, AlertTriangle, CircleCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -63,6 +63,7 @@ export default function FeeGenerationPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const generateLockRef = useRef(false);
 
   const monthLabel = useMemo(() => {
     if (!preview) return "";
@@ -156,8 +157,34 @@ export default function FeeGenerationPage() {
   async function handleGenerateCharges() {
     if (!activeAcademicYearId) return;
 
+    if (generateLockRef.current) {
+      toast.warning("Fee generation is already in progress. Please wait.");
+      return;
+    }
+
     try {
+      generateLockRef.current = true;
       setIsGenerating(true);
+
+      // Always re-check latest preview state before generating to avoid stale duplicate submissions.
+      const latestPreview = await previewFeeGeneration(activeAcademicYearId);
+
+      if (!latestPreview) {
+        throw new Error("Preview data not found");
+      }
+
+      setPreview(latestPreview);
+
+      const latestReadyToGenerate = Boolean(latestPreview.validation?.readyToGenerate);
+      const latestHasPendingGeneration =
+        latestReadyToGenerate && latestPreview.summary.chargesToGenerate > 0;
+
+      if (!latestHasPendingGeneration) {
+        toast.warning("No new charges to generate for this month. Please refresh preview.");
+        setConfirmOpen(false);
+        return;
+      }
+
       const result = await generateFeeCharges(activeAcademicYearId);
 
       if (!result) {
@@ -172,8 +199,23 @@ export default function FeeGenerationPage() {
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
+      generateLockRef.current = false;
       setIsGenerating(false);
     }
+  }
+
+  function openGenerateDialog() {
+    if (!preview) {
+      toast.warning("Preview is not loaded yet.");
+      return;
+    }
+
+    if (!hasPendingGeneration) {
+      toast.warning("No pending charges to generate for this month.");
+      return;
+    }
+
+    setConfirmOpen(true);
   }
 
   return (
@@ -199,8 +241,8 @@ export default function FeeGenerationPage() {
             </Button>
             <Button
               className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-              onClick={() => setConfirmOpen(true)}
-              disabled={!preview || !hasPendingGeneration || isLoadingPreview || isGenerating}
+              onClick={openGenerateDialog}
+              disabled={!preview || isLoadingPreview || isGenerating}
             >
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Generate Charges
