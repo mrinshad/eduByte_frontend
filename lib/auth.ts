@@ -12,12 +12,17 @@ export type AuthSession = {
   accessToken: string
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-
-if (!API_BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not configured")
-}
 const ACCESS_TOKEN_KEY = "edubyte_access_token"
+
+function getApiBaseUrl() {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL
+
+  if (!apiBaseUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured")
+  }
+
+  return apiBaseUrl
+}
 
 function isBrowser() {
   return typeof window !== "undefined"
@@ -54,7 +59,7 @@ async function apiFetch(path: string, init: RequestInit = {}) {
     headers.set("Content-Type", "application/json")
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
+  return fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers,
     credentials: "include",
