@@ -12,7 +12,11 @@ export type AuthSession = {
   accessToken: string
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
+if (!API_BASE_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL is not configured")
+}
 const ACCESS_TOKEN_KEY = "edubyte_access_token"
 
 function isBrowser() {
