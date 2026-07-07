@@ -79,11 +79,13 @@ function SidebarItem({
   active,
   collapsed,
   isSubItem = false,
+  onNavigate,
 }: {
   link: PortalNavItem
   active: boolean
   collapsed: boolean
   isSubItem?: boolean
+  onNavigate?: () => void
 }) {
   const Icon = getIcon(link.slug)
 
@@ -100,6 +102,7 @@ function SidebarItem({
       <Link
         href={link.href}
         aria-current={active ? "page" : undefined}
+        onClick={() => onNavigate?.()}
         className={`group relative flex items-center transition-all duration-200 outline-none rounded-xl text-xs font-medium py-2.5 ${
           isSubItem ? "px-3" : "px-3.5"
         } ${active ? activeClass : hoverClass} ${collapsed ? "justify-center px-0" : ""}`}
@@ -132,11 +135,13 @@ function SidebarSubgroup({
   items,
   collapsed,
   pathname,
+  onNavigate,
 }: {
   subgroup: string
   items: PortalNavItem[]
   collapsed: boolean
   pathname: string
+  onNavigate?: () => void
 }) {
   const mountaineerActive = items.some((item) => {
     const isOverviewLink = item.href.endsWith("/fee-management")
@@ -214,6 +219,7 @@ function SidebarSubgroup({
                     active={active}
                     collapsed={collapsed}
                     isSubItem={true}
+                    onNavigate={onNavigate}
                   />
                 )
               })}
@@ -316,6 +322,7 @@ function SidebarBody({
                         items={subgroupItems}
                         collapsed={collapsed}
                         pathname={pathname}
+                        onNavigate={onCloseMobile}
                       />
                     ))}
                   </div>
@@ -332,6 +339,7 @@ function SidebarBody({
                           link={link}
                           active={active}
                           collapsed={collapsed}
+                          onNavigate={onCloseMobile}
                         />
                       )
                     })}
