@@ -340,31 +340,14 @@ export default function Page() {
             <InfoGrid>
               <InfoItem label="Name" value={student.studentName || "-"} />
               <InfoItem label="Admission No" value={student.admissionNumber || "-"} />
-              <InfoItem label="Gender" value={student.gender || "-"} />
-              <InfoItem label="Date of Birth" value={student.dob ? new Date(student.dob).toLocaleDateString() : "-"} />
-              <InfoItem label="Blood Group" value={student.bloodGroup || "-"} />
-              <InfoItem label="Status" value={student.status || "-"} />
-              <InfoItem label="Father's Name" value={student.fatherName || "-"} />
-              <InfoItem label="Father's Mobile" value={student.fatherMobile || "-"} />
-              <InfoItem label="Mother's Name" value={student.motherName || "-"} />
-              <InfoItem label="Mother's Mobile" value={student.motherMobile || "-"} />
               <InfoItem label="WhatsApp Number" value={student.whatsappNumber || "-"} />
               <InfoItem label="Address" value={student.address || "-"} />
+              <InfoItem label="Class & Div" value={`${enrollmentDetails.classId } - ${ enrollmentDetails.division}`}/>
+              <InfoItem label="Roll Number" value={enrollmentDetails.rollNumber || "-"} />
             </InfoGrid>
           </InfoSection>
 
-          <InfoSection icon={Bus} title="Enrollment Information">
-            <InfoGrid>
-              <InfoItem label="Academic Year" value={enrollmentDetails.academicYearName || "-"} />
-              <InfoItem label="Class" value={enrollmentDetails.classId || "-"} />
-              <InfoItem label="Division" value={enrollmentDetails.division || "-"} />
-              <InfoItem label="Roll Number" value={enrollmentDetails.rollNumber || "-"} />
-              <InfoItem label="Fee Structure" value={enrollmentDetails.feeStructureName || "-"} />
-              <InfoItem label="Vehicle" value={enrollmentDetails.vehicleName || "-"} />
-              <InfoItem label="Vehicle Number" value={enrollmentDetails.vehicleNumber || "-"} />
-              <InfoItem label="Driver Name" value={enrollmentDetails.driverName || "-"} />
-            </InfoGrid>
-          </InfoSection>
+          
 
         </div>
       ) : null}

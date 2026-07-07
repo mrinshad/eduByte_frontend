@@ -135,12 +135,7 @@ export default function FeeCollectionPage() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
-          <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shrink-0"
-          >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Collect Fee
-          </Button>
+          
         </div>
       </div>
 
