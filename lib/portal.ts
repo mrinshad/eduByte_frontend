@@ -105,7 +105,7 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-management/refunds", label: "Refunds", area: "workspace", purpose: "Handle admission cancellation and overpayment refunds", roles: ["Accountant", "Admin"], group: "Finance", subgroup: "Fee Management" },
   { slug: "fee-management/events", label: "Events", area: "workspace", purpose: "Create events and contributions", roles: ["Admin"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/event-collections", label: "Event Collections", area: "workspace", purpose: "Collect event contributions", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
-  { slug: "fee-management/expenses", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
+  { slug: "expense-management/expenses", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/vendors", label: "Vendors", area: "workspace", purpose: "Manage vendors", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/accounts", label: "Accounts", area: "workspace", purpose: "Manage income and expense accounts", roles: ["Admin"], group: "Finance", subgroup: "Accounting" },
   { slug: "fee-management/payroll", label: "Payroll", area: "workspace", purpose: "Generate and track salaries", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
