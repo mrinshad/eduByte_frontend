@@ -57,33 +57,13 @@ export default function Page() {
       setSearch(searchInput.trim());
       setCurrentPage(1);
     }, 300);
+
     return () => clearTimeout(timer);
   }, [searchInput]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [rowsPerPage]);
-
-  const filteredStudents = useMemo(() => {
-    setCurrentPage(1);
-    const q = search.toLowerCase();
-    const safeStudents = Array.isArray(allStudents) ? allStudents : [];
-
-    return safeStudents.filter(
-      (s) =>
-        s.studentName?.toLowerCase().includes(q) ||
-        s.whatsappNumber?.toLowerCase().includes(q) ||
-        s.address?.toLowerCase().includes(q)
-    );
-  }, [search, allStudents]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
-  const safePage = Math.min(currentPage, totalPages);
-
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (safePage - 1) * rowsPerPage;
-    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredStudents, safePage, rowsPerPage]);
+    loadStudents();
+  }, [currentPage, rowsPerPage, search]);
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -191,7 +171,7 @@ export default function Page() {
                     className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                   >
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
+                      {startEntry + index}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
@@ -275,7 +255,7 @@ export default function Page() {
 
         {/* ── Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries

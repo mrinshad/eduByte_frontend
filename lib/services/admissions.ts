@@ -81,6 +81,11 @@ export interface CreateAdmissionResponse {
   success: boolean;
   message: string;
 }
+
+export interface AdmissionsListResponse {
+  items: BackendAdmission[];
+  pagination: PaginationMeta;
+}
  
 interface RawEnrollmentCharge {
   id: string;
@@ -204,23 +209,47 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
   };
 }
  
-export async function getStudentAdmissions() {
-  const payload = (await apiFetch("/api/stdenrollment")) as ApiSuccess<{
+export async function getStudentAdmissions(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+} = {}): Promise<AdmissionsListResponse> {
+  const query = new URLSearchParams();
+
+  if (params.page !== undefined) query.set("page", String(params.page));
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.search) query.set("search", params.search);
+
+  const payload = (await apiFetch(
+    `/api/stdenrollment${query.toString() ? `?${query.toString()}` : ""}`
+  )) as ApiSuccess<{
     items?: BackendAdmission[];
-    pagination?: unknown;
+    pagination?: PaginationMeta;
   }>;
 
   const data = payload.data;
 
   if (Array.isArray(data)) {
-    return data;
+    return {
+      items: data,
+      pagination: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        total: data.length,
+        totalPages: 1,
+      },
+    };
   }
 
-  if (data && typeof data === "object" && Array.isArray(data.items)) {
-    return data.items;
-  }
-
-  return [];
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    pagination: data?.pagination ?? {
+      page: params.page ?? 1,
+      limit: params.limit ?? 10,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 }
  
 export async function createStudentAdmission(

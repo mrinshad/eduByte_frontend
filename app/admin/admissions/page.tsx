@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,19 +26,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Import your new API function and Type definition
-import { getStudentAdmissions, BackendAdmission } from "@/lib/services/admissions";
+import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
 
-  // Real Data, Loading & Error States
   const [students, setStudents] = useState<BackendAdmission[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Dynamic UI States
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,74 +55,58 @@ export default function StudentAdmissionListPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    let active = true;
     async function fetchAdmissions() {
       try {
-        setIsLoading(true);
+        setLoading(true);
+        setError(null);
         const response = await getStudentAdmissions({
           page: currentPage,
           limit: rowsPerPage,
           search,
         });
-        setStudents(response.items);
-        setPagination(response.pagination);
+        if (!active) return;
+
+        setStudents(Array.isArray(response.items) ? response.items : []);
+        setPagination({
+          page: response.pagination?.page ?? currentPage,
+          limit: response.pagination?.limit ?? rowsPerPage,
+          total: response.pagination?.total ?? 0,
+          totalPages: response.pagination?.totalPages ?? 1,
+        });
       } catch (err) {
+        if (!active) return;
         console.error("Failed to load admissions:", err);
+        setStudents([]);
+        setPagination({
+          page: currentPage,
+          limit: rowsPerPage,
+          total: 0,
+          totalPages: 1,
+        });
         setError("Could not retrieve student admissions. Please try again.");
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
     fetchAdmissions();
-  }, []);
 
-  // 1. Process client-side filtering + automatic pagination reset on query mutation
-  const filteredStudents = useMemo(() => {
-    setCurrentPage(1); // Auto-fallback to page 1 during filter operations
-    const safeStudents = Array.isArray(students) ? students : [];
+    return () => {
+      active = false;
+    };
+  }, [currentPage, rowsPerPage, search]);
 
-    return safeStudents.filter((student) => {
-      const query = search.toLowerCase();
-
-      // Defensively fallback to IDs or empty strings if relation strings aren't populated yet
-      const studentName = student.studentName || `ID: ${student.studentId.slice(0, 8)}`;
-      const admissionNumber = student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`;
-      const fatherMobile = student.fatherMobile || "";
-
-      return (
-        studentName.toLowerCase().includes(query) ||
-        admissionNumber.toLowerCase().includes(query) ||
-        fatherMobile.includes(query)
-      );
-    });
-  }, [search, students]);
-
-  // 2. Compute dynamic mathematical bounds for pagination matrix
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
-
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredStudents, currentPage, rowsPerPage]);
-
-  const entryMetrics = useMemo(() => {
-    if (filteredStudents.length === 0) return { start: 0, end: 0 };
-    const start = (currentPage - 1) * rowsPerPage + 1;
-    const end = Math.min(currentPage * rowsPerPage, filteredStudents.length);
-    return { start, end };
-  }, [filteredStudents, currentPage, rowsPerPage]);
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const endEntry = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
-
-      {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-
-            size="icon"
-            onClick={() => router.back()}
-          >
+          <Button variant="outline" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div>
@@ -141,7 +120,6 @@ export default function StudentAdmissionListPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          {/* Enhanced High-Visibility Search Bar */}
           <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
@@ -153,7 +131,7 @@ export default function StudentAdmissionListPage() {
           </div>
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push('/admin/admissions/createAdmission')}
+            onClick={() => router.push("/admin/admissions/createAdmission")}
           >
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
             New Admission
@@ -161,7 +139,6 @@ export default function StudentAdmissionListPage() {
         </div>
       </div>
 
-      {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
@@ -195,7 +172,7 @@ export default function StudentAdmissionListPage() {
             </TableHeader>
 
             <TableBody>
-              {isLoading ? (
+              {loading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
@@ -221,8 +198,10 @@ export default function StudentAdmissionListPage() {
                 </TableRow>
               ) : (
                 students.map((student) => (
-                  <TableRow key={student.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-
+                  <TableRow
+                    key={student.id}
+                    className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
+                  >
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
                       {student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`}
                     </TableCell>
@@ -308,7 +287,6 @@ export default function StudentAdmissionListPage() {
           </Table>
         </div>
 
-        {/* ── Premium Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -339,8 +317,8 @@ export default function StudentAdmissionListPage() {
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1 || totalPages === 0 || isLoading}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || totalPages === 0 || loading}
               >
 
                 <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
@@ -354,8 +332,8 @@ export default function StudentAdmissionListPage() {
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || totalPages === 0 || loading}
               >
                 Next
                 <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />

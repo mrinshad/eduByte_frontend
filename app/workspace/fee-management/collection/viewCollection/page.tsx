@@ -168,7 +168,7 @@ export default function Page() {
       if (key in next) {
         delete next[key]
       } else {
-        next[key] = charge.balance
+        next[key] = charge.finalAmount === 0 ? 0 : charge.balance
       }
       return next
     })
@@ -214,7 +214,26 @@ export default function Page() {
     [payments]
   )
 
-  const difference = totalOutstanding - totalPayments
+  const selectedZeroChargeIds = useMemo(
+    () =>
+      charges
+        .filter((charge) => charge.finalAmount === 0 && chargeKey(charge.id) in selected)
+        .map((charge) => charge.id),
+    [charges, selected]
+  )
+
+  const selectedPositiveCharges = useMemo(
+    () =>
+      charges.filter((charge) => charge.finalAmount > 0 && chargeKey(charge.id) in selected && selected[chargeKey(charge.id)] > 0),
+    [charges, selected]
+  )
+
+  const positiveOutstanding = useMemo(
+    () => selectedPositiveCharges.reduce((sum, charge) => sum + selected[chargeKey(charge.id)], 0),
+    [selectedPositiveCharges, selected]
+  )
+
+  const difference = positiveOutstanding - totalPayments
 
   const displayCharges = useMemo(() => {
     return [...charges].sort((a, b) => {
@@ -255,11 +274,11 @@ export default function Page() {
 
   // ---- Submit ----
   const canSubmit =
-    totalOutstanding > 0 &&
-    difference === 0 &&
-    payments.every((p) => p.amount > 0) &&
-    payments.length > 0 &&
-    !submitting
+    !submitting &&
+    (
+      (positiveOutstanding > 0 && difference === 0 && payments.every((p) => p.amount > 0) && payments.length > 0) ||
+      (positiveOutstanding === 0 && selectedZeroChargeIds.length > 0)
+    )
 
   async function handleSubmit() {
     if (!canSubmit) return
@@ -268,7 +287,7 @@ export default function Page() {
     try {
       const allocations: CollectAllocation[] = [
         ...charges
-          .filter((c) => chargeKey(c.id) in selected && selected[chargeKey(c.id)] > 0)
+          .filter((c) => c.finalAmount > 0 && chargeKey(c.id) in selected && selected[chargeKey(c.id)] > 0)
           .map((c) => ({ studentChargeId: c.id, amount: selected[chargeKey(c.id)] })),
         ...fines
           .filter((f) => fineKey(f.id) in selected && selected[fineKey(f.id)] > 0)
@@ -277,8 +296,9 @@ export default function Page() {
 
       const result = await collectFee({
         enrollmentId,
-        payments: payments.map((p) => ({ accountId: p.accountId, amount: p.amount })),
+        payments: positiveOutstanding > 0 ? payments.map((p) => ({ accountId: p.accountId, amount: p.amount })) : [],
         allocations,
+        zeroChargeIds: selectedZeroChargeIds,
       })
 
       setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
@@ -399,7 +419,7 @@ export default function Page() {
                       {displayCharges.map((charge) => {
                         const key = chargeKey(charge.id)
                         const isSelected = key in selected
-                        const disabled = !charge.canCollect || charge.balance <= 0
+                        const disabled = !charge.canCollect || (charge.balance <= 0 && charge.finalAmount > 0)
                         return (
                           <tr key={charge.id} className={disabled ? "opacity-50" : ""}>
                             <td className="px-3 py-2">
@@ -540,7 +560,7 @@ export default function Page() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-600 dark:text-slate-300">Fee Outstanding</span>
-                      <span className="font-medium text-slate-950 dark:text-slate-100">{formatCurrency(feeOutstanding)}</span>
+                      <span className="font-medium text-slate-950 dark:text-slate-100">{formatCurrency(positiveOutstanding)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600 dark:text-slate-300">Fine Outstanding</span>
@@ -624,11 +644,17 @@ export default function Page() {
                     <span className="font-semibold text-slate-950 dark:text-slate-100">{formatCurrency(totalPayments)}</span>
                   </div>
 
-                  {difference !== 0 && totalOutstanding > 0 && (
+                  {difference !== 0 && positiveOutstanding > 0 && (
                     <p className={`mt-2 text-xs font-medium ${difference > 0 ? "text-amber-600" : "text-red-600"}`}>
                       {difference > 0
                         ? `${formatCurrency(difference)} remaining to allocate`
                         : `${formatCurrency(Math.abs(difference))} over the selected outstanding amount`}
+                    </p>
+                  )}
+
+                  {selectedZeroChargeIds.length > 0 && positiveOutstanding === 0 && (
+                    <p className="mt-2 text-xs font-medium text-emerald-600">
+                      {selectedZeroChargeIds.length} zero-amount charge(s) selected. They will be marked as paid without payment.
                     </p>
                   )}
 

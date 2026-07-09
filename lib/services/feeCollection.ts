@@ -150,6 +150,7 @@ export interface CollectFeePayload {
   enrollmentId: string;
   payments: CollectPaymentLine[];
   allocations: CollectAllocation[];
+  zeroChargeIds?: string[];
 }
 
 export interface CollectFeeResponse {
