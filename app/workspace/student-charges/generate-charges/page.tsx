@@ -75,12 +75,15 @@ export default function FeeGenerationPage() {
     return preview.warnings.filter((item): item is string => typeof item === "string");
   }, [preview?.warnings]);
 
-  const generationWindowAllowed =
-    preview?.validation?.generationWindowAllowed !== false;
+  const generationLocked = preview?.validation?.generationWindowAllowed === false;
+
+  const generationWindowAllowed = !generationLocked;
   const readyToGenerate = Boolean(preview?.validation?.readyToGenerate);
   const hasPendingGeneration = Boolean(
     preview && generationWindowAllowed && preview.summary.chargesToGenerate > 0 && readyToGenerate
   );
+
+  const lockedWarning = warningItems.find((item) => item.toLowerCase().includes("generation is locked"));
 
   const estimatedByType = useMemo(() => {
     if (!preview) return [];
@@ -296,7 +299,9 @@ export default function FeeGenerationPage() {
             className={`rounded-xl p-4 border ${
               hasPendingGeneration
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/20 dark:text-emerald-300"
-                : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300"
+                : generationLocked
+                  ? "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800/60 dark:bg-rose-950/20 dark:text-rose-300"
+                  : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300"
             }`}
           >
             <div className="flex items-start gap-3">
@@ -305,12 +310,16 @@ export default function FeeGenerationPage() {
                 <p className="text-sm font-semibold">
                   {hasPendingGeneration
                     ? `Ready to generate for ${monthLabel}`
-                    : `No pending generation for ${monthLabel}`}
+                    : generationLocked
+                      ? `Generation locked for ${monthLabel}`
+                      : `No pending generation for ${monthLabel}`}
                 </p>
                 <p className="mt-1 text-sm">
                   {hasPendingGeneration
                     ? `Estimated new charges across all active students: ${preview.summary.chargesToGenerate}. Estimated monthly total: ${formatCurrency(preview.financialSummary.total)}.`
-                    : "This month appears already generated or has no due charges from active enrollment charges."}
+                    : generationLocked
+                      ? lockedWarning ?? "This month is outside the allowed generation window."
+                      : "This month appears already generated or has no due charges from active enrollment charges."}
                 </p>
               </div>
             </div>
