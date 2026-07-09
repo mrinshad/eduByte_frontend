@@ -57,7 +57,9 @@ import {
 } from "@/lib/services/admissions";
 import { getVehicles, Vehicle } from "@/lib/services/vehicle";
 import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureView } from "@/lib/services/feeStructure";
+import { getAcademicYears } from "@/lib/services/academicYear";
 import { apiFetch } from "@/lib/api";
+import { formatDateOnly } from "@/lib/utils";
 
 import { useSearchParams } from "next/navigation";
 
@@ -91,7 +93,9 @@ export async function getDivisions(classId: string): Promise<Division[]> {
 interface EditableFeeItem {
     id?: string;
     chargeTypeId: string;
+    frequency: string;
     name: string;
+    originalAmount: number;
     baseAmount: number;
     amount: number | "";
     dueDay: number | "";
@@ -157,6 +161,7 @@ export default function Page() {
     const [divisionsDropdown, setDivisionsDropdown] = useState<Division[]>([]);
     const [vehiclesDropdown, setVehiclesDropdown] = useState<Vehicle[]>([]);
     const [allFeeStructures, setAllFeeStructures] = useState<FeeStructureSummary[]>([]);
+    const [activeAcademicYearId, setActiveAcademicYearId] = useState<string>("");
 
     const [selectedStudentId, setSelectedStudentId] = useState<string>("");
     const [fullStudentData, setFullStudentData] = useState<Student | null>(null);
@@ -197,21 +202,19 @@ export default function Page() {
     const filteredFeeStructures = useMemo(() => {
         if (!selectedClassId) return [];
         return allFeeStructures.filter(
-            (structure) => (structure as any).classId === selectedClassId
+            (structure) =>
+                structure.classId === selectedClassId &&
+                (!activeAcademicYearId || structure.academicYearId === activeAcademicYearId)
         );
-    }, [allFeeStructures, selectedClassId]);
+    }, [allFeeStructures, selectedClassId, activeAcademicYearId]);
 
     const handleStudentPopoverChange = async (open: boolean) => {
         setStudentPopoverOpen(open);
         if (open && studentsDropdown.length === 0) {
             try {
                 setLoadingStudentList(true);
-                const listData = await getStudentAdmissionAndName();
-                if (Array.isArray(listData)) {
-                    setStudentsDropdown(listData);
-                } else if (listData && (listData as any).data) {
-                    setStudentsDropdown((listData as any).data);
-                }
+                const listData = await getStudentAdmissionAndName({ limit: 500 });
+                setStudentsDropdown(Array.isArray(listData) ? listData : []);
             } catch (error) {
                 console.error("Failed to load student list:", error);
             } finally {
@@ -270,8 +273,11 @@ export default function Page() {
         if (open && allFeeStructures.length === 0) {
             try {
                 setLoadingFeeList(true);
-                const feeStructuresData = await getFeeStructures();
-                setAllFeeStructures(feeStructuresData);
+                const academicYears = await getAcademicYears();
+                const activeYear = academicYears.find((year) => year.isActive);
+                setActiveAcademicYearId(activeYear?.id || "");
+                const feeStructuresData = await getFeeStructures({ page: 1, limit: 500 });
+                setAllFeeStructures(feeStructuresData.items);
             } catch (error) {
                 console.error("Failed to load fee structures:", error);
             } finally {
@@ -340,7 +346,9 @@ export default function Page() {
 
                     const itemsLayout: EditableFeeItem[] = response.data.items.map((item) => ({
                         chargeTypeId: item.chargeTypeId,
+                        frequency: item.frequency,
                         name: item.chargeTypeName,
+                        originalAmount: Number(item.amount) || 0,
                         baseAmount: Number(item.amount) || 0,
                         amount: Number(item.amount) || 0,
                         dueDay: "",
@@ -408,7 +416,8 @@ export default function Page() {
                     }
                 }
 
-                const feeStructures = await getFeeStructures();
+                const feeStructuresRes = await getFeeStructures({ page: 1, limit: 500 });
+                const feeStructures = feeStructuresRes.items;
                 setAllFeeStructures(feeStructures);
                 const selectedFee = feeStructures.find(f => f.name === enrollment.feeStructureName);
                 if (selectedFee) {
@@ -429,8 +438,10 @@ export default function Page() {
                 setEditableFeeItems(
                     enrollment.charges.map((charge) => ({
                         id: charge.id,
+                        frequency: charge.frequency,
                         chargeTypeId: charge.chargeTypeId,
                         name: charge.chargeType,
+                        originalAmount: charge.originalAmount,
                         baseAmount: charge.originalAmount,
                         amount: charge.finalAmount,
                         dueDay: charge.dueDay ?? "",
@@ -507,9 +518,9 @@ export default function Page() {
                 const enrollmentCharges = editableFeeItems.map((item) => ({
                     ...(item.id ? { id: item.id } : {}),
                     chargeTypeId: item.chargeTypeId,
-                    originalAmount: String(item.baseAmount),
+                    originalAmount: String(item.originalAmount),
                     finalAmount: String(Number(item.amount) || 0),
-                    discountAmount: String(item.baseAmount - (Number(item.amount) || 0)),
+                    discountAmount: String(item.originalAmount - (Number(item.amount) || 0)),
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
                 }));
@@ -527,9 +538,10 @@ export default function Page() {
             } else {
                 const chargeOverrides = editableFeeItems.map((item) => ({
                     chargeTypeId: item.chargeTypeId,
-                    currentAmount: item.baseAmount,
+                    originalAmount: item.originalAmount,
+                    frequency: item.frequency,
                     finalAmount: Number(item.amount) || 0,
-                    discountAmount: item.baseAmount - (Number(item.amount) || 0),
+                    discountAmount: item.originalAmount - (Number(item.amount) || 0),
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
                 }));
@@ -703,7 +715,7 @@ export default function Page() {
                                             {fullStudentData.status}
                                         </span>
                                     } />
-                                    <InfoItem label="Date of Birth" value={fullStudentData.dob} />
+                                    <InfoItem label="Date of Birth" value={formatDateOnly(fullStudentData.dob)} />
                                     <InfoItem label="Gender & Blood Group" value={`${fullStudentData.gender}, ${fullStudentData.bloodGroup}`} />
                                     <InfoItem label="Father's Legal Name" value={fullStudentData.fatherName} />
                                     <InfoItem label="Father's Phone Contact" value={fullStudentData.fatherMobile} />
@@ -913,9 +925,19 @@ export default function Page() {
 
                         {selectedVehicle && (
                             <div className="mt-2 animate-in fade-in slide-in-from-top-4 duration-300">
-                                <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                                    <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
-                                </h3>
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                        <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
+                                    </h3>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 bg-white border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                        onClick={() => setSelectedVehicle(null)}
+                                    >
+                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove Vehicle
+                                    </Button>
+                                </div>
                                 <InfoGrid className="md:grid-cols-3 lg:grid-cols-3">
                                     <InfoItem label="Registration Plate" value={selectedVehicle.vehicleNumber} />
                                     <InfoItem label="Designated Driver" value={selectedVehicle.driverName} />
@@ -1017,7 +1039,7 @@ export default function Page() {
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
                                                 <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Fee Particulars</TableHead>
-                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">Current Amount</TableHead>
+                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">Original Amount</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Override Amount</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">Due Date (Days)</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[200px]">Description</TableHead>
@@ -1060,7 +1082,7 @@ export default function Page() {
                                                                     type="number"
                                                                     value={item.amount}
                                                                     onChange={(e) => handleItemAmountChange(item.chargeTypeId, e.target.value)}
-                                                                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                                                    onWheel={(e) => e.currentTarget.blur()}
                                                                     className={cn(
                                                                         "h-10 pl-8 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white",
                                                                         hasOverride && "border-[#6D755F] ring-1 ring-[#6D755F]/30"
@@ -1077,7 +1099,7 @@ export default function Page() {
                                                                     placeholder="e.g. 10"
                                                                     value={item.dueDay}
                                                                     onChange={(e) => handleItemDueDateChange(item.chargeTypeId, e.target.value)}
-                                                                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                                                    onWheel={(e) => e.currentTarget.blur()}
                                                                     className="h-10 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400"
                                                                 />
                                                             </div>

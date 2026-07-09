@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -39,17 +39,37 @@ export default function StudentAdmissionListPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Dynamic UI States
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 1,
+  });
 
-  // Fetch data on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     async function fetchAdmissions() {
       try {
         setIsLoading(true);
-        const data = await getStudentAdmissions();
-        setStudents(data);
+        const response = await getStudentAdmissions({
+          page: currentPage,
+          limit: rowsPerPage,
+          search,
+        });
+        setStudents(response.items);
+        setPagination(response.pagination);
       } catch (err) {
         console.error("Failed to load admissions:", err);
         setError("Could not retrieve student admissions. Please try again.");
@@ -126,8 +146,8 @@ export default function StudentAdmissionListPage() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search by name, ID, or phone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
@@ -160,6 +180,12 @@ export default function StudentAdmissionListPage() {
                   Parent Contact
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Vehicle
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Fee Structure
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
@@ -171,7 +197,7 @@ export default function StudentAdmissionListPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center">
+                  <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
                       <p className="text-sm">Fetching student records...</p>
@@ -180,13 +206,13 @@ export default function StudentAdmissionListPage() {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-red-500">
+                  <TableCell colSpan={8} className="h-40 text-center text-red-500">
                     <p className="text-sm font-medium">{error}</p>
                   </TableCell>
                 </TableRow>
-              ) : paginatedStudents.length === 0 ? (
+              ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                  <TableCell colSpan={8} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <GraduationCap className="h-8 w-8 text-slate-300" />
                       <p className="text-sm">No student allocation matches your search.</p>
@@ -194,7 +220,7 @@ export default function StudentAdmissionListPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedStudents.map((student) => (
+                students.map((student) => (
                   <TableRow key={student.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
 
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
@@ -220,6 +246,14 @@ export default function StudentAdmissionListPage() {
                           {student.fatherMobile || "No contact info"}
                         </span>
                       </div>
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {student.vehicleName ? `${student.vehicleName}${student.vehicleNumber ? ` (${student.vehicleNumber})` : ""}` : "-"}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {student.feeStructureName || "-"}
                     </TableCell>
 
                     <TableCell className="px-6 py-4">
@@ -278,9 +312,9 @@ export default function StudentAdmissionListPage() {
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Showing <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.start}</span> to{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.end}</span> of{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{filteredStudents.length}</span> entries
+            Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
@@ -314,7 +348,7 @@ export default function StudentAdmissionListPage() {
               </Button>
 
               <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[4rem] text-center">
-                Page {totalPages === 0 ? 0 : currentPage}
+                Page {currentPage} of {totalPages}
               </div>
 
               <Button

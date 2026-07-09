@@ -5,6 +5,13 @@ type ApiSuccess<T> = {
   message?: string
   data?: T
 }
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
  
 export interface BackendAdmission {
   id: string;
@@ -23,11 +30,16 @@ export interface BackendAdmission {
   fatherMobile?: string;
   class?: string;
   division?: string;
+  feeStructureName?: string;
+  vehicleName?: string | null;
+  vehicleNumber?: string | null;
 }
  
 export interface ChargeOverride {
   chargeTypeId: string;
-  currentAmount: number;
+  frequency?: string;
+  currentAmount?: number;
+  originalAmount?: number;
   finalAmount: number;
   discountAmount: number;
   description: string | null;
@@ -74,6 +86,7 @@ interface RawEnrollmentCharge {
   id: string;
   enrollmentId: string;
   chargeTypeId: string;
+  frequency: string;
   chargeType?: { name: string };
   description: string | null;
   originalAmount: string;
@@ -126,6 +139,7 @@ export interface CompleteEnrollmentRecord {
   charges: {
     id: string;
     chargeTypeId: string;
+    frequency: string;
     chargeType: string;
     description: string | null;
     originalAmount: number;
@@ -149,15 +163,20 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
   const raw = payload.data;
  
   const charges = (raw.enrollmentCharges ?? []).map((c) => {
-    const originalAmount = Number(c.originalAmount) || 0;
+    const originalAmountRaw = Number(c.originalAmount) || 0;
     const discountAmount = Number(c.discountAmount) || 0;
     const finalAmount = Number(c.finalAmount) || 0;
+    const originalAmount =
+      originalAmountRaw > 0
+        ? originalAmountRaw
+        : Math.max(finalAmount + discountAmount, 0);
  
     return {
       id: c.id,
       chargeTypeId: c.chargeTypeId,
       chargeType: c.chargeType?.name || "Charge",
       description: c.description,
+      frequency: c.frequency,
       originalAmount,
       discountAmount,
       finalAmount,

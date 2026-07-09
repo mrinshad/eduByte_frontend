@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import {
@@ -18,34 +18,47 @@ import { getStudents, type StudentListItem } from "@/lib/services/student";
 export default function Page() {
   const router = useRouter();
 
-  const [allStudents, setAllStudents] = useState<StudentListItem[]>([]);
+  const [students, setStudents] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
 
   const loadStudents = async () => {
     try {
       setLoading(true);
       const response = await getStudents({
-        page: 1,
-        limit: 1000,
+        page: currentPage,
+        limit: rowsPerPage,
         search,
         sortBy: "admissionNumber",
         order: "desc",
       });
-      setAllStudents(response.data ?? []);
+      setStudents(response.data ?? []);
+      setPagination(response.pagination);
     } catch (error) {
       console.error(error);
-      setAllStudents([]);
+      setStudents([]);
+      setPagination((prev) => ({ ...prev, total: 0, totalPages: 1 }));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStudents();
-  }, [search]);
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -72,12 +85,9 @@ export default function Page() {
     return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredStudents, safePage, rowsPerPage]);
 
-  const entryMetrics = useMemo(() => {
-    if (filteredStudents.length === 0) return { start: 0, end: 0 };
-    const start = (safePage - 1) * rowsPerPage + 1;
-    const end = Math.min(safePage * rowsPerPage, filteredStudents.length);
-    return { start, end };
-  }, [filteredStudents, safePage, rowsPerPage]);
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const endEntry = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
@@ -107,8 +117,8 @@ export default function Page() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search students..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
@@ -141,6 +151,12 @@ export default function Page() {
                   Address
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Class | Division
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Admission
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
@@ -152,16 +168,16 @@ export default function Page() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center">
+                  <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
                       <p className="text-sm">Loading students...</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : paginatedStudents.length === 0 ? (
+              ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                  <TableCell colSpan={8} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-slate-300" />
                       <p className="text-sm">No students found.</p>
@@ -169,13 +185,13 @@ export default function Page() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedStudents.map((student, index) => (
+                students.map((student, index) => (
                   <TableRow
                     key={student.id}
                     className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                   >
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
-                      {(safePage - 1) * rowsPerPage + index + 1}
+                      {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
@@ -188,6 +204,23 @@ export default function Page() {
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       {student.address}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {(student.className || "-") + " | " + (student.divisionName || "-")}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4">
+                      <Badge
+                        variant="outline"
+                        className={
+                          student.admissionStatus === "ADMITTED"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium"
+                            : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium"
+                        }
+                      >
+                        {student.admissionStatus || "NOT_ADMITTED"}
+                      </Badge>
                     </TableCell>
 
                     <TableCell className="px-6 py-4">
@@ -243,9 +276,9 @@ export default function Page() {
         {/* ── Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Showing <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.start}</span> to{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.end}</span> of{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{filteredStudents.length}</span> entries
+            Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
@@ -268,21 +301,21 @@ export default function Page() {
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={safePage === 1 || loading}
+                disabled={currentPage === 1 || loading}
               >
                 <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
                 Prev
               </Button>
 
               <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[4rem] text-center">
-                Page {safePage} of {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
 
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={safePage === totalPages || loading}
+                disabled={currentPage === totalPages || loading}
               >
                 Next
                 <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
