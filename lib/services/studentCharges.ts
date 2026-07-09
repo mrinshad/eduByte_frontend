@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { authFetch } from "@/lib/auth";
 
 export interface StudentCharge {
   admissionNumber: string;
@@ -20,6 +21,12 @@ type ApiSuccess<T> = {
   success: boolean;
   message?: string;
   data?: T;
+};
+
+type ApiError = {
+  success: false;
+  message?: string;
+  errors?: unknown;
 };
 
 export async function getStudentCharges() {
@@ -106,6 +113,100 @@ export async function getStudentChargesByEnrollmentId(
   const payload = (await apiFetch(
     `/api/stdcharge/enrollment/${enrollmentId}${query}`
   )) as ApiSuccess<StudentEnrollmentCharges>;
+
+  return payload.data ?? null;
+}
+
+export type FeeGenerationPreviewSummary = {
+  activeStudents: number;
+  enrollmentChargesEvaluated: number;
+  chargesToGenerate: number;
+  alreadyGenerated: number;
+  studentsWithNoCharges: number;
+};
+
+export type FeeGenerationPreviewData = {
+  academicYearId: string;
+  academicYearName: string;
+  targetAcademicMonth: number;
+  targetCalendarMonth: number;
+  targetCalendarYear: number;
+  summary: FeeGenerationPreviewSummary;
+  chargesBreakdown: Record<string, number>;
+  frequencyBreakdown: Record<string, number>;
+  financialSummary: {
+    byChargeType: Record<string, number>;
+    total: number;
+  };
+  skipped?: {
+    alreadyGenerated: number;
+  };
+  validation: Record<string, boolean>;
+  warnings?: string[];
+  sampleCharges: Array<{
+    enrollmentId: string;
+    chargeType: string;
+    amount: number;
+    dueDate: string;
+  }>;
+  sampleShowing: number;
+  sampleTotal: number;
+  confirmation: {
+    willCreateCharges: number;
+    willUpdateAcademicYear: boolean;
+    willAdvanceTo: number;
+  };
+};
+
+export type FeeGenerationResult = {
+  academicYearId: string;
+  academicYearName: string;
+  targetAcademicMonth: number;
+  targetCalendarMonth: number;
+  targetCalendarYear: number;
+  studentsProcessed: number;
+  enrollmentChargesEvaluated: number;
+  chargesDue: number;
+  chargesGenerated: number;
+  chargesSkipped: number;
+  lastGeneratedAcademicMonth: number;
+};
+
+async function postStudentChargeAction<T>(endpoint: string, body: unknown) {
+  const response = await authFetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | ApiSuccess<T>
+    | ApiError
+    | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.message ?? `API Error: ${response.status}`);
+  }
+
+  return payload as ApiSuccess<T>;
+}
+
+export async function previewFeeGeneration(academicYearId: string) {
+  const payload = await postStudentChargeAction<FeeGenerationPreviewData>(
+    "/api/stdcharge/preview",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
+
+export async function generateFeeCharges(academicYearId: string) {
+  const payload = await postStudentChargeAction<FeeGenerationResult>(
+    "/api/stdcharge/generate",
+    { academicYearId }
+  );
 
   return payload.data ?? null;
 }

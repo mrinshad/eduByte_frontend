@@ -10,6 +10,7 @@ import {
     MapPin,
     Calendar,
     Clock,
+    GraduationCap,
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { useEffect, useState } from "react";
@@ -19,6 +20,7 @@ import {
     getStudentById,
     type Student,
 } from "@/lib/services/student";
+import { formatDateOnly } from "@/lib/utils";
 
 export default function Page() {
     const router = useRouter();
@@ -142,13 +144,19 @@ export default function Page() {
                                     <FactRow
                                         icon={Cake}
                                         label="Date of birth"
-                                        value={new Date(student.dob).toLocaleDateString()}
+                                        value={formatDateOnly(student.dob)}
                                     />
                                     <FactRow icon={Droplet} label="Blood group" value={student.bloodGroup} />
+                                    <FactRow icon={GraduationCap} label="Class" value={student.className || "-"} />
                                     <FactRow
                                         icon={MessageCircle}
                                         label="Whatsapp"
                                         value={student.whatsappNumber}
+                                    />
+                                    <FactRow
+                                        icon={User}
+                                        label="Admission"
+                                        value={student.admissionStatus || "NOT_ADMITTED"}
                                     />
                                 </div>
                             </CardContent>
@@ -208,7 +216,7 @@ export default function Page() {
                                         <div>
                                             <p className="text-sm text-muted-foreground">Created at</p>
                                             <p className="font-semibold">
-                                                {new Date(student.createdAt).toLocaleDateString()}
+                                                {formatDateOnly(student.createdAt)}
                                             </p>
                                         </div>
                                     </div>
@@ -220,7 +228,7 @@ export default function Page() {
                                         <div>
                                             <p className="text-sm text-muted-foreground">Updated at</p>
                                             <p className="font-semibold">
-                                                {new Date(student.updatedAt).toLocaleDateString()}
+                                                {formatDateOnly(student.updatedAt)}
                                             </p>
                                         </div>
                                     </div>

@@ -235,8 +235,8 @@ export default function Page() {
         </div>
 
         <div className="mt-6 space-y-6">
-          <Card className="w-full">
-            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5 dark:border-white/10">
+          <Card className="w-full dark:bg-background">
+            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
               <div>
                 <CardDescription className={`text-xs uppercase tracking-[0.28em] ${subtleTextClass}`}>
                   Current Academic Year
@@ -263,7 +263,7 @@ export default function Page() {
                   </TooltipContent>
                 </Tooltip>
 
-                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50">
+                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50 dark:bg-background">
                   <DialogHeader>
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -524,7 +524,7 @@ export default function Page() {
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="w-full">
+            <Card className="w-full dark:bg-background">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Class</CardTitle>
@@ -610,7 +610,7 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            <Card className="w-full">
+            <Card className="w-full dark:bg-background">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Division</CardTitle>
@@ -712,9 +712,9 @@ export default function Page() {
         </div>
 
         <Dialog open={classDialogOpen} onOpenChange={setClassDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
             <DialogHeader>
-              <DialogTitle className={titleTextClass}>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
                 {classDialogMode === "add" ? "Add Class" : "Edit Class"}
               </DialogTitle>
               <DialogDescription className={supportingTextClass}>
@@ -768,9 +768,9 @@ export default function Page() {
         </Dialog>
 
         <Dialog open={divisionDialogOpen} onOpenChange={setDivisionDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
             <DialogHeader>
-              <DialogTitle className={titleTextClass}>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
                 {divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
               </DialogTitle>
               <DialogDescription className={supportingTextClass}>

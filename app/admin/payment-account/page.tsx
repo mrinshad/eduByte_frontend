@@ -53,6 +53,24 @@ const EMPTY_FORM: AccountInput = {
 }
 
 export default function Page() {
+
+    const badgeColors = [
+        "bg-red-50 text-red-700 border-red-200",
+        "bg-blue-50 text-blue-700 border-blue-200",
+        "bg-green-50 text-green-700 border-green-200",
+        "bg-yellow-50 text-yellow-700 border-yellow-200",
+        "bg-purple-50 text-purple-700 border-purple-200",
+        "bg-pink-50 text-pink-700 border-pink-200",
+        "bg-cyan-50 text-cyan-700 border-cyan-200",
+        "bg-orange-50 text-orange-700 border-orange-200",
+        "bg-indigo-50 text-indigo-700 border-indigo-200",
+        "bg-lime-50 text-lime-700 border-lime-200",
+        "bg-teal-50 text-teal-700 border-teal-200",
+        "bg-rose-50 text-rose-700 border-rose-200",
+    ];
+    const getRandomBadgeColor = () => {
+        return badgeColors[Math.floor(Math.random() * badgeColors.length)];
+    };
     const router = useRouter()
 
     const [accounts, setAccounts] = useState<Account[]>([])
@@ -169,9 +187,8 @@ export default function Page() {
                                 {tableHeaders.map((header) => (
                                     <TableHead
                                         key={header}
-                                        className={`px-4 h-10 text-xs font-semibold uppercase tracking-wider text-white dark:text-foreground whitespace-nowrap ${
-                                            header === "Actions" ? "text-right w-24" : ""
-                                        } ${header === "Id" ? "w-12" : ""}`}
+                                        className={`px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap ${header === "Actions" ? "text-right" : ""
+                                            }`}
                                     >
                                         {header}
                                     </TableHead>
@@ -182,25 +199,25 @@ export default function Page() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
+                                    <TableCell colSpan={6} className="h-40 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
                                             <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
-                                            <p className="text-xs">Loading accounts...</p>
+                                            <p className="text-sm">Loading accounts...</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
-                                        <p className="text-xs font-medium text-red-500">{error}</p>
+                                    <TableCell colSpan={6} className="h-40 text-center">
+                                        <p className="text-sm font-medium text-red-500">{error}</p>
                                     </TableCell>
                                 </TableRow>
                             ) : accounts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-1.5">
+                                    <TableCell colSpan={6} className="h-40 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500">
                                             <Building2 className="h-6 w-6 text-slate-300" />
-                                            <p className="text-xs text-slate-400">No accounts found. Create one to get started.</p>
+                                            <p className="text-sm">No accounts found. Create one to get started.</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -208,54 +225,55 @@ export default function Page() {
                                 accounts.map((account, index) => (
                                     <TableRow
                                         key={account.id}
-                                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+                                        className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                                     >
-                                        <TableCell className="px-4 py-2.5 w-12 text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                                        <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
                                             {index + 1}
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100">
+                                        <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
                                             {account.name}
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-2.5">
-                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        <TableCell className="px-6 py-4">
+                                            <span
+                                                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRandomBadgeColor()}`}
+                                            >
                                                 {account.type}
                                             </span>
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
+                                        <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                                             {account.description || "—"}
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-2.5">
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
-                                                account.isActive
-                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
-                                                    : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
-                                            }`}>
+                                        <TableCell className="px-6 py-4">
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${account.isActive
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
+                                                : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
+                                                }`}>
                                                 {account.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-2.5 w-24 text-right">
-                                            <div className="flex items-center justify-end gap-0.5">
+                                        <TableCell className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7 rounded-md text-slate-400  hover:text-[#556043] hover:bg-[#556043]/10"
+                                                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                                                     title="Edit"
                                                     onClick={() => openEdit(account)}
                                                 >
-                                                    <Pencil className="h-3.5 w-3.5" />
+                                                    <Pencil className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                                     title="Delete"
                                                 >
-                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>

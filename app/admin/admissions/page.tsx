@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,88 +26,87 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Import your new API function and Type definition
-import { getStudentAdmissions, BackendAdmission } from "@/lib/services/admissions";
+import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
 
-  // Real Data, Loading & Error States
   const [students, setStudents] = useState<BackendAdmission[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Dynamic UI States
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 1,
+  });
 
-  // Fetch data on component mount
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    let active = true;
     async function fetchAdmissions() {
       try {
-        setIsLoading(true);
-        const data = await getStudentAdmissions();
-        setStudents(data);
+        setLoading(true);
+        setError(null);
+        const response = await getStudentAdmissions({
+          page: currentPage,
+          limit: rowsPerPage,
+          search,
+        });
+        if (!active) return;
+
+        setStudents(Array.isArray(response.items) ? response.items : []);
+        setPagination({
+          page: response.pagination?.page ?? currentPage,
+          limit: response.pagination?.limit ?? rowsPerPage,
+          total: response.pagination?.total ?? 0,
+          totalPages: response.pagination?.totalPages ?? 1,
+        });
       } catch (err) {
+        if (!active) return;
         console.error("Failed to load admissions:", err);
+        setStudents([]);
+        setPagination({
+          page: currentPage,
+          limit: rowsPerPage,
+          total: 0,
+          totalPages: 1,
+        });
         setError("Could not retrieve student admissions. Please try again.");
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
     fetchAdmissions();
-  }, []);
 
-  // 1. Process client-side filtering + automatic pagination reset on query mutation
-  const filteredStudents = useMemo(() => {
-    setCurrentPage(1); // Auto-fallback to page 1 during filter operations
-    const safeStudents = Array.isArray(students) ? students : [];
+    return () => {
+      active = false;
+    };
+  }, [currentPage, rowsPerPage, search]);
 
-    return safeStudents.filter((student) => {
-      const query = search.toLowerCase();
-
-      // Defensively fallback to IDs or empty strings if relation strings aren't populated yet
-      const studentName = student.studentName || `ID: ${student.studentId.slice(0, 8)}`;
-      const admissionNumber = student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`;
-      const fatherMobile = student.fatherMobile || "";
-
-      return (
-        studentName.toLowerCase().includes(query) ||
-        admissionNumber.toLowerCase().includes(query) ||
-        fatherMobile.includes(query)
-      );
-    });
-  }, [search, students]);
-
-  // 2. Compute dynamic mathematical bounds for pagination matrix
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
-
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredStudents, currentPage, rowsPerPage]);
-
-  const entryMetrics = useMemo(() => {
-    if (filteredStudents.length === 0) return { start: 0, end: 0 };
-    const start = (currentPage - 1) * rowsPerPage + 1;
-    const end = Math.min(currentPage * rowsPerPage, filteredStudents.length);
-    return { start, end };
-  }, [filteredStudents, currentPage, rowsPerPage]);
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const endEntry = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
-
-      {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-
-            size="icon"
-            onClick={() => router.back()}
-          >
+          <Button variant="outline" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div>
@@ -121,19 +120,18 @@ export default function StudentAdmissionListPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          {/* Enhanced High-Visibility Search Bar */}
           <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search by name, ID, or phone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push('/admin/admissions/createAdmission')}
+            onClick={() => router.push("/admin/admissions/createAdmission")}
           >
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
             New Admission
@@ -141,7 +139,6 @@ export default function StudentAdmissionListPage() {
         </div>
       </div>
 
-      {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
@@ -160,6 +157,12 @@ export default function StudentAdmissionListPage() {
                   Parent Contact
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Vehicle
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                  Fee Structure
+                </TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
@@ -169,9 +172,9 @@ export default function StudentAdmissionListPage() {
             </TableHeader>
 
             <TableBody>
-              {isLoading ? (
+              {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center">
+                  <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-7 w-7 animate-spin text-[oklch(0.46_0.04_125)]" />
                       <p className="text-sm">Fetching student records...</p>
@@ -180,13 +183,13 @@ export default function StudentAdmissionListPage() {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-red-500">
+                  <TableCell colSpan={8} className="h-40 text-center text-red-500">
                     <p className="text-sm font-medium">{error}</p>
                   </TableCell>
                 </TableRow>
-              ) : paginatedStudents.length === 0 ? (
+              ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                  <TableCell colSpan={8} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <GraduationCap className="h-8 w-8 text-slate-300" />
                       <p className="text-sm">No student allocation matches your search.</p>
@@ -194,9 +197,11 @@ export default function StudentAdmissionListPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedStudents.map((student) => (
-                  <TableRow key={student.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-
+                students.map((student) => (
+                  <TableRow
+                    key={student.id}
+                    className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
+                  >
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
                       {student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`}
                     </TableCell>
@@ -220,6 +225,14 @@ export default function StudentAdmissionListPage() {
                           {student.fatherMobile || "No contact info"}
                         </span>
                       </div>
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {student.vehicleName ? `${student.vehicleName}${student.vehicleNumber ? ` (${student.vehicleNumber})` : ""}` : "-"}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {student.feeStructureName || "-"}
                     </TableCell>
 
                     <TableCell className="px-6 py-4">
@@ -274,13 +287,12 @@ export default function StudentAdmissionListPage() {
           </Table>
         </div>
 
-        {/* ── Premium Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Showing <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.start}</span> to{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{entryMetrics.end}</span> of{" "}
-            <span className="font-semibold text-slate-900 dark:text-white">{filteredStudents.length}</span> entries
+            Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
+            <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
@@ -305,8 +317,8 @@ export default function StudentAdmissionListPage() {
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1 || totalPages === 0 || isLoading}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || totalPages === 0 || loading}
               >
 
                 <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
@@ -314,14 +326,14 @@ export default function StudentAdmissionListPage() {
               </Button>
 
               <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[4rem] text-center">
-                Page {totalPages === 0 ? 0 : currentPage}
+                Page {currentPage} of {totalPages}
               </div>
 
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || totalPages === 0 || loading}
               >
                 Next
                 <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
