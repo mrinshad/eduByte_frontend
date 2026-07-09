@@ -111,15 +111,23 @@ export async function getStudents({
 
   const payload = (await apiFetch(
     `/api/students?${params.toString()}`
-  )) as ApiSuccess<{
-    items: StudentListItem[];
-    pagination: StudentPagination;
-  }>;
+  )) as {
+    success: boolean;
+    message?: string;
+    data?: {
+      items?: Student[];
+      pagination?: StudentPagination;
+    };
+  };
+
+  const listItems = Array.isArray(payload.data?.items) ? payload.data.items : [];
+  const pagination = payload.data?.pagination;
 
   return {
-    success: true,
-    data: payload.data?.items ?? [],
-    pagination: payload.data?.pagination ?? {
+    success: payload.success,
+    message: payload.message,
+    data: listItems,
+    pagination: pagination ?? {
       page,
       limit,
       total: 0,

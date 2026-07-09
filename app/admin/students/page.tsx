@@ -61,8 +61,29 @@ export default function Page() {
   }, [searchInput]);
 
   useEffect(() => {
-    loadStudents();
-  }, [currentPage, rowsPerPage, search]);
+    setCurrentPage(1);
+  }, [rowsPerPage]);
+
+  const filteredStudents = useMemo(() => {
+    setCurrentPage(1);
+    const q = search.toLowerCase();
+    const safeStudents = Array.isArray(allStudents) ? allStudents : [];
+
+    return safeStudents.filter(
+      (s) =>
+        s.studentName?.toLowerCase().includes(q) ||
+        s.whatsappNumber?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q)
+    );
+  }, [search, allStudents]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (safePage - 1) * rowsPerPage;
+    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredStudents, safePage, rowsPerPage]);
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;

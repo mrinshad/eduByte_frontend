@@ -78,11 +78,43 @@ export default function StudentAdmissionListPage() {
       }
     }
     fetchAdmissions();
-  }, [currentPage, rowsPerPage, search]);
+  }, []);
 
-  const totalPages = Math.max(1, pagination.totalPages || 1);
-  const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const endEntry = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
+  // 1. Process client-side filtering + automatic pagination reset on query mutation
+  const filteredStudents = useMemo(() => {
+    setCurrentPage(1); // Auto-fallback to page 1 during filter operations
+    const safeStudents = Array.isArray(students) ? students : [];
+
+    return safeStudents.filter((student) => {
+      const query = search.toLowerCase();
+
+      // Defensively fallback to IDs or empty strings if relation strings aren't populated yet
+      const studentName = student.studentName || `ID: ${student.studentId.slice(0, 8)}`;
+      const admissionNumber = student.admissionNumber || student.rollNumber || `REF-${student.id.slice(0, 5)}`;
+      const fatherMobile = student.fatherMobile || "";
+
+      return (
+        studentName.toLowerCase().includes(query) ||
+        admissionNumber.toLowerCase().includes(query) ||
+        fatherMobile.includes(query)
+      );
+    });
+  }, [search, students]);
+
+  // 2. Compute dynamic mathematical bounds for pagination matrix
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
+
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredStudents, currentPage, rowsPerPage]);
+
+  const entryMetrics = useMemo(() => {
+    if (filteredStudents.length === 0) return { start: 0, end: 0 };
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, filteredStudents.length);
+    return { start, end };
+  }, [filteredStudents, currentPage, rowsPerPage]);
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
