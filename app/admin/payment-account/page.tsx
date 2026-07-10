@@ -3,11 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import {
-    ACCOUNT_TYPES,
-    type AccountType,
-} from "@/lib/services/accounts"
-import { Checkbox } from "@/components/ui/checkbox"
+import { ACCOUNT_TYPES, type AccountType } from "@/lib/services/accounts"
 import {
     Table,
     TableBody,
@@ -16,15 +12,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -35,6 +22,9 @@ import {
     type Account,
     type AccountInput,
 } from "@/lib/services/accounts"
+
+// 👇 the reusable component
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
 const tableHeaders = [
     "Id",
@@ -53,7 +43,6 @@ const EMPTY_FORM: AccountInput = {
 }
 
 export default function Page() {
-
     const badgeColors = [
         "bg-red-50 text-red-700 border-red-200",
         "bg-blue-50 text-blue-700 border-blue-200",
@@ -61,16 +50,9 @@ export default function Page() {
         "bg-yellow-50 text-yellow-700 border-yellow-200",
         "bg-purple-50 text-purple-700 border-purple-200",
         "bg-pink-50 text-pink-700 border-pink-200",
-        "bg-cyan-50 text-cyan-700 border-cyan-200",
-        "bg-orange-50 text-orange-700 border-orange-200",
-        "bg-indigo-50 text-indigo-700 border-indigo-200",
-        "bg-lime-50 text-lime-700 border-lime-200",
-        "bg-teal-50 text-teal-700 border-teal-200",
-        "bg-rose-50 text-rose-700 border-rose-200",
-    ];
-    const getRandomBadgeColor = () => {
-        return badgeColors[Math.floor(Math.random() * badgeColors.length)];
-    };
+    ]
+    const getRandomBadgeColor = () => badgeColors[Math.floor(Math.random() * badgeColors.length)]
+
     const router = useRouter()
 
     const [accounts, setAccounts] = useState<Account[]>([])
@@ -82,7 +64,9 @@ export default function Page() {
     const [editingId, setEditingId] = useState<string | null>(null)
     const [formData, setFormData] = useState<AccountInput>({ ...EMPTY_FORM })
 
-    useEffect(() => { loadAccounts() }, [])
+    useEffect(() => {
+        loadAccounts()
+    }, [])
 
     async function loadAccounts() {
         try {
@@ -108,8 +92,6 @@ export default function Page() {
         setFormOpen(true)
     }
 
-    // Pre-fill directly from the list row — no extra API call needed
-    // since GET /api/accounts already returns description & isActive
     function openEdit(account: Account) {
         setEditingId(account.id)
         setFormData({
@@ -146,9 +128,27 @@ export default function Page() {
         }
     }
 
+    // 👇 this is the only "new" piece — describe the form once, declaratively
+    const accountFields: FormField[] = [
+        { type: "text", name: "name", label: "Account Name", placeholder: "Enter account name" },
+        {
+            type: "select",
+            name: "type",
+            label: "Account Type",
+            placeholder: "Select type",
+            options: [
+                ...ACCOUNT_TYPES,
+                ...(formData.type && !ACCOUNT_TYPES.includes(formData.type as typeof ACCOUNT_TYPES[number])
+                    ? [formData.type]
+                    : []),
+            ].map((t) => ({ label: t, value: t })),
+        },
+        { type: "text", name: "description", label: "Description", placeholder: "Enter description" },
+        { type: "checkbox", name: "isActive", label: "Active" },
+    ]
+
     return (
         <section className="w-full px-6 py-4 space-y-6">
-
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -187,8 +187,7 @@ export default function Page() {
                                 {tableHeaders.map((header) => (
                                     <TableHead
                                         key={header}
-                                        className={`px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap ${header === "Actions" ? "text-right" : ""
-                                            }`}
+                                        className={`px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap ${header === "Actions" ? "text-right" : ""}`}
                                     >
                                         {header}
                                     </TableHead>
@@ -230,32 +229,27 @@ export default function Page() {
                                         <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
                                             {index + 1}
                                         </TableCell>
-
                                         <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
                                             {account.name}
                                         </TableCell>
-
                                         <TableCell className="px-6 py-4">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRandomBadgeColor()}`}
-                                            >
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRandomBadgeColor()}`}>
                                                 {account.type}
                                             </span>
                                         </TableCell>
-
                                         <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                                             {account.description || "—"}
                                         </TableCell>
-
                                         <TableCell className="px-6 py-4">
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${account.isActive
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
-                                                : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
-                                                }`}>
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${account.isActive
+                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
+                                                        : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
+                                                    }`}
+                                            >
                                                 {account.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </TableCell>
-
                                         <TableCell className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Button
@@ -285,108 +279,28 @@ export default function Page() {
                 </div>
             </div>
 
-            {/* ── Create / Edit Dialog ── */}
-            <Dialog
+            {/* 👇 the entire dialog is now one component call */}
+            <ReusableFormDialog
                 open={formOpen}
                 onOpenChange={(value) => {
                     setFormOpen(value)
                     if (!value) resetForm()
                 }}
-            >
-                <DialogContent className="sm:max-w-[460px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingId ? "Edit Account" : "Create Account"}</DialogTitle>
-                        <DialogDescription>
-                            {editingId
-                                ? "Update the details of this account."
-                                : "Add a new account by filling in the details below."}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4 py-2">
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Account Name</label>
-                            <Input
-                                placeholder="Enter account name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                                }
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Account Type</label>
-                            <select
-                                value={formData.type}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        type: e.target.value as AccountType,
-                                    }))
-                                }
-                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                            >
-                                {/* Include the current type even if it's not in the preset list */}
-                                {[
-                                    ...ACCOUNT_TYPES,
-                                    ...(formData.type && !ACCOUNT_TYPES.includes(formData.type as typeof ACCOUNT_TYPES[number])
-                                        ? [formData.type]
-                                        : []),
-                                ].map((type) => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Description</label>
-                            <Input
-                                placeholder="Enter description"
-                                value={formData.description}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, description: e.target.value }))
-                                }
-                            />
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                checked={formData.isActive}
-                                onCheckedChange={(checked) =>
-                                    // ✅ fixed: was updating `active`, now correctly updates `isActive`
-                                    setFormData((prev) => ({ ...prev, isActive: checked === true }))
-                                }
-                            />
-                            <label className="text-sm font-medium">Active</label>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => { resetForm(); setFormOpen(false) }}
-                            disabled={isSaving}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="bg-[#556043] text-white hover:bg-[#4a533b]"
-                            onClick={handleSave}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    {editingId ? "Updating..." : "Saving..."}
-                                </>
-                            ) : editingId ? "Update Account" : "Save Account"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
+                title={editingId ? "Edit Account" : "Create Account"}
+                description={
+                    editingId
+                        ? "Update the details of this account."
+                        : "Add a new account by filling in the details below."
+                }
+                fields={accountFields}
+                values={formData}
+                onChange={(name, value) => setFormData((prev) => ({ ...prev, [name]: value }))}
+                onSubmit={handleSave}
+                isSaving={isSaving}
+                isEditing={!!editingId}
+                submitLabel="Save Account"
+                editSubmitLabel="Update Account"
+            />
         </section>
     )
 }

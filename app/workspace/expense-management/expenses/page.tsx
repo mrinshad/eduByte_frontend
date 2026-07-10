@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import PageHeader from "@/components/common/pageHeader"
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -45,12 +46,13 @@ import {
   type AccountName,
 } from "@/lib/services/expense"
 
-// Accent palette lives in one place so it's easy to retheme later.
-const ACCENT = "#556043"
-const ACCENT_HOVER = "#4a533b"
-
-const editIconClass =
-  "rounded-xl text-slate-400 hover:text-white dark:text-slate-500"
+// Same color language as the Academic Profile page (amber accent + soft
+// text-shadow on colored headers so it stays legible over any background).
+const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
+const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
+const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
+const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
+const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
@@ -74,6 +76,8 @@ export default function Page() {
   const [categories, setCategories] = React.useState<ExpenseCategory[]>([])
   const [subCategories, setSubCategories] = React.useState<ExpenseSubCategory[]>([])
   const [accounts, setAccounts] = React.useState<AccountName[]>([])
+
+  const router = useRouter();
 
   const accountNameById = React.useMemo(() => {
     const map = new Map<string, string>()
@@ -261,37 +265,53 @@ export default function Page() {
     <TooltipProvider>
       <section className="px-4 sm:px-6 py-4">
         <PageHeader title="Expenses" description="Manage your expenses" />
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {/* --------------------------------------------------------- */}
-          {/* Expense Categories — click a row to scope the sub category */}
-          {/* card on the right, the same relationship Class has with     */}
-          {/* Division.                                                   */}
-          {/* --------------------------------------------------------- */}
+        <div className="mt-6 space-y-6">
           <Card className="w-full dark:bg-background">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-                  style={{ backgroundColor: `${ACCENT}1A` }}
-                >
-                  <Tags className="h-4.5 w-4.5 text-slate-50" />
-                </span>
-                <div>
-                  <CardTitle className="text-2xl font-semibold text-slate-50 dark:text-slate-50">
-                    Category
+            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
+              <div className="flex w-full items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl font-semibold tracking-tight">
+                    Expense Management
                   </CardTitle>
-                  <CardDescription className="mt-1">
-                    Select a category to see its sub categories.
+
+                  <CardDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Manage expense categories and subcategories.
                   </CardDescription>
                 </div>
+
+                <AddAction onAdd={() =>
+              router.push("/workspace/expense-management/expenses/createExpense")
+            } />
               </div>
-
-              <AddAction onAdd={() => openCategoryDialog("add")} />
             </CardHeader>
+          </Card>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {/* --------------------------------------------------------- */}
+            {/* Expense Categories — click a row to scope the sub category */}
+            {/* card on the right, the same relationship Class has with     */}
+            {/* Division.                                                   */}
+            {/* --------------------------------------------------------- */}
+            <Card className="w-full dark:bg-background">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
+                    <Tags className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
+                  </span>
+                  <div>
+                    <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>
+                      Category
+                    </CardTitle>
+                    <CardDescription className={`mt-1 ${supportingTextClass}`}>
+                      Select a category to see its sub categories.
+                    </CardDescription>
+                  </div>
+                </div>
 
-            <CardContent
-              className="
+                <AddAction onAdd={() => openCategoryDialog("add")} />
+              </CardHeader>
+
+              <CardContent
+                className="
                 space-y-2 pt-4 max-h-[420px] overflow-y-auto
                 scrollbar-thin
                 scrollbar-thumb-slate-300
@@ -300,225 +320,171 @@ export default function Page() {
                 dark:scrollbar-thumb-slate-700
                 dark:hover:scrollbar-thumb-slate-600
               "
-            >
-              {categories.length === 0 ? (
-                <div
-                  className="rounded-3xl border border-dashed px-5 py-6 text-center"
-                  style={{ borderColor: `${ACCENT}55`, backgroundColor: `${ACCENT}0D` }}
-                >
-                  <p className="text-sm font-medium text-slate-950 dark:text-slate-50">No categories yet</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Click here to add categories before creating sub categories.
-                  </p>
-                  <Button
-                    className="mt-4 rounded-xl text-white"
-                    style={{ backgroundColor: ACCENT }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = ACCENT_HOVER)}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = ACCENT)}
-                    onClick={() => openCategoryDialog("add")}
-                  >
-                    Click here to add categories
-                  </Button>
-                </div>
-              ) : (
-                categories.map((category) => {
-                  const isActive = category.id === selectedCategoryId
-                  const subCount = subCategories.filter((sc) => sc.categoryId === category.id).length
+              >
+                {categories.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No categories yet</p>
+                    <p className={`mt-1 text-sm ${supportingTextClass}`}>
+                      Click here to add categories before creating sub categories.
+                    </p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openCategoryDialog("add")}>
+                      Click here to add categories
+                    </Button>
+                  </div>
+                ) : (
+                  categories.map((category) => {
+                    const isActive = category.id === selectedCategoryId
+                    const subCount = subCategories.filter((sc) => sc.categoryId === category.id).length
 
-                  return (
-                    <div
-                      key={category.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedCategoryId(category.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault()
-                          setSelectedCategoryId(category.id)
-                        }
-                      }}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 cursor-pointer mb-2",
-                        isActive
-                          ? "text-white shadow-sm"
-                          : "text-black border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50"
-                      )}
-                      style={
-                        isActive
-                          ? { borderColor: `${ACCENT}66`, backgroundColor: `${ACCENT}14` }
-                          : undefined
-                      }
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                        <Tags
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            isActive ? "text-white" : "text-slate-400"
-                          )}
-                        />
+                    return (
+                      <div
+                        key={category.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedCategoryId(category.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            setSelectedCategoryId(category.id)
+                          }
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
+                          isActive
+                            ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
+                            : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
+                        )}
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                          <Tags className={cn("h-4 w-4 shrink-0", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
 
-                        <div className="min-w-0">
-                          <span
-                            className={cn(
-                              "font-medium truncate block",
-                              isActive
-                                ? "text-white"
-                                : "text-slate-950 dark:text-slate-900"
-                            )}
-                          >
-                            {category.name}
+                          <div className="min-w-0">
+                            <span className="font-medium truncate block text-slate-950 dark:text-slate-100">
+                              {category.name}
+                            </span>
+
+                            {category.description ? (
+                              <span className="text-xs truncate block text-slate-500 dark:text-slate-400">
+                                {category.description}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
+                            {subCount} sub
                           </span>
 
-                          {category.description ? (
-                            <span
-                              className={cn(
-                                "text-xs truncate block",
-                                isActive
-                                  ? "text-white/80"
-                                  : "text-slate-500 dark:text-slate-900"
-                              )}
-                            >
-                              {category.description}
-                            </span>
-                          ) : null}
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSelectedCategoryId(category.id)
+                              openCategoryDialog("edit")
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </CardContent>
+            </Card>
+
+            {/* --------------------------------------------------------- */}
+            {/* Expense Sub Categories — scoped to the selected category. */}
+            {/* --------------------------------------------------------- */}
+            <Card className="w-full dark:bg-background">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
+                    <Layers3 className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
+                  </span>
+                  <div className="min-w-0">
+                    <CardTitle className={`text-2xl font-semibold truncate ${titleTextClass}`}>
+                      Sub Category
+                    </CardTitle>
+                    <CardDescription className={`mt-1 ${supportingTextClass}`}>
+                      {!selectedCategory
+                        ? "Select a category to see its sub categories."
+                        : selectedCategorySubCategories.length === 0
+                          ? "No sub categories yet."
+                          : `${selectedCategory.name} sub categories are shown here.`}
+                    </CardDescription>
+                  </div>
+                </div>
+
+                <AddAction onAdd={() => openSubCategoryDialog("add")} disabled={!selectedCategoryId} />
+              </CardHeader>
+
+              <CardContent
+                className="
+                space-y-2 pt-4 max-h-[420px] overflow-y-auto
+                scrollbar-thin
+                scrollbar-thumb-slate-300
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-slate-400
+                dark:scrollbar-thumb-slate-700
+                dark:hover:scrollbar-thumb-slate-600
+              "
+              >
+                {!selectedCategory ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No category selected</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openCategoryDialog("add")}>
+                      Add category
+                    </Button>
+                  </div>
+                ) : selectedCategorySubCategories.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No sub categories yet</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openSubCategoryDialog("add")}>
+                      Add sub category
+                    </Button>
+                  </div>
+                ) : (
+                  selectedCategorySubCategories.map((subCategory) => (
+                    <div
+                      key={subCategory.id}
+                      className="flex items-center justify-between rounded-2xl border border-black/5 bg-white/80 px-4 py-3 transition-all dark:border-white/10 dark:bg-white/5"
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                          {subCategory.name.slice(0, 2).toUpperCase()}
+                        </span>
+
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-950 dark:text-slate-100 truncate">
+                            {subCategory.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
+                            {accountNameById.get(subCategory.expenseAccountId) ?? subCategory.expenseAccountId}
+                            {subCategory.description ? ` · ${subCategory.description}` : ""}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300"
-                        >
-                          {subCount} sub
-                        </span>
-
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setSelectedCategoryId(category.id)
-                            openCategoryDialog("edit")
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT)}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </CardContent>
-          </Card>
-
-          {/* --------------------------------------------------------- */}
-          {/* Expense Sub Categories — scoped to the selected category. */}
-          {/* --------------------------------------------------------- */}
-          <Card className="w-full dark:bg-background">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span
-                  className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-                  style={{ backgroundColor: `${ACCENT}1A` }}
-                >
-                  <Layers3 className="h-4.5 w-4.5 text-slate-50"  />
-                </span>
-                <div className="min-w-0">
-                  <CardTitle className="text-2xl font-semibold text-slate-50 dark:text-slate-50 truncate">
-                    Sub Category
-                  </CardTitle>
-                  <CardDescription className="mt-1 ">
-                    {!selectedCategory
-                      ? "Select a category to see its sub categories."
-                      : selectedCategorySubCategories.length === 0
-                        ? "No sub categories yet."
-                        : `${selectedCategory.name} sub categories are shown here.`}
-                  </CardDescription>
-                </div>
-              </div>
-
-              <AddAction onAdd={() => openSubCategoryDialog("add")} disabled={!selectedCategoryId} />
-            </CardHeader>
-
-            <CardContent
-              className="
-                space-y-2 pt-4 max-h-[420px] overflow-y-auto
-                scrollbar-thin
-                scrollbar-thumb-slate-300
-                scrollbar-track-transparent
-                hover:scrollbar-thumb-slate-400
-                dark:scrollbar-thumb-slate-700
-                dark:hover:scrollbar-thumb-slate-600
-              "
-            >
-              {!selectedCategory ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
-                  <p className="text-sm font-medium text-slate-950 dark:text-slate-50">No category selected</p>
-                  <Button
-                    className="mt-4 rounded-xl text-white"
-                    style={{ backgroundColor: ACCENT }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = ACCENT_HOVER)}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = ACCENT)}
-                    onClick={() => openCategoryDialog("add")}
-                  >
-                    Add category
-                  </Button>
-                </div>
-              ) : selectedCategorySubCategories.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
-                  <p className="text-sm font-medium text-slate-50 dark:text-slate-50">No sub categories yet</p>
-                  <Button
-                    className="mt-4 rounded-xl text-slate-900 bg-slate-50 dark:bg-white dark:text-slate-950"
-                   
-                   
-                    onClick={() => openSubCategoryDialog("add")}
-                  >
-                    Add sub category
-                  </Button>
-                </div>
-              ) : (
-                selectedCategorySubCategories.map((subCategory) => (
-                  <div
-                    key={subCategory.id}
-                    className="flex items-center justify-between rounded-2xl border border-black/5 bg-white/80 px-4 py-3 transition-all dark:border-white/10 dark:bg-white/5"
-                  >
-                    <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold text-white"
-                        style={{ backgroundColor: ACCENT }}
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className={editIconClass}
+                        onClick={() => openSubCategoryDialog("edit", subCategory)}
                       >
-                        {subCategory.name.slice(0, 2).toUpperCase()}
-                      </span>
-
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-950 dark:text-slate-100 truncate">
-                          {subCategory.name}
-                        </p>
-                        <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
-                          {accountNameById.get(subCategory.expenseAccountId) ?? subCategory.expenseAccountId}
-                          {subCategory.description ? ` · ${subCategory.description}` : ""}
-                        </p>
-                      </div>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </div>
-
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className={editIconClass}
-                      onClick={() => openSubCategoryDialog("edit", subCategory)}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT)}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
 
         {/* ------------------------------------------------------------- */}
         {/* Create / Edit Expense Category Dialog */}
@@ -526,10 +492,10 @@ export default function Page() {
         <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
           <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
                 {categoryDialogMode === "add" ? "Add Category" : "Edit Category"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className={supportingTextClass}>
                 {categoryDialogMode === "add"
                   ? "Create a new expense category."
                   : "Update the selected expense category."}
@@ -562,12 +528,7 @@ export default function Page() {
               <Button variant="outline" onClick={closeCategoryDialog}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => void handleSaveCategory()}
-                disabled={categorySaving}
-                className="text-white"
-                style={{ backgroundColor: ACCENT }}
-              >
+              <Button onClick={() => void handleSaveCategory()} disabled={categorySaving}>
                 {categorySaving ? "Saving..." : categoryDialogMode === "add" ? "Add" : "Save"}
               </Button>
             </DialogFooter>
@@ -580,10 +541,10 @@ export default function Page() {
         <Dialog open={subCategoryDialogOpen} onOpenChange={setSubCategoryDialogOpen}>
           <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
                 {subCategoryDialogMode === "add" ? "Add Sub Category" : "Edit Sub Category"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className={supportingTextClass}>
                 {subCategoryDialogMode === "add"
                   ? `Create a sub category under ${selectedCategory?.name || "the selected category"}.`
                   : "Update the selected sub category."}
@@ -632,12 +593,7 @@ export default function Page() {
               <Button variant="outline" onClick={closeSubCategoryDialog}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => void handleSaveSubCategory()}
-                disabled={subCategorySaving}
-                className="text-white"
-                style={{ backgroundColor: ACCENT }}
-              >
+              <Button onClick={() => void handleSaveSubCategory()} disabled={subCategorySaving}>
                 {subCategorySaving ? "Saving..." : subCategoryDialogMode === "add" ? "Add" : "Save"}
               </Button>
             </DialogFooter>

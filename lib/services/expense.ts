@@ -39,6 +39,17 @@ export interface AccountName {
   name: string;
 }
 
+export interface ExpenseInput {
+  expenseNumber: string;
+  categoryId: string;
+  accountId: string;
+  vehicleId?: string | null;
+  subCategoryId: string;
+  notes?: string;
+  amount: number;
+  expenseDate: string; // ISO date string
+}
+
 type ApiSuccess<T> = {
   success: boolean;
   message?: string;
@@ -106,7 +117,7 @@ export async function updateExpenseSubCategory(
 }
 
 // ---------------------------------------------------------------------
-// Accounts (for Expense Account dropdown)
+// Accounts (for Expense Account / Payment Account dropdowns)
 // ---------------------------------------------------------------------
 
 export async function getAccountNames() {
@@ -115,4 +126,15 @@ export async function getAccountNames() {
   )) as ApiSuccess<AccountName[]>;
 
   return payload.data ?? [];
+}
+
+// ---------------------------------------------------------------------
+// Expense
+// ---------------------------------------------------------------------
+
+export async function createExpense(input: ExpenseInput) {
+  return apiFetch("/api/expense", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
