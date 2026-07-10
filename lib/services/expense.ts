@@ -39,15 +39,21 @@ export interface AccountName {
   name: string;
 }
 
+// A single split-payment line: how much of the total is paid from a given account.
+export interface ExpensePaymentInput {
+  accountId: string;
+  amount: number;
+}
+
 export interface ExpenseInput {
   expenseNumber: string;
   categoryId: string;
-  accountId: string;
   vehicleId?: string | null;
   subCategoryId: string;
   notes?: string;
   amount: number;
   expenseDate: string; // ISO date string
+  payments: ExpensePaymentInput[];
 }
 
 type ApiSuccess<T> = {

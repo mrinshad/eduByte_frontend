@@ -18,6 +18,8 @@ import {
     Hash,
     FileText,
     IndianRupee,
+    Plus,
+    Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -79,6 +81,25 @@ const datePickerClassName =
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
 const datePickerPopperClassName = "z-50";
 
+// ---------------------------------------------------------------------
+// Payment split types
+// ---------------------------------------------------------------------
+
+type PaymentRow = {
+    id: string;
+    accountId: string;
+    amount: number | "";
+};
+
+const createPaymentRow = (): PaymentRow => ({
+    id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `row-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    accountId: "",
+    amount: "",
+});
+
 export default function Page() {
     const router = useRouter();
 
@@ -96,13 +117,15 @@ export default function Page() {
 
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
-    const [selectedAccountId, setSelectedAccountId] = useState<string>("");
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+
+    // ── Split payments (replaces the single payment account field) ──────────
+    const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
+    const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
 
     // ── Popover open state ─────────────────────────────────────────────────
     const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
     const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
-    const [accountPopoverOpen, setAccountPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
 
     // ── Loading state ───────────────────────────────────────────────────────
@@ -158,19 +181,24 @@ export default function Page() {
         }
     };
 
-    const handleAccountPopoverChange = async (open: boolean) => {
-        setAccountPopoverOpen(open);
-        if (open && accountsDropdown.length === 0) {
-            try {
-                setLoadingAccountList(true);
-                const data = await getAccountNames();
-                setAccountsDropdown(data);
-            } catch (error) {
-                console.error("Failed to load accounts:", error);
-            } finally {
-                setLoadingAccountList(false);
-            }
+    // Shared account list, lazily loaded the first time *any* payment row's
+    // popover is opened (all rows draw from the same accounts dropdown).
+    const ensureAccountsLoaded = async () => {
+        if (accountsDropdown.length > 0 || loadingAccountList) return;
+        try {
+            setLoadingAccountList(true);
+            const data = await getAccountNames();
+            setAccountsDropdown(data);
+        } catch (error) {
+            console.error("Failed to load accounts:", error);
+        } finally {
+            setLoadingAccountList(false);
         }
+    };
+
+    const handlePaymentPopoverChange = (rowId: string, open: boolean) => {
+        setOpenPaymentRowId(open ? rowId : null);
+        if (open) void ensureAccountsLoaded();
     };
 
     const handleVehiclePopoverChange = async (open: boolean) => {
@@ -193,6 +221,18 @@ export default function Page() {
         setSelectedSubCategoryId("");
     };
 
+    // ── Payment row helpers ──────────────────────────────────────────────────
+    const addPaymentRow = () => setPayments((prev) => [...prev, createPaymentRow()]);
+
+    const removePaymentRow = (rowId: string) =>
+        setPayments((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== rowId) : prev));
+
+    const updatePaymentAccount = (rowId: string, accountId: string) =>
+        setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, accountId } : p)));
+
+    const updatePaymentAmount = (rowId: string, value: number | "") =>
+        setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, amount: value } : p)));
+
     // Preload categories + sub categories eagerly since Step 2 depends on the
     // category → sub category relationship being ready to filter instantly.
     useEffect(() => {
@@ -210,18 +250,39 @@ export default function Page() {
         })();
     }, []);
 
+    const totalAllocated = useMemo(
+        () => payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
+        [payments]
+    );
+
+    const remaining = (Number(amount) || 0) - totalAllocated;
+
+    const paymentsValid =
+        payments.length > 0 &&
+        payments.every((p) => !!p.accountId && p.amount !== "" && Number(p.amount) > 0) &&
+        amount !== "" &&
+        remaining === 0;
+
     const isValid =
         expenseNumber.trim() !== "" &&
         !!selectedCategoryId &&
         !!selectedSubCategoryId &&
-        !!selectedAccountId &&
         amount !== "" &&
         Number(amount) > 0 &&
-        !!expenseDate;
+        !!expenseDate &&
+        paymentsValid;
 
     const handleSubmit = async () => {
         if (!isValid) {
-            toast.error("Fill in expense number, category, sub category, account, and amount before submitting.");
+            if (amount !== "" && Number(amount) > 0 && remaining !== 0) {
+                toast.error(
+                    remaining > 0
+                        ? `Payments are short by ₹${remaining.toLocaleString()}. Allocate the full amount across accounts.`
+                        : `Payments exceed the expense amount by ₹${Math.abs(remaining).toLocaleString()}.`
+                );
+            } else {
+                toast.error("Fill in expense number, category, sub category, amount, and payment split before submitting.");
+            }
             return;
         }
 
@@ -231,12 +292,15 @@ export default function Page() {
             const result = await createExpense({
                 expenseNumber: expenseNumber.trim(),
                 categoryId: selectedCategoryId,
-                accountId: selectedAccountId,
                 vehicleId: selectedVehicleId || null,
                 subCategoryId: selectedSubCategoryId,
                 notes: notes.trim(),
                 amount: Number(amount),
                 expenseDate: expenseDate.toISOString(),
+                payments: payments.map((p) => ({
+                    accountId: p.accountId,
+                    amount: Number(p.amount),
+                })),
             });
 
             if (result?.success) {
@@ -263,7 +327,7 @@ export default function Page() {
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Record a new expense against a category, sub category, and payment account.
+                            Record a new expense against a category, sub category, and one or more payment accounts.
                         </p>
                     </div>
                 </div>
@@ -456,135 +520,196 @@ export default function Page() {
                     </div>
                 </StepSection>
 
-                {/* Step 3: Payment Account & Vehicle */}
+                {/* Step 3: Payment Accounts & Vehicle */}
                 <StepSection
                     stepNumber="3"
-                    title="Payment Account & Vehicle"
-                    description="Choose the account the expense is paid from, and link a vehicle if this expense relates to transport."
+                    title="Payment Accounts & Vehicle"
+                    description="Split this expense across one or more accounts, and link a vehicle if it relates to transport."
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Wallet className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Payment Account
+                                <Wallet className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Payment Accounts
                             </span>
-                            <Popover open={accountPopoverOpen} onOpenChange={handleAccountPopoverChange}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={accountPopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
-                                    >
-                                        {selectedAccountId
-                                            ? accountsDropdown.find((a) => a.id === selectedAccountId)?.name || "Resolving account..."
-                                            : "Choose a payment account..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Filter accounts..." />
-                                        <CommandList>
-                                            {loadingAccountList ? (
-                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <CommandEmpty>No accounts found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {accountsDropdown.map((account) => (
-                                                            <CommandItem
-                                                                key={account.id}
-                                                                value={account.name}
-                                                                onSelect={() => {
-                                                                    setSelectedAccountId(account.id);
-                                                                    setAccountPopoverOpen(false);
-                                                                }}
-                                                                className="cursor-pointer"
-                                                            >
-                                                                <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedAccountId === account.id ? "opacity-100" : "opacity-0")} />
-                                                                <span>{account.name}</span>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </>
-                                            )}
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={addPaymentRow}
+                                className="h-8 rounded-lg text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                            >
+                                <Plus className="mr-1 h-3.5 w-3.5" /> Add account
+                            </Button>
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Bus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Vehicle (Optional)
+                        <div className="flex flex-col gap-3">
+                            {payments.map((row, index) => {
+                                const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
+                                return (
+                                    <div key={row.id} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                                        <Popover
+                                            open={openPaymentRowId === row.id}
+                                            onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
+                                        >
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openPaymentRowId === row.id}
+                                                    className={cn("w-full sm:flex-1 justify-between font-normal shadow-sm text-left", fieldClass)}
+                                                >
+                                                    {rowAccount ? rowAccount.name : `Choose account ${index + 1}...`}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Filter accounts..." />
+                                                    <CommandList>
+                                                        {loadingAccountList ? (
+                                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <CommandEmpty>No accounts found.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {accountsDropdown.map((account) => (
+                                                                        <CommandItem
+                                                                            key={account.id}
+                                                                            value={account.name}
+                                                                            onSelect={() => {
+                                                                                updatePaymentAccount(row.id, account.id);
+                                                                                setOpenPaymentRowId(null);
+                                                                            }}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <Check className={cn("mr-2 h-4 w-4 text-amber-600", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
+                                                                            <span>{account.name}</span>
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </>
+                                                        )}
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            placeholder="Amount"
+                                            value={row.amount}
+                                            onChange={(e) =>
+                                                updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
+                                            }
+                                            onWheel={(e) => e.currentTarget.blur()}
+                                            className={cn("w-full sm:w-40", fieldClass)}
+                                        />
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => removePaymentRow(row.id)}
+                                            disabled={payments.length === 1}
+                                            className="h-12 w-12 shrink-0 rounded-xl border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 disabled:opacity-40 dark:border-slate-700"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div
+                            className={cn(
+                                "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium",
+                                remaining === 0
+                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                            )}
+                        >
+                            <span>Allocated ₹{totalAllocated.toLocaleString()} of ₹{(Number(amount) || 0).toLocaleString()}</span>
+                            <span>
+                                {remaining === 0
+                                    ? "Fully allocated"
+                                    : remaining > 0
+                                        ? `₹${remaining.toLocaleString()} remaining`
+                                        : `₹${Math.abs(remaining).toLocaleString()} over`}
                             </span>
-                            <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={vehiclePopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
-                                    >
-                                        {selectedVehicleId
-                                            ? (() => {
-                                                const v = vehiclesDropdown.find((veh) => veh.id === selectedVehicleId);
-                                                return v ? `${v.vehicleName} (${v.vehicleNumber})` : "Resolving vehicle...";
-                                            })()
-                                            : "Not linked to a vehicle..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Search vehicles..." />
-                                        <CommandList>
-                                            {loadingVehicleList ? (
-                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <CommandEmpty>No vehicles found.</CommandEmpty>
-                                                    <CommandGroup>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Bus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Vehicle (Optional)
+                        </span>
+                        <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={vehiclePopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
+                                >
+                                    {selectedVehicleId
+                                        ? (() => {
+                                            const v = vehiclesDropdown.find((veh) => veh.id === selectedVehicleId);
+                                            return v ? `${v.vehicleName} (${v.vehicleNumber})` : "Resolving vehicle...";
+                                        })()
+                                        : "Not linked to a vehicle..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search vehicles..." />
+                                    <CommandList>
+                                        {loadingVehicleList ? (
+                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No vehicles found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="none"
+                                                        onSelect={() => {
+                                                            setSelectedVehicleId("");
+                                                            setVehiclePopoverOpen(false);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-500">No vehicle</span>
+                                                    </CommandItem>
+                                                    {vehiclesDropdown.map((vehicle) => (
                                                         <CommandItem
-                                                            value="none"
+                                                            key={vehicle.id}
+                                                            value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
                                                             onSelect={() => {
-                                                                setSelectedVehicleId("");
+                                                                setSelectedVehicleId(vehicle.id);
                                                                 setVehiclePopoverOpen(false);
                                                             }}
-                                                            className="cursor-pointer"
+                                                            className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
-                                                            <span className="text-slate-500">No vehicle</span>
+                                                            <Check className={cn("mr-3 h-4 w-4 text-amber-600", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
+                                                            </div>
                                                         </CommandItem>
-                                                        {vehiclesDropdown.map((vehicle) => (
-                                                            <CommandItem
-                                                                key={vehicle.id}
-                                                                value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
-                                                                onSelect={() => {
-                                                                    setSelectedVehicleId(vehicle.id);
-                                                                    setVehiclePopoverOpen(false);
-                                                                }}
-                                                                className="py-3 cursor-pointer"
-                                                            >
-                                                                <Check className={cn("mr-3 h-4 w-4 text-amber-600", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
-                                                                    <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
-                                                                </div>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </>
-                                            )}
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </StepSection>
 
