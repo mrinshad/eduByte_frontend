@@ -56,13 +56,17 @@ import {
   updateFineType,
   getFineTypes,
   getStudentFines,
-  getStudentAdmissionAndName,
+  getStudentAdmissionAndNameWithEnrollment,
   createStudentFine,
   updateStudentFine,
   type FineType,
   type StudentFine,
-  type StudentAdmissionAndName,
+  type StudentAdmissionAndNameWithEnrollment,
 } from "@/lib/services/fineTypes"
+
+type StudentEnrollmentOption = Omit<StudentAdmissionAndNameWithEnrollment, "enrollmentId"> & {
+  enrollmentId: string
+}
 
 export default function Page() {
   const router = useRouter()
@@ -239,8 +243,7 @@ export default function Page() {
   // ---------------------------------------------------------------------
   const [editingFineId, setEditingFineId] = useState<string | null>(null)
   const [newFineOpen, setNewFineOpen] = useState(false)
-  const [students, setStudents] = useState<StudentAdmissionAndName[]>([])
-  const [studentSearch, setStudentSearch] = useState("")
+  const [students, setStudents] = useState<StudentEnrollmentOption[]>([])
 
   const [fineForm, setFineForm] = useState({
     studentId: "",
@@ -257,13 +260,14 @@ export default function Page() {
       amount: "",
       reason: "",
     })
-    setStudentSearch("")
   }
 
   async function loadStudents() {
     try {
-      const data = await getStudentAdmissionAndName()
-      setStudents(data)
+      const data = await getStudentAdmissionAndNameWithEnrollment()
+      setStudents(
+        data.filter((student): student is StudentEnrollmentOption => Boolean(student.enrollmentId))
+      )
     } catch (error) {
       toast.error("Failed to load students")
     }
@@ -303,12 +307,6 @@ export default function Page() {
       )
     }
   }
-
-  const filteredStudents = students.filter(
-    (student) =>
-      student.studentName?.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      student.admissionNumber?.toLowerCase().includes(studentSearch.toLowerCase())
-  )
 
   // ---------------------------------------------------------------------
   // Render
@@ -714,35 +712,28 @@ export default function Page() {
             {/* Student Dropdown */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
-              <Select
+              <select
                 value={fineForm.studentId}
-                onValueChange={(value) =>
-                  setFineForm((prev) => ({ ...prev, studentId: value }))
+                onChange={(e) =>
+                  setFineForm((prev) => ({ ...prev, studentId: e.target.value }))
                 }
+                className="h-8 w-full min-w-0 rounded-xl border border-input bg-transparent px-2.5 py-1 text-sm text-slate-950 outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-slate-50"
               >
-                <SelectTrigger className="w-full rounded-xl">
-                  <SelectValue placeholder="Select Student" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  <div className="p-2 sticky top-0 bg-background z-10">
-                    <Input
-                      placeholder="Search Student..."
-                      value={studentSearch}
-                      onChange={(e) => setStudentSearch(e.target.value)}
-                      className="rounded-lg h-9"
-                    />
-                  </div>
-                  {filteredStudents.length === 0 ? (
-                    <p className="p-4 text-center text-xs text-muted-foreground">No students found</p>
-                  ) : (
-                    filteredStudents.map((student) => (
-                      <SelectItem key={student.id} value={student.enrollmentId}>
-                        {student.admissionNumber} - {student.studentName}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                <option value="" disabled>
+                  Select Student
+                </option>
+                {students.length === 0 ? (
+                  <option value="" disabled>
+                    No students found
+                  </option>
+                ) : (
+                  students.map((student) => (
+                    <option key={student.id} value={student.enrollmentId}>
+                      {student.admissionNumber} - {student.studentName}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
             {/* Fine Type Dropdown */}
@@ -754,8 +745,8 @@ export default function Page() {
                   setFineForm((prev) => ({ ...prev, fineTypeId: value }))
                 }
               >
-                <SelectTrigger className="w-full rounded-xl">
-                  <SelectValue placeholder="Select Fine Type" />
+                <SelectTrigger className="w-full min-w-0 overflow-hidden rounded-xl">
+                  <SelectValue placeholder="Select Fine Type" className="truncate" />
                 </SelectTrigger>
                 <SelectContent>
                   {fineTypes.map((fine) => (
