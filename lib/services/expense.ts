@@ -144,3 +144,18 @@ export async function createExpense(input: ExpenseInput) {
     body: JSON.stringify(input),
   });
 }
+export interface PaymentMethodAccount {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  isActive: boolean;
+}
+
+export async function getPaymentMethodAccounts() {
+  const payload = (await apiFetch(
+    "/api/accounts?type=PAYMENT_METHOD&isActive=true"
+  )) as { success: boolean; data?: PaymentMethodAccount[] };
+
+  return payload.data ?? [];
+}

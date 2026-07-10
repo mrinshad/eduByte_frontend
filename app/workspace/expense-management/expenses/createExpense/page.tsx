@@ -43,10 +43,11 @@ import {
     createExpense,
     getExpenseCategories,
     getExpenseSubCategories,
-    getAccountNames,
+    
+    getPaymentMethodAccounts,
+    type PaymentMethodAccount,
     type ExpenseCategory,
     type ExpenseSubCategory,
-    type AccountName,
 } from "@/lib/services/expense";
 import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
 
@@ -106,7 +107,7 @@ export default function Page() {
     // ── Lookup data ─────────────────────────────────────────────────────────
     const [categoriesDropdown, setCategoriesDropdown] = useState<ExpenseCategory[]>([]);
     const [subCategoriesDropdown, setSubCategoriesDropdown] = useState<ExpenseSubCategory[]>([]);
-    const [accountsDropdown, setAccountsDropdown] = useState<AccountName[]>([]);
+    const [accountsDropdown, setAccountsDropdown] = useState<PaymentMethodAccount[]>([]);
     const [vehiclesDropdown, setVehiclesDropdown] = useState<Vehicle[]>([]);
 
     // ── Form state ──────────────────────────────────────────────────────────
@@ -187,7 +188,7 @@ export default function Page() {
         if (accountsDropdown.length > 0 || loadingAccountList) return;
         try {
             setLoadingAccountList(true);
-            const data = await getAccountNames();
+            const data = await getPaymentMethodAccounts();
             setAccountsDropdown(data);
         } catch (error) {
             console.error("Failed to load accounts:", error);
