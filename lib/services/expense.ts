@@ -39,6 +39,23 @@ export interface AccountName {
   name: string;
 }
 
+// A single split-payment line: how much of the total is paid from a given account.
+export interface ExpensePaymentInput {
+  accountId: string;
+  amount: number;
+}
+
+export interface ExpenseInput {
+  expenseNumber: string;
+  categoryId: string;
+  vehicleId?: string | null;
+  subCategoryId: string;
+  notes?: string;
+  amount: number;
+  expenseDate: string; // ISO date string
+  payments: ExpensePaymentInput[];
+}
+
 type ApiSuccess<T> = {
   success: boolean;
   message?: string;
@@ -106,13 +123,39 @@ export async function updateExpenseSubCategory(
 }
 
 // ---------------------------------------------------------------------
-// Accounts (for Expense Account dropdown)
+// Accounts (for Expense Account / Payment Account dropdowns)
 // ---------------------------------------------------------------------
 
 export async function getAccountNames() {
   const payload = (await apiFetch(
     "/api/accounts/names"
   )) as ApiSuccess<AccountName[]>;
+
+  return payload.data ?? [];
+}
+
+// ---------------------------------------------------------------------
+// Expense
+// ---------------------------------------------------------------------
+
+export async function createExpense(input: ExpenseInput) {
+  return apiFetch("/api/expense", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+export interface PaymentMethodAccount {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  isActive: boolean;
+}
+
+export async function getPaymentMethodAccounts() {
+  const payload = (await apiFetch(
+    "/api/accounts?type=PAYMENT_METHOD&isActive=true"
+  )) as { success: boolean; data?: PaymentMethodAccount[] };
 
   return payload.data ?? [];
 }

@@ -19,15 +19,15 @@ export interface Student {
   admissionNumber: string;
   studentName: string;
   gender: "Male" | "Female";
-  dob: string;
-  bloodGroup: string;
+  dob: string | null;
+  bloodGroup: string | null;
   fatherName: string;
   fatherMobile: string;
   motherName: string;
   motherMobile: string;
   whatsappNumber: string;
   address: string;
-  status: "ACTIVE" | "ALUMNI";
+  status: "ACTIVE" | "WITHDRAWN" | "ALUMNI";
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
@@ -40,7 +40,7 @@ export interface StudentListItem {
   admissionNumber: string;
   studentName: string;
   gender: "Male" | "Female";
-  dob: string;
+  dob: string | null;
   whatsappNumber: string;
   address: string;
   status: string;

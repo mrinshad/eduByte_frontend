@@ -36,6 +36,12 @@ export type GetStudentFinesResult = {
   admissionNumber: string;
   studentName: string;
 }
+export interface StudentAdmissionAndNameWithEnrollment {
+  id: string;
+  enrollmentId: string | null;
+  admissionNumber: string;
+  studentName: string;
+}
 export type StudentFineDetail = {
   id: string;
   enrollmentId: string;
@@ -137,6 +143,14 @@ export async function getStudentAdmissionAndName() {
   const payload = (await apiFetch(
     `/api/stdfines/stdenid-name`
   )) as ApiSuccess<StudentAdmissionAndName[]>;
+
+  return payload.data ?? [];
+}
+
+export async function getStudentAdmissionAndNameWithEnrollment() {
+  const payload = (await apiFetch(
+    `/api/stdfines/stdenid-name-enrollment`
+  )) as ApiSuccess<StudentAdmissionAndNameWithEnrollment[]>;
 
   return payload.data ?? [];
 }

@@ -1,12 +1,21 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import * as React from "react"
 import { toast } from "sonner"
+import { Tags, Layers3, Pencil, Plus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import PageHeader from "@/components/common/pageHeader"
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -16,21 +25,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Pencil, Search, Loader2, X } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
   createExpenseCategory,
@@ -45,56 +46,77 @@ import {
   type AccountName,
 } from "@/lib/services/expense"
 
+// Same color language as the Academic Profile page (amber accent + soft
+// text-shadow on colored headers so it stays legible over any background).
+const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
+const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
+const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
+const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
+const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
+
+function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="outline" size="icon" className="rounded-xl" onClick={onAdd} disabled={disabled}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Add</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 export default function Page() {
   // ---------------------------------------------------------------------
   // Shared lookup data
   // ---------------------------------------------------------------------
-  const [categories, setCategories] = useState<ExpenseCategory[]>([])
-  const [subCategories, setSubCategories] = useState<ExpenseSubCategory[]>([])
-  const [accounts, setAccounts] = useState<AccountName[]>([])
+  const [categories, setCategories] = React.useState<ExpenseCategory[]>([])
+  const [subCategories, setSubCategories] = React.useState<ExpenseSubCategory[]>([])
+  const [accounts, setAccounts] = React.useState<AccountName[]>([])
 
-  const [categoriesLoading, setCategoriesLoading] = useState(true)
-  const [subCategoriesLoading, setSubCategoriesLoading] = useState(true)
+  const router = useRouter();
 
-  const categoryNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    categories.forEach((c) => map.set(c.id, c.name))
-    return map
-  }, [categories])
-
-  const accountNameById = useMemo(() => {
+  const accountNameById = React.useMemo(() => {
     const map = new Map<string, string>()
     accounts.forEach((a) => map.set(a.id, a.name))
     return map
   }, [accounts])
 
+  // The category selected in the left card scopes the sub category card on
+  // the right — same relationship the Class card has with the Division card.
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState("")
+
+  const selectedCategory = React.useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId) ?? null,
+    [categories, selectedCategoryId]
+  )
+
+  const selectedCategorySubCategories = React.useMemo(
+    () => subCategories.filter((sc) => sc.categoryId === selectedCategoryId),
+    [subCategories, selectedCategoryId]
+  )
+
   async function loadCategories() {
-    setCategoriesLoading(true)
     try {
       const data = await getExpenseCategories()
       setCategories(data)
+      if (data.length > 0) {
+        setSelectedCategoryId((current) => current || data[0].id)
+      }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load expense categories"
-      )
-    } finally {
-      setCategoriesLoading(false)
+      toast.error(error instanceof Error ? error.message : "Failed to load expense categories")
     }
   }
 
   async function loadSubCategories() {
-    setSubCategoriesLoading(true)
     try {
       const data = await getExpenseSubCategories()
       setSubCategories(data)
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to load expense sub categories"
-      )
-    } finally {
-      setSubCategoriesLoading(false)
+      toast.error(error instanceof Error ? error.message : "Failed to load expense sub categories")
     }
   }
 
@@ -107,180 +129,132 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
+  React.useEffect(() => {
     void loadCategories()
     void loadSubCategories()
     void loadAccounts()
   }, [])
 
   // ---------------------------------------------------------------------
-  // Expense Category — search + create/edit dialog
+  // Expense Category — add/edit dialog
   // ---------------------------------------------------------------------
-  const [categorySearch, setCategorySearch] = useState("")
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null)
-  const [categorySubmitting, setCategorySubmitting] = useState(false)
-  const [categoryForm, setCategoryForm] = useState({ name: "", description: "" })
+  const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false)
+  const [categoryDialogMode, setCategoryDialogMode] = React.useState<"add" | "edit">("add")
+  const [categoryNameDraft, setCategoryNameDraft] = React.useState("")
+  const [categoryDescriptionDraft, setCategoryDescriptionDraft] = React.useState("")
+  const [categorySaving, setCategorySaving] = React.useState(false)
 
-  const filteredCategories = categories.filter((c) => {
-    const term = categorySearch.trim().toLowerCase()
-    if (!term) return true
-    return (
-      c.name.toLowerCase().includes(term) ||
-      c.description.toLowerCase().includes(term)
-    )
-  })
-
-  function openCreateCategory() {
-    setEditingCategory(null)
-    setCategoryForm({ name: "", description: "" })
+  function openCategoryDialog(mode: "add" | "edit") {
+    setCategoryDialogMode(mode)
+    setCategoryNameDraft(mode === "edit" ? selectedCategory?.name ?? "" : "")
+    setCategoryDescriptionDraft(mode === "edit" ? selectedCategory?.description ?? "" : "")
     setCategoryDialogOpen(true)
   }
 
-  function openEditCategory(category: ExpenseCategory) {
-    setEditingCategory(category)
-    setCategoryForm({ name: category.name, description: category.description })
-    setCategoryDialogOpen(true)
-  }
-
-  function resetAndCloseCategoryDialog() {
+  function closeCategoryDialog() {
     setCategoryDialogOpen(false)
-    setEditingCategory(null)
-    setCategoryForm({ name: "", description: "" })
+    setCategoryNameDraft("")
+    setCategoryDescriptionDraft("")
   }
 
   async function handleSaveCategory() {
-    const name = categoryForm.name.trim()
-    const description = categoryForm.description.trim()
+    const name = categoryNameDraft.trim()
+    const description = categoryDescriptionDraft.trim()
 
     if (!name) {
       toast.error("Enter a category name")
       return
     }
 
-    setCategorySubmitting(true)
+    setCategorySaving(true)
     try {
-      if (editingCategory) {
-        await updateExpenseCategory(editingCategory.id, { name, description })
-        toast.success("Updated Expense Category")
-      } else {
+      if (categoryDialogMode === "add") {
         await createExpenseCategory({ name, description })
-        toast.success("Created Expense Category")
+        toast.success("Category created")
+      } else if (selectedCategoryId) {
+        await updateExpenseCategory(selectedCategoryId, { name, description })
+        toast.success("Category updated")
       }
 
       await loadCategories()
-      resetAndCloseCategoryDialog()
+      closeCategoryDialog()
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : editingCategory
-            ? "Failed to update expense category"
-            : "Failed to create expense category"
-      )
+      toast.error(error instanceof Error ? error.message : "Failed to save category")
     } finally {
-      setCategorySubmitting(false)
+      setCategorySaving(false)
     }
   }
 
   // ---------------------------------------------------------------------
-  // Expense Sub Category — search + create/edit dialog
+  // Expense Sub Category — add/edit dialog, scoped to selectedCategoryId
   // ---------------------------------------------------------------------
-  const [subCategorySearch, setSubCategorySearch] = useState("")
-  const [subCategoryDialogOpen, setSubCategoryDialogOpen] = useState(false)
-  const [editingSubCategory, setEditingSubCategory] = useState<ExpenseSubCategory | null>(null)
-  const [subCategorySubmitting, setSubCategorySubmitting] = useState(false)
-  const [subCategoryForm, setSubCategoryForm] = useState({
-    categoryId: "",
-    name: "",
-    expenseAccountId: "",
-    description: "",
-  })
+  const [subCategoryDialogOpen, setSubCategoryDialogOpen] = React.useState(false)
+  const [subCategoryDialogMode, setSubCategoryDialogMode] = React.useState<"add" | "edit">("add")
+  const [editingSubCategoryId, setEditingSubCategoryId] = React.useState<string | null>(null)
+  const [subCategoryNameDraft, setSubCategoryNameDraft] = React.useState("")
+  const [subCategoryAccountDraft, setSubCategoryAccountDraft] = React.useState("")
+  const [subCategoryDescriptionDraft, setSubCategoryDescriptionDraft] = React.useState("")
+  const [subCategorySaving, setSubCategorySaving] = React.useState(false)
 
-  const filteredSubCategories = subCategories.filter((sc) => {
-    const term = subCategorySearch.trim().toLowerCase()
-    if (!term) return true
-    const categoryName = categoryNameById.get(sc.categoryId) ?? ""
-    const accountName = accountNameById.get(sc.expenseAccountId) ?? ""
-    return (
-      sc.name.toLowerCase().includes(term) ||
-      sc.description.toLowerCase().includes(term) ||
-      categoryName.toLowerCase().includes(term) ||
-      accountName.toLowerCase().includes(term)
-    )
-  })
-
-  function openCreateSubCategory() {
-    setEditingSubCategory(null)
-    setSubCategoryForm({ categoryId: "", name: "", expenseAccountId: "", description: "" })
+  function openSubCategoryDialog(mode: "add" | "edit", subCategory?: ExpenseSubCategory) {
+    setSubCategoryDialogMode(mode)
+    setEditingSubCategoryId(mode === "edit" ? subCategory?.id ?? null : null)
+    setSubCategoryNameDraft(mode === "edit" ? subCategory?.name ?? "" : "")
+    setSubCategoryAccountDraft(mode === "edit" ? subCategory?.expenseAccountId ?? "" : "")
+    setSubCategoryDescriptionDraft(mode === "edit" ? subCategory?.description ?? "" : "")
     setSubCategoryDialogOpen(true)
   }
 
-  function openEditSubCategory(subCategory: ExpenseSubCategory) {
-    setEditingSubCategory(subCategory)
-    setSubCategoryForm({
-      categoryId: subCategory.categoryId,
-      name: subCategory.name,
-      expenseAccountId: subCategory.expenseAccountId,
-      description: subCategory.description,
-    })
-    setSubCategoryDialogOpen(true)
-  }
-
-  function resetAndCloseSubCategoryDialog() {
+  function closeSubCategoryDialog() {
     setSubCategoryDialogOpen(false)
-    setEditingSubCategory(null)
-    setSubCategoryForm({ categoryId: "", name: "", expenseAccountId: "", description: "" })
+    setEditingSubCategoryId(null)
+    setSubCategoryNameDraft("")
+    setSubCategoryAccountDraft("")
+    setSubCategoryDescriptionDraft("")
   }
 
   async function handleSaveSubCategory() {
-    const name = subCategoryForm.name.trim()
-    const description = subCategoryForm.description.trim()
+    const name = subCategoryNameDraft.trim()
+    const description = subCategoryDescriptionDraft.trim()
 
-    if (!subCategoryForm.categoryId) {
-      toast.error("Select a category")
+    if (!selectedCategoryId) {
+      toast.error("Select a category first")
       return
     }
     if (!name) {
       toast.error("Enter a sub category name")
       return
     }
-    if (!subCategoryForm.expenseAccountId) {
+    if (!subCategoryAccountDraft) {
       toast.error("Select an expense account")
       return
     }
 
-    setSubCategorySubmitting(true)
+    setSubCategorySaving(true)
     try {
-      if (editingSubCategory) {
-        await updateExpenseSubCategory(editingSubCategory.id, {
-          name,
-          expenseAccountId: subCategoryForm.expenseAccountId,
-          description,
-        })
-        toast.success("Updated Expense Sub Category")
-      } else {
+      if (subCategoryDialogMode === "add") {
         await createExpenseSubCategory({
-          categoryId: subCategoryForm.categoryId,
+          categoryId: selectedCategoryId,
           name,
-          expenseAccountId: subCategoryForm.expenseAccountId,
+          expenseAccountId: subCategoryAccountDraft,
           description,
         })
-        toast.success("Created Expense Sub Category")
+        toast.success("Sub category created")
+      } else if (editingSubCategoryId) {
+        await updateExpenseSubCategory(editingSubCategoryId, {
+          name,
+          expenseAccountId: subCategoryAccountDraft,
+          description,
+        })
+        toast.success("Sub category updated")
       }
 
       await loadSubCategories()
-      resetAndCloseSubCategoryDialog()
+      closeSubCategoryDialog()
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : editingSubCategory
-            ? "Failed to update expense sub category"
-            : "Failed to create expense sub category"
-      )
+      toast.error(error instanceof Error ? error.message : "Failed to save sub category")
     } finally {
-      setSubCategorySubmitting(false)
+      setSubCategorySaving(false)
     }
   }
 
@@ -288,397 +262,344 @@ export default function Page() {
   // Render
   // ---------------------------------------------------------------------
   return (
-    <section className="w-full px-4 sm:px-6 py-4 space-y-6">
-      <PageHeader title="Expenses" description="Manage your expenses" />
+    <TooltipProvider>
+      <section className="px-4 sm:px-6 py-4">
+        <PageHeader title="Expenses" description="Manage your expenses" />
+        <div className="mt-6 space-y-6">
+          <Card className="w-full dark:bg-background">
+            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
+              <div className="flex w-full items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl font-semibold tracking-tight">
+                    Expense Management
+                  </CardTitle>
 
-      {/* ------------------------------------------------------------- */}
-      {/* Expense Categories */}
-      {/* ------------------------------------------------------------- */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Expense Categories</h1>
+                  <CardDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Manage expense categories and subcategories.
+                  </CardDescription>
+                </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64 shadow-sm rounded-xl">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-              <Input
-                placeholder="Search categories..."
-                value={categorySearch}
-                onChange={(e) => setCategorySearch(e.target.value)}
-                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-            </div>
-            <Button
-              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs w-full sm:w-auto"
-              onClick={openCreateCategory}
-            >
-              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
-              New Category
-            </Button>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            <div className="max-h-[292px] overflow-y-auto">
-              <Table className="w-full min-w-[560px]">
-                <TableHeader>
-                  <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none sticky top-0 z-10">
-                    <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-[25%]">
-                      Name
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[55%]">
-                      Description
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center w-[20%]">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {categoriesLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="h-40 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                          <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
-                          <p className="text-sm">Fetching expense categories...</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredCategories.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="h-40 text-center text-slate-500">
-                        No categories found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredCategories.map((category) => (
-                      <TableRow
-                        key={category.id}
-                        className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
-                      >
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[180px] truncate">
-                          {category.name}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-[320px] truncate">
-                          {category.description}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditCategory(category)}
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                            title="Edit Category"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------- */}
-      {/* Expense Sub Categories */}
-      {/* ------------------------------------------------------------- */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Expense Sub Categories</h1>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64 shadow-sm rounded-xl">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-              <Input
-                placeholder="Search sub categories..."
-                value={subCategorySearch}
-                onChange={(e) => setSubCategorySearch(e.target.value)}
-                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-            </div>
-            <Button
-              className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs w-full sm:w-auto"
-              onClick={openCreateSubCategory}
-            >
-              <Plus className="h-4 w-4 text-white dark:text-slate-900" />
-              New Sub Category
-            </Button>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            <div className="max-h-[292px] overflow-y-auto">
-              <Table className="w-full min-w-[760px]">
-                <TableHeader>
-                  <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none sticky top-0 z-10">
-                    <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-[18%]">
+                <AddAction onAdd={() =>
+              router.push("/workspace/expense-management/expenses/createExpense")
+            } />
+              </div>
+            </CardHeader>
+          </Card>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {/* --------------------------------------------------------- */}
+            {/* Expense Categories — click a row to scope the sub category */}
+            {/* card on the right, the same relationship Class has with     */}
+            {/* Division.                                                   */}
+            {/* --------------------------------------------------------- */}
+            <Card className="w-full dark:bg-background">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
+                    <Tags className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
+                  </span>
+                  <div>
+                    <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>
                       Category
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[18%]">
-                      Name
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[16%]">
-                      Expense Account
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap w-[33%]">
-                      Description
-                    </TableHead>
-                    <TableHead className="px-4 sm:px-6 h-12 text-[oklch(0.98_0.01_95)] font-semibold tracking-tight whitespace-nowrap text-center w-[15%]">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
+                    </CardTitle>
+                    <CardDescription className={`mt-1 ${supportingTextClass}`}>
+                      Select a category to see its sub categories.
+                    </CardDescription>
+                  </div>
+                </div>
 
-                <TableBody>
-                  {subCategoriesLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
-                          <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
-                          <p className="text-sm">Fetching expense sub categories...</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredSubCategories.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center text-slate-500">
-                        No sub categories found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredSubCategories.map((subCategory) => (
-                      <TableRow
-                        key={subCategory.id}
-                        className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
+                <AddAction onAdd={() => openCategoryDialog("add")} />
+              </CardHeader>
+
+              <CardContent
+                className="
+                space-y-2 pt-4 max-h-[420px] overflow-y-auto
+                scrollbar-thin
+                scrollbar-thumb-slate-300
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-slate-400
+                dark:scrollbar-thumb-slate-700
+                dark:hover:scrollbar-thumb-slate-600
+              "
+              >
+                {categories.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No categories yet</p>
+                    <p className={`mt-1 text-sm ${supportingTextClass}`}>
+                      Click here to add categories before creating sub categories.
+                    </p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openCategoryDialog("add")}>
+                      Click here to add categories
+                    </Button>
+                  </div>
+                ) : (
+                  categories.map((category) => {
+                    const isActive = category.id === selectedCategoryId
+                    const subCount = subCategories.filter((sc) => sc.categoryId === category.id).length
+
+                    return (
+                      <div
+                        key={category.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedCategoryId(category.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            setSelectedCategoryId(category.id)
+                          }
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/40 cursor-pointer",
+                          isActive
+                            ? "border-amber-500/40 bg-amber-100/90 shadow-sm dark:border-amber-400/30 dark:bg-amber-400/10"
+                            : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]",
+                        )}
                       >
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
-                          {categoryNameById.get(subCategory.categoryId) ?? "—"}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
-                          {subCategory.name}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-[140px] truncate">
-                          {accountNameById.get(subCategory.expenseAccountId) ?? subCategory.expenseAccountId}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-[280px] truncate">
-                          {subCategory.description}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                          <Tags className={cn("h-4 w-4 shrink-0", isActive ? "text-amber-700 dark:text-amber-300" : "text-slate-400")} />
+
+                          <div className="min-w-0">
+                            <span className="font-medium truncate block text-slate-950 dark:text-slate-100">
+                              {category.name}
+                            </span>
+
+                            {category.description ? (
+                              <span className="text-xs truncate block text-slate-500 dark:text-slate-400">
+                                {category.description}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
+                            {subCount} sub
+                          </span>
+
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => openEditSubCategory(subCategory)}
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                            title="Edit Sub Category"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSelectedCategoryId(category.id)
+                              openCategoryDialog("edit")
+                            }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </CardContent>
+            </Card>
+
+            {/* --------------------------------------------------------- */}
+            {/* Expense Sub Categories — scoped to the selected category. */}
+            {/* --------------------------------------------------------- */}
+            <Card className="w-full dark:bg-background">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
+                    <Layers3 className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
+                  </span>
+                  <div className="min-w-0">
+                    <CardTitle className={`text-2xl font-semibold truncate ${titleTextClass}`}>
+                      Sub Category
+                    </CardTitle>
+                    <CardDescription className={`mt-1 ${supportingTextClass}`}>
+                      {!selectedCategory
+                        ? "Select a category to see its sub categories."
+                        : selectedCategorySubCategories.length === 0
+                          ? "No sub categories yet."
+                          : `${selectedCategory.name} sub categories are shown here.`}
+                    </CardDescription>
+                  </div>
+                </div>
+
+                <AddAction onAdd={() => openSubCategoryDialog("add")} disabled={!selectedCategoryId} />
+              </CardHeader>
+
+              <CardContent
+                className="
+                space-y-2 pt-4 max-h-[420px] overflow-y-auto
+                scrollbar-thin
+                scrollbar-thumb-slate-300
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-slate-400
+                dark:scrollbar-thumb-slate-700
+                dark:hover:scrollbar-thumb-slate-600
+              "
+              >
+                {!selectedCategory ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No category selected</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openCategoryDialog("add")}>
+                      Add category
+                    </Button>
+                  </div>
+                ) : selectedCategorySubCategories.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                    <p className={`text-sm font-medium ${titleTextClass}`}>No sub categories yet</p>
+                    <Button className="mt-4 rounded-xl" onClick={() => openSubCategoryDialog("add")}>
+                      Add sub category
+                    </Button>
+                  </div>
+                ) : (
+                  selectedCategorySubCategories.map((subCategory) => (
+                    <div
+                      key={subCategory.id}
+                      className="flex items-center justify-between rounded-2xl border border-black/5 bg-white/80 px-4 py-3 transition-all dark:border-white/10 dark:bg-white/5"
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                          {subCategory.name.slice(0, 2).toUpperCase()}
+                        </span>
+
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-950 dark:text-slate-100 truncate">
+                            {subCategory.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
+                            {accountNameById.get(subCategory.expenseAccountId) ?? subCategory.expenseAccountId}
+                            {subCategory.description ? ` · ${subCategory.description}` : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className={editIconClass}
+                        onClick={() => openSubCategoryDialog("edit", subCategory)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* Create / Edit Expense Category Dialog */}
-      {/* ------------------------------------------------------------- */}
-      <Dialog
-        open={categoryDialogOpen}
-        onOpenChange={(next) => (next ? setCategoryDialogOpen(next) : resetAndCloseCategoryDialog())}
-      >
-        <DialogContent className="w-[92vw] sm:max-w-lg rounded-2xl p-4 sm:p-6" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl font-semibold">
-              {editingCategory ? "Edit Expense Category" : "Create Expense Category"}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              {editingCategory
-                ? "Update this expense category."
-                : "Add a new expense category."}
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Name
-              </label>
-              <Input
-                placeholder="e.g. Office Expense"
-                value={categoryForm.name}
-                onChange={(e) =>
-                  setCategoryForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="rounded-xl"
-              />
+        {/* ------------------------------------------------------------- */}
+        {/* Create / Edit Expense Category Dialog */}
+        {/* ------------------------------------------------------------- */}
+        <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
+            <DialogHeader>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
+                {categoryDialogMode === "add" ? "Add Category" : "Edit Category"}
+              </DialogTitle>
+              <DialogDescription className={supportingTextClass}>
+                {categoryDialogMode === "add"
+                  ? "Create a new expense category."
+                  : "Update the selected expense category."}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Category Name</label>
+                <Input
+                  className="mt-2"
+                  value={categoryNameDraft}
+                  onChange={(event) => setCategoryNameDraft(event.target.value)}
+                  placeholder="e.g. Office Expense"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Description</label>
+                <Input
+                  className="mt-2"
+                  value={categoryDescriptionDraft}
+                  onChange={(event) => setCategoryDescriptionDraft(event.target.value)}
+                  placeholder="e.g. Category for office expense"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Description
-              </label>
-              <Input
-                placeholder="e.g. Category for office expense"
-                value={categoryForm.description}
-                onChange={(e) =>
-                  setCategoryForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                className="rounded-xl"
-              />
-            </div>
-          </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeCategoryDialog}>
+                Cancel
+              </Button>
+              <Button onClick={() => void handleSaveCategory()} disabled={categorySaving}>
+                {categorySaving ? "Saving..." : categoryDialogMode === "add" ? "Add" : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto rounded-xl"
-              onClick={resetAndCloseCategoryDialog}
-            >
-              
-              Cancel
-            </Button>
-            <Button
-              onClick={() => void handleSaveCategory()}
-              disabled={categorySubmitting}
-              className="w-full sm:w-auto rounded-xl"
-            >
-              {categorySubmitting
-                ? editingCategory ? "Updating..." : "Creating..."
-                : editingCategory ? "Update" : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* ------------------------------------------------------------- */}
+        {/* Create / Edit Expense Sub Category Dialog */}
+        {/* ------------------------------------------------------------- */}
+        <Dialog open={subCategoryDialogOpen} onOpenChange={setSubCategoryDialogOpen}>
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
+            <DialogHeader>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
+                {subCategoryDialogMode === "add" ? "Add Sub Category" : "Edit Sub Category"}
+              </DialogTitle>
+              <DialogDescription className={supportingTextClass}>
+                {subCategoryDialogMode === "add"
+                  ? `Create a sub category under ${selectedCategory?.name || "the selected category"}.`
+                  : "Update the selected sub category."}
+              </DialogDescription>
+            </DialogHeader>
 
-      {/* ------------------------------------------------------------- */}
-      {/* Create / Edit Expense Sub Category Dialog */}
-      {/* ------------------------------------------------------------- */}
-      <Dialog
-        open={subCategoryDialogOpen}
-        onOpenChange={(next) => (next ? setSubCategoryDialogOpen(next) : resetAndCloseSubCategoryDialog())}
-      >
-        <DialogContent className="w-[92vw] sm:max-w-lg rounded-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl font-semibold">
-              {editingSubCategory ? "Edit Expense Sub Category" : "Create Expense Sub Category"}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              {editingSubCategory
-                ? "Update this expense sub category."
-                : "Add a new expense sub category under a category."}
-            </DialogDescription>
-          </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Sub Category Name</label>
+                <Input
+                  className="mt-2"
+                  value={subCategoryNameDraft}
+                  onChange={(event) => setSubCategoryNameDraft(event.target.value)}
+                  placeholder="e.g. Fuel Expense"
+                />
+              </div>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Category
-              </label>
-              <Select
-                value={subCategoryForm.categoryId}
-                onValueChange={(value) =>
-                  setSubCategoryForm((prev) => ({ ...prev, categoryId: value }))
-                }
-                disabled={!!editingSubCategory}
-              >
-                <SelectTrigger className="w-full rounded-xl">
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Expense Account</label>
+                <Select value={subCategoryAccountDraft} onValueChange={setSubCategoryAccountDraft}>
+                  <SelectTrigger className="w-full rounded-xl mt-2">
+                    <SelectValue placeholder="Select Expense Account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Description</label>
+                <Input
+                  className="mt-2"
+                  value={subCategoryDescriptionDraft}
+                  onChange={(event) => setSubCategoryDescriptionDraft(event.target.value)}
+                  placeholder="e.g. Vehicle subcategory: fuel expense"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Name
-              </label>
-              <Input
-                placeholder="e.g. Fuel Expense"
-                value={subCategoryForm.name}
-                onChange={(e) =>
-                  setSubCategoryForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Expense Account
-              </label>
-              <Select
-                value={subCategoryForm.expenseAccountId}
-                onValueChange={(value) =>
-                  setSubCategoryForm((prev) => ({ ...prev, expenseAccountId: value }))
-                }
-              >
-                <SelectTrigger className="w-full rounded-xl">
-                  <SelectValue placeholder="Select Expense Account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Description
-              </label>
-              <Input
-                placeholder="e.g. Vehicle subcategory: fuel expense"
-                value={subCategoryForm.description}
-                onChange={(e) =>
-                  setSubCategoryForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                className="rounded-xl"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto rounded-xl"
-              onClick={resetAndCloseSubCategoryDialog}
-            >
-              
-              Cancel
-            </Button>
-            <Button
-              onClick={() => void handleSaveSubCategory()}
-              disabled={subCategorySubmitting}
-              className="w-full sm:w-auto rounded-xl"
-            >
-              {subCategorySubmitting
-                ? editingSubCategory ? "Updating..." : "Creating..."
-                : editingSubCategory ? "Update" : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </section>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeSubCategoryDialog}>
+                Cancel
+              </Button>
+              <Button onClick={() => void handleSaveSubCategory()} disabled={subCategorySaving}>
+                {subCategorySaving ? "Saving..." : subCategoryDialogMode === "add" ? "Add" : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </section>
+    </TooltipProvider>
   )
 }

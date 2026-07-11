@@ -109,8 +109,8 @@ export default function Page() {
                         admissionNumber: student.admissionNumber,
                         studentName: student.studentName,
                         gender: student.gender,
-                        dob: student.dob,
-                        bloodGroup: student.bloodGroup,
+                        dob: student.dob ?? "",
+                        bloodGroup: student.bloodGroup ?? "",
                         fatherName: student.fatherName,
                         fatherMobile: student.fatherMobile,
                         motherName: student.motherName,
@@ -118,7 +118,7 @@ export default function Page() {
                         whatsappNumber: student.whatsappNumber,
                         address: student.address,
                     });
-                    setDate(new Date(student.dob));
+                    setDate(student.dob ? new Date(student.dob) : undefined);
                 }
             } catch (error) {
                 toast.error("Failed to load student details");
