@@ -94,7 +94,12 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-management/receipts", label: "Receipts", area: "workspace", purpose: "View, print, and reverse receipts", roles: ["Accountant"], group: "Finance", subgroup: "Fee Management" },
   { slug: "fee-management/refunds", label: "Refunds", area: "workspace", purpose: "Handle admission cancellation and overpayment refunds", roles: ["Accountant", "Admin"], group: "Finance", subgroup: "Fee Management" },
 
+  { slug: "expense-management/expenses", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
 
+  { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
+
+  { slug: "reports", label: "Reports", area: "workspace", purpose: "View reports", roles: ["Admin", "Principal", "Accountant"], group: "Overview" },
+  
   
   { slug: "student-charges/student-charges", label: "Student Charge", area: "workspace", purpose: "Show fees owed by students", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", roles: ["Admin", "Accountant"], group: "Finance", subgroup: "Accounting" },

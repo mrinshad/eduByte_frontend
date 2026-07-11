@@ -43,7 +43,7 @@ import {
     createExpense,
     getExpenseCategories,
     getExpenseSubCategories,
-    
+
     getPaymentMethodAccounts,
     type PaymentMethodAccount,
     type ExpenseCategory,
@@ -53,13 +53,13 @@ import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
 
 // ---------------------------------------------------------------------
 // Shared layout pieces — same shape as the Admission page's StepSection,
-// recolored to the amber accent used across the Expense pages.
+// recolored to the exact #6D755F sage accent used across the Admission page.
 // ---------------------------------------------------------------------
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
     <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
                 {stepNumber}
             </div>
             <div>
@@ -73,12 +73,12 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
 
 const fieldClass = `
   h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
-  focus:ring-2 focus:ring-amber-500 focus:border-transparent
+  focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
 `;
 
 const datePickerClassName =
-    "w-full h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
+    "w-full h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
 const datePickerPopperClassName = "z-50";
 
@@ -340,7 +340,18 @@ export default function Page() {
                     <Button
                         onClick={handleSubmit}
                         disabled={submitting || !isValid}
-                        className="rounded-xl h-11 px-8 bg-amber-600 text-white hover:bg-amber-700 shadow-md dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                        className="
+    rounded-xl
+    h-11
+    px-8
+    bg-[#6D755F]
+    text-white
+    hover:bg-[#5b624f]
+    shadow-md
+    dark:bg-slate-100
+    dark:text-slate-900
+    dark:hover:bg-slate-200
+  "
                     >
                         {submitting ? "Processing..." : "Confirm Expense"}
                     </Button>
@@ -357,7 +368,7 @@ export default function Page() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex flex-col gap-2">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Hash className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Expense Number
+                                <Hash className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Number
                             </span>
                             <Input
                                 placeholder="e.g. EXP003"
@@ -369,7 +380,7 @@ export default function Page() {
 
                         <div className="flex flex-col gap-2">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Receipt className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Expense Date
+                                <Receipt className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Date
                             </span>
                             <DatePicker
                                 selected={expenseDate}
@@ -390,7 +401,7 @@ export default function Page() {
 
                         <div className="flex flex-col gap-2">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <IndianRupee className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Amount
+                                <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Amount
                             </span>
                             <Input
                                 type="number"
@@ -414,7 +425,7 @@ export default function Page() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Tags className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Expense Category
+                                <Tags className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Category
                             </span>
                             <Popover open={categoryPopoverOpen} onOpenChange={handleCategoryPopoverChange}>
                                 <PopoverTrigger asChild>
@@ -434,7 +445,7 @@ export default function Page() {
                                         <CommandList>
                                             {loadingCategoryList ? (
                                                 <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                                 </div>
                                             ) : (
                                                 <>
@@ -450,7 +461,7 @@ export default function Page() {
                                                                 }}
                                                                 className="cursor-pointer"
                                                             >
-                                                                <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
+                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
                                                                 <span>{category.name}</span>
                                                             </CommandItem>
                                                         ))}
@@ -465,7 +476,7 @@ export default function Page() {
 
                         <div className="flex flex-col gap-2">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Layers3 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Sub Category
+                                <Layers3 className="h-3.5 w-3.5 text-[#6D755F]" /> Sub Category
                             </span>
                             <Popover open={subCategoryPopoverOpen} onOpenChange={handleSubCategoryPopoverChange}>
                                 <PopoverTrigger asChild>
@@ -490,7 +501,7 @@ export default function Page() {
                                         <CommandList>
                                             {loadingSubCategoryList ? (
                                                 <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                                 </div>
                                             ) : (
                                                 <>
@@ -506,7 +517,7 @@ export default function Page() {
                                                                 }}
                                                                 className="cursor-pointer"
                                                             >
-                                                                <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
+                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
                                                                 <span>{subCategory.name}</span>
                                                             </CommandItem>
                                                         ))}
@@ -530,14 +541,14 @@ export default function Page() {
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Wallet className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Payment Accounts
+                                <Wallet className="h-3.5 w-3.5 text-[#6D755F]" /> Payment Accounts
                             </span>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={addPaymentRow}
-                                className="h-8 rounded-lg text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                                className="h-8 rounded-lg text-[#6D755F] hover:bg-[#6D755F]/10"
                             >
                                 <Plus className="mr-1 h-3.5 w-3.5" /> Add account
                             </Button>
@@ -569,7 +580,7 @@ export default function Page() {
                                                     <CommandList>
                                                         {loadingAccountList ? (
                                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                                             </div>
                                                         ) : (
                                                             <>
@@ -585,7 +596,7 @@ export default function Page() {
                                                                             }}
                                                                             className="cursor-pointer"
                                                                         >
-                                                                            <Check className={cn("mr-2 h-4 w-4 text-amber-600", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
+                                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
                                                                             <span>{account.name}</span>
                                                                         </CommandItem>
                                                                     ))}
@@ -629,7 +640,7 @@ export default function Page() {
                                 "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium",
                                 remaining === 0
                                     ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                    : "bg-[#6D755F]/10 text-[#6D755F]"
                             )}
                         >
                             <span>Allocated ₹{totalAllocated.toLocaleString()} of ₹{(Number(amount) || 0).toLocaleString()}</span>
@@ -645,7 +656,7 @@ export default function Page() {
 
                     <div className="flex flex-col gap-2">
                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Bus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Vehicle (Optional)
+                            <Bus className="h-3.5 w-3.5 text-[#6D755F]" /> Vehicle (Optional)
                         </span>
                         <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
                             <PopoverTrigger asChild>
@@ -670,7 +681,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingVehicleList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -684,7 +695,7 @@ export default function Page() {
                                                         }}
                                                         className="cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4 text-amber-600", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
                                                         <span className="text-slate-500">No vehicle</span>
                                                     </CommandItem>
                                                     {vehiclesDropdown.map((vehicle) => (
@@ -697,7 +708,7 @@ export default function Page() {
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4 text-amber-600", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                                 <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
@@ -722,26 +733,26 @@ export default function Page() {
                 >
                     <div className="flex flex-col gap-2">
                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> Notes
+                            <FileText className="h-3.5 w-3.5 text-[#6D755F]" /> Notes
                         </span>
                         <textarea
                             placeholder="e.g. testing expense posting, with transaction"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
-                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition hover:border-slate-400 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
                         />
                     </div>
 
-                    {/* Live summary strip, mirrors the total-ledger footer on the Admission page */}
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-amber-600 dark:bg-amber-500 px-6 py-5">
+                    {/* Live summary strip — matches the Admission page's ledger-total footer exactly */}
+                    <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-[#6D755F] px-6 py-5 rounded-b-xl">
                         <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white/90 dark:text-slate-950/80">Expense Amount</span>
-                            <span className="text-xs text-white/70 dark:text-slate-950/60">
+                            <span className="text-sm font-medium text-white/90">Expense Amount</span>
+                            <span className="text-xs text-white/70">
                                 {expenseDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                             </span>
                         </div>
-                        <span className="text-3xl font-bold tracking-tight text-white dark:text-slate-950">
+                        <span className="text-3xl font-bold tracking-tight text-white">
                             ₹{(Number(amount) || 0).toLocaleString()}
                         </span>
                     </div>
