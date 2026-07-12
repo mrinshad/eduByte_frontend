@@ -15,15 +15,15 @@ const quickLinks = [
     Icon: GraduationCap,
   },
   {
-    href: "/workspace/fee-management/collection",
-    title: "Fee Collection",
-    description: "Open collection workflow for payments and reconciliation.",
+    href: "/admin/academic-profile",
+    title: "Academic Profile",
+    description: "Manage academic years , class and division.",
     Icon: CircleDollarSign,
   },
   {
-    href: "/workspace/fee-management/receipts",
-    title: "Receipts",
-    description: "Manage generated receipts and quick lookups.",
+    href: "/admin/vehicles",
+    title: "Vehicle Management",
+    description: "Manage vehicle records, assignments, routes, and transport-related information.",
     Icon: Receipt,
   },
 ]

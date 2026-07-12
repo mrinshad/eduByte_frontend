@@ -40,7 +40,7 @@ import {
   createExpenseSubCategory,
   getExpenseSubCategories,
   updateExpenseSubCategory,
-  getAccountNames,
+  getExpenseAccountsNamesandIds,
   type ExpenseCategory,
   type ExpenseSubCategory,
   type AccountName,
@@ -122,7 +122,7 @@ export default function Page() {
 
   async function loadAccounts() {
     try {
-      const data = await getAccountNames()
+      const data = await getExpenseAccountsNamesandIds()
       setAccounts(data)
     } catch (error) {
       toast.error("Failed to load accounts")
