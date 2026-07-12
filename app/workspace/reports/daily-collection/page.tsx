@@ -155,11 +155,11 @@ export default function DailyCollectionReportPage() {
     }
 
     return (
-        <section className="w-full px-6 py-4 space-y-6">
+        <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
             {/* Header */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                         <Button
                             size="icon"
                             variant="outline"
@@ -168,11 +168,11 @@ export default function DailyCollectionReportPage() {
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div>
-                            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <div className="min-w-0">
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Daily Collection Report
                             </h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {report ? formatDisplayDate(report.date) : "Fee collection, at a glance"}
                             </p>
                         </div>
@@ -212,10 +212,10 @@ export default function DailyCollectionReportPage() {
                     <p className="text-sm">Loading collection report...</p>
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     {/* Total collection — modern full-width hero */}
                     <div
-                        className="relative overflow-hidden rounded-2xl p-7 shadow-lg"
+                        className="relative overflow-hidden rounded-2xl p-5 shadow-lg sm:p-7"
                         style={{
                             background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
                         }}
@@ -224,7 +224,7 @@ export default function DailyCollectionReportPage() {
                         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
-                        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+                        <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end sm:gap-6">
                             <div>
                                 <div className="mb-3 flex items-center gap-2">
                                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
@@ -234,7 +234,7 @@ export default function DailyCollectionReportPage() {
                                         Total Collection
                                     </p>
                                 </div>
-                                <p className="text-5xl font-bold tracking-tight text-white">
+                                <p className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
                                     {formatCurrency(total)}
                                 </p>
                             </div>
@@ -257,21 +257,22 @@ export default function DailyCollectionReportPage() {
                         </div>
                     </div>
 
-                    {/* Payment methods + charge type — matched height, each scrolls internally */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr] lg:h-[480px]">
+                    {/* Payment methods + charge type — matched height on large screens
+                        (stacked full-width on mobile/tablet), each scrolls internally */}
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[360px_1fr] lg:h-[480px]">
                         {/* Payment method breakdown */}
-                        <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5 lg:h-full">
                             <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 By Payment Method
                             </p>
 
                             {paymentMethods.length === 0 ? (
-                                <div className="flex flex-1 flex-col items-center justify-center gap-2 text-slate-500">
+                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-slate-500 lg:py-0">
                                     <Wallet className="h-7 w-7 text-slate-300" />
                                     <p className="text-sm">No payments recorded for this date.</p>
                                 </div>
                             ) : (
-                                <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+                                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
                                     {paymentMethods.map((pm) => {
                                         const key = pm.paymentMethod.toLowerCase();
                                         const style = PAYMENT_METHOD_STYLES[key] ?? {
@@ -325,9 +326,9 @@ export default function DailyCollectionReportPage() {
                         </div>
 
                         {/* Charge type breakdown — plain table, no card chrome, height-matched with scroll */}
-                        <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/50">
-                            <div className="flex-1 overflow-y-auto">
-                                <Table>
+                        <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/50 lg:h-full">
+                            <div className="max-h-[420px] overflow-auto lg:max-h-none lg:flex-1">
+                                <Table className="min-w-[560px]">
                                     <TableHeader className="sticky top-0 z-10">
                                         <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
                                             <TableHead className="px-4 h-11 text-white dark:text-foreground font-semibold whitespace-nowrap">
