@@ -64,3 +64,52 @@ export async function getStudentsByVehicle(vehicleId: string) {
 
   return payload.data;
 }
+//
+//
+// daily collection
+
+// Add these to your existing lib/services/reports.ts file
+// (same file that already exports getVehicleLists / getStudentsByVehicle)
+
+
+
+export interface PaymentMethodData {
+    paymentMethod: string;
+    amount: number;
+}
+
+export interface ChargeTypeData {
+    chargeType: string;
+    amount: number;
+}
+
+export interface DailyCollectionData {
+    date: string;
+    totalCollection: number;
+    paymentMethodData: PaymentMethodData[];
+    collectionByChargeType: ChargeTypeData[];
+}
+
+type ApiSuccess<T> = {
+    success: boolean;
+    message?: string;
+    data?: T;
+};
+
+// Get Daily Collection Report
+export async function getDailyCollectionReport(
+    date: string
+): Promise<DailyCollectionData> {
+    const payload = (await apiFetch(
+        `/api/reports/daily-collection?date=${date}`
+    )) as ApiSuccess<DailyCollectionData>;
+
+    return (
+        payload.data ?? {
+            date,
+            totalCollection: 0,
+            paymentMethodData: [],
+            collectionByChargeType: [],
+        }
+    );
+}
