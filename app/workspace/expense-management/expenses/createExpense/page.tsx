@@ -264,6 +264,21 @@ export default function Page() {
         paymentsValid;
 
     const handleSubmit = async () => {
+        if (Math.abs(remaining) >= 0.01) {
+            if (remaining > 0) {
+                toast.error(
+                    `₹${remaining.toLocaleString()} is still unallocated.`
+                );
+            } else {
+                toast.error(
+                    `Allocated amount exceeds the expense by ₹${Math.abs(
+                        remaining
+                    ).toLocaleString()}.`
+                );
+            }
+
+            return;
+        }
         if (!isValid) {
             if (amount !== "" && Number(amount) > 0 && remaining !== 0) {
                 toast.error(
@@ -582,110 +597,111 @@ export default function Page() {
                     </div>
 
                     {/* RIGHT */}
-{/* Payment split */}
-                <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                    <div className="flex items-center justify-between">
-                        <FieldLabel>Payment Accounts</FieldLabel>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={addPaymentRow}
-                            className="h-7 rounded-md px-2 text-xs hover:bg-transparent hover:underline"
-                            style={{ color: SAGE }}
-                        >
-                            <Plus className="mr-1 h-3.5 w-3.5" /> Add account
-                        </Button>
+                    {/* Payment split */}
+                    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-center justify-between">
+                            <FieldLabel>Payment Accounts</FieldLabel>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={addPaymentRow}
+                                className="h-7 rounded-md px-2 text-xs hover:bg-transparent hover:underline"
+                                style={{ color: SAGE }}
+                            >
+                                <Plus className="mr-1 h-3.5 w-3.5" /> Add account
+                            </Button>
+                        </div>
+
+                        <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
+                            {payments.map((row, index) => {
+                                const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
+                                return (
+
+                                    <div key={row.id} className="flex shrink-0 items-center gap-2">
+                                        <Popover
+                                            open={openPaymentRowId === row.id}
+                                            onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
+                                        >
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openPaymentRowId === row.id}
+                                                    className={cn("h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
+                                                >
+                                                    <span className="truncate">{rowAccount ? rowAccount.name : `Choose account ${index + 1}`}</span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Filter accounts..." />
+                                                    <CommandList>
+                                                        {loadingAccountList ? (
+                                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <CommandEmpty>No accounts found.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {accountsDropdown.map((account) => (
+                                                                        <CommandItem
+                                                                            key={account.id}
+                                                                            value={account.name}
+                                                                            onSelect={() => {
+                                                                                updatePaymentAccount(row.id, account.id);
+                                                                                setOpenPaymentRowId(null);
+                                                                            }}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                                            <span>{account.name}</span>
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </>
+                                                        )}
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            placeholder="Amount"
+                                            value={row.amount}
+                                            onChange={(e) =>
+                                                updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
+                                            }
+                                            onWheel={(e) => e.currentTarget.blur()}
+                                            className={cn("h-10 w-28 shrink-0 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
+                                        />
+
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => removePaymentRow(row.id)}
+                                            disabled={payments.length === 1}
+                                            className="h-10 w-9 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950/30"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {payments.length > 3 && (
+                            <p className="text-[11px] text-slate-400">{payments.length} accounts · scroll for more</p>
+                        )}
                     </div>
-
-                    <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
-                        {payments.map((row, index) => {
-                            const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
-                            return (
-                                <div key={row.id} className="flex shrink-0 items-center gap-2">
-                                    <Popover
-                                        open={openPaymentRowId === row.id}
-                                        onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
-                                    >
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                aria-expanded={openPaymentRowId === row.id}
-                                                className={cn("h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
-                                            >
-                                                <span className="truncate">{rowAccount ? rowAccount.name : `Choose account ${index + 1}`}</span>
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                            <Command>
-                                                <CommandInput placeholder="Filter accounts..." />
-                                                <CommandList>
-                                                    {loadingAccountList ? (
-                                                        <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <CommandEmpty>No accounts found.</CommandEmpty>
-                                                            <CommandGroup>
-                                                                {accountsDropdown.map((account) => (
-                                                                    <CommandItem
-                                                                        key={account.id}
-                                                                        value={account.name}
-                                                                        onSelect={() => {
-                                                                            updatePaymentAccount(row.id, account.id);
-                                                                            setOpenPaymentRowId(null);
-                                                                        }}
-                                                                        className="cursor-pointer"
-                                                                    >
-                                                                        <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                                        <span>{account.name}</span>
-                                                                    </CommandItem>
-                                                                ))}
-                                                            </CommandGroup>
-                                                        </>
-                                                    )}
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-
-                                    <Input
-                                        type="number"
-                                        min={0}
-                                        placeholder="Amount"
-                                        value={row.amount}
-                                        onChange={(e) =>
-                                            updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
-                                        }
-                                        onWheel={(e) => e.currentTarget.blur()}
-                                        className={cn("h-10 w-28 shrink-0 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
-                                    />
-
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => removePaymentRow(row.id)}
-                                        disabled={payments.length === 1}
-                                        className="h-10 w-9 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950/30"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {payments.length > 3 && (
-                        <p className="text-[11px] text-slate-400">{payments.length} accounts · scroll for more</p>
-                    )}
-                </div>
                 </div>
 
-                
+
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -760,7 +776,7 @@ export default function Page() {
                 <div className="flex flex-col gap-2">
                     <Button
                         onClick={handleSubmit}
-                        disabled={submitting || !isValid}
+                        disabled={submitting}
                         className="h-11 w-full rounded-lg bg-white text-sm font-semibold text-slate-900 shadow-md hover:bg-white/90 disabled:opacity-50"
                     >
                         {submitting ? (
