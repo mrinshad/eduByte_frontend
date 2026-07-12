@@ -1,11 +1,9 @@
 import { apiFetch } from "@/lib/api"
 
 export const ACCOUNT_TYPES = [
-  "Asset",
-  "Income",
-  "Expense",
-  "Liability",
-  "Equity",
+  "PAYMENT_METHOD",
+  "INCOME",
+  "EXPENSE",
 ] as const
 
 export type AccountType = (typeof ACCOUNT_TYPES)[number]

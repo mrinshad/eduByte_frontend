@@ -37,7 +37,7 @@ const tableHeaders = [
 
 const EMPTY_FORM: AccountInput = {
     name: "",
-    type: "Asset",
+    type: "INCOME",
     description: "",
     isActive: true,
 }
