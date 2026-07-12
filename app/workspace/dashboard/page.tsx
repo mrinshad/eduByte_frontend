@@ -16,15 +16,15 @@ const quickLinks = [
     Icon: FileCheck2,
   },
   {
-    href: "/workspace/fee-management/expenses",
+    href: "/workspace/expense-management/expenses",
     title: "Expenses",
     description: "Track operational expenses with account tags.",
     Icon: BanknoteArrowDown,
   },
   {
-    href: "/workspace/academic/profile",
-    title: "Academic Profile",
-    description: "Switch active year, class settings, and calendar.",
+    href: "/workspace/reports/vehicle-allocation",
+    title: "Vehicle Allocation",
+    description: "Manage and allocate vehicles for daily operations.",
     Icon: Wrench,
   },
 ]
