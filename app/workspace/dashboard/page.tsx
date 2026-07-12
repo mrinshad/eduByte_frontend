@@ -16,15 +16,15 @@ const quickLinks = [
     Icon: FileCheck2,
   },
   {
-    href: "/workspace/fee-management/expenses",
-    title: "Expenses",
-    description: "Track operational expenses with account tags.",
+    href: "/workspace/expense-management/expenses/createExpense",
+    title: "New Expense",
+    description: "Log a new expense and how it was paid.",
     Icon: BanknoteArrowDown,
   },
   {
-    href: "/workspace/academic/profile",
-    title: "Academic Profile",
-    description: "Switch active year, class settings, and calendar.",
+    href: "/workspace/reports/vehicle-allocation",
+    title: "Vehicle Allocation",
+    description: "Manage and allocate vehicles for daily operations.",
     Icon: Wrench,
   },
 ]
@@ -37,7 +37,6 @@ export default function WorkspaceDashboardPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Workspace Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Daily operations, payments, and academic controls.</p>
         </div>
-        <Badge className="w-fit bg-[#556043] text-white hover:bg-[#4a533b]">Operations Ready</Badge>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

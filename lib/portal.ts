@@ -29,37 +29,28 @@ export const portalSections: PortalSection[] = [
   // --- ADMIN AREA ---
   { slug: "dashboard", label: "Dashboard", area: "admin", purpose: "Admin dashboard", roles: ["Admin"], group: "Admin" },
   { slug: "academic-profile", label: "Academics", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic" },
-  { slug: "student-promotion", label: "Promotions", area: "admin", purpose: "Promote students between classes", roles: ["Admin"], group: "Academic" },
-
+  
   { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Student Management" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", roles: ["Admin"], group: "Student Management" },
-  { slug: "enrollments", label: "Enrollments", area: "admin", purpose: "Manage enrollments", roles: ["Admin"], group: "Student Management" },
-  { slug: "student-withdrawal", label: "Withdrawals", area: "admin", purpose: "Process withdrawals", roles: ["Admin"], group: "Student Management" },
-  { slug: "alumni", label: "Alumni", area: "admin", purpose: "Alumni records", roles: ["Admin"], group: "Student Management" },
 
   { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", roles: ["Admin"], group: "Fee Configuration" },
-  { slug: "discount-types", label: "Discount Types", area: "admin", purpose: "Define discounts", roles: ["Admin"], group: "Fee Configuration" },
-  { slug: "fine-types", label: "Fine Types", area: "admin", purpose: "Fine type configuration", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "payment-account", label: "Accounts", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", roles: ["Admin"], group: "Transport Management" },
-  { slug: "student-vehicle-assignments", label: "Vehicle Assignments", area: "admin", purpose: "Assign vehicles to students", roles: ["Admin"], group: "Transport" },
+  
+  // { slug: "staff", label: "Staff", area: "admin", purpose: "Manage staff", roles: ["Admin"], group: "Staff Management" },
+  // { slug: "departments", label: "Departments", area: "admin", purpose: "Manage departments", roles: ["Admin"], group: "Staff Management" },
+  // { slug: "designations", label: "Designations", area: "admin", purpose: "Manage designations", roles: ["Admin"], group: "Staff Management" },
 
-  { slug: "staff", label: "Staff", area: "admin", purpose: "Manage staff", roles: ["Admin"], group: "Staff Management" },
-  { slug: "departments", label: "Departments", area: "admin", purpose: "Manage departments", roles: ["Admin"], group: "Staff Management" },
-  { slug: "designations", label: "Designations", area: "admin", purpose: "Manage designations", roles: ["Admin"], group: "Staff Management" },
+  // { slug: "users", label: "Users", area: "admin", purpose: "User accounts", roles: ["Admin"], group: "User Management" },
+  // { slug: "roles", label: "Roles", area: "admin", purpose: "Role management", roles: ["Admin"], group: "User Management" },
+  // { slug: "permissions", label: "Permissions", area: "admin", purpose: "Permission sets", roles: ["Admin"], group: "User Management" },
 
-  { slug: "users", label: "Users", area: "admin", purpose: "User accounts", roles: ["Admin"], group: "User Management" },
-  { slug: "roles", label: "Roles", area: "admin", purpose: "Role management", roles: ["Admin"], group: "User Management" },
-  { slug: "permissions", label: "Permissions", area: "admin", purpose: "Permission sets", roles: ["Admin"], group: "User Management" },
-
-  { slug: "admission-numbers", label: "Admission Nos.", area: "admin", purpose: "Admission numbering", roles: ["Admin"], group: "Numbering" },
-  { slug: "receipt-numbers", label: "Receipt Nos.", area: "admin", purpose: "Receipt numbering", roles: ["Admin"], group: "Numbering" },
-  { slug: "expense-numbers", label: "Expense Nos.", area: "admin", purpose: "Expense numbering", roles: ["Admin"], group: "Numbering" },
-  { slug: "transaction-numbers", label: "Transaction Nos.", area: "admin", purpose: "Transaction numbering", roles: ["Admin"], group: "Numbering" },
-
-  { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "System audit logs", roles: ["Admin"], group: "Admin" },
+  // { slug: "admission-numbers", label: "Admission Nos.", area: "admin", purpose: "Admission numbering", roles: ["Admin"], group: "Numbering" },
+  // { slug: "receipt-numbers", label: "Receipt Nos.", area: "admin", purpose: "Receipt numbering", roles: ["Admin"], group: "Numbering" },
+  // { slug: "expense-numbers", label: "Expense Nos.", area: "admin", purpose: "Expense numbering", roles: ["Admin"], group: "Numbering" },
+  // { slug: "transaction-numbers", label: "Transaction Nos.", area: "admin", purpose: "Transaction numbering", roles: ["Admin"], group: "Numbering" },
 
   // --- STUDENT AREA ---
   { slug: "dashboard", label: "Dashboard", area: "student", purpose: "Student dashboard", roles: ["Student"], group: "Student" },
@@ -87,19 +78,10 @@ export const portalSections: PortalSection[] = [
   { slug: "dashboard", label: "Dashboard", area: "workspace", purpose: "Quick overview of collections, expenses, and pending fees", roles: ["Admin", "Accountant", "Principal"], group: "Overview" },
   { slug: "students", label: "Students", area: "workspace", purpose: "Manage student records", roles: ["Office Staff", "Admin"], group: "Academic Setup" },
   
-  
-  
-  { slug: "fee-management", label: "Overview", area: "workspace", purpose: "Overview of fee operations and billing modules", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
   { slug: "fee-management/collection", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", roles: ["Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-  { slug: "fee-management/receipts", label: "Receipts", area: "workspace", purpose: "View, print, and reverse receipts", roles: ["Accountant"], group: "Finance", subgroup: "Fee Management" },
-  { slug: "fee-management/refunds", label: "Refunds", area: "workspace", purpose: "Handle admission cancellation and overpayment refunds", roles: ["Accountant", "Admin"], group: "Finance", subgroup: "Fee Management" },
-
   { slug: "expense-management/expenses", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-
-  { slug: "reports", label: "Reports", area: "workspace", purpose: "View reports", roles: ["Admin", "Principal", "Accountant"], group: "Overview" },
-  
   
   { slug: "student-charges/student-charges", label: "Student Charge", area: "workspace", purpose: "Show fees owed by students", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", roles: ["Admin", "Accountant"], group: "Finance", subgroup: "Accounting" },

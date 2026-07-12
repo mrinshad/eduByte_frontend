@@ -134,6 +134,19 @@ export async function getAccountNames() {
   return payload.data ?? [];
 }
 
+
+// ---------------------------------------------------------------------
+// Expense Accounts (for Expense Account / Payment Account dropdowns)
+// ---------------------------------------------------------------------
+
+export async function getExpenseAccountsNamesandIds() {
+  const payload = (await apiFetch(
+    "/api/accounts/expense-accounts"
+  )) as ApiSuccess<AccountName[]>;
+
+  return payload.data ?? [];
+}
+
 // ---------------------------------------------------------------------
 // Expense
 // ---------------------------------------------------------------------

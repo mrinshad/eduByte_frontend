@@ -10,14 +10,9 @@ import {
     Check,
     ChevronsUpDown,
     Loader2,
-    Receipt,
     Tags,
     Layers3,
-    Wallet,
     Bus,
-    Hash,
-    FileText,
-    IndianRupee,
     Plus,
     Trash2,
 } from "lucide-react";
@@ -52,35 +47,25 @@ import {
 import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
 
 // ---------------------------------------------------------------------
-// Shared layout pieces — same shape as the Admission page's StepSection,
-// recolored to the exact #6D755F sage accent used across the Admission page.
+// Shared bits — same sage accent (#6D755F) as the rest of the app.
 // ---------------------------------------------------------------------
 
-const StepSection = ({ stepNumber, title, description, children }: any) => (
-    <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-        <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
-                {stepNumber}
-            </div>
-            <div>
-                <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
-                {description && <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>}
-            </div>
-        </div>
-        <div className="flex flex-col gap-6">{children}</div>
-    </div>
-);
+const SAGE = "#6D755F";
 
 const fieldClass = `
-  h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+  h-11 rounded-lg border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
 `;
 
 const datePickerClassName =
-    "w-full h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
+    "w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-300 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
 const datePickerPopperClassName = "z-50";
+
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+    <label className="text-[12px] font-medium text-slate-500 dark:text-slate-400">{children}</label>
+);
 
 // ---------------------------------------------------------------------
 // Payment split types
@@ -120,7 +105,7 @@ export default function Page() {
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
-    // ── Split payments (replaces the single payment account field) ──────────
+    // ── Split payments ────────────────────────────────────────────────────
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
     const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
 
@@ -146,12 +131,17 @@ export default function Page() {
         [subCategoriesDropdown, selectedSubCategoryId]
     );
 
+    const selectedVehicle = useMemo(
+        () => vehiclesDropdown.find((v) => v.id === selectedVehicleId) ?? null,
+        [vehiclesDropdown, selectedVehicleId]
+    );
+
     const filteredSubCategories = useMemo(() => {
         if (!selectedCategoryId) return [];
         return subCategoriesDropdown.filter((sc) => sc.categoryId === selectedCategoryId);
     }, [subCategoriesDropdown, selectedCategoryId]);
 
-    // ── Lazy loaders, same pattern as the Admission page popovers ─────────────
+    // ── Lazy loaders ──────────────────────────────────────────────────────
     const handleCategoryPopoverChange = async (open: boolean) => {
         setCategoryPopoverOpen(open);
         if (open && categoriesDropdown.length === 0) {
@@ -234,8 +224,7 @@ export default function Page() {
     const updatePaymentAmount = (rowId: string, value: number | "") =>
         setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, amount: value } : p)));
 
-    // Preload categories + sub categories eagerly since Step 2 depends on the
-    // category → sub category relationship being ready to filter instantly.
+    // Preload categories + sub categories eagerly.
     useEffect(() => {
         void (async () => {
             try {
@@ -257,6 +246,7 @@ export default function Page() {
     );
 
     const remaining = (Number(amount) || 0) - totalAllocated;
+    const allocationPct = amount && Number(amount) > 0 ? Math.min(100, (totalAllocated / Number(amount)) * 100) : 0;
 
     const paymentsValid =
         payments.length > 0 &&
@@ -274,6 +264,21 @@ export default function Page() {
         paymentsValid;
 
     const handleSubmit = async () => {
+        if (Math.abs(remaining) >= 0.01) {
+            if (remaining > 0) {
+                toast.error(
+                    `₹${remaining.toLocaleString()} is still unallocated.`
+                );
+            } else {
+                toast.error(
+                    `Allocated amount exceeds the expense by ₹${Math.abs(
+                        remaining
+                    ).toLocaleString()}.`
+                );
+            }
+
+            return;
+        }
         if (!isValid) {
             if (amount !== "" && Number(amount) > 0 && remaining !== 0) {
                 toast.error(
@@ -319,246 +324,301 @@ export default function Page() {
     };
 
     return (
-        <div className="w-full min-h-screen p-6 md:p-8 space-y-8 animate-in fade-in duration-300">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center space-x-4">
-                    <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl h-10 w-10 shadow-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <div className="flex w-full rounded-2xl flex-col bg-white dark:bg-slate-950 lg:h-[80vh] lg:flex-row lg:overflow-hidden">
+
+            {/* ── Left: form fields ───────────────────────────────────── */}
+            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:p-10">
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="icon" onClick={() => router.back()} className="h-9 w-9 shrink-0 rounded-lg border-slate-200 dark:border-slate-700">
                         <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Record a new expense against a category, sub category, and one or more payment accounts.
-                        </p>
+                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>
+                        <p className="text-xs text-slate-400">Log a new expense and how it was paid</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                        Discard
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={submitting || !isValid}
-                        className="
-    rounded-xl
-    h-11
-    px-8
-    bg-[#6D755F]
-    text-white
-    hover:bg-[#5b624f]
-    shadow-md
-    dark:bg-slate-100
-    dark:text-slate-900
-    dark:hover:bg-slate-200
-  "
-                    >
-                        {submitting ? "Processing..." : "Confirm Expense"}
-                    </Button>
+                {/* Expense number / date / amount */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Expense Number</FieldLabel>
+                        <Input
+                            placeholder="e.g. EXP003"
+                            value={expenseNumber}
+                            onChange={(e) => setExpenseNumber(e.target.value)}
+                            className={fieldClass}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Date</FieldLabel>
+                        <DatePicker
+                            selected={expenseDate}
+                            onChange={(date: Date | null) => setExpenseDate(date ?? new Date())}
+                            dateFormat="PPP"
+                            className={datePickerClassName}
+                            calendarClassName={datePickerCalendarClassName}
+                            popperClassName={datePickerPopperClassName}
+                            wrapperClassName="w-full"
+                            showMonthDropdown
+                            showYearDropdown
+                            scrollableYearDropdown
+                            yearDropdownItemNumber={15}
+                            dropdownMode="select"
+                            openToDate={expenseDate}
+                        />
+                    </div>
+
                 </div>
-            </div>
 
-            <div className="mx-auto max-w-5xl space-y-8 pb-12">
-                {/* Step 1: Expense Details */}
-                <StepSection
-                    stepNumber="1"
-                    title="Expense Identification"
-                    description="Provide the expense reference number, the date it was incurred, and the amount."
-                >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Hash className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Number
-                            </span>
-                            <Input
-                                placeholder="e.g. EXP003"
-                                value={expenseNumber}
-                                onChange={(e) => setExpenseNumber(e.target.value)}
-                                className={fieldClass}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Receipt className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Date
-                            </span>
-                            <DatePicker
-                                selected={expenseDate}
-                                onChange={(date: Date | null) => setExpenseDate(date ?? new Date())}
-                                dateFormat="PPP"
-                                className={datePickerClassName}
-                                calendarClassName={datePickerCalendarClassName}
-                                popperClassName={datePickerPopperClassName}
-                                wrapperClassName="w-full"
-                                showMonthDropdown
-                                showYearDropdown
-                                scrollableYearDropdown
-                                yearDropdownItemNumber={15}
-                                dropdownMode="select"
-                                openToDate={expenseDate}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Amount
-                            </span>
-                            <Input
-                                type="number"
-                                min={0}
-                                placeholder="e.g. 4000"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
-                                onWheel={(e) => e.currentTarget.blur()}
-                                className={fieldClass}
-                            />
-                        </div>
+                {/* Category / sub category / vehicle */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Category</FieldLabel>
+                        <Popover open={categoryPopoverOpen} onOpenChange={handleCategoryPopoverChange}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={categoryPopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                        <Tags className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                        <span className="truncate">{selectedCategory ? selectedCategory.name : "Choose category"}</span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Filter categories..." />
+                                    <CommandList>
+                                        {loadingCategoryList ? (
+                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No categories found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {categoriesDropdown.map((category) => (
+                                                        <CommandItem
+                                                            key={category.id}
+                                                            value={category.name}
+                                                            onSelect={() => {
+                                                                handleCategorySelect(category.id);
+                                                                setCategoryPopoverOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <span>{category.name}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
-                </StepSection>
 
-                {/* Step 2: Category & Sub Category */}
-                <StepSection
-                    stepNumber="2"
-                    title="Category & Sub Category"
-                    description="Select the expense category, then choose the sub category it falls under."
-                >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Tags className="h-3.5 w-3.5 text-[#6D755F]" /> Expense Category
-                            </span>
-                            <Popover open={categoryPopoverOpen} onOpenChange={handleCategoryPopoverChange}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={categoryPopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
-                                    >
-                                        {selectedCategory ? selectedCategory.name : "Choose a category..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Filter categories..." />
-                                        <CommandList>
-                                            {loadingCategoryList ? (
-                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <CommandEmpty>No categories found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {categoriesDropdown.map((category) => (
-                                                            <CommandItem
-                                                                key={category.id}
-                                                                value={category.name}
-                                                                onSelect={() => {
-                                                                    handleCategorySelect(category.id);
-                                                                    setCategoryPopoverOpen(false);
-                                                                }}
-                                                                className="cursor-pointer"
-                                                            >
-                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
-                                                                <span>{category.name}</span>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </>
-                                            )}
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Layers3 className="h-3.5 w-3.5 text-[#6D755F]" /> Sub Category
-                            </span>
-                            <Popover open={subCategoryPopoverOpen} onOpenChange={handleSubCategoryPopoverChange}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        disabled={!selectedCategoryId}
-                                        aria-expanded={subCategoryPopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
-                                    >
-                                        {selectedSubCategory
-                                            ? selectedSubCategory.name
-                                            : selectedCategoryId
-                                                ? "Choose a sub category..."
-                                                : "Select a category first..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Filter sub categories..." />
-                                        <CommandList>
-                                            {loadingSubCategoryList ? (
-                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <CommandEmpty>No sub categories for this category.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {filteredSubCategories.map((subCategory) => (
-                                                            <CommandItem
-                                                                key={subCategory.id}
-                                                                value={subCategory.name}
-                                                                onSelect={() => {
-                                                                    setSelectedSubCategoryId(subCategory.id);
-                                                                    setSubCategoryPopoverOpen(false);
-                                                                }}
-                                                                className="cursor-pointer"
-                                                            >
-                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
-                                                                <span>{subCategory.name}</span>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </>
-                                            )}
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Sub Category</FieldLabel>
+                        <Popover open={subCategoryPopoverOpen} onOpenChange={handleSubCategoryPopoverChange}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    disabled={!selectedCategoryId}
+                                    aria-expanded={subCategoryPopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3 disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                        <Layers3 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                        <span className="truncate">
+                                            {selectedSubCategory ? selectedSubCategory.name : selectedCategoryId ? "Choose sub category" : "Pick a category first"}
+                                        </span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Filter sub categories..." />
+                                    <CommandList>
+                                        {loadingSubCategoryList ? (
+                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No sub categories for this category.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {filteredSubCategories.map((subCategory) => (
+                                                        <CommandItem
+                                                            key={subCategory.id}
+                                                            value={subCategory.name}
+                                                            onSelect={() => {
+                                                                setSelectedSubCategoryId(subCategory.id);
+                                                                setSubCategoryPopoverOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <span>{subCategory.name}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
-                </StepSection>
+                </div>
 
-                {/* Step 3: Payment Accounts & Vehicle */}
-                <StepSection
-                    stepNumber="3"
-                    title="Payment Accounts & Vehicle"
-                    description="Split this expense across one or more accounts, and link a vehicle if it relates to transport."
-                >
-                    <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Amount</FieldLabel>
+                        <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 4000"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            className={fieldClass}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Vehicle (optional)</FieldLabel>
+                        <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={vehiclePopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                        <Bus className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                        <span className="truncate">{selectedVehicle ? selectedVehicle.vehicleName : "Not linked"}</span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search vehicles..." />
+                                    <CommandList>
+                                        {loadingVehicleList ? (
+                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No vehicles found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="none"
+                                                        onSelect={() => {
+                                                            setSelectedVehicleId("");
+                                                            setVehiclePopoverOpen(false);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                        <span className="text-slate-500">No vehicle</span>
+                                                    </CommandItem>
+                                                    {vehiclesDropdown.map((vehicle) => (
+                                                        <CommandItem
+                                                            key={vehicle.id}
+                                                            value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
+                                                            onSelect={() => {
+                                                                setSelectedVehicleId(vehicle.id);
+                                                                setVehiclePopoverOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-3 h-4 w-4", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+                    {/* LEFT */}
+
+                    <div className="flex flex-col gap-1.5">
+
+                        <FieldLabel>Notes</FieldLabel>
+
+                        <textarea
+                            placeholder="Optional context for this expense"
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows={6}
+                            className="
+                w-full
+                resize-none
+                rounded-lg
+                border
+                border-slate-200
+                bg-white
+                px-3
+                py-2
+                text-sm
+                dark:border-slate-700
+                dark:bg-slate-950
+                focus:ring-2
+                focus:ring-[#6D755F]
+            "
+                        />
+
+                    </div>
+
+                    {/* RIGHT */}
+                    {/* Payment split */}
+                    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Wallet className="h-3.5 w-3.5 text-[#6D755F]" /> Payment Accounts
-                            </span>
+                            <FieldLabel>Payment Accounts</FieldLabel>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={addPaymentRow}
-                                className="h-8 rounded-lg text-[#6D755F] hover:bg-[#6D755F]/10"
+                                className="h-7 rounded-md px-2 text-xs hover:bg-transparent hover:underline"
+                                style={{ color: SAGE }}
                             >
                                 <Plus className="mr-1 h-3.5 w-3.5" /> Add account
                             </Button>
                         </div>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
                             {payments.map((row, index) => {
                                 const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
                                 return (
-                                    <div key={row.id} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+
+                                    <div key={row.id} className="flex shrink-0 items-center gap-2">
                                         <Popover
                                             open={openPaymentRowId === row.id}
                                             onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
@@ -568,10 +628,10 @@ export default function Page() {
                                                     variant="outline"
                                                     role="combobox"
                                                     aria-expanded={openPaymentRowId === row.id}
-                                                    className={cn("w-full sm:flex-1 justify-between font-normal shadow-sm text-left", fieldClass)}
+                                                    className={cn("h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
                                                 >
-                                                    {rowAccount ? rowAccount.name : `Choose account ${index + 1}...`}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                                    <span className="truncate">{rowAccount ? rowAccount.name : `Choose account ${index + 1}`}</span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
@@ -580,7 +640,7 @@ export default function Page() {
                                                     <CommandList>
                                                         {loadingAccountList ? (
                                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
                                                             </div>
                                                         ) : (
                                                             <>
@@ -596,7 +656,7 @@ export default function Page() {
                                                                             }}
                                                                             className="cursor-pointer"
                                                                         >
-                                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
+                                                                            <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
                                                                             <span>{account.name}</span>
                                                                         </CommandItem>
                                                                     ))}
@@ -617,16 +677,16 @@ export default function Page() {
                                                 updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
                                             }
                                             onWheel={(e) => e.currentTarget.blur()}
-                                            className={cn("w-full sm:w-40", fieldClass)}
+                                            className={cn("h-10 w-28 shrink-0 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
                                         />
 
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="ghost"
                                             size="icon"
                                             onClick={() => removePaymentRow(row.id)}
                                             disabled={payments.length === 1}
-                                            className="h-12 w-12 shrink-0 rounded-xl border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 disabled:opacity-40 dark:border-slate-700"
+                                            className="h-10 w-9 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950/30"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -635,128 +695,107 @@ export default function Page() {
                             })}
                         </div>
 
-                        <div
-                            className={cn(
-                                "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium",
-                                remaining === 0
-                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                    : "bg-[#6D755F]/10 text-[#6D755F]"
-                            )}
-                        >
-                            <span>Allocated ₹{totalAllocated.toLocaleString()} of ₹{(Number(amount) || 0).toLocaleString()}</span>
-                            <span>
-                                {remaining === 0
-                                    ? "Fully allocated"
-                                    : remaining > 0
-                                        ? `₹${remaining.toLocaleString()} remaining`
-                                        : `₹${Math.abs(remaining).toLocaleString()} over`}
-                            </span>
-                        </div>
+                        {payments.length > 3 && (
+                            <p className="text-[11px] text-slate-400">{payments.length} accounts · scroll for more</p>
+                        )}
                     </div>
+                </div>
 
-                    <div className="flex flex-col gap-2">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Bus className="h-3.5 w-3.5 text-[#6D755F]" /> Vehicle (Optional)
-                        </span>
-                        <Popover open={vehiclePopoverOpen} onOpenChange={handleVehiclePopoverChange}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={vehiclePopoverOpen}
-                                    className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
-                                >
-                                    {selectedVehicleId
-                                        ? (() => {
-                                            const v = vehiclesDropdown.find((veh) => veh.id === selectedVehicleId);
-                                            return v ? `${v.vehicleName} (${v.vehicleNumber})` : "Resolving vehicle...";
-                                        })()
-                                        : "Not linked to a vehicle..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                <Command>
-                                    <CommandInput placeholder="Search vehicles..." />
-                                    <CommandList>
-                                        {loadingVehicleList ? (
-                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <CommandEmpty>No vehicles found.</CommandEmpty>
-                                                <CommandGroup>
-                                                    <CommandItem
-                                                        value="none"
-                                                        onSelect={() => {
-                                                            setSelectedVehicleId("");
-                                                            setVehiclePopoverOpen(false);
-                                                        }}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
-                                                        <span className="text-slate-500">No vehicle</span>
-                                                    </CommandItem>
-                                                    {vehiclesDropdown.map((vehicle) => (
-                                                        <CommandItem
-                                                            key={vehicle.id}
-                                                            value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
-                                                            onSelect={() => {
-                                                                setSelectedVehicleId(vehicle.id);
-                                                                setVehiclePopoverOpen(false);
-                                                            }}
-                                                            className="py-3 cursor-pointer"
-                                                        >
-                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                            <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
-                                                                <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
-                                                            </div>
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </>
-                                        )}
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </StepSection>
 
-                {/* Step 4: Notes */}
-                <StepSection
-                    stepNumber="4"
-                    title="Notes"
-                    description="Add any additional context for this expense (optional)."
-                >
-                    <div className="flex flex-col gap-2">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <FileText className="h-3.5 w-3.5 text-[#6D755F]" /> Notes
-                        </span>
-                        <textarea
-                            placeholder="e.g. testing expense posting, with transaction"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            rows={4}
-                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition hover:border-slate-400 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
-                        />
-                    </div>
+            </div>
 
-                    {/* Live summary strip — matches the Admission page's ledger-total footer exactly */}
-                    <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-[#6D755F] px-6 py-5 rounded-b-xl">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white/90">Expense Amount</span>
-                            <span className="text-xs text-white/70">
-                                {expenseDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            </span>
-                        </div>
-                        <span className="text-3xl font-bold tracking-tight text-white">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+            </div>
+
+            {/* ── Right: review & submit panel ───────────────────────── */}
+            <div
+                className="flex w-full flex-col justify-between gap-6 p-6 text-white lg:w-[340px] lg:shrink-0 lg:p-8"
+                style={{ backgroundColor: SAGE }}
+            >
+                <div className="flex flex-col gap-6">
+                    <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-white/60">Amount</p>
+                        <p className="mt-1 text-4xl font-bold tracking-tight">
                             ₹{(Number(amount) || 0).toLocaleString()}
-                        </span>
+                        </p>
+                        <p className="mt-1 text-xs text-white/60">
+                            {expenseDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
                     </div>
-                </StepSection>
+
+                    <div className="flex flex-col gap-2 border-t border-white/15 pt-4 text-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="text-white/60">Category</span>
+                            <span className="font-medium">{selectedCategory ? selectedCategory.name : "—"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-white/60">Sub category</span>
+                            <span className="font-medium">{selectedSubCategory ? selectedSubCategory.name : "—"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-white/60">Vehicle</span>
+                            <span className="font-medium">{selectedVehicle ? selectedVehicle.vehicleName : "—"}</span>
+                        </div>
+                    </div>
+
+                    {/* <div className="flex flex-col gap-1.5 border-t border-white/15 pt-4">
+                            <label className="text-xs font-medium uppercase tracking-wider text-white/60">Notes</label>
+                            <textarea
+                                placeholder="Optional context for this expense"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                rows={3}
+                                className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-white/50 focus:ring-2 focus:ring-white/20"
+                            />
+                        </div> */}
+
+                    <div className="flex flex-col gap-2 border-t border-white/15 pt-4">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-white/60">Allocated</span>
+                            <span className="font-medium">
+                                ₹{totalAllocated.toLocaleString()} / ₹{(Number(amount) || 0).toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+                            <div
+                                className={cn("h-full rounded-full transition-all", remaining < 0 ? "bg-red-300" : "bg-white")}
+                                style={{ width: `${allocationPct}%` }}
+                            />
+                        </div>
+                        <p className="text-[11px] text-white/60">
+                            {remaining === 0
+                                ? "Fully allocated"
+                                : remaining > 0
+                                    ? `₹${remaining.toLocaleString()} not yet allocated`
+                                    : `₹${Math.abs(remaining).toLocaleString()} over the expense amount`}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="h-11 w-full rounded-lg bg-white text-sm font-semibold text-slate-900 shadow-md hover:bg-white/90 disabled:opacity-50"
+                    >
+                        {submitting ? (
+                            <span className="flex items-center gap-1.5">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing
+                            </span>
+                        ) : (
+                            "Confirm Expense"
+                        )}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        onClick={() => router.back()}
+                        disabled={submitting}
+                        className="h-10 w-full rounded-lg text-sm text-white/80 hover:bg-white/10 hover:text-white"
+                    >
+                        Discard
+                    </Button>
+                </div>
             </div>
         </div>
     );
