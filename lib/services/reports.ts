@@ -154,3 +154,64 @@ export async function getExpenseByCategoryReport(
         }
     );
 }
+//
+// Student Outstanding Report
+//
+
+export interface StudentOutstanding {
+  studentId: string;
+  admissionNumber: string;
+  studentName: string;
+  studentStatus: string;
+  class: string;
+  feeOutstanding: number;
+  fineOutstanding: number;
+  totalOutstanding: number;
+}
+
+export interface StudentOutstandingPagination {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface StudentOutstandingData {
+  academicYear: string | null;
+  students: StudentOutstanding[];
+  totalPendingAmount: number;
+  pagination: StudentOutstandingPagination;
+}
+
+export interface StudentOutstandingResponse {
+  success: boolean;
+  message?: string;
+  data: StudentOutstandingData;
+}
+
+// Get Student Outstanding Report
+export async function getStudentOutstandingReport(
+  page: number = 1,
+  limit: number = 10,
+  search: string = ""
+): Promise<StudentOutstandingData> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (search.trim()) {
+    params.set("search", search.trim());
+  }
+
+  const payload = (await apiFetch(
+    `/api/reports/student-outstanding?${params.toString()}`
+  )) as ApiSuccess<StudentOutstandingData>;
+
+  return (
+    payload.data ?? {
+      academicYear: null,
+      students: [],
+      totalPendingAmount: 0,
+      pagination: { page, limit, total: 0 },
+    }
+  );
+}
