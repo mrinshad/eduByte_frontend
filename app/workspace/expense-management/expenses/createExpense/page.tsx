@@ -13,6 +13,7 @@ import {
     Tags,
     Layers3,
     Bus,
+    User,
     Plus,
     Trash2,
 } from "lucide-react";
@@ -38,11 +39,12 @@ import {
     createExpense,
     getExpenseCategories,
     getExpenseSubCategories,
-
     getPaymentMethodAccounts,
+    getStaffNamesAndIds,
     type PaymentMethodAccount,
     type ExpenseCategory,
     type ExpenseSubCategory,
+    type StaffName,
 } from "@/lib/services/expense";
 import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
 
@@ -94,9 +96,9 @@ export default function Page() {
     const [subCategoriesDropdown, setSubCategoriesDropdown] = useState<ExpenseSubCategory[]>([]);
     const [accountsDropdown, setAccountsDropdown] = useState<PaymentMethodAccount[]>([]);
     const [vehiclesDropdown, setVehiclesDropdown] = useState<Vehicle[]>([]);
+    const [staffDropdown, setStaffDropdown] = useState<StaffName[]>([]);
 
     // ── Form state ──────────────────────────────────────────────────────────
-    const [expenseNumber, setExpenseNumber] = useState<string>("");
     const [expenseDate, setExpenseDate] = useState<Date>(new Date());
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState<string>("");
@@ -104,6 +106,7 @@ export default function Page() {
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+    const [selectedStaffId, setSelectedStaffId] = useState<string>("");
 
     // ── Split payments ────────────────────────────────────────────────────
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
@@ -113,12 +116,14 @@ export default function Page() {
     const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
     const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
+    const [staffPopoverOpen, setStaffPopoverOpen] = useState(false);
 
     // ── Loading state ───────────────────────────────────────────────────────
     const [loadingCategoryList, setLoadingCategoryList] = useState(false);
     const [loadingSubCategoryList, setLoadingSubCategoryList] = useState(false);
     const [loadingAccountList, setLoadingAccountList] = useState(false);
     const [loadingVehicleList, setLoadingVehicleList] = useState(false);
+    const [loadingStaffList, setLoadingStaffList] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const selectedCategory = useMemo(
@@ -134,6 +139,11 @@ export default function Page() {
     const selectedVehicle = useMemo(
         () => vehiclesDropdown.find((v) => v.id === selectedVehicleId) ?? null,
         [vehiclesDropdown, selectedVehicleId]
+    );
+
+    const selectedStaff = useMemo(
+        () => staffDropdown.find((s) => s.id === selectedStaffId) ?? null,
+        [staffDropdown, selectedStaffId]
     );
 
     const filteredSubCategories = useMemo(() => {
@@ -207,6 +217,21 @@ export default function Page() {
         }
     };
 
+    const handleStaffPopoverChange = async (open: boolean) => {
+        setStaffPopoverOpen(open);
+        if (open && staffDropdown.length === 0) {
+            try {
+                setLoadingStaffList(true);
+                const data = await getStaffNamesAndIds();
+                setStaffDropdown(data);
+            } catch (error) {
+                console.error("Failed to load staff:", error);
+            } finally {
+                setLoadingStaffList(false);
+            }
+        }
+    };
+
     const handleCategorySelect = (categoryId: string) => {
         setSelectedCategoryId(categoryId);
         setSelectedSubCategoryId("");
@@ -255,7 +280,6 @@ export default function Page() {
         remaining === 0;
 
     const isValid =
-        expenseNumber.trim() !== "" &&
         !!selectedCategoryId &&
         !!selectedSubCategoryId &&
         amount !== "" &&
@@ -287,7 +311,7 @@ export default function Page() {
                         : `Payments exceed the expense amount by ₹${Math.abs(remaining).toLocaleString()}.`
                 );
             } else {
-                toast.error("Fill in expense number, category, sub category, amount, and payment split before submitting.");
+                toast.error("Fill in category, sub category, amount, and payment split before submitting.");
             }
             return;
         }
@@ -296,10 +320,10 @@ export default function Page() {
             setSubmitting(true);
 
             const result = await createExpense({
-                expenseNumber: expenseNumber.trim(),
                 categoryId: selectedCategoryId,
                 vehicleId: selectedVehicleId || null,
                 subCategoryId: selectedSubCategoryId,
+                staffId: selectedStaffId || null,
                 notes: notes.trim(),
                 amount: Number(amount),
                 expenseDate: expenseDate.toISOString(),
@@ -339,16 +363,72 @@ export default function Page() {
                     </div>
                 </div>
 
-                {/* Expense number / date / amount */}
+                {/* Staff / date */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Expense Number</FieldLabel>
-                        <Input
-                            placeholder="e.g. EXP003"
-                            value={expenseNumber}
-                            onChange={(e) => setExpenseNumber(e.target.value)}
-                            className={fieldClass}
-                        />
+                        <FieldLabel>Staff (optional)</FieldLabel>
+                        <Popover open={staffPopoverOpen} onOpenChange={handleStaffPopoverChange}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={staffPopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                        <User className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                        <span className="truncate">{selectedStaff ? selectedStaff.name : "Not linked"}</span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search staff..." />
+                                    <CommandList>
+                                        {loadingStaffList ? (
+                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CommandEmpty>No staff found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="none"
+                                                        onSelect={() => {
+                                                            setSelectedStaffId("");
+                                                            setStaffPopoverOpen(false);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4", selectedStaffId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                        <span className="text-slate-500">No staff</span>
+                                                    </CommandItem>
+                                                    {staffDropdown.map((staff) => (
+                                                        <CommandItem
+                                                            key={staff.id}
+                                                            value={`${staff.name} ${staff.employeeCode}`}
+                                                            onSelect={() => {
+                                                                setSelectedStaffId(staff.id);
+                                                                setStaffPopoverOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-3 h-4 w-4", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{staff.name}</span>
+                                                                <span className="text-xs text-slate-400">Code: {staff.employeeCode}</span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </>
+                                        )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -372,7 +452,7 @@ export default function Page() {
 
                 </div>
 
-                {/* Category / sub category / vehicle */}
+                {/* Category / sub category */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
                         <FieldLabel>Category</FieldLabel>
@@ -705,10 +785,6 @@ export default function Page() {
 
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-            </div>
-
             {/* ── Right: review & submit panel ───────────────────────── */}
             <div
                 className="flex w-full flex-col justify-between gap-6 p-6 text-white lg:w-[340px] lg:shrink-0 lg:p-8"
@@ -738,18 +814,11 @@ export default function Page() {
                             <span className="text-white/60">Vehicle</span>
                             <span className="font-medium">{selectedVehicle ? selectedVehicle.vehicleName : "—"}</span>
                         </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-white/60">Staff</span>
+                            <span className="font-medium">{selectedStaff ? selectedStaff.name : "—"}</span>
+                        </div>
                     </div>
-
-                    {/* <div className="flex flex-col gap-1.5 border-t border-white/15 pt-4">
-                            <label className="text-xs font-medium uppercase tracking-wider text-white/60">Notes</label>
-                            <textarea
-                                placeholder="Optional context for this expense"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows={3}
-                                className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                            />
-                        </div> */}
 
                     <div className="flex flex-col gap-2 border-t border-white/15 pt-4">
                         <div className="flex items-center justify-between text-xs">

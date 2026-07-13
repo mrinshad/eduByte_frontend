@@ -39,6 +39,19 @@ export interface AccountName {
   name: string;
 }
 
+// Staff, for the "Staff" dropdown on the Create Expense form.
+export type StaffStatus = "ACTIVE" | "INACTIVE";
+
+export interface StaffName {
+  id: string;
+  employeeCode: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  joiningDate: string | null;
+  status: StaffStatus;
+}
+
 // A single split-payment line: how much of the total is paid from a given account.
 export interface ExpensePaymentInput {
   accountId: string;
@@ -55,10 +68,14 @@ export interface CreateExpenseResponse {
 }
 
 export interface ExpenseInput {
-  expenseNumber: string;
+  // expenseNumber is no longer collected on the form — the backend
+  // generates it. Kept optional here in case any caller still wants to
+  // pass one explicitly.
+  expenseNumber?: string;
   categoryId: string;
   vehicleId?: string | null;
   subCategoryId: string;
+  staffId?: string | null;
   notes?: string;
   amount: number;
   expenseDate: string; // ISO date string
@@ -152,6 +169,16 @@ export async function getExpenseAccountsNamesandIds() {
   const payload = (await apiFetch(
     "/api/accounts/expense-accounts"
   )) as ApiSuccess<AccountName[]>;
+
+  return payload.data ?? [];
+}
+
+// ---------------------------------------------------------------------
+// Staff (for the Staff dropdown on the Create Expense form)
+// ---------------------------------------------------------------------
+
+export async function getStaffNamesAndIds() {
+  const payload = (await apiFetch("/api/staff")) as ApiSuccess<StaffName[]>;
 
   return payload.data ?? [];
 }
