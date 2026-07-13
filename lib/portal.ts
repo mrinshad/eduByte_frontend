@@ -88,7 +88,10 @@ export const portalSections: PortalSection[] = [
   
   //reports
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
+  
   { slug: "reports/daily-collection", label: "Daily collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/charge-type-collection", label: "Charge Type collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {

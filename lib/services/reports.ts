@@ -1,5 +1,11 @@
 import { apiFetch } from "@/lib/api";
 
+type ApiSuccess<T> = {
+    success: boolean;
+    message?: string;
+    data?: T;
+};
+
 //
 // Vehicle Reports
 //
@@ -64,14 +70,10 @@ export async function getStudentsByVehicle(vehicleId: string) {
 
   return payload.data;
 }
+
 //
+// Daily Collection Report (now a date range: fromDate -> toDate)
 //
-// daily collection
-
-// Add these to your existing lib/services/reports.ts file
-// (same file that already exports getVehicleLists / getStudentsByVehicle)
-
-
 
 export interface PaymentMethodData {
     paymentMethod: string;
@@ -84,32 +86,63 @@ export interface ChargeTypeData {
 }
 
 export interface DailyCollectionData {
-    date: string;
+    fromDate: string;
+    toDate: string;
     totalCollection: number;
     paymentMethodData: PaymentMethodData[];
     collectionByChargeType: ChargeTypeData[];
 }
 
-type ApiSuccess<T> = {
-    success: boolean;
-    message?: string;
-    data?: T;
-};
-
 // Get Daily Collection Report
 export async function getDailyCollectionReport(
-    date: string
+    fromDate: string,
+    toDate: string
 ): Promise<DailyCollectionData> {
     const payload = (await apiFetch(
-        `/api/reports/daily-collection?date=${date}`
+        `/api/reports/daily-collection?fromDate=${fromDate}&toDate=${toDate}`
     )) as ApiSuccess<DailyCollectionData>;
 
     return (
         payload.data ?? {
-            date,
+            fromDate,
+            toDate,
             totalCollection: 0,
             paymentMethodData: [],
             collectionByChargeType: [],
+        }
+    );
+}
+
+//
+// Charge Type Collection Report
+//
+
+export interface ChargeTypeSummary {
+    chargeTypeId: string;
+    chargeTypeName: string;
+    totalCollected: number;
+    transactionCount: number;
+    percentageOfTotal: number;
+}
+
+export interface ChargeTypeCollectionData {
+    summary: ChargeTypeSummary[];
+    grandTotal: number;
+}
+
+// Get Charge Type Collection Report
+export async function getChargeTypeCollectionReport(
+    from: string,
+    to: string
+): Promise<ChargeTypeCollectionData> {
+    const payload = (await apiFetch(
+        `/api/reports/charge-type-collection?from=${from}&to=${to}`
+    )) as ApiSuccess<ChargeTypeCollectionData>;
+
+    return (
+        payload.data ?? {
+            summary: [],
+            grandTotal: 0,
         }
     );
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
+    ArrowRight,
     Banknote,
     Calendar,
     IndianRupee,
@@ -67,6 +68,7 @@ function tomorrowISO() {
         day: "2-digit",
     }).format(indiaToday);
 }
+
 function todayISO() {
     return new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Kolkata",
@@ -76,7 +78,7 @@ function todayISO() {
     }).format(new Date());
 }
 
-// The API returns `date` as a full ISO timestamp (e.g.
+// The API returns date fields as full ISO timestamps (e.g.
 // "2026-07-12T00:00:00.000Z"). Take just the yyyy-mm-dd part before
 // building a display date, otherwise appending "T00:00:00" again
 // produces an invalid string.
@@ -86,33 +88,47 @@ function formatDisplayDate(date: string) {
     const datePart = date.slice(0, 10);
     return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
-        weekday: "long",
         day: "2-digit",
-        month: "long",
+        month: "short",
         year: "numeric",
     });
+}
+
+function formatDisplayDateRange(fromDate: string, toDate: string) {
+    if (!fromDate || !toDate) return "Fee collection, at a glance";
+
+    const fromPart = fromDate.slice(0, 10);
+    const toPart = toDate.slice(0, 10);
+
+    if (fromPart === toPart) return formatDisplayDate(fromPart);
+
+    return `${formatDisplayDate(fromPart)} — ${formatDisplayDate(toPart)}`;
 }
 
 export default function DailyCollectionReportPage() {
     const router = useRouter();
 
-    const [selectedDate, setSelectedDate] = useState<string>(todayISO());
+    const [fromDate, setFromDate] = useState<string>(todayISO());
+    const [toDate, setToDate] = useState<string>(todayISO());
     const [report, setReport] = useState<DailyCollectionData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Re-fetches every time the date changes, so switching dates always
-    // replaces (never merges with) the previous day's numbers.
+    // Re-fetches every time either end of the range changes, so switching
+    // dates always replaces (never merges with) the previous numbers.
     useEffect(() => {
-        if (!selectedDate) return;
+        if (!fromDate || !toDate) return;
+
+        // Guard against an inverted range (e.g. user picks "to" before "from")
+        if (fromDate > toDate) return;
 
         let cancelled = false;
 
-        async function load(date: string) {
+        async function load(from: string, to: string) {
             try {
                 setIsLoading(true);
                 setError(null);
-                const data = await getDailyCollectionReport(date);
+                const data = await getDailyCollectionReport(from, to);
                 if (!cancelled) setReport(data);
             } catch (err) {
                 if (!cancelled) {
@@ -124,16 +140,17 @@ export default function DailyCollectionReportPage() {
             }
         }
 
-        load(selectedDate);
+        load(fromDate, toDate);
 
         return () => {
             cancelled = true;
         };
-    }, [selectedDate]);
+    }, [fromDate, toDate]);
 
     const paymentMethods = report?.paymentMethodData ?? [];
     const chargeTypes = report?.collectionByChargeType ?? [];
     const total = report?.totalCollection ?? 0;
+    const isRangeInvalid = fromDate > toDate;
 
     // Sorted so the largest contributor leads the table — makes the
     // breakdown scannable without the user having to hunt for it.
@@ -142,13 +159,18 @@ export default function DailyCollectionReportPage() {
         [chargeTypes]
     );
 
+    function handleFromDateChange(value: string) {
+        setFromDate(value);
+        // Keep the range valid: pull "to" forward if it now precedes "from"
+        if (value > toDate) setToDate(value);
+    }
+
     function handleRefresh() {
-        // Re-trigger the effect by nudging state through the same setter
-        // the date picker uses, so refresh and date-change share one path.
-        setSelectedDate((d) => d);
+        if (isRangeInvalid) return;
+
         setIsLoading(true);
         setError(null);
-        getDailyCollectionReport(selectedDate)
+        getDailyCollectionReport(fromDate, toDate)
             .then(setReport)
             .catch(() => setError("Could not load the collection report. Please try again."))
             .finally(() => setIsLoading(false));
@@ -158,7 +180,7 @@ export default function DailyCollectionReportPage() {
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
             {/* Header */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
                             size="icon"
@@ -173,28 +195,52 @@ export default function DailyCollectionReportPage() {
                                 Daily Collection Report
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                {report ? formatDisplayDate(report.date) : "Fee collection, at a glance"}
+                                {report
+                                    ? formatDisplayDateRange(report.fromDate, report.toDate)
+                                    : "Fee collection, at a glance"}
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-full sm:w-48">
-                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <Input
-                                type="date"
-                                value={selectedDate}
-                                max={tomorrowISO()}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                            />
+                    {/* Date range picker — stacks on mobile, inline from tablet up */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
+                            <div className="relative w-full sm:w-40">
+                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    type="date"
+                                    aria-label="From date"
+                                    value={fromDate}
+                                    max={tomorrowISO()}
+                                    onChange={(e) => handleFromDateChange(e.target.value)}
+                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+                                />
+                            </div>
+
+                            <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
+                                <ArrowRight className="h-4 w-4" />
+                            </div>
+
+                            <div className="relative w-full sm:w-40">
+                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    type="date"
+                                    aria-label="To date"
+                                    value={toDate}
+                                    min={fromDate}
+                                    max={tomorrowISO()}
+                                    onChange={(e) => setToDate(e.target.value)}
+                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+                                />
+                            </div>
                         </div>
+
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-10 w-10 shrink-0 text-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                            className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
                             onClick={handleRefresh}
-                            disabled={isLoading}
+                            disabled={isLoading || isRangeInvalid}
                         >
                             <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                         </Button>
@@ -202,7 +248,11 @@ export default function DailyCollectionReportPage() {
                 </div>
             </div>
 
-            {error ? (
+            {isRangeInvalid ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                    The "from" date must be before the "to" date.
+                </div>
+            ) : error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
                     {error}
                 </div>
@@ -269,7 +319,7 @@ export default function DailyCollectionReportPage() {
                             {paymentMethods.length === 0 ? (
                                 <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-slate-500 lg:py-0">
                                     <Wallet className="h-7 w-7 text-slate-300" />
-                                    <p className="text-sm">No payments recorded for this date.</p>
+                                    <p className="text-sm">No payments recorded for this range.</p>
                                 </div>
                             ) : (
                                 <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
@@ -351,7 +401,7 @@ export default function DailyCollectionReportPage() {
                                                 <TableCell colSpan={4} className="h-32 text-center text-slate-500">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <Receipt className="h-7 w-7 text-slate-300" />
-                                                        <p className="text-sm">No collections recorded for this date.</p>
+                                                        <p className="text-sm">No collections recorded for this range.</p>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
