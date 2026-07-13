@@ -146,3 +146,38 @@ export async function getChargeTypeCollectionReport(
         }
     );
 }
+
+//
+// Expense By Category Report
+//
+ 
+export interface CategoryExpense {
+    category: string;
+    amount: number;
+}
+ 
+export interface ExpenseByCategoryData {
+    fromDate: string;
+    toDate: string;
+    totalExpense: number;
+    categories: CategoryExpense[];
+}
+ 
+// Get Expense By Category Report
+export async function getExpenseByCategoryReport(
+    fromDate: string,
+    toDate: string
+): Promise<ExpenseByCategoryData> {
+    const payload = (await apiFetch(
+        `/api/reports/expense-by-category?fromDate=${fromDate}&toDate=${toDate}`
+    )) as ApiSuccess<ExpenseByCategoryData>;
+ 
+    return (
+        payload.data ?? {
+            fromDate,
+            toDate,
+            totalExpense: 0,
+            categories: [],
+        }
+    );
+}
