@@ -45,6 +45,15 @@ export interface ExpensePaymentInput {
   amount: number;
 }
 
+export interface CreateExpenseResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    expenseNumber: string;
+  };
+}
+
 export interface ExpenseInput {
   expenseNumber: string;
   categoryId: string;
@@ -151,12 +160,49 @@ export async function getExpenseAccountsNamesandIds() {
 // Expense
 // ---------------------------------------------------------------------
 
-export async function createExpense(input: ExpenseInput) {
+export async function createExpense(
+  input: ExpenseInput
+): Promise<CreateExpenseResponse> {
   return apiFetch("/api/expense", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
+
+export interface ExpensePrintResponse {
+  success: boolean;
+  data: {
+    id: string;
+    expenseNumber: string;
+    expenseDate: string;
+    amount: number;
+    notes?: string;
+
+    category: string;
+    subCategory: string;
+
+    vehicle: {
+      vehicleName: string;
+      vehicleNumber: string;
+    } | null;
+
+    staff: {
+      name: string;
+    } | null;
+
+    payments: {
+      account: string;
+      amount: number;
+    }[];
+  };
+}
+
+export async function getExpensePrint(
+  id: string
+): Promise<ExpensePrintResponse> {
+  return apiFetch(`/api/expense/${id}/print`);
+}
+
 export interface PaymentMethodAccount {
   id: string;
   name: string;

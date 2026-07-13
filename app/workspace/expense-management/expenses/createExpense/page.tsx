@@ -309,11 +309,12 @@ export default function Page() {
                 })),
             });
 
-            if (result?.success) {
-                toast.success(result?.message || "Expense created successfully");
-                router.back();
+            if (result.success) {
+                toast.success(result.message || "Expense created successfully");
+
+                router.push(`/print/expenses/${result.data.id}`);
             } else {
-                toast.error(result?.message || "An error occurred during submission.");
+                toast.error(result.message || "An error occurred during submission.");
             }
         } catch (error) {
             toast.error("Failed to create expense");

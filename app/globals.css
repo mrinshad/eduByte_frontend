@@ -141,3 +141,20 @@ input[type="number"] {
     @apply font-sans;
   }
 }
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+    
+    .a4-container {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 15mm 12mm !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+}
