@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
     Card,
@@ -35,7 +36,19 @@ const BRAND = "#556043"; // Kidscove olive-green — same shade used across the 
 // Same amber accent language as the Expense Management page, so this
 // report feels like the same product rather than a bolted-on screen.
 const titleTextClass = "text-slate-950 dark:text-slate-100";
-const supportingTextClass = "text-muted-foreground";
+const supportingTextClass = "text-slate-700 dark:text-slate-300";
+
+// Categories and sub categories are dynamic (school-defined), so instead of
+// a lookup map we rotate a small accent palette — the exact same palette
+// and rotation logic the Daily Collection Report uses for charge types, so
+// both reports read as one consistent visual language.
+const ACCENT_PALETTE = [
+    "#556043", // brand green
+    "#3b6e91", // steel blue
+    "#a8763e", // amber/bronze
+    "#7a4a8f", // violet
+    "#b0524a", // rust
+];
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -288,14 +301,14 @@ export default function ExpenseByCategoryReportPage() {
                 </div>
             ) : (
                 <div className="space-y-4 sm:space-y-6">
-                    {/* Total expense — compact full-width hero */}
+                    {/* Total expense — full-width hero, same gradient + glow
+                        treatment as the Daily Collection Report's hero. */}
                     <div
                         className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
                         style={{
                             background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
                         }}
                     >
-                        {/* Decorative glow accents — purely visual, clipped by overflow-hidden */}
                         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
@@ -324,10 +337,10 @@ export default function ExpenseByCategoryReportPage() {
                         {/* Category — full list on load, click to scope the      */}
                         {/* sub category card on the right.                        */}
                         {/* ----------------------------------------------------- */}
-                        <Card className="flex flex-col bg-white dark:bg-background lg:h-full">
+                        <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
                             <CardHeader className="flex flex-col gap-3 border-b border-black/5 dark:border-white/10">
                                 <div className="flex items-center gap-2.5">
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
                                         <Tags className="h-4.5 w-4.5 text-[#556043] dark:text-emerald-300" />
                                     </span>
                                     <div>
@@ -347,7 +360,7 @@ export default function ExpenseByCategoryReportPage() {
                                         placeholder="Search category name..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="h-10 rounded-lg pl-9 pr-8"
+                                        className="h-10 rounded-lg pl-9 pr-8 shadow-sm"
                                     />
                                     {search && (
                                         <button
@@ -364,7 +377,7 @@ export default function ExpenseByCategoryReportPage() {
 
                             <CardContent
                                 className="
-                                space-y-2 pt-4 overflow-y-auto
+                                space-y-3 pt-4 overflow-y-auto
                                 max-h-[420px] lg:max-h-none lg:flex-1
                                 scrollbar-thin
                                 scrollbar-thumb-slate-300
@@ -375,7 +388,7 @@ export default function ExpenseByCategoryReportPage() {
                             "
                             >
                                 {sortedCategories.length === 0 ? (
-                                    <div className="rounded-3xl border border-dashed border-[#556043]/25 bg-[#556043]/5 px-5 py-6 text-center dark:border-emerald-400/25 dark:bg-emerald-400/10">
+                                    <div className="rounded-3xl border border-dashed border-[#556043]/25 bg-[#556043]/5 px-5 py-6 text-center shadow-sm dark:border-emerald-400/25 dark:bg-emerald-400/10">
                                         <p className={`text-sm font-medium ${titleTextClass}`}>
                                             No expenses recorded
                                         </p>
@@ -384,14 +397,15 @@ export default function ExpenseByCategoryReportPage() {
                                         </p>
                                     </div>
                                 ) : filteredCategories.length === 0 ? (
-                                    <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                                    <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
                                         <p className={`text-sm font-medium ${titleTextClass}`}>
                                             No categories match &quot;{search}&quot;
                                         </p>
                                     </div>
                                 ) : (
-                                    filteredCategories.map((category) => {
+                                    filteredCategories.map((category, i) => {
                                         const isActive = category.category === selectedCategory;
+                                        const accent = ACCENT_PALETTE[i % ACCENT_PALETTE.length];
                                         const pct = total > 0 ? Math.round((category.amount / total) * 100) : 0;
                                         const subCount = category.subCategories?.length ?? 0;
 
@@ -408,44 +422,48 @@ export default function ExpenseByCategoryReportPage() {
                                                     }
                                                 }}
                                                 className={cn(
-                                                    "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#556043]/30 cursor-pointer",
+                                                    "flex cursor-pointer items-center gap-3 rounded-xl border p-3 shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#556043]/30",
                                                     isActive
-                                                        ? "border-[#556043]/40 bg-[#556043]/[0.06] shadow-sm dark:border-emerald-400/30 dark:bg-emerald-400/10"
-                                                        : "border-black/5 bg-white/80 hover:border-black/10 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]"
+                                                        ? "border-[#556043]/40 bg-[#556043]/[0.06] shadow-md dark:border-emerald-400/30 dark:bg-emerald-400/10"
+                                                        : "border-slate-100 hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-white/[0.06]"
                                                 )}
                                             >
-                                                <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                                                    <Tags
-                                                        className={cn(
-                                                            "h-4 w-4 shrink-0",
-                                                            isActive ? "text-[#556043] dark:text-emerald-300" : "text-slate-400"
-                                                        )}
-                                                    />
-
-                                                    <div className="min-w-0 flex-1">
-                                                        <span className="font-medium truncate block capitalize text-slate-950 dark:text-slate-100">
+                                                <span
+                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
+                                                    style={{ backgroundColor: accent }}
+                                                >
+                                                    <Tags className="h-4.5 w-4.5" />
+                                                </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="flex items-center justify-between gap-2">
+                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
                                                             {category.category}
                                                         </span>
-                                                        <span className="mt-1.5 flex items-center gap-2">
-                                                            <span className="h-1.5 w-full max-w-[120px] overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                                <span
-                                                                    className="block h-full rounded-full"
-                                                                    style={{ width: `${pct}%`, backgroundColor: BRAND }}
-                                                                />
-                                                            </span>
-                                                            <span className="text-xs text-slate-500">{pct}%</span>
+                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                                            {formatCurrency(category.amount)}
                                                         </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col items-end gap-1.5 shrink-0 pl-2">
-                                                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                        {formatCurrency(category.amount)}
                                                     </span>
-                                                    <span className="rounded-full border border-black/5 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                                                        {subCount} sub
+                                                    <span className="mt-1.5 flex items-center gap-2">
+                                                        <span className="block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                            <span
+                                                                className="block h-full rounded-full transition-all"
+                                                                style={{
+                                                                    width: `${pct}%`,
+                                                                    backgroundColor: accent,
+                                                                }}
+                                                            />
+                                                        </span>
+                                                        <span className="shrink-0 text-[11px] text-slate-400">
+                                                            {subCount} sub
+                                                        </span>
                                                     </span>
-                                                </div>
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                                >
+                                                    {pct}%
+                                                </Badge>
                                             </div>
                                         );
                                     })
@@ -457,10 +475,10 @@ export default function ExpenseByCategoryReportPage() {
                         {/* Sub Category — scoped to the selected category, asks   */}
                         {/* the user to pick one first.                             */}
                         {/* ----------------------------------------------------- */}
-                        <Card className="flex flex-col bg-white dark:bg-background lg:h-full">
+                        <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
                             <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
                                         <Layers3 className="h-4.5 w-4.5 text-[#556043] dark:text-emerald-300" />
                                     </span>
                                     <div className="min-w-0">
@@ -486,7 +504,7 @@ export default function ExpenseByCategoryReportPage() {
 
                             <CardContent
                                 className="
-                                space-y-2 pt-4 overflow-y-auto
+                                space-y-3 pt-4 overflow-y-auto
                                 max-h-[420px] lg:max-h-none lg:flex-1
                                 scrollbar-thin
                                 scrollbar-thumb-slate-300
@@ -497,7 +515,7 @@ export default function ExpenseByCategoryReportPage() {
                             "
                             >
                                 {!activeCategoryData ? (
-                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
                                         <Layers3 className="h-7 w-7 text-slate-300" />
                                         <p className={`mt-2 text-sm font-medium ${titleTextClass}`}>
                                             Please select a category
@@ -507,7 +525,7 @@ export default function ExpenseByCategoryReportPage() {
                                         </p>
                                     </div>
                                 ) : activeSubCategories.length === 0 ? (
-                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
+                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
                                         <Layers3 className="h-7 w-7 text-slate-300" />
                                         <p className={`mt-2 text-sm font-medium ${titleTextClass}`}>
                                             No sub categories yet
@@ -517,39 +535,47 @@ export default function ExpenseByCategoryReportPage() {
                                         </p>
                                     </div>
                                 ) : (
-                                    activeSubCategories.map((sc) => {
+                                    activeSubCategories.map((sc, i) => {
                                         const categoryTotal = activeCategoryData.amount;
+                                        const accent = ACCENT_PALETTE[i % ACCENT_PALETTE.length];
                                         const pct = categoryTotal > 0 ? Math.round((sc.amount / categoryTotal) * 100) : 0;
 
                                         return (
                                             <div
                                                 key={sc.name}
-                                                className="flex items-center justify-between rounded-2xl border border-black/5 bg-white/80 px-4 py-3 transition-all dark:border-white/10 dark:bg-white/5"
+                                                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 shadow-sm transition-all hover:shadow-md dark:border-slate-800/50"
                                             >
-                                                <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-                                                        {sc.name.slice(0, 2).toUpperCase()}
-                                                    </span>
-
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="font-medium capitalize text-slate-950 dark:text-slate-100 truncate">
-                                                            {sc.name}
-                                                        </p>
-                                                        <span className="mt-1.5 flex items-center gap-2">
-                                                            <span className="h-1.5 w-full max-w-[140px] overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                                <span
-                                                                    className="block h-full rounded-full"
-                                                                    style={{ width: `${pct}%`, backgroundColor: BRAND }}
-                                                                />
-                                                            </span>
-                                                            <span className="text-xs text-slate-500">{pct}%</span>
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <span className="shrink-0 pl-2 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                    {formatCurrency(sc.amount)}
+                                                <span
+                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
+                                                    style={{ backgroundColor: accent }}
+                                                >
+                                                    <Layers3 className="h-4.5 w-4.5" />
                                                 </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="flex items-center justify-between gap-2">
+                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
+                                                            {sc.name}
+                                                        </span>
+                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                                            {formatCurrency(sc.amount)}
+                                                        </span>
+                                                    </span>
+                                                    <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                        <span
+                                                            className="block h-full rounded-full transition-all"
+                                                            style={{
+                                                                width: `${pct}%`,
+                                                                backgroundColor: accent,
+                                                            }}
+                                                        />
+                                                    </span>
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                                >
+                                                    {pct}%
+                                                </Badge>
                                             </div>
                                         );
                                     })

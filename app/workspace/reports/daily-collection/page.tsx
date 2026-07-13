@@ -18,14 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import {
     getDailyCollectionReport,
     type DailyCollectionData,
 } from "@/lib/services/reports"; // <-- adjust to wherever you saved the API file
@@ -34,13 +26,20 @@ const BRAND = "#556043";
 
 // Icon + accent per payment method. Falls back to a generic wallet icon
 // for any method the backend adds later that we haven't styled yet.
-const PAYMENT_METHOD_STYLES: Record<
-    string,
-    { icon: React.ElementType; accent: string }
-> = {
+const PAYMENT_METHOD_STYLES: Record<string, { icon: React.ElementType; accent: string }> = {
     cash: { icon: Banknote, accent: "#556043" },
     upi: { icon: Smartphone, accent: "#3b6e91" },
 };
+
+// Charge types are dynamic (school-defined), so instead of a lookup map
+// we rotate a small accent palette and use one consistent icon.
+const CHARGE_TYPE_ACCENTS = [
+    "#556043", // brand green
+    "#3b6e91", // steel blue
+    "#a8763e", // amber/bronze
+    "#7a4a8f", // violet
+    "#b0524a", // rust
+];
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -152,7 +151,7 @@ export default function DailyCollectionReportPage() {
     const total = report?.totalCollection ?? 0;
     const isRangeInvalid = fromDate > toDate;
 
-    // Sorted so the largest contributor leads the table — makes the
+    // Sorted so the largest contributor leads the list — makes the
     // breakdown scannable without the user having to hunt for it.
     const sortedChargeTypes = useMemo(
         () => [...chargeTypes].sort((a, b) => b.amount - a.amount),
@@ -308,9 +307,9 @@ export default function DailyCollectionReportPage() {
                         </div>
                     </div>
 
-                    {/* Payment methods + charge type — matched height on large screens
-                        (stacked full-width on mobile/tablet), each scrolls internally */}
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[360px_1fr] lg:h-[480px]">
+                    {/* Payment methods + charge type — both card-list style now,
+                        matched height on large screens, each scrolls internally */}
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:h-[480px]">
                         {/* Payment method breakdown */}
                         <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5 lg:h-full">
                             <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -376,74 +375,67 @@ export default function DailyCollectionReportPage() {
                             )}
                         </div>
 
-                        {/* Charge type breakdown — plain table, no card chrome, height-matched with scroll */}
-                        <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/50 lg:h-full">
-                            <div className="max-h-[420px] overflow-auto lg:max-h-none lg:flex-1">
-                                <Table className="min-w-[560px]">
-                                    <TableHeader className="sticky top-0 z-10">
-                                        <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                                            <TableHead className="px-4 h-11 text-white dark:text-foreground font-semibold whitespace-nowrap">
-                                                #
-                                            </TableHead>
-                                            <TableHead className="px-4 h-11 text-white dark:text-foreground font-semibold whitespace-nowrap">
-                                                Charge Type
-                                            </TableHead>
-                                            <TableHead className="px-4 h-11 text-white dark:text-foreground font-semibold whitespace-nowrap">
-                                                Share
-                                            </TableHead>
-                                            <TableHead className="px-4 h-11 text-right text-white dark:text-foreground font-semibold whitespace-nowrap">
-                                                Amount
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {sortedChargeTypes.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="h-32 text-center text-slate-500">
-                                                    <div className="flex flex-col items-center justify-center gap-2">
-                                                        <Receipt className="h-7 w-7 text-slate-300" />
-                                                        <p className="text-sm">No collections recorded for this range.</p>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            sortedChargeTypes.map((c, i) => {
-                                                const pct = total > 0 ? Math.round((c.amount / total) * 100) : 0;
-                                                return (
-                                                    <TableRow
-                                                        key={c.chargeType}
-                                                        className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
-                                                    >
-                                                        <TableCell className="px-4 py-3 text-sm font-medium text-slate-500">
-                                                            {i + 1}
-                                                        </TableCell>
-                                                        <TableCell className="px-4 py-3 text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
+                        {/* Charge type breakdown — card list, matched to Payment Method styling */}
+                        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5 lg:h-full">
+                            <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                By Charge Type
+                            </p>
+
+                            {sortedChargeTypes.length === 0 ? (
+                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-slate-500 lg:py-0">
+                                    <Receipt className="h-7 w-7 text-slate-300" />
+                                    <p className="text-sm">No collections recorded for this range.</p>
+                                </div>
+                            ) : (
+                                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
+                                    {sortedChargeTypes.map((c, i) => {
+                                        const accent = CHARGE_TYPE_ACCENTS[i % CHARGE_TYPE_ACCENTS.length];
+                                        const pct = total > 0 ? Math.round((c.amount / total) * 100) : 0;
+
+                                        return (
+                                            <div
+                                                key={c.chargeType}
+                                                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800/50"
+                                            >
+                                                <span
+                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+                                                    style={{ backgroundColor: accent }}
+                                                >
+                                                    <Receipt className="h-4.5 w-4.5" />
+                                                </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="flex items-center justify-between gap-2">
+                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
                                                             {c.chargeType}
-                                                        </TableCell>
-                                                        <TableCell className="px-4 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                                    <span
-                                                                        className="block h-full rounded-full bg-[#556043]"
-                                                                        style={{ width: `${pct}%` }}
-                                                                    />
-                                                                </span>
-                                                                <span className="text-xs text-slate-500">{pct}%</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="px-4 py-3 text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                                        </span>
+                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
                                                             {formatCurrency(c.amount)}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                                        </span>
+                                                    </span>
+                                                    <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                        <span
+                                                            className="block h-full rounded-full transition-all"
+                                                            style={{
+                                                                width: `${pct}%`,
+                                                                backgroundColor: accent,
+                                                            }}
+                                                        />
+                                                    </span>
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                                >
+                                                    {pct}%
+                                                </Badge>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {sortedChargeTypes.length > 0 && (
-                                <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-800/50 dark:bg-slate-900/40">
+                                <div className="mt-3 flex shrink-0 items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/50">
                                     <span className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                                         Total
                                     </span>

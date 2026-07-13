@@ -72,6 +72,45 @@ export async function getStudentsByVehicle(vehicleId: string) {
 }
 
 //
+// Total Financial By Vehicle Report
+//
+
+export interface FinancialByVehicleData {
+  vehicleId: string;
+  vehicleName: string;
+  vehicleNumber: string;
+  income: number;
+  expense: number;
+  profit: number;
+}
+
+export interface FinancialByVehicleResponse {
+  success: boolean;
+  message: string;
+  data: FinancialByVehicleData;
+}
+
+// Get total financial report (income, expense, profit) for a single vehicle
+export async function getFinancialByVehicleReport(
+  vehicleId: string
+): Promise<FinancialByVehicleData> {
+  const payload = (await apiFetch(
+    `/api/reports/financial-by-vehicle/${vehicleId}`
+  )) as ApiSuccess<FinancialByVehicleData>;
+
+  return (
+    payload.data ?? {
+      vehicleId,
+      vehicleName: "",
+      vehicleNumber: "",
+      income: 0,
+      expense: 0,
+      profit: 0,
+    }
+  );
+}
+
+//
 // Daily Collection Report (now a date range: fromDate -> toDate)
 //
 
@@ -212,6 +251,51 @@ export async function getStudentOutstandingReport(
       students: [],
       totalPendingAmount: 0,
       pagination: { page, limit, total: 0 },
+    }
+  );
+}
+//
+// Expense Summary Report
+//
+
+export interface CategoryExpenseSummary {
+  categoryId: string;
+  categoryName: string;
+  totalAmount: number;
+  expenseCount: number;
+  percentageOfTotal: number;
+}
+
+export interface ExpenseSummaryData {
+  totalExpenses: number;
+  categorySummary: CategoryExpenseSummary[];
+  grandTotal?: number;
+}
+
+export interface ExpenseSummaryResponse {
+  success: boolean;
+  message?: string;
+  data: ExpenseSummaryData;
+}
+
+// Get Expense Summary Report
+export async function getExpenseSummaryReport(
+  from?: string,
+  to?: string
+): Promise<ExpenseSummaryData> {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+
+  const query = params.toString();
+  const payload = (await apiFetch(
+    `/api/reports/expense-summary${query ? `?${query}` : ""}`
+  )) as ApiSuccess<ExpenseSummaryData>;
+
+  return (
+    payload.data ?? {
+      totalExpenses: 0,
+      categorySummary: [],
     }
   );
 }

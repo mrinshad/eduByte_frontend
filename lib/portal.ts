@@ -87,14 +87,17 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", roles: ["Admin", "Accountant"], group: "Finance", subgroup: "Accounting" },
   
   //reports
+  { slug: "reports/vehicle-wise-report", label: "Report", area: "workspace", purpose: "expense and income report", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
+  
   
   { slug: "reports/daily-collection", label: "Daily collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   
   { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   
   
-  { slug: "reports/categories-by-expense", label: "Category wise expense", area: "workspace", purpose: "View expenses by category", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
+  { slug: "reports/categories-by-expense", label: "Category wise ", area: "workspace", purpose: "View expenses by category", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
+  { slug: "reports/expense-summary", label: "Summary", area: "workspace", purpose: "View expenses by chargetype", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
