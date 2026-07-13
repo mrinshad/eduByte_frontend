@@ -265,26 +265,27 @@ export default function DailyCollectionReportPage() {
                 <div className="space-y-4 sm:space-y-6">
                     {/* Total collection — modern full-width hero */}
                     <div
-                        className="relative overflow-hidden rounded-2xl p-5 shadow-lg sm:p-7"
+                        className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
                         style={{
                             background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
                         }}
                     >
-                        {/* Decorative glow accents — purely visual, clipped by overflow-hidden */}
                         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
-                        <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end sm:gap-6">
+                        <div className="relative flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                             <div>
-                                <div className="mb-3 flex items-center gap-2">
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
-                                        <IndianRupee className="h-4.5 w-4.5 text-white" />
+                                <div className="mb-2 flex items-center gap-2">
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+                                        <IndianRupee className="h-4 w-4 text-white" />
                                     </span>
+
                                     <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
                                         Total Collection
                                     </p>
                                 </div>
-                                <p className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+
+                                <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
                                     {formatCurrency(total)}
                                 </p>
                             </div>
@@ -294,7 +295,7 @@ export default function DailyCollectionReportPage() {
                                     {paymentMethods.map((pm) => (
                                         <span
                                             key={pm.paymentMethod}
-                                            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm"
+                                            className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm"
                                         >
                                             <span className="capitalize">{pm.paymentMethod}</span>
                                             <span className="ml-1.5 font-semibold">

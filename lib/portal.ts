@@ -90,7 +90,10 @@ export const portalSections: PortalSection[] = [
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   
   { slug: "reports/daily-collection", label: "Daily collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
-  { slug: "reports/charge-type-collection", label: "Charge Type collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  
+  { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  
+  
   { slug: "reports/categories-by-expense", label: "Category wise expense", area: "workspace", purpose: "View expenses by category", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
 ]
 

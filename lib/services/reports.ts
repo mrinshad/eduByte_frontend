@@ -113,47 +113,20 @@ export async function getDailyCollectionReport(
     );
 }
 
-//
-// Charge Type Collection Report
-//
-
-export interface ChargeTypeSummary {
-    chargeTypeId: string;
-    chargeTypeName: string;
-    totalCollected: number;
-    transactionCount: number;
-    percentageOfTotal: number;
-}
-
-export interface ChargeTypeCollectionData {
-    summary: ChargeTypeSummary[];
-    grandTotal: number;
-}
-
-// Get Charge Type Collection Report
-export async function getChargeTypeCollectionReport(
-    from: string,
-    to: string
-): Promise<ChargeTypeCollectionData> {
-    const payload = (await apiFetch(
-        `/api/reports/charge-type-collection?from=${from}&to=${to}`
-    )) as ApiSuccess<ChargeTypeCollectionData>;
-
-    return (
-        payload.data ?? {
-            summary: [],
-            grandTotal: 0,
-        }
-    );
-}
 
 //
 // Expense By Category Report
 //
  
+export interface SubCategoryExpense {
+    name: string;
+    amount: number;
+}
+ 
 export interface CategoryExpense {
     category: string;
     amount: number;
+    subCategories: SubCategoryExpense[];
 }
  
 export interface ExpenseByCategoryData {
