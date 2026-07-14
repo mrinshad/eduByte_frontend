@@ -16,6 +16,7 @@ import {
   type CollectAllocation,
   type PaymentMethodAccount,
 } from "@/lib/services/feeCollection"
+import React from "react";
 
 const formatCurrency = (n: number) =>
   `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -233,22 +234,50 @@ export default function Page() {
     [selectedPositiveCharges, selected]
   )
 
-  const difference = positiveOutstanding - totalPayments
+  // Total that actually requires a payment allocation: positive-amount charges + fines.
+  // (Fines don't have a "zero amount, mark as paid" path like charges do.)
+  const payableOutstanding = positiveOutstanding + fineOutstanding
 
-  const displayCharges = useMemo(() => {
-    return [...charges].sort((a, b) => {
-      if (a.canCollect !== b.canCollect) {
-        return a.canCollect ? -1 : 1
+  const difference = payableOutstanding - totalPayments
+  const displayFines = useMemo(() => {
+    return [...fines].sort((a, b) => {
+      const aPaid = a.balance <= 0
+      const bPaid = b.balance <= 0
+      if (aPaid !== bPaid) {
+        return aPaid ? 1 : -1 // unpaid first, paid last
       }
-
-      const periodA = (a.periodYear ?? 0) * 100 + (a.periodMonth ?? 0)
-      const periodB = (b.periodYear ?? 0) * 100 + (b.periodMonth ?? 0)
-      if (periodA !== periodB) {
-        return periodB - periodA
-      }
-
       return 0
     })
+  }, [fines])
+  const groupedCharges = useMemo(() => {
+    const groups = new Map<string, { label: string; periodKey: number; items: StudentCharge[] }>()
+
+    for (const charge of charges) {
+      const hasPeriod = !!charge.periodMonth && !!charge.periodYear
+      const periodKey = hasPeriod ? (charge.periodYear as number) * 100 + (charge.periodMonth as number) : -1
+      const label = hasPeriod
+        ? new Date(charge.periodYear as number, (charge.periodMonth as number) - 1, 1)
+          .toLocaleString("default", { month: "long", year: "numeric" })
+        : "No Period"
+
+      const groupKey = String(periodKey)
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, { label, periodKey, items: [] })
+      }
+      groups.get(groupKey)!.items.push(charge)
+    }
+
+    // within each month: unpaid first, then paid; collectable charges surface first among unpaid
+    for (const group of groups.values()) {
+      group.items.sort((a, b) => {
+        const aPaid = a.balance <= 0
+        const bPaid = b.balance <= 0
+        if (aPaid !== bPaid) return aPaid ? 1 : -1
+        return a.canCollect === b.canCollect ? 0 : a.canCollect ? -1 : 1
+      })
+    }
+
+    return Array.from(groups.values()).sort((a, b) => b.periodKey - a.periodKey)
   }, [charges])
 
   // ---- Payment line handlers ----
@@ -276,8 +305,8 @@ export default function Page() {
   const canSubmit =
     !submitting &&
     (
-      (positiveOutstanding > 0 && difference === 0 && payments.every((p) => p.amount > 0) && payments.length > 0) ||
-      (positiveOutstanding === 0 && selectedZeroChargeIds.length > 0)
+      (payableOutstanding > 0 && difference === 0 && payments.every((p) => p.amount > 0) && payments.length > 0) ||
+      (payableOutstanding === 0 && selectedZeroChargeIds.length > 0)
     )
 
   async function handleSubmit() {
@@ -296,7 +325,7 @@ export default function Page() {
 
       const result = await collectFee({
         enrollmentId,
-        payments: positiveOutstanding > 0 ? payments.map((p) => ({ accountId: p.accountId, amount: p.amount })) : [],
+        payments: payableOutstanding > 0 ? payments.map((p) => ({ accountId: p.accountId, amount: p.amount })) : [],
         allocations,
         zeroChargeIds: selectedZeroChargeIds,
       })
@@ -362,12 +391,12 @@ export default function Page() {
               <InfoItem label="Admission No" value={student.admissionNumber || "-"} />
               <InfoItem label="WhatsApp Number" value={student.whatsappNumber || "-"} />
               <InfoItem label="Address" value={student.address || "-"} />
-              <InfoItem label="Class & Div" value={`${enrollmentDetails.classId } - ${ enrollmentDetails.division}`}/>
+              <InfoItem label="Class & Div" value={`${enrollmentDetails.classId} - ${enrollmentDetails.division}`} />
               <InfoItem label="Roll Number" value={enrollmentDetails.rollNumber || "-"} />
             </InfoGrid>
           </InfoSection>
 
-          
+
 
         </div>
       ) : null}
@@ -416,55 +445,81 @@ export default function Page() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                      {displayCharges.map((charge) => {
-                        const key = chargeKey(charge.id)
-                        const isSelected = key in selected
-                        const disabled = !charge.canCollect || (charge.balance <= 0 && charge.finalAmount > 0)
-                        return (
-                          <tr key={charge.id} className={disabled ? "opacity-50" : ""}>
-                            <td className="px-3 py-2">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                disabled={disabled}
-                                onChange={() => toggleCharge(charge)}
-                                className="h-4 w-4 rounded border-slate-300 accent-[#556043]"
-                              />
-                            </td>
-                            <td className="px-3 py-2 font-medium text-slate-950 dark:text-slate-100">
-                              {charge.chargeType}
-                              {charge.status !== "PENDING" && (
-                                <span className="ml-2 text-[10px] uppercase tracking-wide text-slate-400">
-                                  {charge.status.replace("_", " ")}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                              <PeriodLabel month={charge.periodMonth} year={charge.periodYear} />
-                            </td>
-                            <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
-                              {formatCurrency(charge.finalAmount)}
-                            </td>
-                            <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
-                              {formatCurrency(charge.paidAmount)}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium text-slate-950 dark:text-slate-100">
-                              {formatCurrency(charge.balance)}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <input
-                                type="number"
-                                min={0}
-                                max={charge.balance}
-                                disabled={!isSelected}
-                                value={isSelected ? selected[key] : ""}
-                                onChange={(e) => updateAmount(key, Number(e.target.value), charge.balance)}
-                                className="w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
-                              />
+                      {groupedCharges.map((group) => (
+                        <React.Fragment key={group.periodKey}>
+                          <tr>
+                            <td
+                              colSpan={7}
+                              className="bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400"
+                            >
+                              {group.label}
                             </td>
                           </tr>
-                        )
-                      })}
+                          {group.items.map((charge) => {
+                            const key = chargeKey(charge.id)
+                            const isSelected = key in selected
+                            const isPaid = charge.balance <= 0 && charge.finalAmount > 0
+                            const disabled = !charge.canCollect || (charge.balance <= 0 && charge.finalAmount > 0)
+                            return (
+                              <tr key={charge.id} className={disabled ? "opacity-50" : ""}>
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    disabled={disabled}
+                                    onChange={() => toggleCharge(charge)}
+                                    className="h-4 w-4 rounded border-slate-300 accent-[#556043]"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 font-medium text-slate-950 dark:text-slate-100">
+                                  <div className="flex items-center gap-2">
+                                    <span>{charge.chargeType}</span>
+
+                                    {isPaid ? (
+                                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        Paid
+                                      </span>
+                                    ) : charge.status === "PARTIALLY_PAID" ? (
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                                        Partially Paid
+                                      </span>
+                                    ) : (
+                                      charge.status !== "PENDING" && (
+                                        <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                          {charge.status.replace("_", " ")}
+                                        </span>
+                                      )
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                                  <PeriodLabel month={charge.periodMonth} year={charge.periodYear} />
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
+                                  {formatCurrency(charge.finalAmount)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
+                                  {formatCurrency(charge.paidAmount)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-950 dark:text-slate-100">
+                                  {formatCurrency(charge.balance)}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={charge.balance}
+                                    disabled={!isSelected}
+                                    value={isSelected ? selected[key] : ""}
+                                    onChange={(e) => updateAmount(key, Number(e.target.value), charge.balance)}
+                                    className="w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
+                                  />
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </React.Fragment>
+                      ))}
                       {charges.length === 0 && (
                         <tr>
                           <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
@@ -495,9 +550,10 @@ export default function Page() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                      {fines.map((fine) => {
+                      {displayFines.map((fine) => {
                         const key = fineKey(fine.id)
                         const isSelected = key in selected
+                        const isPaid = fine.balance <= 0
                         const disabled = !fine.canCollect || fine.balance <= 0
                         return (
                           <tr key={fine.id} className={disabled ? "opacity-50" : ""}>
@@ -511,7 +567,14 @@ export default function Page() {
                               />
                             </td>
                             <td className="px-3 py-2">
-                              <div className="font-medium text-slate-950 dark:text-slate-100">{fine.fineType}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-slate-950 dark:text-slate-100">{fine.fineType}</span>
+                                {isPaid && (
+                                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    Paid
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-slate-500 dark:text-slate-400">{fine.reason}</div>
                             </td>
                             <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
@@ -644,7 +707,7 @@ export default function Page() {
                     <span className="font-semibold text-slate-950 dark:text-slate-100">{formatCurrency(totalPayments)}</span>
                   </div>
 
-                  {difference !== 0 && positiveOutstanding > 0 && (
+                  {difference !== 0 && payableOutstanding > 0 && (
                     <p className={`mt-2 text-xs font-medium ${difference > 0 ? "text-amber-600" : "text-red-600"}`}>
                       {difference > 0
                         ? `${formatCurrency(difference)} remaining to allocate`
@@ -652,7 +715,7 @@ export default function Page() {
                     </p>
                   )}
 
-                  {selectedZeroChargeIds.length > 0 && positiveOutstanding === 0 && (
+                  {selectedZeroChargeIds.length > 0 && payableOutstanding === 0 && (
                     <p className="mt-2 text-xs font-medium text-emerald-600">
                       {selectedZeroChargeIds.length} zero-amount charge(s) selected. They will be marked as paid without payment.
                     </p>
