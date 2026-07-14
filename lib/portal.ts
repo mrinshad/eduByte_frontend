@@ -87,7 +87,7 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", roles: ["Admin", "Accountant"], group: "Finance", subgroup: "Accounting" },
   
   //reports
-  { slug: "reports/vehicle-wise-report", label: "Report", area: "workspace", purpose: "expense and income report", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
+  { slug: "reports/vehicle-wise-report", label: "Vehicle Financial Report", area: "workspace", purpose: "expense and income report", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   
   

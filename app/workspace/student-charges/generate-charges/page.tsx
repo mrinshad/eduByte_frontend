@@ -404,7 +404,7 @@
               </Section>
             ) : null}
 
-            {hasPendingGeneration && preview.sampleCharges.length > 0 ? (
+            {/* {hasPendingGeneration && preview.sampleCharges.length > 0 ? (
               <Section title="Sample Charges">
                 <div className="space-y-2">
                   {preview.sampleCharges.slice(0, 5).map((item, index) => (
@@ -420,7 +420,7 @@
                   ))}
                 </div>
               </Section>
-            ) : null}
+            ) : null} */}
 
             {lastGenerationResult ? (
               <Section title="Latest Generation Result">
