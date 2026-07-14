@@ -141,3 +141,16 @@ input[type="number"] {
     @apply font-sans;
   }
 }
+
+@media print {
+    body {
+        background: white !important;
+    }
+
+    [data-sonner-toaster],
+    li[data-sonner-toast] {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+}

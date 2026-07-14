@@ -39,17 +39,43 @@ export interface AccountName {
   name: string;
 }
 
+// Staff, for the "Staff" dropdown on the Create Expense form.
+export type StaffStatus = "ACTIVE" | "INACTIVE";
+
+export interface StaffName {
+  id: string;
+  employeeCode: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  joiningDate: string | null;
+  status: StaffStatus;
+}
+
 // A single split-payment line: how much of the total is paid from a given account.
 export interface ExpensePaymentInput {
   accountId: string;
   amount: number;
 }
 
+export interface CreateExpenseResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    expenseNumber: string;
+  };
+}
+
 export interface ExpenseInput {
-  expenseNumber: string;
+  // expenseNumber is no longer collected on the form — the backend
+  // generates it. Kept optional here in case any caller still wants to
+  // pass one explicitly.
+  expenseNumber?: string;
   categoryId: string;
   vehicleId?: string | null;
   subCategoryId: string;
+  staffId?: string | null;
   notes?: string;
   amount: number;
   expenseDate: string; // ISO date string
@@ -148,15 +174,62 @@ export async function getExpenseAccountsNamesandIds() {
 }
 
 // ---------------------------------------------------------------------
+// Staff (for the Staff dropdown on the Create Expense form)
+// ---------------------------------------------------------------------
+
+export async function getStaffNamesAndIds() {
+  const payload = (await apiFetch("/api/staff")) as ApiSuccess<StaffName[]>;
+
+  return payload.data ?? [];
+}
+
+// ---------------------------------------------------------------------
 // Expense
 // ---------------------------------------------------------------------
 
-export async function createExpense(input: ExpenseInput) {
+export async function createExpense(
+  input: ExpenseInput
+): Promise<CreateExpenseResponse> {
   return apiFetch("/api/expense", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
+
+export interface ExpensePrintResponse {
+  success: boolean;
+  data: {
+    id: string;
+    expenseNumber: string;
+    expenseDate: string;
+    amount: number;
+    notes?: string;
+
+    category: string;
+    subCategory: string;
+
+    vehicle: {
+      vehicleName: string;
+      vehicleNumber: string;
+    } | null;
+
+    staff: {
+      name: string;
+    } | null;
+
+    payments: {
+      account: string;
+      amount: number;
+    }[];
+  };
+}
+
+export async function getExpensePrint(
+  id: string
+): Promise<ExpensePrintResponse> {
+  return apiFetch(`/api/expense/${id}/print`);
+}
+
 export interface PaymentMethodAccount {
   id: string;
   name: string;

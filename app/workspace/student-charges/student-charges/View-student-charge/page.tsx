@@ -143,7 +143,7 @@ export default function ViewAdmissionPage() {
   // and pass along the charge + enrollment so it can record the payment.
   function handlePayCharge(charge: EnrollmentCharge) {
     router.push(
-      `/admin/feepayment?chargeId=${charge.id}&enrollmentId=${charge.enrollmentId}`
+      `/workspace/fee-management/collection/viewCollection?id=${charge.enrollmentId}`
     );
   }
  

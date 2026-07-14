@@ -121,13 +121,13 @@ export default function Page() {
   }
 
   async function loadAccounts() {
-    try {
-      const data = await getExpenseAccountsNamesandIds()
-      setAccounts(data)
-    } catch (error) {
-      toast.error("Failed to load accounts")
-    }
+  try {
+    const data = await getExpenseAccountsNamesandIds()
+    setAccounts(data)
+  } catch (error) {
+    toast.error("Failed to load accounts")
   }
+}
 
   React.useEffect(() => {
     void loadCategories()
@@ -463,8 +463,8 @@ export default function Page() {
                             {subCategory.name}
                           </p>
                           <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
-                            {accountNameById.get(subCategory.expenseAccountId) ?? subCategory.expenseAccountId}
-                            {subCategory.description ? ` · ${subCategory.description}` : ""}
+                            
+                            {subCategory.description ? `  ${subCategory.description}` : ""}
                           </p>
                         </div>
                       </div>
