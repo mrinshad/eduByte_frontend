@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getStudentFeeCollection, type studentFeeCollection } from "@/lib/services/feeCollection";
+import { getStudentFeeCollection, type StudentFeeCollection } from "@/lib/services/feeCollection";
 
 export default function FeeCollectionPage() {
 
@@ -26,7 +26,7 @@ export default function FeeCollectionPage() {
   ];
 
   // Real Data, Loading & Error States
-  const [students, setStudents] = useState<studentFeeCollection[]>([])
+  const [students, setStudents] = useState<StudentFeeCollection[]>([])
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
 
@@ -41,7 +41,7 @@ export default function FeeCollectionPage() {
       try {
         setLoading(true);
         const data = await getStudentFeeCollection();
-        setStudents(data);
+        setStudents(data.items);
       } catch (err) {
         console.error("Fee Collection API Error:", err);
 
