@@ -29,9 +29,10 @@ export const portalSections: PortalSection[] = [
   // --- ADMIN AREA ---
   { slug: "dashboard", label: "Dashboard", area: "admin", purpose: "Admin dashboard", roles: ["Admin"], group: "Admin" },
   { slug: "academic-profile", label: "Academics", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic" },
-  
-  { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Student Management" },
-  { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", roles: ["Admin"], group: "Student Management" },
+  { slug: "staff", label: "Staff", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Academic" },
+
+  { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Academic" },
+  { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", roles: ["Admin"], group: "Academic" },
 
   { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", roles: ["Admin"], group: "Fee Configuration" },
