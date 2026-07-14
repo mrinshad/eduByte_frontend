@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
+    ArrowRight,
     Bus,
+    Calendar,
     Loader2,
     RefreshCcw,
     Search,
@@ -26,6 +28,12 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
     getVehicleLists,
     getFinancialByVehicleReport,
@@ -58,6 +66,65 @@ function formatCurrency(amount: number) {
     }).format(amount);
 }
 
+function tomorrowISO() {
+    const date = new Date();
+
+    const indiaToday = new Date(
+        date.toLocaleString("en-US", {
+            timeZone: "Asia/Kolkata",
+        })
+    );
+
+    indiaToday.setDate(indiaToday.getDate() + 1);
+
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(indiaToday);
+}
+
+function todayISO() {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(new Date());
+}
+
+// Groups the flat expenseBreakdown[] (category + subCategory + amount) into
+// one entry per category, each carrying its subCategory rows and a running
+// total — this is what feeds the Accordion.
+interface GroupedCategory {
+    category: string;
+    total: number;
+    items: { subCategory: string; amount: number }[];
+}
+
+function groupExpenseBreakdown(
+    breakdown: FinancialByVehicleData["expenseBreakdown"]
+): GroupedCategory[] {
+    const map = new Map<string, GroupedCategory>();
+
+    for (const item of breakdown ?? []) {
+        const existing = map.get(item.category);
+        if (existing) {
+            existing.total += item.amount;
+            existing.items.push({ subCategory: item.subCategory, amount: item.amount });
+        } else {
+            map.set(item.category, {
+                category: item.category,
+                total: item.amount,
+                items: [{ subCategory: item.subCategory, amount: item.amount }],
+            });
+        }
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+}
+
 export default function VehicleFinancialReportPage() {
     const router = useRouter();
 
@@ -70,6 +137,12 @@ export default function VehicleFinancialReportPage() {
     // right is scoped to this, same relationship the Category/Sub Category
     // cards have on the Expense By Category report.
     const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
+    // Date range for the financial report — same pattern as the Daily
+    // Collection Report page. Defaults to "today" on both ends.
+    const [fromDate, setFromDate] = useState<string>(todayISO());
+    const [toDate, setToDate] = useState<string>(todayISO());
+
     const [financial, setFinancial] = useState<FinancialByVehicleData | null>(null);
     const [isLoadingFinancial, setIsLoadingFinancial] = useState(false);
     const [financialError, setFinancialError] = useState<string | null>(null);
@@ -92,21 +165,25 @@ export default function VehicleFinancialReportPage() {
         loadVehicles();
     }, []);
 
-    // Re-fetches every time the selected vehicle changes, so switching
-    // vehicles always replaces (never merges with) the previous numbers.
+    // Re-fetches every time the selected vehicle OR the date range changes,
+    // so switching either always replaces (never merges with) the previous
+    // numbers. Guards against an inverted range the same way Daily
+    // Collection Report does.
     useEffect(() => {
         if (!selectedVehicleId) {
             setFinancial(null);
             return;
         }
 
+        if (fromDate > toDate) return;
+
         let cancelled = false;
 
-        async function loadFinancial(vehicleId: string) {
+        async function loadFinancial(vehicleId: string, from: string, to: string) {
             try {
                 setIsLoadingFinancial(true);
                 setFinancialError(null);
-                const data = await getFinancialByVehicleReport(vehicleId);
+                const data = await getFinancialByVehicleReport(vehicleId, from, to);
                 if (!cancelled) setFinancial(data);
             } catch {
                 if (!cancelled) {
@@ -118,12 +195,12 @@ export default function VehicleFinancialReportPage() {
             }
         }
 
-        loadFinancial(selectedVehicleId);
+        loadFinancial(selectedVehicleId, fromDate, toDate);
 
         return () => {
             cancelled = true;
         };
-    }, [selectedVehicleId]);
+    }, [selectedVehicleId, fromDate, toDate]);
 
     // Client-side filter by vehicle name, number, or driver. The endpoint
     // itself has no search param, so we narrow the already-fetched list.
@@ -143,6 +220,11 @@ export default function VehicleFinancialReportPage() {
         [vehicles, selectedVehicleId]
     );
 
+    const groupedExpenses = useMemo(
+        () => (financial ? groupExpenseBreakdown(financial.expenseBreakdown) : []),
+        [financial]
+    );
+
     const isProfit = (financial?.profit ?? 0) >= 0;
     const incomeExpenseTotal = (financial?.income ?? 0) + (financial?.expense ?? 0);
     const incomePct =
@@ -150,11 +232,19 @@ export default function VehicleFinancialReportPage() {
     const expensePct =
         incomeExpenseTotal > 0 ? Math.round(((financial?.expense ?? 0) / incomeExpenseTotal) * 100) : 0;
 
+    const isRangeInvalid = fromDate > toDate;
+
+    function handleFromDateChange(value: string) {
+        setFromDate(value);
+        // Keep the range valid: pull "to" forward if it now precedes "from"
+        if (value > toDate) setToDate(value);
+    }
+
     function handleRefresh() {
         loadVehicles();
-        if (selectedVehicleId) {
+        if (selectedVehicleId && !isRangeInvalid) {
             setIsLoadingFinancial(true);
-            getFinancialByVehicleReport(selectedVehicleId)
+            getFinancialByVehicleReport(selectedVehicleId, fromDate, toDate)
                 .then(setFinancial)
                 .catch(() => setFinancialError("Could not load the financial report. Please try again."))
                 .finally(() => setIsLoadingFinancial(false));
@@ -165,7 +255,7 @@ export default function VehicleFinancialReportPage() {
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
             {/* Header */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
                             size="icon"
@@ -185,28 +275,62 @@ export default function VehicleFinancialReportPage() {
                         </div>
                     </div>
 
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                        onClick={handleRefresh}
-                        disabled={isLoadingVehicles || isLoadingFinancial}
-                    >
-                        <RefreshCcw
-                            className={`h-4 w-4 ${isLoadingVehicles || isLoadingFinancial ? "animate-spin" : ""}`}
-                        />
-                    </Button>
+                    {/* Date range picker — stacks on mobile, inline from tablet up */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
+                            <div className="relative w-full sm:w-40">
+                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    type="date"
+                                    aria-label="From date"
+                                    value={fromDate}
+                                    max={tomorrowISO()}
+                                    onChange={(e) => handleFromDateChange(e.target.value)}
+                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+                                />
+                            </div>
+
+                            <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
+                                <ArrowRight className="h-4 w-4" />
+                            </div>
+
+                            <div className="relative w-full sm:w-40">
+                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    type="date"
+                                    aria-label="To date"
+                                    value={toDate}
+                                    min={fromDate}
+                                    max={tomorrowISO()}
+                                    onChange={(e) => setToDate(e.target.value)}
+                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+                                />
+                            </div>
+                        </div>
+
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+                            onClick={handleRefresh}
+                            disabled={isLoadingVehicles || isLoadingFinancial || isRangeInvalid}
+                        >
+                            <RefreshCcw
+                                className={`h-4 w-4 ${isLoadingVehicles || isLoadingFinancial ? "animate-spin" : ""}`}
+                            />
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* Vehicles (left) + Financial overview (right) — matched height on
-                large screens, each card scrolls internally. */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:h-[560px]">
+            {/* Vehicles (left, narrower) + Financial overview (right, wider) —
+                2/5 vs 3/5 split on large screens, each card scrolls internally. */}
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-5 lg:h-[640px]">
                 {/* ----------------------------------------------------- */}
                 {/* Vehicles — full list on load, click to scope the       */}
                 {/* financial card on the right.                           */}
                 {/* ----------------------------------------------------- */}
-                <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
+                <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:col-span-2 lg:h-full">
                     <CardHeader className="flex flex-col gap-3 border-b border-black/5 dark:border-white/10">
                         <div className="flex items-center gap-2.5">
                             <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
@@ -339,10 +463,10 @@ export default function VehicleFinancialReportPage() {
                 </Card>
 
                 {/* ----------------------------------------------------- */}
-                {/* Financial overview — scoped to the selected vehicle,   */}
-                {/* asks the user to pick one first.                        */}
+                {/* Financial overview — scoped to the selected vehicle    */}
+                {/* AND the selected date range.                            */}
                 {/* ----------------------------------------------------- */}
-                <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
+                <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:col-span-3 lg:h-full">
                     <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                         <div className="flex items-center gap-2.5 min-w-0">
                             <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
@@ -381,6 +505,12 @@ export default function VehicleFinancialReportPage() {
                                 </p>
                                 <p className={`mt-1 text-sm ${supportingTextClass}`}>
                                     Its income, expense and profit will show up here.
+                                </p>
+                            </div>
+                        ) : isRangeInvalid ? (
+                            <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-amber-200 bg-amber-50 px-5 py-6 text-center shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+                                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                                    The &quot;from&quot; date must be before the &quot;to&quot; date.
                                 </p>
                             </div>
                         ) : isLoadingFinancial ? (
@@ -498,6 +628,60 @@ export default function VehicleFinancialReportPage() {
                                         </Badge>
                                     </div>
                                 </div>
+
+                                {/* Expense breakdown — plain shadcn Accordion, no
+                                    "Expense Breakdown" header/wrapper card around it. */}
+                                {groupedExpenses.length > 0 && (
+                                    <Accordion
+                                        type="multiple"
+                                        className="rounded-xl border border-slate-100 px-1 shadow-sm dark:border-slate-800/50"
+                                    >
+                                        {groupedExpenses.map((group, i) => {
+                                            const accent = ACCENT_PALETTE[i % ACCENT_PALETTE.length];
+                                            return (
+                                                <AccordionItem
+                                                    key={group.category}
+                                                    value={group.category}
+                                                    className="border-slate-100 last:border-b-0 dark:border-slate-800/50"
+                                                >
+                                                    <AccordionTrigger className="px-2 py-3 hover:no-underline">
+                                                        <span className="flex flex-1 items-center justify-between gap-2 pr-2">
+                                                            <span className="flex items-center gap-2 min-w-0">
+                                                                <span
+                                                                    className="h-2 w-2 shrink-0 rounded-full"
+                                                                    style={{ backgroundColor: accent }}
+                                                                />
+                                                                <span className="truncate text-sm font-medium capitalize text-slate-900 dark:text-slate-200">
+                                                                    {group.category}
+                                                                </span>
+                                                            </span>
+                                                            <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                                                {formatCurrency(group.total)}
+                                                            </span>
+                                                        </span>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="px-2 pb-2">
+                                                        <div className="space-y-1.5 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/40">
+                                                            {group.items.map((item, idx) => (
+                                                                <div
+                                                                    key={`${item.subCategory}-${idx}`}
+                                                                    className="flex items-center justify-between gap-2 text-sm"
+                                                                >
+                                                                    <span className="truncate capitalize text-slate-600 dark:text-slate-400">
+                                                                        {item.subCategory}
+                                                                    </span>
+                                                                    <span className="shrink-0 font-medium text-slate-800 dark:text-slate-200">
+                                                                        {formatCurrency(item.amount)}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            );
+                                        })}
+                                    </Accordion>
+                                )}
 
                                 {/* Totals footer */}
                                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/50">
