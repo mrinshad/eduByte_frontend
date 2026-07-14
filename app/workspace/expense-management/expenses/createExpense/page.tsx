@@ -18,6 +18,8 @@ import {
     Trash2,
 } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -102,6 +104,7 @@ export default function Page() {
     const [expenseDate, setExpenseDate] = useState<Date>(new Date());
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState<string>("");
+    const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(true);
 
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
@@ -336,7 +339,11 @@ export default function Page() {
             if (result.success) {
                 toast.success(result.message || "Expense created successfully");
 
-                router.push(`/print/expenses/${result.data.id}`);
+                if (printAfterCreate) {
+                    router.push(`/print/expenses/${result.data.id}`);
+                } else {
+                    router.push("/workspace/expense-management/expenses/createExpense");
+                }
             } else {
                 toast.error(result.message || "An error occurred during submission.");
             }
@@ -844,6 +851,15 @@ export default function Page() {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm text-white/80 cursor-pointer select-none">
+                        <Checkbox
+                            checked={printAfterCreate}
+                            onCheckedChange={(checked) => setPrintAfterCreate(checked === true)}
+                            className="border-white/40 data-[state=checked]:bg-white data-[state=checked]:text-[#6D755F]"
+                        />
+                        Print voucher after creating
+                    </label>
+
                     <Button
                         onClick={handleSubmit}
                         disabled={submitting}

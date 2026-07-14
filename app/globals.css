@@ -143,18 +143,14 @@ input[type="number"] {
 }
 
 @media print {
-    @page {
-        size: A4 portrait;
-        margin: 0;
-    }
-    
-    .a4-container {
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 15mm 12mm !important;
-    }
-    
     body {
         background: white !important;
+    }
+
+    [data-sonner-toaster],
+    li[data-sonner-toast] {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
     }
 }
