@@ -75,11 +75,21 @@ export async function getStudentsByVehicle(vehicleId: string) {
 // Total Financial By Vehicle Report
 //
 
+export interface VehicleExpenseBreakdownItem {
+  category: string;
+  subCategory: string;
+  amount: number;
+}
+
 export interface FinancialByVehicleData {
   vehicleId: string;
   vehicleName: string;
   vehicleNumber: string;
   income: number;
+  transportFeeGenerated: number;
+  transportFeePaid: number;
+  transportFeePending: number;
+  expenseBreakdown: VehicleExpenseBreakdownItem[];
   expense: number;
   profit: number;
 }
@@ -90,12 +100,21 @@ export interface FinancialByVehicleResponse {
   data: FinancialByVehicleData;
 }
 
-// Get total financial report (income, expense, profit) for a single vehicle
+// Get total financial report (income, expense, profit) for a single vehicle.
+// fromDate/toDate are optional — pass them to scope the report to a date
+// range (same range picker pattern as the Daily Collection Report).
 export async function getFinancialByVehicleReport(
-  vehicleId: string
+  vehicleId: string,
+  fromDate?: string,
+  toDate?: string
 ): Promise<FinancialByVehicleData> {
+  const params = new URLSearchParams();
+  if (fromDate) params.set("fromDate", fromDate);
+  if (toDate) params.set("toDate", toDate);
+  const query = params.toString();
+
   const payload = (await apiFetch(
-    `/api/reports/financial-by-vehicle/${vehicleId}`
+    `/api/reports/financial-by-vehicle/${vehicleId}${query ? `?${query}` : ""}`
   )) as ApiSuccess<FinancialByVehicleData>;
 
   return (
@@ -104,6 +123,10 @@ export async function getFinancialByVehicleReport(
       vehicleName: "",
       vehicleNumber: "",
       income: 0,
+      transportFeeGenerated: 0,
+      transportFeePaid: 0,
+      transportFeePending: 0,
+      expenseBreakdown: [],
       expense: 0,
       profit: 0,
     }
