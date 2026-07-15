@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { getStudentById, type Student } from "@/lib/services/student"
+import { refreshLateFines } from "@/lib/services/lateFine"
 import { formatDateOnly } from "@/lib/utils"
 
 function InfoSection({
@@ -120,8 +121,14 @@ export default function Page() {
 
       try {
         setLoading(true)
-        const response = await getStudentById(studentId)
-        setStudent(response)
+        const response = await getStudentById(studentId);
+
+        setStudent(response);
+
+        if (response?.enrollmentId) {
+          const refreshResponse = await refreshLateFines(response.enrollmentId);
+          console.log(refreshResponse);
+        }
       } catch (error) {
         console.error("Failed to load student details:", error)
         setStudent(null)
