@@ -1,5 +1,5 @@
 "use client";
- 
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -11,7 +11,7 @@ import {
   AlertCircle,
   CreditCard,
 } from "lucide-react";
- 
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,18 +22,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
- 
+
 import {
   getStudentChargesByEnrollmentId,
   type StudentEnrollmentCharges,
   type EnrollmentCharge,
 } from "@/lib/services/studentCharges"; // adjust to wherever this service actually lives
 import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
- 
+import { refreshLateFines } from "@/lib/services/lateFine";
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
- 
+
 function InfoSection({
   icon: Icon,
   title,
@@ -53,7 +54,7 @@ function InfoSection({
     </div>
   );
 }
- 
+
 function InfoGrid({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
@@ -61,7 +62,7 @@ function InfoGrid({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
- 
+
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="px-4 py-3">
@@ -72,7 +73,7 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
- 
+
 // Charge status -> badge classes + sort priority. Pending and partial are
 // shown before paid, and each status gets its own colour.
 const CHARGE_STATUS_STYLES: Record<string, string> = {
@@ -83,40 +84,40 @@ const CHARGE_STATUS_STYLES: Record<string, string> = {
   PAID:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400",
 };
- 
+
 const CHARGE_ROW_ACCENT: Record<string, string> = {
   PENDING: "border-l-4 border-l-red-400",
   PARTIAL: "border-l-4 border-l-amber-400",
   PAID: "border-l-4 border-l-emerald-400",
 };
- 
 
- 
+
+
 // Charges in these statuses still have money owed, so they get a Pay button.
 const PAYABLE_STATUSES = new Set(["PENDING", "PARTIAL"]);
- 
+
 function formatDateOnly(value: string) {
   if (!value) return "—";
   return value.slice(0, 10); // "2026-12-07T12:00:00.000Z" -> "2026-12-07"
 }
- 
+
 function formatCurrency(value: number) {
   return `₹${value.toLocaleString()}`;
 }
- 
+
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
- 
+
 export default function ViewAdmissionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
- 
+
   const [enrollment, setEnrollment] = useState<StudentEnrollmentCharges | null>(null);
   const [enrollmentDetails, setEnrollmentDetails] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
- 
+
   useEffect(() => {
     async function loadData() {
       if (!id) return;
@@ -126,6 +127,9 @@ export default function ViewAdmissionPage() {
           getStudentChargesByEnrollmentId(id),
           getEnrollmentById(id),
         ]);
+        if (studentChargeData?.enrollmentId) {
+          await refreshLateFines(studentChargeData.enrollmentId);
+        }
 
         setEnrollment(studentChargeData);
         setEnrollmentDetails(enrollmentData);
@@ -137,7 +141,7 @@ export default function ViewAdmissionPage() {
     }
     loadData();
   }, [id]);
- 
+
   // Pay button handler. Wire this up to your actual payment flow —
   // e.g. open a payment modal, or navigate to a dedicated payment page
   // and pass along the charge + enrollment so it can record the payment.
@@ -146,7 +150,7 @@ export default function ViewAdmissionPage() {
       `/workspace/fee-management/collection/viewCollection?id=${charge.enrollmentId}`
     );
   }
- 
+
   if (loading) {
     return (
       <section className="w-full px-6 py-4">
@@ -154,7 +158,7 @@ export default function ViewAdmissionPage() {
       </section>
     );
   }
- 
+
   if (!enrollment) {
     return (
       <section className="w-full px-6 py-4">
@@ -165,14 +169,14 @@ export default function ViewAdmissionPage() {
       </section>
     );
   }
- 
+
   const { studentDetails, charges } = enrollment;
- 
+
   const sortedCharges = charges;
 
   const enrollmentChargesTemplate = enrollmentDetails?.charges ?? [];
-  
- 
+
+
   const totalFinal = charges.reduce((sum, c) => sum + parseFloat(c.finalAmount || "0"), 0);
   const totalPaid = charges.reduce((sum, c) => sum + parseFloat(c.paidAmount || "0"), 0);
   const totalBalance = totalFinal - totalPaid;
@@ -185,7 +189,7 @@ export default function ViewAdmissionPage() {
   const academicYearPayable = totalFinal;
   const academicYearPaid = totalPaid;
   const academicYearBalance = totalBalance;
- 
+
   return (
     <section className="w-full px-6 py-4">
       {/* Header */}
@@ -207,9 +211,9 @@ export default function ViewAdmissionPage() {
             </p>
           </div>
         </div>
- 
+
       </div>
- 
+
       <div className="space-y-6">
         {/* ── Student information (card) ── */}
         <InfoSection icon={User} title="Student Information">
@@ -244,7 +248,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Address" value={studentDetails.address} />
           </InfoGrid>
         </InfoSection>
- 
+
         {/* ── Student charges (table) ── */}
         <InfoSection icon={Receipt} title="Student Charges">
           <div className="grid grid-cols-2 border-b border-slate-200 bg-background/5 dark:border-slate-800/50 dark:bg-background/5 md:grid-cols-4">
@@ -353,43 +357,42 @@ export default function ViewAdmissionPage() {
                 </TableHead>
               </TableRow>
             </TableHeader>
- 
+
             <TableBody>
               {sortedCharges.map((charge) => {
                 const final = parseFloat(charge.finalAmount || "0");
                 const paid = parseFloat(charge.paidAmount || "0");
                 const balance = final - paid;
                 const canPay = PAYABLE_STATUSES.has(charge.status);
- 
+
                 return (
                   <TableRow
                     key={charge.id}
-                    className={`border-slate-100 dark:border-slate-800/50 ${
-                      CHARGE_ROW_ACCENT[charge.status] ?? ""
-                    }`}
+                    className={`border-slate-100 dark:border-slate-800/50 ${CHARGE_ROW_ACCENT[charge.status] ?? ""
+                      }`}
                   >
                     <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
                       {charge.description}
                     </TableCell>
- 
+
                     <TableCell className="text-right text-sm text-slate-950 dark:text-slate-100">
                       {formatCurrency(final)}
                     </TableCell>
- 
+
                     <TableCell className="text-right text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       {
                         formatCurrency(paid)
                       }
                     </TableCell>
- 
+
                     <TableCell className="text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
                       {formatCurrency(balance)}
                     </TableCell>
- 
+
                     <TableCell className="text-sm text-slate-600 dark:text-slate-300">
                       {formatDateOnly(charge.dueDate)}
                     </TableCell>
- 
+
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -401,7 +404,7 @@ export default function ViewAdmissionPage() {
                         {charge.status}
                       </Badge>
                     </TableCell>
- 
+
                     <TableCell className="text-right">
                       {canPay ? (
                         <Button
@@ -422,7 +425,7 @@ export default function ViewAdmissionPage() {
               })}
             </TableBody>
           </Table>
- 
+
           {/* Summary footer */}
           <div className="grid grid-cols-3 border-t border-slate-200 bg-background/5 dark:border-slate-800/50 dark:bg-background/5">
             {[

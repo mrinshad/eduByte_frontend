@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 import { getStudentFineById, reverseStudentFine, type StudentFineDetail } from "@/lib/services/fineTypes";
+import { refreshLateFines } from "@/lib/services/lateFine";
 
 // ---------------------------------------------------------------------------
 // Sub-components — matches the InfoSection / InfoGrid / InfoItem pattern
@@ -96,35 +97,35 @@ export default function ViewStudentFinePage() {
   const [confirmReverse, setConfirmReverse] = useState(false)
 
   const handleReverseFine = async () => {
-  if (!reverseReason.trim()) {
-    toast.error("Please enter a reversal reason")
-    return
+    if (!reverseReason.trim()) {
+      toast.error("Please enter a reversal reason")
+      return
+    }
+
+    try {
+      const response = await reverseStudentFine(
+        fine!.id,
+        reverseReason
+      )
+
+      console.log("Reverse Response:", response)
+
+      toast.success("Fine reversed successfully")
+
+      const updatedFine = await getStudentFineById(fine!.id)
+      setFine(updatedFine)
+
+      setReverseOpen(false)
+      setReverseReason("")
+      setConfirmReverse(false)
+    } catch (error: any) {
+      console.error("Reverse Error:", error)
+
+      toast.error(
+        error?.message || "Failed to reverse fine"
+      )
+    }
   }
-
-  try {
-    const response = await reverseStudentFine(
-      fine!.id,
-      reverseReason
-    )
-
-    console.log("Reverse Response:", response)
-
-    toast.success("Fine reversed successfully")
-
-    const updatedFine = await getStudentFineById(fine!.id)
-    setFine(updatedFine)
-
-    setReverseOpen(false)
-    setReverseReason("")
-    setConfirmReverse(false)
-  } catch (error: any) {
-    console.error("Reverse Error:", error)
-
-    toast.error(
-      error?.message || "Failed to reverse fine"
-    )
-  }
-}
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -142,9 +143,9 @@ export default function ViewStudentFinePage() {
 
       try {
         const data = await getStudentFineById(id)
-
-        console.log("Fine Detail =>", data)
-
+        if (data?.enrollmentId) {
+          await refreshLateFines(data.enrollmentId);
+        }
         setFine(data)
       } catch (err) {
         console.error(err)

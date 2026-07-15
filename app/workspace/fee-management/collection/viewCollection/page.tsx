@@ -17,6 +17,7 @@ import {
   type PaymentMethodAccount,
 } from "@/lib/services/feeCollection"
 import React from "react";
+import { refreshLateFines } from "@/lib/services/lateFine";
 
 const formatCurrency = (n: number) =>
   `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -115,6 +116,10 @@ export default function Page() {
         setError(null)
         const details = await getStudentDetails(enrollmentId)
         setEnrollmentDetails(details)
+        if (details?.enrollmentId) {
+                  const refreshResponse = await refreshLateFines(details.enrollmentId);
+                  console.log(refreshResponse);
+                }
       } catch (err) {
         console.error("Student Details API Error:", err)
         setError(err instanceof Error ? err.message : "Something went wrong.")
