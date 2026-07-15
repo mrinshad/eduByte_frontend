@@ -11,7 +11,9 @@ import {
   Pencil,
   AlertCircle,
 } from "lucide-react";
- 
+
+import { refreshLateFines } from "@/lib/services/lateFine"
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -111,7 +113,9 @@ export default function ViewAdmissionPage() {
       try {
         setLoading(true);
         const data = await getEnrollmentById(id);
-        console.log(data);
+        if (data?.enrollmentId) {
+          const refreshResponse = await refreshLateFines(data.enrollmentId);
+        }
         setEnrollment(data);
       } catch (err) {
         console.error("Failed to load enrollment view detail records:", err);

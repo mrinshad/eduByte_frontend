@@ -28,6 +28,7 @@ export interface Student {
   whatsappNumber: string;
   address: string;
   status: "ACTIVE" | "WITHDRAWN" | "ALUMNI";
+  enrollmentId?: string;
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";

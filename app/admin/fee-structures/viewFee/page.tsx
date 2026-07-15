@@ -24,14 +24,9 @@ export default function Page() {
 
     const loadData = async () => {
         try {
-            console.log("id:", feeStructureId);
-
             const response = await viewFeeStructure(
                 feeStructureId!
             );
-
-            console.log("response:", response);
-            console.log("data:", response.data);
 
             setFeeStructure(response.data);
         } catch (error) {

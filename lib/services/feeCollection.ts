@@ -1,13 +1,27 @@
 import { apiFetch } from "@/lib/api";
 
-export interface studentFeeCollection {
-    enrollmentId: string,
-    admissionNumber: string,
-    student: string,
-    class: string,
-    vehicle: string,
-    TotalDue: number
+export interface StudentFeeCollectionPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
+
+type ApiSuccess<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
+
+export interface StudentFeeCollection {
+  enrollmentId: string;
+  admissionNumber: string;
+  student: string;
+  class: string;
+  vehicle: string;
+  TotalDue: number;
+}
+
 export interface StudentDetailsResponse {
   success: boolean;
   data: EnrollmentDetails;
@@ -74,14 +88,39 @@ export async function getStudentDetails(enrollmentId: string) {
 
   return payload.data;
 }
-export async function getStudentFeeCollection() {
+export async function getStudentFeeCollection(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  className?: string;
+  vehicle?: string;
+  status?: "all" | "paid" | "pending";
+}) {
+  const query = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 10),
+    search: params?.search ?? "",
+    className: params?.className ?? "",
+    vehicle: params?.vehicle ?? "",
+    status: params?.status ?? "all",
+  });
 
-    const payload = (await apiFetch("/api/feecollection/stdlist")) as {
-        success: boolean,
-        message?: string,
-        data?: studentFeeCollection[];
-    };
-    return payload.data ?? [];
+  const payload = (await apiFetch(
+    `/api/feecollection/stdlist?${query.toString()}`
+  )) as ApiSuccess<{
+    items: StudentFeeCollection[];
+    pagination: StudentFeeCollectionPagination;
+  }>;
+
+  return {
+    items: payload.data?.items ?? [],
+    pagination: payload.data?.pagination ?? {
+      page: 1,
+      limit: params?.limit ?? 10,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
