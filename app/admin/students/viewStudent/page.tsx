@@ -126,8 +126,7 @@ export default function Page() {
         setStudent(response);
 
         if (response?.enrollmentId) {
-          const refreshResponse = await refreshLateFines(response.enrollmentId);
-          console.log(refreshResponse);
+          await refreshLateFines(response.enrollmentId);
         }
       } catch (error) {
         console.error("Failed to load student details:", error)

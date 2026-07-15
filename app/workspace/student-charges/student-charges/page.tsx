@@ -68,7 +68,6 @@ export default function StudentChargesListPage() {
       try {
         setIsLoading(true);
         const data = await getStudentCharges();
-        console.log(data)
         setCharges(data);
       } catch (err) {
         console.error("Failed to load student charges:", err);

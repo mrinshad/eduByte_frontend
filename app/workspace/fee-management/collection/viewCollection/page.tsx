@@ -117,9 +117,8 @@ export default function Page() {
         const details = await getStudentDetails(enrollmentId)
         setEnrollmentDetails(details)
         if (details?.enrollmentId) {
-                  const refreshResponse = await refreshLateFines(details.enrollmentId);
-                  console.log(refreshResponse);
-                }
+          await refreshLateFines(details.enrollmentId);
+        }
       } catch (err) {
         console.error("Student Details API Error:", err)
         setError(err instanceof Error ? err.message : "Something went wrong.")

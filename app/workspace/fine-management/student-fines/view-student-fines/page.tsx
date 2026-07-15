@@ -108,8 +108,6 @@ export default function ViewStudentFinePage() {
         reverseReason
       )
 
-      console.log("Reverse Response:", response)
-
       toast.success("Fine reversed successfully")
 
       const updatedFine = await getStudentFineById(fine!.id)

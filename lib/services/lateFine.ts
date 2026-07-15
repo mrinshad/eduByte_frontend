@@ -8,7 +8,5 @@ export async function refreshLateFines(enrollmentId: string) {
     }
   );
 
-  console.log("Refresh Late Fines Response:", payload);
-
   return payload;
 }
