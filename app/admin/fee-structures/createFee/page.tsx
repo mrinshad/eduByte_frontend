@@ -55,10 +55,12 @@ const inputClass = `
   h-14
   w-full
   rounded-xl
-  border border-slate-300
+  border border-slate-300 dark:border-slate-700
   px-4
   text-base
-  bg-white
+  bg-white dark:bg-slate-900
+  text-slate-900 dark:text-slate-100
+  placeholder:text-slate-400 dark:placeholder:text-slate-500
   focus:ring-2
   focus:ring-[#6D755F]
   focus:border-[#6D755F]
@@ -68,19 +70,29 @@ const selectClass = `
   h-14
   w-full
   rounded-xl
-  border border-slate-300
+  border border-slate-300 dark:border-slate-700
   px-4
   text-base
-  bg-white
+  !bg-white dark:!bg-slate-900
+  !text-slate-900 dark:!text-slate-100
   justify-between
   focus:ring-2
   focus:ring-[#6D755F]
   focus:border-[#6D755F]
 `;
 
+// Dropdown panel styling (shared across all selects)
+const selectContentClass = `
+  rounded-xl
+  border border-slate-200 dark:border-slate-800
+  bg-white dark:bg-slate-900
+  shadow-lg
+`;
+
 // Updated SelectItem theme styling
 const selectItemClass = `
   rounded-lg cursor-pointer text-slate-900 dark:text-slate-100
+  focus:bg-[#6D755F]/10 dark:focus:bg-[#6D755F]/20
   data-[highlighted]:bg-[#6D755F] data-[highlighted]:text-white
   data-[state=checked]:bg-[#6D755F] data-[state=checked]:text-white
 `;
@@ -279,7 +291,7 @@ export default function Page() {
                                         <SelectValue placeholder="Select class name" />
                                     </SelectTrigger>
 
-                                    <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <SelectContent className={selectContentClass}>
                                         {classes.map((cls) => (
                                             <SelectItem
                                                 key={cls.id}
@@ -306,7 +318,7 @@ export default function Page() {
                                         <SelectValue placeholder="Select Academic Year" />
                                     </SelectTrigger>
 
-                                    <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <SelectContent className={selectContentClass}>
                                         {academicYears.map((year) => (
                                             <SelectItem
                                                 key={year.id}
@@ -417,7 +429,7 @@ export default function Page() {
                                                         <SelectTrigger className={cn(inputClass, "h-11")}>
                                                             <SelectValue placeholder="Select Charge Type" />
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-white border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1">
+                                                        <SelectContent className={cn(selectContentClass, "p-1")}>
                                                             {chargeTypes.map((chargeType) => (
                                                                 <SelectItem
                                                                     key={chargeType.id}
