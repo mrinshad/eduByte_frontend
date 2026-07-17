@@ -116,9 +116,6 @@ export default function Page() {
         setError(null)
         const details = await getStudentDetails(enrollmentId)
         setEnrollmentDetails(details)
-        if (details?.enrollmentId) {
-          await refreshLateFines(details.enrollmentId);
-        }
       } catch (err) {
         console.error("Student Details API Error:", err)
         setError(err instanceof Error ? err.message : "Something went wrong.")
@@ -131,6 +128,11 @@ export default function Page() {
       try {
         setChargesLoading(true)
         setChargesError(null)
+
+        // Ensure any due late fines are generated on the server
+        // BEFORE we pull charges/fines, so they show up on first load.
+        await refreshLateFines(enrollmentId)
+
         const [chargesData, finesData, paymentAccountsData] = await Promise.all([
           getStudentCharges(enrollmentId),
           getStudentFines(enrollmentId),
