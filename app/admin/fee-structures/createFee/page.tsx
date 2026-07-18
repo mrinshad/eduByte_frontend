@@ -55,10 +55,12 @@ const inputClass = `
   h-14
   w-full
   rounded-xl
-  border border-slate-300
+  border border-slate-300 dark:border-slate-700
   px-4
   text-base
-  bg-white
+  bg-white dark:bg-slate-900
+  text-slate-900 dark:text-slate-100
+  placeholder:text-slate-400 dark:placeholder:text-slate-500
   focus:ring-2
   focus:ring-[#6D755F]
   focus:border-[#6D755F]
@@ -68,19 +70,29 @@ const selectClass = `
   h-14
   w-full
   rounded-xl
-  border border-slate-300
+  border border-slate-300 dark:border-slate-700
   px-4
   text-base
-  bg-white
+  !bg-white dark:!bg-slate-900
+  !text-slate-900 dark:!text-slate-100
   justify-between
   focus:ring-2
   focus:ring-[#6D755F]
   focus:border-[#6D755F]
 `;
 
+// Dropdown panel styling (shared across all selects)
+const selectContentClass = `
+  rounded-xl
+  border border-slate-200 dark:border-slate-800
+  bg-white dark:bg-slate-900
+  shadow-lg
+`;
+
 // Updated SelectItem theme styling
 const selectItemClass = `
   rounded-lg cursor-pointer text-slate-900 dark:text-slate-100
+  focus:bg-[#6D755F]/10 dark:focus:bg-[#6D755F]/20
   data-[highlighted]:bg-[#6D755F] data-[highlighted]:text-white
   data-[state=checked]:bg-[#6D755F] data-[state=checked]:text-white
 `;
@@ -100,6 +112,11 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
     </div>
 );
 
+// Small red asterisk shown next to labels for required fields
+const RequiredMark = () => (
+    <span className="text-red-600 ml-0.5" aria-hidden="true">*</span>
+);
+
 // --- Main Page Component ---
 
 export default function Page() {
@@ -112,6 +129,14 @@ export default function Page() {
     const [submitting, setSubmitting] = useState(false);
 
     const [feeItems, setFeeItems] = useState<{ chargeTypeId: string; amount: string; }[]>([]);
+    const [itemErrors, setItemErrors] = useState<Record<number, string>>({});
+
+    // Field-level errors for the Core Configuration inputs
+    const [fieldErrors, setFieldErrors] = useState<{
+        name?: string;
+        selectedClass?: string;
+        selectedAcademicYear?: string;
+    }>({});
 
     const [classes, setClasses] = useState<SchoolClass[]>([]);
     const [selectedClass, setSelectedClass] = useState("");
@@ -123,7 +148,7 @@ export default function Page() {
 
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [isActive, setIsActive] = useState(false);
+    const [isActive, setIsActive] = useState(true);
 
 
     const [open, setOpen] = useState(false);
@@ -180,13 +205,109 @@ export default function Page() {
 
     const deleteFeeItem = (index: number) => {
         setFeeItems(feeItems.filter((_, i) => i !== index));
+        setItemErrors((prev) => {
+            const next: Record<number, string> = {};
+            Object.entries(prev).forEach(([key, value]) => {
+                const keyIndex = Number(key);
+                if (keyIndex === index) return; // drop the removed row's error
+                const shiftedIndex = keyIndex > index ? keyIndex - 1 : keyIndex;
+                next[shiftedIndex] = value;
+            });
+            return next;
+        });
+    };
+
+    const clearItemError = (index: number) => {
+        setItemErrors((prev) => {
+            if (!(index in prev)) return prev;
+            const next = { ...prev };
+            delete next[index];
+            return next;
+        });
+    };
+
+    // Validates every fee item row individually and returns a map of
+    // index -> error message. Also flags duplicate charge type selections.
+    const validateFeeItems = (): { valid: boolean; errors: Record<number, string> } => {
+        const errors: Record<number, string> = {};
+        const seenChargeTypeIds = new Map<string, number>();
+
+        feeItems.forEach((item, index) => {
+            if (!item.chargeTypeId) {
+                errors[index] = "Select a charge type";
+                return;
+            }
+
+            if (seenChargeTypeIds.has(item.chargeTypeId)) {
+                errors[index] = "This charge type is already added";
+                const firstIndex = seenChargeTypeIds.get(item.chargeTypeId)!;
+                errors[firstIndex] = "This charge type is already added";
+                return;
+            }
+            seenChargeTypeIds.set(item.chargeTypeId, index);
+
+            const trimmedAmount = item.amount.trim();
+            if (trimmedAmount === "") {
+                errors[index] = "Enter an amount";
+                return;
+            }
+
+            const numericAmount = Number(trimmedAmount);
+            if (Number.isNaN(numericAmount)) {
+                errors[index] = "Amount must be a number";
+            } else if (numericAmount <= 0) {
+                errors[index] = "Amount must be greater than 0";
+            }
+        });
+
+        return { valid: Object.keys(errors).length === 0, errors };
+    };
+
+    // Best-effort extraction of a human-readable message from whatever
+    // apiFetch throws (Error instance, plain object with `message`, or a
+    // raw string), so real backend validation errors reach the user
+    // instead of a generic fallback.
+    const getErrorMessage = (error: unknown, fallback: string): string => {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === "string" && error.trim()) return error;
+        if (
+            error &&
+            typeof error === "object" &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+        ) {
+            return (error as { message: string }).message;
+        }
+        return fallback;
     };
 
     const handleCreateFeeStructure = async () => {
-        if (!name.trim()) return toast.error("Please enter a fee structure name");
-        if (!selectedClass) return toast.error("Please select a class");
-        if (!selectedAcademicYear) return toast.error("Please select an academic year");
-        if (feeItems.length === 0) return toast.error("Please add at least one fee item");
+        const nextFieldErrors: typeof fieldErrors = {};
+        if (!name.trim()) nextFieldErrors.name = "Structure name is required";
+        if (!selectedClass) nextFieldErrors.selectedClass = "Please select a class";
+        if (!selectedAcademicYear) nextFieldErrors.selectedAcademicYear = "Please select an academic year";
+        setFieldErrors(nextFieldErrors);
+
+        if (feeItems.length === 0) {
+            toast.error("Please add at least one fee item");
+            return;
+        }
+
+        const { valid, errors } = validateFeeItems();
+        setItemErrors(errors);
+
+        // Surface the first problem found, top fields first, then fee items
+        const firstFieldError = Object.values(nextFieldErrors)[0];
+        if (firstFieldError) {
+            toast.error(firstFieldError);
+            return;
+        }
+
+        if (!valid) {
+            const firstItemError = Object.values(errors)[0];
+            toast.error(firstItemError ?? "Please fix the highlighted fee items");
+            return;
+        }
 
         try {
             setSubmitting(true);
@@ -213,7 +334,10 @@ export default function Page() {
             router.push("/admin/fee-structures");
         } catch (error) {
             console.error(error);
-            toast.error(isEditMode ? "Failed to update fee structure" : "Failed to create fee structure");
+            const fallback = isEditMode
+                ? "Failed to update fee structure"
+                : "Failed to create fee structure";
+            toast.error(getErrorMessage(error, fallback));
         } finally {
             setSubmitting(false);
         }
@@ -272,14 +396,25 @@ export default function Page() {
                             {/* Class Selection */}
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Target Class
+                                    <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Target Class<RequiredMark />
                                 </Label>
-                                <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                    <SelectTrigger className={selectClass}>
+                                <Select
+                                    value={selectedClass}
+                                    onValueChange={(value) => {
+                                        setSelectedClass(value);
+                                        setFieldErrors((prev) => ({ ...prev, selectedClass: undefined }));
+                                    }}
+                                >
+                                    <SelectTrigger
+                                        className={cn(
+                                            selectClass,
+                                            fieldErrors.selectedClass && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                        )}
+                                    >
                                         <SelectValue placeholder="Select class name" />
                                     </SelectTrigger>
 
-                                    <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <SelectContent className={selectContentClass}>
                                         {classes.map((cls) => (
                                             <SelectItem
                                                 key={cls.id}
@@ -291,22 +426,35 @@ export default function Page() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {fieldErrors.selectedClass && (
+                                    <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
+                                        {fieldErrors.selectedClass}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Academic Year Selection */}
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Calendar className="h-3.5 w-3.5 text-[#6D755F]" /> Academic Year
+                                    <Calendar className="h-3.5 w-3.5 text-[#6D755F]" /> Academic Year<RequiredMark />
                                 </Label>
                                 <Select
                                     value={selectedAcademicYear}
-                                    onValueChange={setSelectedAcademicYear}
+                                    onValueChange={(value) => {
+                                        setSelectedAcademicYear(value);
+                                        setFieldErrors((prev) => ({ ...prev, selectedAcademicYear: undefined }));
+                                    }}
                                 >
-                                    <SelectTrigger className={selectClass}>
+                                    <SelectTrigger
+                                        className={cn(
+                                            selectClass,
+                                            fieldErrors.selectedAcademicYear && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                        )}
+                                    >
                                         <SelectValue placeholder="Select Academic Year" />
                                     </SelectTrigger>
 
-                                    <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <SelectContent className={selectContentClass}>
                                         {academicYears.map((year) => (
                                             <SelectItem
                                                 key={year.id}
@@ -319,19 +467,35 @@ export default function Page() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {fieldErrors.selectedAcademicYear && (
+                                    <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
+                                        {fieldErrors.selectedAcademicYear}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Structure Name */}
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <FileText className="h-3.5 w-3.5 text-[#6D755F]" /> Structure Name
+                                    <FileText className="h-3.5 w-3.5 text-[#6D755F]" /> Structure Name<RequiredMark />
                                 </Label>
                                 <Input
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                                    }}
                                     placeholder="e.g. Grade 10 - Annual Standard"
-                                    className={inputClass}
+                                    className={cn(
+                                        inputClass,
+                                        fieldErrors.name && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                    )}
                                 />
+                                {fieldErrors.name && (
+                                    <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
+                                        {fieldErrors.name}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Description */}
@@ -390,7 +554,7 @@ export default function Page() {
                                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-6 py-4">
                                         <div>
                                             <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 block">
-                                                Active Components
+                                                Active Components<RequiredMark />
                                             </span>
                                             <span className="text-xs text-slate-500">Configure base amounts for each charge type.</span>
                                         </div>
@@ -403,60 +567,89 @@ export default function Page() {
                                         </Button>
                                     </div>
                                     <div className="p-4 space-y-3">
-                                        {feeItems.map((item, index) => (
-                                            <div key={index} className="flex flex-col md:flex-row items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-                                                <div className="w-full md:flex-1">
-                                                    <Select
-                                                        value={item.chargeTypeId}
-                                                        onValueChange={(value) => {
-                                                            const updated = [...feeItems];
-                                                            updated[index].chargeTypeId = value;
-                                                            setFeeItems(updated);
-                                                        }}
+                                        {feeItems.map((item, index) => {
+                                            const rowError = itemErrors[index];
+                                            return (
+                                                <div key={index} className="space-y-1.5">
+                                                    <div
+                                                        className={cn(
+                                                            "flex flex-col md:flex-row items-center gap-3 p-3 rounded-xl border bg-slate-50/50 dark:bg-slate-900/30",
+                                                            rowError
+                                                                ? "border-red-400 dark:border-red-500/60 bg-red-50/50 dark:bg-red-950/20"
+                                                                : "border-slate-100 dark:border-slate-800"
+                                                        )}
                                                     >
-                                                        <SelectTrigger className={cn(inputClass, "h-11")}>
-                                                            <SelectValue placeholder="Select Charge Type" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-white border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1">
-                                                            {chargeTypes.map((chargeType) => (
-                                                                <SelectItem
-                                                                    key={chargeType.id}
-                                                                    value={chargeType.id}
-                                                                    className={selectItemClass}
+                                                        <div className="w-full md:flex-1">
+                                                            <Select
+                                                                value={item.chargeTypeId}
+                                                                onValueChange={(value) => {
+                                                                    const updated = [...feeItems];
+                                                                    updated[index].chargeTypeId = value;
+                                                                    setFeeItems(updated);
+                                                                    clearItemError(index);
+                                                                }}
+                                                            >
+                                                                <SelectTrigger
+                                                                    className={cn(
+                                                                        inputClass,
+                                                                        "h-11",
+                                                                        rowError && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                                                    )}
                                                                 >
-                                                                    {chargeType.name}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                                                    <SelectValue placeholder="Select Charge Type" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className={cn(selectContentClass, "p-1")}>
+                                                                    {chargeTypes.map((chargeType) => (
+                                                                        <SelectItem
+                                                                            key={chargeType.id}
+                                                                            value={chargeType.id}
+                                                                            className={selectItemClass}
+                                                                        >
+                                                                            {chargeType.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
 
-                                                <div className="w-full md:w-48 relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₹</span>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="Amount"
-                                                        value={item.amount}
-                                                        onChange={(e) => {
-                                                            const updated = [...feeItems];
-                                                            updated[index].amount = e.target.value;
-                                                            setFeeItems(updated);
-                                                        }}
-                                                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                                                        className={cn(inputClass, "h-11 pl-8")}
-                                                    />
-                                                </div>
+                                                        <div className="w-full md:w-48 relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₹</span>
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="Amount"
+                                                                value={item.amount}
+                                                                onChange={(e) => {
+                                                                    const updated = [...feeItems];
+                                                                    updated[index].amount = e.target.value;
+                                                                    setFeeItems(updated);
+                                                                    clearItemError(index);
+                                                                }}
+                                                                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                                                className={cn(
+                                                                    inputClass,
+                                                                    "h-11 pl-8",
+                                                                    rowError && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                                                )}
+                                                            />
+                                                        </div>
 
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => deleteFeeItem(index)}
-                                                    className="h-11 w-11 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => deleteFeeItem(index)}
+                                                            className="h-11 w-11 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    {rowError && (
+                                                        <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
+                                                            {rowError}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-xl bg-[#6D755F] px-6 py-5">

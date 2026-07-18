@@ -289,10 +289,41 @@ export interface CategoryExpenseSummary {
   percentageOfTotal: number;
 }
 
-export interface ExpenseSummaryData {
+export interface ExpenseSummaryByCategoryData {
   totalExpenses: number;
   categorySummary: CategoryExpenseSummary[];
   grandTotal?: number;
+}
+
+//
+// Expense Summary Report (list of individual expenses, newest first)
+//
+
+export interface ExpenseItem {
+  id: string;
+  expenseNumber: string;
+  amount: number;
+  expenseDate: string;
+  notes: string | null;
+  createdAt: string;
+  category: string | null;
+  subCategory: string | null;
+  account: string | null;
+  vehicle: string | null;
+  staff: string | null;
+}
+
+export interface ExpenseSummaryPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ExpenseSummaryData {
+  totalExpenses: number;
+  items: ExpenseItem[];
+  pagination: ExpenseSummaryPagination;
 }
 
 export interface ExpenseSummaryResponse {
@@ -301,19 +332,47 @@ export interface ExpenseSummaryResponse {
   data: ExpenseSummaryData;
 }
 
-// Get Expense Summary Report
+// Get Expense Summary Report — paginated list of expenses, ordered by
+// createdAt desc (last added first) by default.
 export async function getExpenseSummaryReport(
   from?: string,
-  to?: string
+  to?: string,
+  page: number = 1,
+  limit: number = 10
 ): Promise<ExpenseSummaryData> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+
+  const payload = (await apiFetch(
+    `/api/reports/expense-summary?${params.toString()}`
+  )) as ApiSuccess<ExpenseSummaryData>;
+
+  return (
+    payload.data ?? {
+      totalExpenses: 0,
+      items: [],
+      pagination: { page, limit, total: 0, totalPages: 1 },
+    }
+  );
+}
+
+// Get Expense Summary Report
+export async function getExpenseSummaryByCategoryReport(
+  from?: string,
+  to?: string
+): Promise<ExpenseSummaryByCategoryData> {
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
 
   const query = params.toString();
   const payload = (await apiFetch(
-    `/api/reports/expense-summary${query ? `?${query}` : ""}`
-  )) as ApiSuccess<ExpenseSummaryData>;
+    `/api/reports/expense-summary-by-category${query ? `?${query}` : ""}`
+  )) as ApiSuccess<ExpenseSummaryByCategoryData>;
 
   return (
     payload.data ?? {

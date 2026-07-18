@@ -6,32 +6,22 @@ import {
     ArrowLeft,
     ArrowRight,
     Calendar,
-    Layers,
+    ChevronLeft,
+    ChevronRight,
     Loader2,
-    PieChart,
     Receipt,
     RefreshCcw,
     TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
     getExpenseSummaryReport,
     type ExpenseSummaryData,
-} from "@/lib/services/reports"; // <-- adjust to wherever you saved the API file
+} from "@/lib/services/reports";
 
 const BRAND = "#556043";
-
-// Categories are dynamic (school-defined), so we rotate a small accent
-// palette rather than maintaining a lookup map per category.
-const CATEGORY_ACCENTS = [
-    "#556043", // brand green
-    "#3b6e91", // steel blue
-    "#a8763e", // amber/bronze
-    "#7a4a8f", // violet
-    "#b0524a", // rust
-];
+const PAGE_SIZE = 10;
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -81,6 +71,7 @@ export default function ExpenseSummaryPage() {
 
     const [fromDate, setFromDate] = useState<string>(todayISO());
     const [toDate, setToDate] = useState<string>(todayISO());
+    const [page, setPage] = useState(1);
     const [report, setReport] = useState<ExpenseSummaryData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -92,11 +83,11 @@ export default function ExpenseSummaryPage() {
 
         let cancelled = false;
 
-        async function load(from: string, to: string) {
+        async function load(from: string, to: string, pageNum: number) {
             try {
                 setIsLoading(true);
                 setError(null);
-                const data = await getExpenseSummaryReport(from, to);
+                const data = await getExpenseSummaryReport(from, to, pageNum, PAGE_SIZE);
                 if (!cancelled) setReport(data);
             } catch (err) {
                 if (!cancelled) {
@@ -108,28 +99,29 @@ export default function ExpenseSummaryPage() {
             }
         }
 
-        load(fromDate, toDate);
+        load(fromDate, toDate, page);
 
         return () => {
             cancelled = true;
         };
-    }, [fromDate, toDate]);
+    }, [fromDate, toDate, page]);
 
-    const categorySummary = report?.categorySummary ?? [];
+    const items = report?.items ?? [];
     const totalExpenses = report?.totalExpenses ?? 0;
+    const pagination = report?.pagination ?? { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 };
 
-    // Largest category leads the list — matches the "biggest contributor
-    // first" pattern used on the Daily Collection Report page.
-    const sortedCategories = useMemo(
-        () => [...categorySummary].sort((a, b) => b.totalAmount - a.totalAmount),
-        [categorySummary]
-    );
-
-    const topCategory = sortedCategories[0] ?? null;
+    const rangeStart = items.length === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+    const rangeEnd = items.length === 0 ? 0 : rangeStart + items.length - 1;
 
     function handleFromDateChange(value: string) {
         setFromDate(value);
         if (value > toDate) setToDate(value);
+        setPage(1);
+    }
+
+    function handleToDateChange(value: string) {
+        setToDate(value);
+        setPage(1);
     }
 
     function handleRefresh() {
@@ -137,7 +129,7 @@ export default function ExpenseSummaryPage() {
 
         setIsLoading(true);
         setError(null);
-        getExpenseSummaryReport(fromDate, toDate)
+        getExpenseSummaryReport(fromDate, toDate, page, PAGE_SIZE)
             .then(setReport)
             .catch(() => setError("Could not load the expense summary. Please try again."))
             .finally(() => setIsLoading(false));
@@ -196,7 +188,7 @@ export default function ExpenseSummaryPage() {
                                     value={toDate}
                                     min={fromDate}
                                     max={tomorrowISO()}
-                                    onChange={(e) => setToDate(e.target.value)}
+                                    onChange={(e) => handleToDateChange(e.target.value)}
                                     className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
                                 />
                             </div>
@@ -256,115 +248,105 @@ export default function ExpenseSummaryPage() {
                                 </p>
                             </div>
 
-                            {topCategory && (
-                                <span className="w-fit rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm">
-                                    Top: <span className="capitalize">{topCategory.categoryName}</span>
-                                    <span className="ml-1.5 font-semibold">
-                                        {topCategory.percentageOfTotal.toFixed(1)}%
-                                    </span>
-                                </span>
-                            )}
+                            <span className="w-fit rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm">
+                                {pagination.total} {pagination.total === 1 ? "entry" : "entries"}
+                            </span>
                         </div>
                     </div>
 
-                    {/* Stat strip */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                    Categories
-                                </span>
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10">
-                                    <Layers className="h-4.5 w-4.5 text-sky-700 dark:text-sky-300" />
-                                </span>
-                            </div>
-                            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                                {sortedCategories.length}
-                            </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                    Total Entries
-                                </span>
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
-                                    <Receipt className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
-                                </span>
-                            </div>
-                            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                                {sortedCategories.reduce((sum, c) => sum + c.expenseCount, 0)}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Category breakdown — card list */}
-                    <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-                        <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            By Category
+                    {/* Expense list — plain ERP-style table, newest first */}
+                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                        <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:border-slate-800/50 sm:px-5">
+                            Expenses
                         </p>
 
-                        {sortedCategories.length === 0 ? (
+                        {items.length === 0 ? (
                             <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500">
-                                <PieChart className="h-7 w-7 text-slate-300" />
+                                <Receipt className="h-7 w-7 text-slate-300" />
                                 <p className="text-sm">No expenses recorded for this range.</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                {sortedCategories.map((category, i) => {
-                                    const accent = CATEGORY_ACCENTS[i % CATEGORY_ACCENTS.length];
-
-                                    return (
-                                        <div
-                                            key={category.categoryId}
-                                            className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800/50"
-                                        >
-                                            <span
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                                                style={{ backgroundColor: accent }}
-                                            >
-                                                {category.categoryName.slice(0, 2).toUpperCase()}
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="flex items-center justify-between gap-2">
-                                                    <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
-                                                        {category.categoryName}
-                                                    </span>
-                                                    <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                        {formatCurrency(category.totalAmount)}
-                                                    </span>
-                                                </span>
-                                                <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                    <span
-                                                        className="block h-full rounded-full transition-all"
-                                                        style={{
-                                                            width: `${Math.min(100, category.percentageOfTotal)}%`,
-                                                            backgroundColor: accent,
-                                                        }}
-                                                    />
-                                                </span>
-                                                <span className="mt-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                                                    <span>
-                                                        {category.expenseCount}{" "}
-                                                        {category.expenseCount === 1 ? "expense" : "expenses"}
-                                                    </span>
-                                                    <span>{category.percentageOfTotal.toFixed(1)}%</span>
-                                                </span>
-                                            </span>
-                                        </div>
-                                    );
-                                })}
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[880px] text-sm">
+                                    <thead className="bg-slate-50 dark:bg-slate-900/60">
+                                        <tr className="text-left text-slate-500 dark:text-slate-400">
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Expense #</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Date</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Category</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Sub Category</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Account</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Vehicle</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Staff</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Notes</th>
+                                            <th className="px-4 py-2.5 text-right font-medium sm:px-5">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                        {items.map((expense) => (
+                                            <tr key={expense.id}>
+                                                <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100 sm:px-5">
+                                                    {expense.expenseNumber}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {formatDisplayDate(expense.expenseDate)}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.category ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.subCategory ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.account ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.vehicle ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.staff ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 max-w-[200px] truncate text-slate-600 dark:text-slate-300 sm:px-5">
+                                                    {expense.notes ?? "—"}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-right font-medium text-slate-950 dark:text-slate-100 sm:px-5">
+                                                    {formatCurrency(expense.amount)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 
-                        {sortedCategories.length > 0 && (
-                            <div className="mt-3 flex shrink-0 items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/50">
-                                <span className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                    Total
-                                </span>
-                                <span className="text-sm font-bold text-[#556043]">
-                                    {formatCurrency(totalExpenses)}
-                                </span>
+                        {/* Pagination footer */}
+                        {items.length > 0 && (
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-800/50 sm:flex-row sm:px-5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Showing {rangeStart}–{rangeEnd} of {pagination.total}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8"
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                        disabled={pagination.page <= 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Page {pagination.page} of {pagination.totalPages}
+                                    </span>
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8"
+                                        onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                                        disabled={pagination.page >= pagination.totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>

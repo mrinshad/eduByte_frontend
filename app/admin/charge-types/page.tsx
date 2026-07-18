@@ -6,7 +6,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react"
-import { freequencyOptions } from "@/lib/constant"
+import { freequencyOptions, categoryOptions } from "@/lib/constant"
 import { getAccountTypes, type accountName } from "@/lib/services/accountTypes"
 import {
   createChargeType, getChargeTypes, updateChargeType,
@@ -29,6 +29,7 @@ export default function Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<chargeType>({
     name: "",
+    category: "",
     frequency: "",
     incomeAccountId: "",
   })
@@ -58,12 +59,12 @@ export default function Page() {
   }
 
   const resetForm = () => {
-    setFormData({ name: "", frequency: "", incomeAccountId: "" })
+    setFormData({ name: "", category: "", frequency: "", incomeAccountId: "" })
     setEditingId(null)
   }
 
   const handleSave = async () => {
-    if (!formData.name || !formData.frequency || !formData.incomeAccountId) {
+    if (!formData.name || !formData.category || !formData.frequency || !formData.incomeAccountId) {
       toast.warning("Please fill all fields")
       return
     }
@@ -89,6 +90,13 @@ export default function Page() {
   // 👇 form shape described once — swap in `accounts` once it's loaded
   const chargeTypeFields: FormField[] = [
     { type: "text", name: "name", label: "Fee Type Name", placeholder: "Tuition Fee" },
+    {
+      type: "select",
+      name: "category",
+      label: "Category",
+      placeholder: "Select Category",
+      options: categoryOptions,
+    },
     {
       type: "select",
       name: "frequency",
@@ -134,6 +142,7 @@ export default function Page() {
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background border-none">
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">ID</TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Fee Type</TableHead>
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Category</TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Frequency</TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Account Type</TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Created At</TableHead>
@@ -143,7 +152,7 @@ export default function Page() {
             <TableBody>
               {chargeTypes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                  <TableCell colSpan={7} className="h-40 text-center text-slate-500">
                     <p className="text-sm">No charge types found.</p>
                   </TableCell>
                 </TableRow>
@@ -152,6 +161,9 @@ export default function Page() {
                   <TableRow key={data.name} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
                     <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">{index + 1}</TableCell>
                     <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{data.name}</TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      {data.category ? data.category.charAt(0) + data.category.slice(1).toLowerCase() : "—"}
+                    </TableCell>
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{data.frequency}</TableCell>
                     <TableCell className="px-6 py-4">
                       <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium">
@@ -172,6 +184,7 @@ export default function Page() {
                             setEditingId(data.id)
                             setFormData({
                               name: data.name,
+                              category: data.category ?? "",
                               frequency: data.frequency,
                               incomeAccountId: data.incomeAccount?.id ?? "",
                             })
