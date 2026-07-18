@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Check,
   X,
+  Loader2,
 } from "lucide-react"
 import DatePicker from "react-datepicker"
 
@@ -67,12 +68,12 @@ const datePickerPopperClassName = "z-50"
 const datePickerMinDate = new Date(2020, 0, 1)
 const datePickerMaxDate = new Date(2050, 11, 31)
 
-function AddAction({ onAdd }: { onAdd: () => void }) {
+function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="rounded-xl" onClick={onAdd}>
+          <Button variant="outline" size="icon" className="rounded-xl" onClick={onAdd} disabled={disabled}>
             <Plus className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
@@ -80,6 +81,19 @@ function AddAction({ onAdd }: { onAdd: () => void }) {
           <p>Add</p>
         </TooltipContent>
       </Tooltip>
+    </div>
+  )
+}
+
+function RowSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[1, 2, 3].map((key) => (
+        <div
+          key={key}
+          className="h-14 w-full animate-pulse rounded-2xl border border-black/5 bg-slate-200/70 dark:border-white/10 dark:bg-white/5"
+        />
+      ))}
     </div>
   )
 }
@@ -111,6 +125,17 @@ export default function Page() {
   // clicking edit on one row would show the currently-selected row's data.
   const [editingClassId, setEditingClassId] = React.useState("")
   const [editingDivisionId, setEditingDivisionId] = React.useState("")
+
+  // Loading state for the very first data fetch, used to render skeletons.
+  const [isInitialLoading, setIsInitialLoading] = React.useState(true)
+
+  // Per-action loading/disabled flags so a button can't be clicked twice
+  // while its request is still in flight.
+  const [isCreatingYear, setIsCreatingYear] = React.useState(false)
+  const [savingYearId, setSavingYearId] = React.useState<string | null>(null)
+  const [settingDefaultYearId, setSettingDefaultYearId] = React.useState<string | null>(null)
+  const [isSavingClass, setIsSavingClass] = React.useState(false)
+  const [isSavingDivision, setIsSavingDivision] = React.useState(false)
 
   const selectedClass = React.useMemo(
     () => classes.find((entry) => entry.id === selectedClassId) ?? null,
@@ -161,6 +186,7 @@ export default function Page() {
 
   React.useEffect(() => {
     async function loadInitialData() {
+      setIsInitialLoading(true)
       try {
         const [yearList, defaultYear, classList] = await Promise.all([
           getAcademicYears(),
@@ -182,6 +208,8 @@ export default function Page() {
         setDivisionsByClassId(Object.fromEntries(divisionEntries))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load data")
+      } finally {
+        setIsInitialLoading(false)
       }
     }
 
@@ -256,7 +284,11 @@ export default function Page() {
                   Current Academic Year
                 </CardDescription>
                 <CardTitle className={`mt-2 text-2xl font-semibold ${titleTextClass}`}>
-                  {currentAcademicYear}
+                  {isInitialLoading ? (
+                    <span className="inline-block h-7 w-40 animate-pulse rounded-lg bg-white/20" />
+                  ) : (
+                    currentAcademicYear
+                  )}
                 </CardTitle>
                 <CardDescription className={`mt-1 ${supportingTextClass}`}>
                   Use the switch button to change the active academic year.
@@ -295,7 +327,10 @@ export default function Page() {
                   </DialogHeader>
 
                   <div className="space-y-3 py-2">
-                    {academicYears.map((year) => (
+                    {isInitialLoading && academicYears.length === 0 ? (
+                      <RowSkeleton />
+                    ) : (
+                      academicYears.map((year) => (
                       <div
                         key={year.id}
                         className={cn(
@@ -310,7 +345,7 @@ export default function Page() {
                             <div className="space-y-3">
                               <div>
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
-                                <Input className="mt-2" value={editingYearNameDraft} onChange={(e) => setEditingYearNameDraft(e.target.value)} />
+                                <Input className="mt-2" value={editingYearNameDraft} onChange={(e) => setEditingYearNameDraft(e.target.value)} disabled={savingYearId === year.id} />
                               </div>
 
                               <div className="grid gap-4 md:grid-cols-2">
@@ -333,6 +368,7 @@ export default function Page() {
                                     minDate={datePickerMinDate}
                                     maxDate={datePickerMaxDate}
                                     openToDate={editingYearStartDate ?? new Date()}
+                                    disabled={savingYearId === year.id}
                                   />
                                 </div>
 
@@ -355,34 +391,46 @@ export default function Page() {
                                     minDate={datePickerMinDate}
                                     maxDate={datePickerMaxDate}
                                     openToDate={editingYearEndDate ?? new Date()}
+                                    disabled={savingYearId === year.id}
                                   />
                                 </div>
                               </div>
 
                               <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => { closeYearEdit(); toast.message("Cancelled"); }}>
+                                <Button variant="ghost" size="icon" disabled={savingYearId === year.id} onClick={() => { closeYearEdit(); toast.message("Cancelled"); }}>
                                   <X className="h-4 w-4" />
                                 </Button>
 
-                                <Button size="icon" onClick={() => {
-                                  void (async () => {
-                                    try {
-                                      await updateAcademicYear(String(year.id), {
-                                        name: editingYearNameDraft,
-                                        startDate: (editingYearStartDate || new Date()).toISOString(),
-                                        endDate: (editingYearEndDate || new Date()).toISOString(),
-                                      })
+                                <Button
+                                  size="icon"
+                                  disabled={savingYearId === year.id}
+                                  onClick={() => {
+                                    void (async () => {
+                                      setSavingYearId(year.id)
+                                      try {
+                                        await updateAcademicYear(String(year.id), {
+                                          name: editingYearNameDraft,
+                                          startDate: (editingYearStartDate || new Date()).toISOString(),
+                                          endDate: (editingYearEndDate || new Date()).toISOString(),
+                                        })
 
-                                      setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
-                                      await refreshCurrentAcademicYear()
-                                      closeYearEdit()
-                                      toast.success("Saved")
-                                    } catch (error) {
-                                      toast.error(error instanceof Error ? error.message : "Failed to save academic year")
-                                    }
-                                  })()
-                                }}>
-                                  <Check className="h-4 w-4" />
+                                        setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
+                                        await refreshCurrentAcademicYear()
+                                        closeYearEdit()
+                                        toast.success("Saved")
+                                      } catch (error) {
+                                        toast.error(error instanceof Error ? error.message : "Failed to save academic year")
+                                      } finally {
+                                        setSavingYearId(null)
+                                      }
+                                    })()
+                                  }}
+                                >
+                                  {savingYearId === year.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -397,7 +445,13 @@ export default function Page() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="icon-sm" className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")} onClick={() => { void openYearEdit(year) }}>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")}
+                                disabled={settingDefaultYearId === year.id}
+                                onClick={() => { void openYearEdit(year) }}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
 
@@ -407,8 +461,10 @@ export default function Page() {
                                 </Button>
                               ) : (
                                 <Button
+                                  disabled={settingDefaultYearId === year.id}
                                   onClick={() => {
                                     void (async () => {
+                                      setSettingDefaultYearId(year.id)
                                       try {
                                         await setDefaultAcademicYear(year.id)
                                         setAcademicYears((prev) => prev.map((item) => ({ ...item, isActive: item.id === year.id })))
@@ -417,18 +473,28 @@ export default function Page() {
                                         toast.success("Default academic year updated")
                                       } catch (error) {
                                         toast.error(error instanceof Error ? error.message : "Failed to set default academic year")
+                                      } finally {
+                                        setSettingDefaultYearId(null)
                                       }
                                     })()
                                   }}
                                 >
-                                  Set Default
+                                  {settingDefaultYearId === year.id ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      Setting...
+                                    </>
+                                  ) : (
+                                    "Set Default"
+                                  )}
                                 </Button>
                               )}
                             </div>
                           </>
                         )}
                       </div>
-                    ))}
+                      ))
+                    )}
                   </div>
 
                   <DialogFooter>
@@ -451,7 +517,7 @@ export default function Page() {
                   <div className="space-y-4 py-2">
                     <div>
                       <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
-                      <Input placeholder="2026 - 2027" className="mt-2" value={yearNameDraft} onChange={(event) => setYearNameDraft(event.target.value)} />
+                      <Input placeholder="2026 - 2027" className="mt-2" value={yearNameDraft} onChange={(event) => setYearNameDraft(event.target.value)} disabled={isCreatingYear} />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
@@ -474,6 +540,7 @@ export default function Page() {
                           minDate={datePickerMinDate}
                           maxDate={datePickerMaxDate}
                           openToDate={fromDate ?? new Date()}
+                          disabled={isCreatingYear}
                         />
                       </div>
 
@@ -496,19 +563,22 @@ export default function Page() {
                           minDate={datePickerMinDate}
                           maxDate={datePickerMaxDate}
                           openToDate={toDate ?? new Date()}
+                          disabled={isCreatingYear}
                         />
                       </div>
                     </div>
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateYearOpen(false)}>
+                    <Button variant="outline" disabled={isCreatingYear} onClick={() => setCreateYearOpen(false)}>
                       Cancel
                     </Button>
 
                     <Button
+                      disabled={isCreatingYear}
                       onClick={() => {
                         void (async () => {
+                          setIsCreatingYear(true)
                           try {
                             await createAcademicYear({
                               name: yearNameDraft,
@@ -525,11 +595,20 @@ export default function Page() {
                             toast.success("Academic year created")
                           } catch (error) {
                             toast.error(error instanceof Error ? error.message : "Failed to create academic year")
+                          } finally {
+                            setIsCreatingYear(false)
                           }
                         })()
                       }}
                     >
-                      Create
+                      {isCreatingYear ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create"
+                      )}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -547,7 +626,7 @@ export default function Page() {
                   </CardDescription>
                 </div>
 
-                <AddAction onAdd={() => openClassDialog("add")} />
+                <AddAction onAdd={() => openClassDialog("add")} disabled={isInitialLoading} />
               </CardHeader>
 
               <CardContent
@@ -561,7 +640,9 @@ export default function Page() {
                 dark:hover:scrollbar-thumb-slate-600
               "
               >
-                {classes.length === 0 ? (
+                {isInitialLoading ? (
+                  <RowSkeleton />
+                ) : classes.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No classes yet</p>
                     <p className={`mt-1 text-sm ${supportingTextClass}`}>
@@ -629,15 +710,17 @@ export default function Page() {
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Division</CardTitle>
                   <CardDescription className={`mt-1 ${supportingTextClass}`}>
-                    {!selectedClass
-                      ? "Select a class to see its divisions."
-                      : selectedDivisions.length === 0
-                        ? "No divisions yet."
-                        : `${selectedClass.name} divisions are shown here.`}
+                    {isInitialLoading
+                      ? "Loading divisions..."
+                      : !selectedClass
+                        ? "Select a class to see its divisions."
+                        : selectedDivisions.length === 0
+                          ? "No divisions yet."
+                          : `${selectedClass.name} divisions are shown here.`}
                   </CardDescription>
                 </div>
 
-                <AddAction onAdd={() => openDivisionDialog("add")} />
+                <AddAction onAdd={() => openDivisionDialog("add")} disabled={isInitialLoading} />
               </CardHeader>
 
               <CardContent
@@ -651,7 +734,9 @@ export default function Page() {
                 dark:hover:scrollbar-thumb-slate-600
               "
               >
-                {!selectedClass ? (
+                {isInitialLoading ? (
+                  <RowSkeleton />
+                ) : !selectedClass ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No class selected</p>
                     <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
@@ -747,17 +832,20 @@ export default function Page() {
                   value={classNameDraft}
                   onChange={(event) => setClassNameDraft(event.target.value)}
                   placeholder="Example: Grade 5 - Morning Session"
+                  disabled={isSavingClass}
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={closeClassDialog}>
+              <Button variant="outline" disabled={isSavingClass} onClick={closeClassDialog}>
                 Cancel
               </Button>
               <Button
+                disabled={isSavingClass}
                 onClick={() => {
                   void (async () => {
+                    setIsSavingClass(true)
                     try {
                       const classIdToUpdate = editingClassId || selectedClassId
 
@@ -769,16 +857,25 @@ export default function Page() {
 
                       setClasses(await getClasses())
                       if (classIdToUpdate) {
-                        toast.success(classDialogMode === "add" ? "Class created" : "Class updated")
+                        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
                       }
                       closeClassDialog()
                     } catch (error) {
                       toast.error(error instanceof Error ? error.message : "Failed to save class")
+                    } finally {
+                      setIsSavingClass(false)
                     }
                   })()
                 }}
               >
-                {classDialogMode === "add" ? "Add" : "Save"}
+                {isSavingClass ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {classDialogMode === "add" ? "Adding..." : "Saving..."}
+                  </>
+                ) : (
+                  classDialogMode === "add" ? "Add" : "Save"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -805,17 +902,20 @@ export default function Page() {
                   value={divisionNameDraft}
                   onChange={(event) => setDivisionNameDraft(event.target.value)}
                   placeholder="Example: Division A - Primary Block"
+                  disabled={isSavingDivision}
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={closeDivisionDialog}>
+              <Button variant="outline" disabled={isSavingDivision} onClick={closeDivisionDialog}>
                 Cancel
               </Button>
               <Button
+                disabled={isSavingDivision}
                 onClick={() => {
                   void (async () => {
+                    setIsSavingDivision(true)
                     try {
                       if (!selectedClassId) {
                         throw new Error("Select a class first")
@@ -837,15 +937,24 @@ export default function Page() {
                         ...current,
                         [selectedClassId]: updatedDivisions,
                       }))
-                      toast.success(divisionDialogMode === "add" ? "Division created" : "Division updated")
+                      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
                       closeDivisionDialog()
                     } catch (error) {
                       toast.error(error instanceof Error ? error.message : "Failed to save division")
+                    } finally {
+                      setIsSavingDivision(false)
                     }
                   })()
                 }}
               >
-                {divisionDialogMode === "add" ? "Add" : "Save"}
+                {isSavingDivision ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {divisionDialogMode === "add" ? "Adding..." : "Saving..."}
+                  </>
+                ) : (
+                  divisionDialogMode === "add" ? "Add" : "Save"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
