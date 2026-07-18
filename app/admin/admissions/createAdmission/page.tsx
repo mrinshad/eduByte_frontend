@@ -117,6 +117,17 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
     </div>
 );
 
+// Small red asterisk shown next to labels for required fields
+const RequiredMark = () => (
+    <span className="text-red-500 ml-0.5" aria-hidden="true">*</span>
+);
+
+// Small red text shown under an invalid field
+const FieldError = ({ message }: { message?: string }) =>
+    message ? (
+        <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">{message}</p>
+    ) : null;
+
 const InfoGrid = ({
     children,
     className,
@@ -147,6 +158,11 @@ const fieldClass = `
   h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
+`;
+
+// Applied on top of fieldClass when that field currently has a validation error
+const fieldErrorClass = `
+  !border-red-400 dark:!border-red-500/60 focus:!ring-red-400/40
 `;
 
 export default function Page() {
@@ -188,6 +204,11 @@ export default function Page() {
     const [loadingVehicleList, setLoadingVehicleList] = useState(false);
     const [loadingFeeList, setLoadingFeeList] = useState(false);
     const [loadingEnrollment, setLoadingEnrollment] = useState(false);
+
+    // Field-level errors for the required top-level selectors
+    const [fieldErrors, setFieldErrors] = useState<{ student?: string; class?: string; division?: string; feeStructure?: string }>({});
+    // Per-row errors for the fee items table, keyed by chargeTypeId
+    const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
 
     // When true, the fee-structure-details effect must NOT overwrite editableFeeItems.
     // Set to true at the very start of loadEnrollment() and cleared only after
@@ -292,6 +313,7 @@ export default function Page() {
         setDivisionsDropdown([]);
         setSelectedFeeStructureId("");
         setEditableFeeItems([]);
+        setFieldErrors((prev) => ({ ...prev, class: undefined }));
     };
 
     // ── Student detail fetch ──────────────────────────────────────────────────
@@ -355,6 +377,7 @@ export default function Page() {
                         description: "",
                     }));
                     setEditableFeeItems(itemsLayout);
+                    setItemErrors({});
                 }
             } catch (error) {
                 console.error("Error loading fee structure:", error);
@@ -464,6 +487,15 @@ export default function Page() {
     }, [isEditMode, enrollmentId]);
 
     // ── Fee item change handlers ──────────────────────────────────────────────
+    const clearItemError = (chargeTypeId: string) => {
+        setItemErrors((prev) => {
+            if (!(chargeTypeId in prev)) return prev;
+            const next = { ...prev };
+            delete next[chargeTypeId];
+            return next;
+        });
+    };
+
     const handleItemAmountChange = (chargeTypeId: string, value: string) => {
         setEditableFeeItems((prev) =>
             prev.map((item) =>
@@ -472,6 +504,7 @@ export default function Page() {
                     : item
             )
         );
+        clearItemError(chargeTypeId);
     };
 
     const handleItemDueDateChange = (chargeTypeId: string, value: string) => {
@@ -482,6 +515,7 @@ export default function Page() {
                     : item
             )
         );
+        clearItemError(chargeTypeId);
     };
 
     const handleItemDescriptionChange = (chargeTypeId: string, value: string) => {
@@ -496,16 +530,80 @@ export default function Page() {
 
     const handleRemoveItem = (chargeTypeId: string) => {
         setEditableFeeItems((prev) => prev.filter((item) => item.chargeTypeId !== chargeTypeId));
+        clearItemError(chargeTypeId);
     };
 
     const totalAmount = useMemo(() => {
         return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     }, [editableFeeItems]);
 
+    // Checks the four required selectors and returns field-keyed messages.
+    const validateTopFields = (): { valid: boolean; errors: typeof fieldErrors } => {
+        const errors: typeof fieldErrors = {};
+        if (!selectedStudentId) errors.student = "Please select a student";
+        if (!selectedClassId) errors.class = "Please select a class";
+        if (!selectedDivisionId) errors.division = "Please select a division";
+        if (!selectedFeeStructureId) errors.feeStructure = "Please select a fee structure template";
+        return { valid: Object.keys(errors).length === 0, errors };
+    };
+
+    // Validates every fee item row (only relevant when a fee template is linked):
+    // amount must be present and non-negative; due day, if set, must be 1–31.
+    const validateFeeItems = (): { valid: boolean; errors: Record<string, string> } => {
+        const errors: Record<string, string> = {};
+
+        editableFeeItems.forEach((item) => {
+            if (item.amount === "") {
+                errors[item.chargeTypeId] = "Enter an amount";
+                return;
+            }
+            if (Number(item.amount) < 0) {
+                errors[item.chargeTypeId] = "Amount cannot be negative";
+                return;
+            }
+            if (item.dueDay !== "" && (Number(item.dueDay) < 1 || Number(item.dueDay) > 31)) {
+                errors[item.chargeTypeId] = "Due day must be between 1 and 31";
+            }
+        });
+
+        return { valid: Object.keys(errors).length === 0, errors };
+    };
+
+    // Best-effort extraction of a human-readable message from whatever
+    // apiFetch throws, so real backend validation errors (e.g. duplicate
+    // enrollment, invalid fee structure) reach the user instead of a
+    // generic fallback.
+    const getErrorMessage = (error: unknown, fallback: string): string => {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === "string" && error.trim()) return error;
+        if (
+            error &&
+            typeof error === "object" &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+        ) {
+            return (error as { message: string }).message;
+        }
+        return fallback;
+    };
+
     // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        if (!selectedStudentId || !selectedClassId || !selectedDivisionId) {
-            alert("Ensure Student, Class, and Division targets are selected before submitting.");
+        const { valid: topValid, errors: topErrors } = validateTopFields();
+        setFieldErrors(topErrors);
+
+        const { valid: itemsValid, errors: rowErrors } = validateFeeItems();
+        setItemErrors(rowErrors);
+
+        if (!topValid) {
+            const firstError = Object.values(topErrors)[0];
+            toast.error(firstError ?? "Please complete the required fields");
+            return;
+        }
+
+        if (!itemsValid) {
+            const firstError = Object.values(rowErrors)[0];
+            toast.error(firstError ?? "Please fix the highlighted fee items");
             return;
         }
 
@@ -562,11 +660,12 @@ export default function Page() {
             if (result?.success) {
                 router.back();
             } else {
-                alert(result?.message || "An error occurred during submission.");
+                toast.error(result?.message || "An error occurred during submission.");
             }
         } catch (error) {
-            toast.error("Failed to save admission");
             console.error("Submit error:", error);
+            const fallback = isEditMode ? "Failed to update admission" : "Failed to save admission";
+            toast.error(getErrorMessage(error, fallback));
         } finally {
             setSubmitting(false);
         }
@@ -598,7 +697,8 @@ export default function Page() {
                             submitting ||
                             !selectedStudentId ||
                             !selectedClassId ||
-                            !selectedDivisionId
+                            !selectedDivisionId ||
+                            !selectedFeeStructureId
                         }
                         className="
     rounded-xl
@@ -611,6 +711,8 @@ export default function Page() {
     dark:bg-slate-100
     dark:text-slate-900
     dark:hover:bg-slate-200
+    disabled:opacity-50
+    disabled:cursor-not-allowed
   "
                     >
                         {submitting
@@ -637,13 +739,20 @@ export default function Page() {
                         description="Extract lightweight items from index directory list frames securely on-click."
                     >
                         <div className="w-full">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                <User className="h-3.5 w-3.5 text-[#6D755F]" /> Target Student<RequiredMark />
+                            </span>
                             <Popover open={studentPopoverOpen} onOpenChange={handleStudentPopoverChange}>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="outline"
                                         role="combobox"
                                         aria-expanded={studentPopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
+                                        className={cn(
+                                            "w-full justify-between font-normal shadow-sm text-left",
+                                            fieldClass,
+                                            fieldErrors.student && fieldErrorClass
+                                        )}
                                     >
                                         {selectedStudentId ? (
                                             (() => {
@@ -676,6 +785,7 @@ export default function Page() {
                                                                 onSelect={() => {
                                                                     setSelectedStudentId(student.id);
                                                                     setStudentPopoverOpen(false);
+                                                                    setFieldErrors((prev) => ({ ...prev, student: undefined }));
                                                                 }}
                                                                 className="py-3 cursor-pointer"
                                                             >
@@ -693,6 +803,7 @@ export default function Page() {
                                     </Command>
                                 </PopoverContent>
                             </Popover>
+                            <FieldError message={fieldErrors.student} />
                         </div>
 
                         {loadingStudent ? (
@@ -746,7 +857,7 @@ export default function Page() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Assigned School Class
+                                    <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Assigned School Class<RequiredMark />
                                 </span>
                                 <Popover open={classPopoverOpen} onOpenChange={handleClassPopoverChange}>
                                     <PopoverTrigger asChild>
@@ -754,7 +865,11 @@ export default function Page() {
                                             variant="outline"
                                             role="combobox"
                                             aria-expanded={classPopoverOpen}
-                                            className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
+                                            className={cn(
+                                                "w-full justify-between font-normal shadow-sm text-left",
+                                                fieldClass,
+                                                fieldErrors.class && fieldErrorClass
+                                            )}
                                         >
                                             {selectedClassId ? (
                                                 classesDropdown.find(c => c.id === selectedClassId)?.name || "Parsing class..."
@@ -795,11 +910,12 @@ export default function Page() {
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
+                                <FieldError message={fieldErrors.class} />
                             </div>
 
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <GitBranch className="h-3.5 w-3.5 text-[#6D755F]" /> Specific Section Division
+                                    <GitBranch className="h-3.5 w-3.5 text-[#6D755F]" /> Specific Section Division<RequiredMark />
                                 </span>
                                 <Popover open={divisionPopoverOpen} onOpenChange={handleDivisionPopoverChange}>
                                     <PopoverTrigger asChild>
@@ -808,7 +924,11 @@ export default function Page() {
                                             role="combobox"
                                             disabled={!selectedClassId}
                                             aria-expanded={divisionPopoverOpen}
-                                            className={cn("w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
+                                            className={cn(
+                                                "w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40",
+                                                fieldClass,
+                                                fieldErrors.division && fieldErrorClass
+                                            )}
                                         >
                                             {selectedDivisionId ? (
                                                 divisionsDropdown.find(d => d.id === selectedDivisionId)?.name || "Parsing division..."
@@ -835,6 +955,7 @@ export default function Page() {
                                                                     onSelect={() => {
                                                                         setSelectedDivisionId(d.id);
                                                                         setDivisionPopoverOpen(false);
+                                                                        setFieldErrors((prev) => ({ ...prev, division: undefined }));
                                                                     }}
                                                                     className="cursor-pointer"
                                                                 >
@@ -849,6 +970,7 @@ export default function Page() {
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
+                                <FieldError message={fieldErrors.division} />
                             </div>
 
                             <div className="flex flex-col gap-2">
@@ -954,6 +1076,9 @@ export default function Page() {
                         description="Load templates dynamically scoped to your selected class. All charge items are included in the submission."
                     >
                         <div className="md:w-1/2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                <Wallet className="h-3.5 w-3.5 text-[#6D755F]" /> Fee Structure Template<RequiredMark />
+                            </span>
                             <Popover open={feePopoverOpen} onOpenChange={handleFeePopoverChange}>
                                 <PopoverTrigger asChild>
                                     <Button
@@ -961,7 +1086,11 @@ export default function Page() {
                                         role="combobox"
                                         disabled={!selectedClassId}
                                         aria-expanded={feePopoverOpen}
-                                        className={cn("w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
+                                        className={cn(
+                                            "w-full justify-between font-normal shadow-sm text-left disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40",
+                                            fieldClass,
+                                            fieldErrors.feeStructure && fieldErrorClass
+                                        )}
                                     >
                                         {selectedFeeStructureId ? (
                                             allFeeStructures.find(f => f.id === selectedFeeStructureId)?.name || "Parsing fee structure..."
@@ -989,6 +1118,7 @@ export default function Page() {
                                                                 onSelect={() => {
                                                                     setSelectedFeeStructureId(template.id);
                                                                     setFeePopoverOpen(false);
+                                                                    setFieldErrors((prev) => ({ ...prev, feeStructure: undefined }));
                                                                 }}
                                                                 className="py-3 cursor-pointer"
                                                             >
@@ -1003,6 +1133,7 @@ export default function Page() {
                                     </Command>
                                 </PopoverContent>
                             </Popover>
+                            <FieldError message={fieldErrors.feeStructure} />
                         </div>
 
                         {loadingFeeStructure ? (
@@ -1028,7 +1159,10 @@ export default function Page() {
                                         variant="ghost"
                                         size="sm"
                                         className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
-                                        onClick={() => setSelectedFeeStructureId("")}
+                                        onClick={() => {
+                                            setSelectedFeeStructureId("");
+                                            setItemErrors({});
+                                        }}
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" /> Unlink Template
                                     </Button>
@@ -1040,7 +1174,7 @@ export default function Page() {
                                             <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
                                                 <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Fee Particulars</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">Original Amount</TableHead>
-                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Override Amount</TableHead>
+                                                <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">Override Amount<RequiredMark /></TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">Due Date (Days)</TableHead>
                                                 <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[200px]">Description</TableHead>
                                                 <TableHead className="w-[60px] pr-6 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Remove</TableHead>
@@ -1050,8 +1184,17 @@ export default function Page() {
                                             {editableFeeItems.map((item) => {
                                                 const discount = item.baseAmount - (Number(item.amount) || 0);
                                                 const hasOverride = Number(item.amount) !== item.baseAmount;
+                                                const rowError = itemErrors[item.chargeTypeId];
                                                 return (
-                                                    <TableRow key={item.chargeTypeId} className="border-slate-100 dark:border-slate-800 align-top">
+                                                    <TableRow
+                                                        key={item.chargeTypeId}
+                                                        className={cn(
+                                                            "align-top",
+                                                            rowError
+                                                                ? "border-red-300 dark:border-red-500/50 bg-red-50/40 dark:bg-red-950/10"
+                                                                : "border-slate-100 dark:border-slate-800"
+                                                        )}
+                                                    >
                                                         <TableCell className="pl-6 font-medium text-slate-800 dark:text-slate-200 pt-4">
                                                             {item.name}
                                                             {hasOverride && discount > 0 && (
@@ -1085,10 +1228,12 @@ export default function Page() {
                                                                     onWheel={(e) => e.currentTarget.blur()}
                                                                     className={cn(
                                                                         "h-10 pl-8 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white",
-                                                                        hasOverride && "border-[#6D755F] ring-1 ring-[#6D755F]/30"
+                                                                        hasOverride && !rowError && "border-[#6D755F] ring-1 ring-[#6D755F]/30",
+                                                                        rowError && fieldErrorClass
                                                                     )}
                                                                 />
                                                             </div>
+                                                            <FieldError message={rowError} />
                                                         </TableCell>
 
                                                         <TableCell className="pt-4">

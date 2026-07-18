@@ -106,6 +106,11 @@ export default function Page() {
   const [divisionDialogMode, setDivisionDialogMode] = React.useState<"add" | "edit">("add")
   const [classNameDraft, setClassNameDraft] = React.useState("")
   const [divisionNameDraft, setDivisionNameDraft] = React.useState("")
+  // Track which class/division is actually being edited, independent of
+  // the "selected" (highlighted) row. This is what fixes the bug where
+  // clicking edit on one row would show the currently-selected row's data.
+  const [editingClassId, setEditingClassId] = React.useState("")
+  const [editingDivisionId, setEditingDivisionId] = React.useState("")
 
   const selectedClass = React.useMemo(
     () => classes.find((entry) => entry.id === selectedClassId) ?? null,
@@ -200,26 +205,35 @@ export default function Page() {
     }
   }, [yearDialogOpen])
 
-  function openClassDialog(mode: "add" | "edit") {
+  // `target` lets the caller pass the exact row that was clicked, instead
+  // of relying on `selectedClass`, which may not have updated yet if
+  // `setSelectedClassId` was just called in the same event handler.
+  function openClassDialog(mode: "add" | "edit", target?: SchoolClass) {
+    const classToEdit = target ?? selectedClass ?? undefined
     setClassDialogMode(mode)
-    setClassNameDraft(mode === "edit" ? selectedClass?.name ?? "" : "")
+    setEditingClassId(mode === "edit" ? classToEdit?.id ?? "" : "")
+    setClassNameDraft(mode === "edit" ? classToEdit?.name ?? "" : "")
     setClassDialogOpen(true)
   }
 
-  function openDivisionDialog(mode: "add" | "edit") {
+  function openDivisionDialog(mode: "add" | "edit", target?: Division) {
+    const divisionToEdit = target ?? selectedDivision ?? undefined
     setDivisionDialogMode(mode)
-    setDivisionNameDraft(mode === "edit" ? selectedDivision?.name ?? "" : "")
+    setEditingDivisionId(mode === "edit" ? divisionToEdit?.id ?? "" : "")
+    setDivisionNameDraft(mode === "edit" ? divisionToEdit?.name ?? "" : "")
     setDivisionDialogOpen(true)
   }
 
   function closeClassDialog() {
     setClassDialogOpen(false)
     setClassNameDraft("")
+    setEditingClassId("")
   }
 
   function closeDivisionDialog() {
     setDivisionDialogOpen(false)
     setDivisionNameDraft("")
+    setEditingDivisionId("")
   }
 
   return (
@@ -597,7 +611,7 @@ export default function Page() {
                             onClick={(event) => {
                               event.stopPropagation()
                               setSelectedClassId(schoolClass.id)
-                              openClassDialog("edit")
+                              openClassDialog("edit", schoolClass)
                             }}
                           >
                             <Pencil className="h-4 w-4" />
@@ -696,7 +710,8 @@ export default function Page() {
                           className={editIconClass}
                           onClick={(event) => {
                             event.stopPropagation()
-                            openDivisionDialog("edit")
+                            setSelectedDivisionId(division.id)
+                            openDivisionDialog("edit", division)
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -744,14 +759,16 @@ export default function Page() {
                 onClick={() => {
                   void (async () => {
                     try {
+                      const classIdToUpdate = editingClassId || selectedClassId
+
                       if (classDialogMode === "add") {
                         await createClass(classNameDraft)
-                      } else if (selectedClassId) {
-                        await updateClass(selectedClassId, classNameDraft)
+                      } else if (classIdToUpdate) {
+                        await updateClass(classIdToUpdate, classNameDraft)
                       }
 
                       setClasses(await getClasses())
-                      if (selectedClassId) {
+                      if (classIdToUpdate) {
                         toast.success(classDialogMode === "add" ? "Class created" : "Class updated")
                       }
                       closeClassDialog()
@@ -804,10 +821,12 @@ export default function Page() {
                         throw new Error("Select a class first")
                       }
 
+                      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
+
                       if (divisionDialogMode === "add") {
                         await createDivisions(selectedClassId, [divisionNameDraft])
-                      } else if (selectedDivisionId) {
-                        await updateDivision(selectedDivisionId, divisionNameDraft)
+                      } else if (divisionIdToUpdate) {
+                        await updateDivision(divisionIdToUpdate, divisionNameDraft)
                       }
 
                       const updatedClasses = await getClasses()

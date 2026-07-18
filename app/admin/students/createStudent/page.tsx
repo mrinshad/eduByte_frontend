@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-    ArrowLeft, 
-    CalendarIcon, 
-    User, 
-    Users, 
-    MapPin, 
-    Loader2 
+import {
+    ArrowLeft,
+    CalendarIcon,
+    User,
+    Users,
+    MapPin,
+    Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -42,6 +42,20 @@ import {
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+// Which fields are mandatory. bloodGroup is intentionally excluded (optional).
+type RequiredField =
+    | "admissionNumber"
+    | "studentName"
+    | "dob"
+    | "fatherName"
+    | "fatherMobile"
+    | "motherName"
+    | "motherMobile"
+    | "whatsappNumber"
+    | "address";
+
+const PHONE_REGEX = /^[0-9]{10}$/;
+
 // ── Reusable Step Section Component ──
 const StepSection = ({ stepNumber, title, description, icon: Icon, children }: any) => (
     <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
@@ -61,11 +75,21 @@ const StepSection = ({ stepNumber, title, description, icon: Icon, children }: a
     </div>
 );
 
+// Small red asterisk shown next to labels for required fields
+const RequiredMark = () => (
+    <span className="text-red-500 ml-0.5" aria-hidden="true">*</span>
+);
+
 // ── Shared Field Styling (Ensuring strictly equal height and width) ──
 const fieldClass = `
   flex w-full h-12 px-3 py-2 items-center rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400
   focus:outline-none focus:ring-2 focus:ring-[#556043]/30 focus:border-[#556043]
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
+`;
+
+// Applied on top of fieldClass when that field currently has a validation error
+const fieldErrorClass = `
+  !border-red-400 dark:!border-red-500/60 focus:!ring-red-400/40 focus:!border-red-400
 `;
 
 // ── Shared Select Item Theme ──
@@ -74,6 +98,12 @@ const selectItemClass = `
   data-[highlighted]:bg-[#556043] data-[highlighted]:text-white
   data-[state=checked]:bg-[#556043] data-[state=checked]:text-white
 `;
+
+// Small red text shown under an invalid field
+const FieldError = ({ message }: { message?: string }) =>
+    message ? (
+        <p className="text-xs font-medium text-red-600 dark:text-red-400">{message}</p>
+    ) : null;
 
 export default function Page() {
     const [date, setDate] = React.useState<Date>();
@@ -98,6 +128,9 @@ export default function Page() {
         whatsappNumber: "",
         address: "",
     });
+
+    // Field-level validation errors, keyed by field name
+    const [fieldErrors, setFieldErrors] = useState<Partial<Record<RequiredField, string>>>({});
 
     useEffect(() => {
         const loadStudent = async () => {
@@ -131,13 +164,103 @@ export default function Page() {
     }, [id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [e.target.name]: e.target.value,
+            [name]: value,
         }));
+        // Clear that field's error as soon as the user edits it
+        setFieldErrors((prev) => {
+            if (!(name in prev)) return prev;
+            const next = { ...prev };
+            delete next[name as RequiredField];
+            return next;
+        });
+    };
+
+    // Runs every required-field check and returns a map of field -> message.
+    // Phone fields also get a basic 10-digit format check.
+    const validateForm = (): { valid: boolean; errors: Partial<Record<RequiredField, string>> } => {
+        const errors: Partial<Record<RequiredField, string>> = {};
+
+        if (!formData.admissionNumber.trim()) errors.admissionNumber = "Admission number is required";
+        if (!formData.studentName.trim()) errors.studentName = "Student's full name is required";
+        if (!formData.dob) errors.dob = "Date of birth is required";
+
+        if (!formData.fatherName.trim()) {
+            errors.fatherName = "Father's name is required";
+        }
+        if (!formData.fatherMobile.trim()) {
+            errors.fatherMobile = "Father's phone number is required";
+        } else if (!PHONE_REGEX.test(formData.fatherMobile.trim())) {
+            errors.fatherMobile = "Enter a valid 10-digit phone number";
+        }
+
+        if (!formData.motherName.trim()) {
+            errors.motherName = "Mother's name is required";
+        }
+        if (!formData.motherMobile.trim()) {
+            errors.motherMobile = "Mother's phone number is required";
+        } else if (!PHONE_REGEX.test(formData.motherMobile.trim())) {
+            errors.motherMobile = "Enter a valid 10-digit phone number";
+        }
+
+        if (!formData.whatsappNumber.trim()) {
+            errors.whatsappNumber = "Whatsapp number is required";
+        } else if (!PHONE_REGEX.test(formData.whatsappNumber.trim())) {
+            errors.whatsappNumber = "Enter a valid 10-digit phone number";
+        }
+
+        if (!formData.address.trim()) errors.address = "Address is required";
+
+        return { valid: Object.keys(errors).length === 0, errors };
+    };
+
+    // Cheap, submit-independent check used only to enable/disable the
+    // Save button — mirrors validateForm's "required" checks (not the
+    // phone-format checks) so the button unlocks as soon as fields are
+    // filled, and the format is caught with a clear message on submit.
+    const isRequiredFilled = useMemo(() => {
+        return (
+            formData.admissionNumber.trim() !== "" &&
+            formData.studentName.trim() !== "" &&
+            formData.dob !== "" &&
+            formData.fatherName.trim() !== "" &&
+            formData.fatherMobile.trim() !== "" &&
+            formData.motherName.trim() !== "" &&
+            formData.motherMobile.trim() !== "" &&
+            formData.whatsappNumber.trim() !== "" &&
+            formData.address.trim() !== ""
+        );
+    }, [formData]);
+
+    // Best-effort extraction of a human-readable message from whatever
+    // apiFetch throws, so real backend validation errors (e.g. duplicate
+    // admission number) reach the user instead of a generic fallback.
+    const getErrorMessage = (error: unknown, fallback: string): string => {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === "string" && error.trim()) return error;
+        if (
+            error &&
+            typeof error === "object" &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+        ) {
+            return (error as { message: string }).message;
+        }
+        return fallback;
     };
 
     const handleSubmit = async () => {
+        const { valid, errors } = validateForm();
+        setFieldErrors(errors);
+
+        if (!valid) {
+            const firstError = Object.values(errors)[0];
+            toast.error(firstError ?? "Please fix the highlighted fields");
+            return;
+        }
+
         try {
             setLoading(true);
             if (id) {
@@ -150,7 +273,8 @@ export default function Page() {
             router.push("/admin/students");
         } catch (error) {
             console.error(error);
-            toast.error("Failed to save student record");
+            const fallback = id ? "Failed to update student record" : "Failed to save student record";
+            toast.error(getErrorMessage(error, fallback));
         } finally {
             setLoading(false);
         }
@@ -161,10 +285,10 @@ export default function Page() {
             {/* ── Header Area ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center space-x-4">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={() => router.back()} 
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.back()}
                         className="rounded-xl h-10 w-10 shadow-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                     >
                         <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
@@ -180,18 +304,18 @@ export default function Page() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button 
-                        variant="outline" 
-                        onClick={() => router.back()} 
-                        disabled={loading} 
+                    <Button
+                        variant="outline"
+                        onClick={() => router.back()}
+                        disabled={loading}
                         className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                     >
                         Discard
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={loading || initialLoading}
-                        className="rounded-xl h-11 px-8 bg-[#556043] text-white hover:bg-[#4a533b] shadow-md dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                        disabled={loading || initialLoading || !isRequiredFilled}
+                        className="rounded-xl h-11 px-8 bg-[#556043] text-white hover:bg-[#4a533b] shadow-md dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
@@ -208,7 +332,7 @@ export default function Page() {
                 </div>
             ) : (
                 <div className="mx-auto max-w-5xl space-y-8 pb-12">
-                    
+
                     {/* Step 1: Basic Information */}
                     <StepSection
                         stepNumber="1"
@@ -218,36 +342,49 @@ export default function Page() {
                     >
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-2">
-                                <Label htmlFor="admissionNumber" className="text-slate-700 dark:text-slate-300">Admission Number</Label>
+                                <Label htmlFor="admissionNumber" className="text-slate-700 dark:text-slate-300">
+                                    Admission Number<RequiredMark />
+                                </Label>
                                 <Input
                                     id="admissionNumber"
                                     name="admissionNumber"
                                     value={formData.admissionNumber}
                                     onChange={handleChange}
                                     placeholder="e.g. ADM-2024-001"
-                                    className={fieldClass}
+                                    className={cn(fieldClass, fieldErrors.admissionNumber && fieldErrorClass)}
                                 />
+                                <FieldError message={fieldErrors.admissionNumber} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="studentName" className="text-slate-700 dark:text-slate-300">Full Name</Label>
+                                <Label htmlFor="studentName" className="text-slate-700 dark:text-slate-300">
+                                    Full Name<RequiredMark />
+                                </Label>
                                 <Input
                                     id="studentName"
                                     name="studentName"
                                     value={formData.studentName}
                                     onChange={handleChange}
                                     placeholder="Student's Legal Name"
-                                    className={fieldClass}
+                                    className={cn(fieldClass, fieldErrors.studentName && fieldErrorClass)}
                                 />
+                                <FieldError message={fieldErrors.studentName} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-slate-700 dark:text-slate-300">Date Of Birth</Label>
+                                <Label className="text-slate-700 dark:text-slate-300">
+                                    Date Of Birth<RequiredMark />
+                                </Label>
                                 <Popover open={open} onOpenChange={setOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className={cn("justify-start text-left font-normal", fieldClass, !date && "text-slate-400")}
+                                            className={cn(
+                                                "justify-start text-left font-normal",
+                                                fieldClass,
+                                                !date && "text-slate-400",
+                                                fieldErrors.dob && fieldErrorClass
+                                            )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
                                             {date ? format(date, "PPP") : "Select Date"}
@@ -265,15 +402,24 @@ export default function Page() {
                                                     ...prev,
                                                     dob: selectedDate.toISOString(),
                                                 }));
+                                                setFieldErrors((prev) => {
+                                                    if (!("dob" in prev)) return prev;
+                                                    const next = { ...prev };
+                                                    delete next.dob;
+                                                    return next;
+                                                });
                                                 setOpen(false);
                                             }}
                                         />
                                     </PopoverContent>
                                 </Popover>
+                                <FieldError message={fieldErrors.dob} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="gender" className="text-slate-700 dark:text-slate-300">Gender</Label>
+                                <Label htmlFor="gender" className="text-slate-700 dark:text-slate-300">
+                                    Gender<RequiredMark />
+                                </Label>
                                 <Select
                                     value={formData.gender}
                                     onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value as "Male" | "Female" }))}
@@ -308,15 +454,18 @@ export default function Page() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="whatsappNumber" className="text-slate-700 dark:text-slate-300">Whatsapp Number</Label>
+                                <Label htmlFor="whatsappNumber" className="text-slate-700 dark:text-slate-300">
+                                    Whatsapp Number<RequiredMark />
+                                </Label>
                                 <Input
                                     id="whatsappNumber"
                                     name="whatsappNumber"
                                     value={formData.whatsappNumber}
                                     onChange={handleChange}
-                                    placeholder="e.g. +91 9876543210"
-                                    className={fieldClass}
+                                    placeholder="e.g. 9876543210"
+                                    className={cn(fieldClass, fieldErrors.whatsappNumber && fieldErrorClass)}
                                 />
+                                <FieldError message={fieldErrors.whatsappNumber} />
                             </div>
                         </div>
                     </StepSection>
@@ -335,26 +484,32 @@ export default function Page() {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="fatherName" className="text-slate-700 dark:text-slate-300">Full Name</Label>
+                                        <Label htmlFor="fatherName" className="text-slate-700 dark:text-slate-300">
+                                            Full Name<RequiredMark />
+                                        </Label>
                                         <Input
                                             id="fatherName"
                                             name="fatherName"
                                             value={formData.fatherName}
                                             onChange={handleChange}
                                             placeholder="Father's Legal Name"
-                                            className={fieldClass}
+                                            className={cn(fieldClass, fieldErrors.fatherName && fieldErrorClass)}
                                         />
+                                        <FieldError message={fieldErrors.fatherName} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="fatherMobile" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                        <Label htmlFor="fatherMobile" className="text-slate-700 dark:text-slate-300">
+                                            Phone Number<RequiredMark />
+                                        </Label>
                                         <Input
                                             id="fatherMobile"
                                             name="fatherMobile"
                                             value={formData.fatherMobile}
                                             onChange={handleChange}
                                             placeholder="Contact Number"
-                                            className={fieldClass}
+                                            className={cn(fieldClass, fieldErrors.fatherMobile && fieldErrorClass)}
                                         />
+                                        <FieldError message={fieldErrors.fatherMobile} />
                                     </div>
                                 </div>
                             </div>
@@ -365,26 +520,32 @@ export default function Page() {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="motherName" className="text-slate-700 dark:text-slate-300">Full Name</Label>
+                                        <Label htmlFor="motherName" className="text-slate-700 dark:text-slate-300">
+                                            Full Name<RequiredMark />
+                                        </Label>
                                         <Input
                                             id="motherName"
                                             name="motherName"
                                             value={formData.motherName}
                                             onChange={handleChange}
                                             placeholder="Mother's Legal Name"
-                                            className={fieldClass}
+                                            className={cn(fieldClass, fieldErrors.motherName && fieldErrorClass)}
                                         />
+                                        <FieldError message={fieldErrors.motherName} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="motherMobile" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                        <Label htmlFor="motherMobile" className="text-slate-700 dark:text-slate-300">
+                                            Phone Number<RequiredMark />
+                                        </Label>
                                         <Input
                                             id="motherMobile"
                                             name="motherMobile"
                                             value={formData.motherMobile}
                                             onChange={handleChange}
                                             placeholder="Contact Number"
-                                            className={fieldClass}
+                                            className={cn(fieldClass, fieldErrors.motherMobile && fieldErrorClass)}
                                         />
+                                        <FieldError message={fieldErrors.motherMobile} />
                                     </div>
                                 </div>
                             </div>
@@ -399,15 +560,18 @@ export default function Page() {
                         description="Primary physical location and mailing address."
                     >
                         <div className="space-y-2">
-                            <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">Complete Address</Label>
+                            <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">
+                                Complete Address<RequiredMark />
+                            </Label>
                             <Textarea
                                 id="address"
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
                                 placeholder="House/Flat No., Street, City, State, ZIP Code"
-                                className={cn("min-h-[120px] resize-y", fieldClass, "h-auto py-3 items-start")}
+                                className={cn("min-h-[120px] resize-y", fieldClass, "h-auto py-3 items-start", fieldErrors.address && fieldErrorClass)}
                             />
+                            <FieldError message={fieldErrors.address} />
                         </div>
                     </StepSection>
 
