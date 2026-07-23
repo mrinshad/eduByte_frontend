@@ -4,6 +4,7 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { parseApiError } from "@/lib/api-error";
 
 import {
     Command,
@@ -50,7 +51,9 @@ import {
 import { cn } from "@/lib/utils";
 
 // --- Shared UI Components from Admission Page ---
-
+const FEE_STRUCTURE_DUPLICATE_MAP = {
+  name: { field: "name", message: "A fee structure with this name already exists" },
+};
 const inputClass = `
   h-14
   w-full
@@ -117,6 +120,35 @@ const RequiredMark = () => (
     <span className="text-red-600 ml-0.5" aria-hidden="true">*</span>
 );
 
+// ── Field-level validators (same pattern as the Create Staff form) ──
+
+const STRUCTURE_NAME_PATTERN = /^[a-zA-Z0-9\s.,'()/-]+$/;
+
+function validateStructureName(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) return "Structure name is required";
+    if (trimmed.length < 3) return "Must be at least 3 characters";
+    if (trimmed.length > 100) return "Must be under 100 characters";
+    if (!STRUCTURE_NAME_PATTERN.test(trimmed)) return "Only letters, numbers, spaces and . , ' ( ) - / are allowed";
+    return undefined;
+}
+
+function validateClassSelection(value: string): string | undefined {
+    if (!value) return "Please select a class";
+    return undefined;
+}
+
+function validateAcademicYearSelection(value: string): string | undefined {
+    if (!value) return "Please select an academic year";
+    return undefined;
+}
+
+function validateDescription(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (trimmed.length > 500) return "Must be under 500 characters";
+    return undefined;
+}
+
 // --- Main Page Component ---
 
 export default function Page() {
@@ -136,6 +168,7 @@ export default function Page() {
         name?: string;
         selectedClass?: string;
         selectedAcademicYear?: string;
+        description?: string;
     }>({});
 
     const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -257,6 +290,8 @@ export default function Page() {
                 errors[index] = "Amount must be a number";
             } else if (numericAmount <= 0) {
                 errors[index] = "Amount must be greater than 0";
+            } else if (numericAmount > 10000000) {
+                errors[index] = "Amount seems unrealistically high";
             }
         });
 
@@ -282,10 +317,12 @@ export default function Page() {
     };
 
     const handleCreateFeeStructure = async () => {
-        const nextFieldErrors: typeof fieldErrors = {};
-        if (!name.trim()) nextFieldErrors.name = "Structure name is required";
-        if (!selectedClass) nextFieldErrors.selectedClass = "Please select a class";
-        if (!selectedAcademicYear) nextFieldErrors.selectedAcademicYear = "Please select an academic year";
+        const nextFieldErrors: typeof fieldErrors = {
+            name: validateStructureName(name),
+            selectedClass: validateClassSelection(selectedClass),
+            selectedAcademicYear: validateAcademicYearSelection(selectedAcademicYear),
+            description: validateDescription(description),
+        };
         setFieldErrors(nextFieldErrors);
 
         if (feeItems.length === 0) {
@@ -297,7 +334,7 @@ export default function Page() {
         setItemErrors(errors);
 
         // Surface the first problem found, top fields first, then fee items
-        const firstFieldError = Object.values(nextFieldErrors)[0];
+        const firstFieldError = Object.values(nextFieldErrors).find(Boolean);
         if (firstFieldError) {
             toast.error(firstFieldError);
             return;
@@ -312,11 +349,11 @@ export default function Page() {
         try {
             setSubmitting(true);
             const payload: CreateFeeStructureInput = {
-                name,
+                name: name.trim(),
                 academicYearId: selectedAcademicYear,
                 classId: selectedClass,
                 isActive,
-                description,
+                description: description.trim(),
                 items: feeItems.map((item) => ({
                     chargeTypeId: item.chargeTypeId,
                     amount: Number(item.amount),
@@ -337,7 +374,16 @@ export default function Page() {
             const fallback = isEditMode
                 ? "Failed to update fee structure"
                 : "Failed to create fee structure";
-            toast.error(getErrorMessage(error, fallback));
+            const parsed = parseApiError(error, fallback, FEE_STRUCTURE_DUPLICATE_MAP);
+
+            if (parsed.field) {
+                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
+            }
+            toast.error(parsed.message);
+
+            if (parsed.isAuthError) {
+                router.push("/login");
+            }
         } finally {
             setSubmitting(false);
         }
@@ -505,10 +551,22 @@ export default function Page() {
                                 </Label>
                                 <Textarea
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => {
+                                        setDescription(e.target.value);
+                                        setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                                    }}
                                     placeholder="Optional details regarding this fee structure..."
-                                    className={cn(inputClass, "min-h-[120px] py-3 resize-none")}
+                                    className={cn(
+                                        inputClass,
+                                        "min-h-[120px] py-3 resize-none",
+                                        fieldErrors.description && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                    )}
                                 />
+                                {fieldErrors.description && (
+                                    <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
+                                        {fieldErrors.description}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Active Status */}

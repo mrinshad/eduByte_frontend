@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, User, Loader2, Bus, Wallet, Receipt, Plus, X, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, User, Bus, Wallet, Receipt, Plus, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -73,6 +73,137 @@ function PeriodLabel({ month, year }: { month: number | null; year: number | nul
   if (!month || !year) return <span>-</span>;
   const date = new Date(year, month - 1, 1);
   return <span>{date.toLocaleString("default", { month: "short" })} {year}</span>;
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton primitives (shadcn-style: bg-slate-200/800 + animate-pulse)
+// ---------------------------------------------------------------------------
+function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-slate-200 dark:bg-slate-800 ${className}`} />
+}
+
+function StudentInfoSkeleton() {
+  return (
+    <InfoSection icon={User} title="Student Information">
+      <InfoGrid>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="px-4 py-3">
+            <Skeleton className="mb-2 h-2.5 w-16" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        ))}
+      </InfoGrid>
+    </InfoSection>
+  )
+}
+
+function ChargesTableSkeleton() {
+  return (
+    <div>
+      <Skeleton className="mb-2 h-3 w-32" />
+      <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800/50">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="bg-slate-50 dark:bg-slate-900/60">
+            <tr className="text-left text-slate-500 dark:text-slate-400">
+              <th className="px-3 py-2 font-medium w-10"></th>
+              <th className="px-3 py-2 font-medium">Charge</th>
+              <th className="px-3 py-2 font-medium">Period</th>
+              <th className="px-3 py-2 font-medium text-right">Amount</th>
+              <th className="px-3 py-2 font-medium text-right">Paid</th>
+              <th className="px-3 py-2 font-medium text-right">Balance</th>
+              <th className="px-3 py-2 font-medium text-right w-32">Collect</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+            <tr>
+              <td colSpan={7} className="bg-slate-50 px-3 py-1.5 dark:bg-slate-900/60">
+                <Skeleton className="h-3 w-24" />
+              </td>
+            </tr>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <tr key={i}>
+                <td className="px-3 py-2"><Skeleton className="h-4 w-4 rounded" /></td>
+                <td className="px-3 py-2"><Skeleton className="h-4 w-28" /></td>
+                <td className="px-3 py-2"><Skeleton className="h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-7 w-24 rounded-md" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function FinesTableSkeleton() {
+  return (
+    <div>
+      <Skeleton className="mb-2 h-3 w-16" />
+      <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800/50">
+        <table className="w-full min-w-[520px] text-sm">
+          <thead className="bg-slate-50 dark:bg-slate-900/60">
+            <tr className="text-left text-slate-500 dark:text-slate-400">
+              <th className="px-3 py-2 font-medium w-10"></th>
+              <th className="px-3 py-2 font-medium">Fine</th>
+              <th className="px-3 py-2 font-medium text-right">Amount</th>
+              <th className="px-3 py-2 font-medium text-right">Paid</th>
+              <th className="px-3 py-2 font-medium text-right">Balance</th>
+              <th className="px-3 py-2 font-medium text-right w-32">Collect</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <tr key={i}>
+                <td className="px-3 py-2"><Skeleton className="h-4 w-4 rounded" /></td>
+                <td className="px-3 py-2">
+                  <Skeleton className="mb-1 h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-4 w-16" /></td>
+                <td className="px-3 py-2"><Skeleton className="ml-auto h-7 w-24 rounded-md" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function SummaryPaymentSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800/50">
+        <Skeleton className="mb-3 h-3 w-20" />
+        <div className="space-y-3">
+          <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-16" /></div>
+          <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-16" /></div>
+          <div className="flex justify-between border-t border-slate-200 pt-2 dark:border-slate-800/50">
+            <Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+      </div>
+      <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800/50">
+        <div className="mb-3 flex items-center justify-between">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-7 w-24 rounded-md" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 flex-1 rounded-md" />
+          <Skeleton className="h-9 w-28 rounded-md" />
+        </div>
+        <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 dark:border-slate-800/50">
+          <Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-20" />
+        </div>
+        <Skeleton className="mt-4 h-10 w-full rounded-md" />
+      </div>
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -369,21 +500,27 @@ export default function Page() {
           <ArrowLeft className="h-4 w-4 text-foreground" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-            {loading ? "Loading..." : student?.studentName || "-"}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            {loading ? "" : student?.admissionNumber || "-"}
-          </p>
+          {loading ? (
+            <>
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="mt-1.5 h-4 w-28" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                {student?.studentName || "-"}
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                {student?.admissionNumber || "-"}
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       {/* ── Student / Enrollment Info ── */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500">
-          <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
-          <p className="text-sm">Loading student details...</p>
-        </div>
+        <StudentInfoSkeleton />
       ) : error ? (
         <div className="flex flex-col items-center justify-center gap-2 py-16 text-red-500">
           <p className="text-sm font-medium">{error}</p>
@@ -411,9 +548,10 @@ export default function Page() {
       {!loading && !error && (
         <InfoSection icon={Wallet} title="Outstanding Charges & Fines">
           {chargesLoading ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
-              <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
-              <p className="text-sm">Loading outstanding charges...</p>
+            <div className="p-4 space-y-6">
+              <ChargesTableSkeleton />
+              <FinesTableSkeleton />
+              <SummaryPaymentSkeleton />
             </div>
           ) : chargesError ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-red-500">

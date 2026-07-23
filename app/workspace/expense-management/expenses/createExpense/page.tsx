@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
+import { parseApiError } from "@/lib/api-error";
 import {
     ArrowLeft,
     Check,
@@ -62,6 +63,8 @@ const fieldClass = `
   dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
 `;
 
+const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400";
+
 const datePickerClassName =
     "w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-300 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
@@ -70,6 +73,11 @@ const datePickerPopperClassName = "z-50";
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
     <label className="text-[12px] font-medium text-slate-500 dark:text-slate-400">{children}</label>
 );
+
+const FieldError = ({ children }: { children?: string }) => {
+    if (!children) return null;
+    return <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-0.5">{children}</p>;
+};
 
 // ---------------------------------------------------------------------
 // Payment split types
@@ -114,6 +122,14 @@ export default function Page() {
     // ── Split payments ────────────────────────────────────────────────────
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
     const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
+
+    // ── Field-level validation errors ──────────────────────────────────────
+    const [fieldErrors, setFieldErrors] = useState<{
+        category?: string;
+        subCategory?: string;
+        amount?: string;
+    }>({});
+    const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
 
     // ── Popover open state ─────────────────────────────────────────────────
     const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
@@ -238,19 +254,41 @@ export default function Page() {
     const handleCategorySelect = (categoryId: string) => {
         setSelectedCategoryId(categoryId);
         setSelectedSubCategoryId("");
+        setFieldErrors((prev) => ({ ...prev, category: undefined }));
     };
 
     // ── Payment row helpers ──────────────────────────────────────────────────
     const addPaymentRow = () => setPayments((prev) => [...prev, createPaymentRow()]);
 
-    const removePaymentRow = (rowId: string) =>
+    const removePaymentRow = (rowId: string) => {
         setPayments((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== rowId) : prev));
+        setPaymentErrors((prev) => {
+            if (!(rowId in prev)) return prev;
+            const next = { ...prev };
+            delete next[rowId];
+            return next;
+        });
+    };
 
-    const updatePaymentAccount = (rowId: string, accountId: string) =>
+    const updatePaymentAccount = (rowId: string, accountId: string) => {
         setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, accountId } : p)));
+        setPaymentErrors((prev) => {
+            if (!(rowId in prev)) return prev;
+            const next = { ...prev };
+            delete next[rowId];
+            return next;
+        });
+    };
 
-    const updatePaymentAmount = (rowId: string, value: number | "") =>
+    const updatePaymentAmount = (rowId: string, value: number | "") => {
         setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, amount: value } : p)));
+        setPaymentErrors((prev) => {
+            if (!(rowId in prev)) return prev;
+            const next = { ...prev };
+            delete next[rowId];
+            return next;
+        });
+    };
 
     // Preload categories + sub categories eagerly.
     useEffect(() => {
@@ -276,45 +314,67 @@ export default function Page() {
     const remaining = (Number(amount) || 0) - totalAllocated;
     const allocationPct = amount && Number(amount) > 0 ? Math.min(100, (totalAllocated / Number(amount)) * 100) : 0;
 
-    const paymentsValid =
-        payments.length > 0 &&
-        payments.every((p) => !!p.accountId && p.amount !== "" && Number(p.amount) > 0) &&
-        amount !== "" &&
-        remaining === 0;
+    // ── Field-level validation ────────────────────────────────────────────
+    // Checks each field individually (rather than one big boolean) so we can
+    // toast a specific, actionable message and highlight exactly the field
+    // that's missing — e.g. "Please select a category" instead of a generic
+    // "fill in the form" message.
+    const validateExpenseForm = (): {
+        valid: boolean;
+        fieldErrors: typeof fieldErrors;
+        paymentErrors: Record<string, string>;
+        firstError?: string;
+    } => {
+        const nextFieldErrors: typeof fieldErrors = {};
+        const nextPaymentErrors: Record<string, string> = {};
 
-    const isValid =
-        !!selectedCategoryId &&
-        !!selectedSubCategoryId &&
-        amount !== "" &&
-        Number(amount) > 0 &&
-        !!expenseDate &&
-        paymentsValid;
+        if (!selectedCategoryId) nextFieldErrors.category = "Please select a category";
+        if (!selectedSubCategoryId) nextFieldErrors.subCategory = "Please select a sub category";
+        if (amount === "" || Number(amount) <= 0) nextFieldErrors.amount = "Please enter a valid amount";
+
+        payments.forEach((row) => {
+            if (!row.accountId) {
+                nextPaymentErrors[row.id] = "Please select a payment account";
+            } else if (row.amount === "" || Number(row.amount) <= 0) {
+                nextPaymentErrors[row.id] = "Please enter an amount for this account";
+            }
+        });
+
+        // Surface the first problem in the same order fields appear on screen.
+        const firstError =
+            nextFieldErrors.category ??
+            nextFieldErrors.subCategory ??
+            nextFieldErrors.amount ??
+            Object.values(nextPaymentErrors)[0];
+
+        return {
+            valid: !firstError,
+            fieldErrors: nextFieldErrors,
+            paymentErrors: nextPaymentErrors,
+            firstError,
+        };
+    };
 
     const handleSubmit = async () => {
-        if (Math.abs(remaining) >= 0.01) {
-            if (remaining > 0) {
-                toast.error(
-                    `₹${remaining.toLocaleString()} is still unallocated.`
-                );
-            } else {
-                toast.error(
-                    `Allocated amount exceeds the expense by ₹${Math.abs(
-                        remaining
-                    ).toLocaleString()}.`
-                );
-            }
+        const { valid, fieldErrors: nextFieldErrors, paymentErrors: nextPaymentErrors, firstError } =
+            validateExpenseForm();
 
+        setFieldErrors(nextFieldErrors);
+        setPaymentErrors(nextPaymentErrors);
+
+        if (!valid) {
+            toast.error(firstError!);
             return;
         }
-        if (!isValid) {
-            if (amount !== "" && Number(amount) > 0 && remaining !== 0) {
-                toast.error(
-                    remaining > 0
-                        ? `Payments are short by ₹${remaining.toLocaleString()}. Allocate the full amount across accounts.`
-                        : `Payments exceed the expense amount by ₹${Math.abs(remaining).toLocaleString()}.`
-                );
+
+        // Fields are individually valid — now check the allocation math.
+        if (Math.abs(remaining) >= 0.01) {
+            if (remaining > 0) {
+                toast.error(`₹${remaining.toLocaleString()} is still unallocated.`);
             } else {
-                toast.error("Fill in category, sub category, amount, and payment split before submitting.");
+                toast.error(
+                    `Allocated amount exceeds the expense by ₹${Math.abs(remaining).toLocaleString()}.`
+                );
             }
             return;
         }
@@ -348,8 +408,13 @@ export default function Page() {
                 toast.error(result.message || "An error occurred during submission.");
             }
         } catch (error) {
-            toast.error("Failed to create expense");
             console.error("Submit error:", error);
+            const parsed = parseApiError(error, "Failed to create expense");
+            toast.error(parsed.message);
+
+            if (parsed.isAuthError) {
+                router.push("/login");
+            }
         } finally {
             setSubmitting(false);
         }
@@ -462,14 +527,18 @@ export default function Page() {
                 {/* Category / sub category */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Category</FieldLabel>
+                        <FieldLabel>Category<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                         <Popover open={categoryPopoverOpen} onOpenChange={handleCategoryPopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={categoryPopoverOpen}
-                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                    className={cn(
+                                        "w-full justify-between font-normal shadow-sm text-left px-3",
+                                        fieldClass,
+                                        fieldErrors.category && fieldErrorClass
+                                    )}
                                 >
                                     <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
                                         <Tags className="h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -511,10 +580,11 @@ export default function Page() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
+                        <FieldError>{fieldErrors.category}</FieldError>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Sub Category</FieldLabel>
+                        <FieldLabel>Sub Category<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                         <Popover open={subCategoryPopoverOpen} onOpenChange={handleSubCategoryPopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
@@ -522,7 +592,11 @@ export default function Page() {
                                     role="combobox"
                                     disabled={!selectedCategoryId}
                                     aria-expanded={subCategoryPopoverOpen}
-                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3 disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40", fieldClass)}
+                                    className={cn(
+                                        "w-full justify-between font-normal shadow-sm text-left px-3 disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-900/40",
+                                        fieldClass,
+                                        fieldErrors.subCategory && fieldErrorClass
+                                    )}
                                 >
                                     <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
                                         <Layers3 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -552,6 +626,7 @@ export default function Page() {
                                                             onSelect={() => {
                                                                 setSelectedSubCategoryId(subCategory.id);
                                                                 setSubCategoryPopoverOpen(false);
+                                                                setFieldErrors((prev) => ({ ...prev, subCategory: undefined }));
                                                             }}
                                                             className="cursor-pointer"
                                                         >
@@ -566,22 +641,27 @@ export default function Page() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
+                        <FieldError>{fieldErrors.subCategory}</FieldError>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                     <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Amount</FieldLabel>
+                        <FieldLabel>Amount<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                         <Input
                             type="number"
                             min={0}
                             placeholder="e.g. 4000"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                            onChange={(e) => {
+                                setAmount(e.target.value === "" ? "" : Number(e.target.value));
+                                setFieldErrors((prev) => ({ ...prev, amount: undefined }));
+                            }}
                             onWheel={(e) => e.currentTarget.blur()}
-                            className={fieldClass}
+                            className={cn(fieldClass, fieldErrors.amount && fieldErrorClass)}
                         />
+                        <FieldError>{fieldErrors.amount}</FieldError>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -688,7 +768,7 @@ export default function Page() {
                     {/* Payment split */}
                     <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between">
-                            <FieldLabel>Payment Accounts</FieldLabel>
+                            <FieldLabel>Payment Accounts<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -704,80 +784,91 @@ export default function Page() {
                         <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
                             {payments.map((row, index) => {
                                 const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
+                                const rowError = paymentErrors[row.id];
                                 return (
-
-                                    <div key={row.id} className="flex shrink-0 items-center gap-2">
-                                        <Popover
-                                            open={openPaymentRowId === row.id}
-                                            onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
-                                        >
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    aria-expanded={openPaymentRowId === row.id}
-                                                    className={cn("h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
-                                                >
-                                                    <span className="truncate">{rowAccount ? rowAccount.name : `Choose account ${index + 1}`}</span>
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
-                                                <Command>
-                                                    <CommandInput placeholder="Filter accounts..." />
-                                                    <CommandList>
-                                                        {loadingAccountList ? (
-                                                            <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <CommandEmpty>No accounts found.</CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {accountsDropdown.map((account) => (
-                                                                        <CommandItem
-                                                                            key={account.id}
-                                                                            value={account.name}
-                                                                            onSelect={() => {
-                                                                                updatePaymentAccount(row.id, account.id);
-                                                                                setOpenPaymentRowId(null);
-                                                                            }}
-                                                                            className="cursor-pointer"
-                                                                        >
-                                                                            <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                                            <span>{account.name}</span>
-                                                                        </CommandItem>
-                                                                    ))}
-                                                                </CommandGroup>
-                                                            </>
+                                    <div key={row.id} className="flex flex-col gap-1">
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Popover
+                                                open={openPaymentRowId === row.id}
+                                                onOpenChange={(open) => handlePaymentPopoverChange(row.id, open)}
+                                            >
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={openPaymentRowId === row.id}
+                                                        className={cn(
+                                                            "h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950",
+                                                            fieldClass,
+                                                            rowError && fieldErrorClass
                                                         )}
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
+                                                    >
+                                                        <span className="truncate">{rowAccount ? rowAccount.name : `Choose account ${index + 1}`}</span>
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Filter accounts..." />
+                                                        <CommandList>
+                                                            {loadingAccountList ? (
+                                                                <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <CommandEmpty>No accounts found.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                        {accountsDropdown.map((account) => (
+                                                                            <CommandItem
+                                                                                key={account.id}
+                                                                                value={account.name}
+                                                                                onSelect={() => {
+                                                                                    updatePaymentAccount(row.id, account.id);
+                                                                                    setOpenPaymentRowId(null);
+                                                                                }}
+                                                                                className="cursor-pointer"
+                                                                            >
+                                                                                <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                                                <span>{account.name}</span>
+                                                                            </CommandItem>
+                                                                        ))}
+                                                                    </CommandGroup>
+                                                                </>
+                                                            )}
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
 
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            placeholder="Amount"
-                                            value={row.amount}
-                                            onChange={(e) =>
-                                                updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
-                                            }
-                                            onWheel={(e) => e.currentTarget.blur()}
-                                            className={cn("h-10 w-28 shrink-0 border-slate-200 bg-white dark:bg-slate-950", fieldClass)}
-                                        />
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                placeholder="Amount"
+                                                value={row.amount}
+                                                onChange={(e) =>
+                                                    updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
+                                                }
+                                                onWheel={(e) => e.currentTarget.blur()}
+                                                className={cn(
+                                                    "h-10 w-28 shrink-0 border-slate-200 bg-white dark:bg-slate-950",
+                                                    fieldClass,
+                                                    rowError && fieldErrorClass
+                                                )}
+                                            />
 
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removePaymentRow(row.id)}
-                                            disabled={payments.length === 1}
-                                            className="h-10 w-9 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950/30"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removePaymentRow(row.id)}
+                                                disabled={payments.length === 1}
+                                                className="h-10 w-9 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950/30"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <FieldError>{rowError}</FieldError>
                                     </div>
                                 );
                             })}

@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -91,8 +92,6 @@ const CHARGE_ROW_ACCENT: Record<string, string> = {
   PAID: "border-l-4 border-l-emerald-400",
 };
 
-
-
 // Charges in these statuses still have money owed, so they get a Pay button.
 const PAYABLE_STATUSES = new Set(["PENDING", "PARTIAL"]);
 
@@ -103,6 +102,172 @@ function formatDateOnly(value: string) {
 
 function formatCurrency(value: number) {
   return `₹${value.toLocaleString()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+
+function ViewAdmissionSkeleton() {
+  return (
+    <section className="w-full px-6 py-4">
+      {/* Header skeleton */}
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-9 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* ── Student information skeleton ── */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="px-4 py-3">
+                <Skeleton className="mb-2 h-2.5 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Student charges skeleton ── */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 border-b border-slate-200 bg-background/5 dark:border-slate-800/50 dark:bg-background/5 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center px-5 py-4">
+                <Skeleton className="mb-2 h-2.5 w-28" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+
+          {/* Enrollment fee structure table skeleton */}
+          <div className="border-b border-slate-200 dark:border-slate-800/50">
+            <div className="px-4 py-3">
+              <Skeleton className="h-3 w-64" />
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50 dark:hover:bg-slate-950/50">
+                  <TableHead className="h-10">
+                    <Skeleton className="h-3 w-20" />
+                  </TableHead>
+                  <TableHead className="h-10">
+                    <Skeleton className="h-3 w-16" />
+                  </TableHead>
+                  <TableHead className="h-10 text-right">
+                    <Skeleton className="ml-auto h-3 w-20" />
+                  </TableHead>
+                  <TableHead className="h-10">
+                    <Skeleton className="h-3 w-14" />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i} className="border-slate-100 dark:border-slate-800/50">
+                    <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-10" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Charges table skeleton */}
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50 dark:hover:bg-slate-950/50">
+                <TableHead className="h-10">
+                  <Skeleton className="h-3 w-24" />
+                </TableHead>
+                <TableHead className="h-10 text-right">
+                  <Skeleton className="ml-auto h-3 w-20" />
+                </TableHead>
+                <TableHead className="h-10 text-right">
+                  <Skeleton className="ml-auto h-3 w-14" />
+                </TableHead>
+                <TableHead className="h-10 text-right">
+                  <Skeleton className="ml-auto h-3 w-16" />
+                </TableHead>
+                <TableHead className="h-10">
+                  <Skeleton className="h-3 w-20" />
+                </TableHead>
+                <TableHead className="h-10">
+                  <Skeleton className="h-3 w-16" />
+                </TableHead>
+                <TableHead className="h-10 text-right">
+                  <Skeleton className="ml-auto h-3 w-12" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i} className="border-slate-100 dark:border-slate-800/50">
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="ml-auto h-4 w-16" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="ml-auto h-4 w-16" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="ml-auto h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="ml-auto h-8 w-16 rounded-md" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Summary footer skeleton */}
+          <div className="grid grid-cols-3 border-t border-slate-200 bg-background/5 dark:border-slate-800/50 dark:bg-background/5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center px-5 py-4">
+                <Skeleton className="mb-2 h-2.5 w-24" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -152,11 +317,7 @@ export default function ViewAdmissionPage() {
   }
 
   if (loading) {
-    return (
-      <section className="w-full px-6 py-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-      </section>
-    );
+    return <ViewAdmissionSkeleton />;
   }
 
   if (!enrollment) {
@@ -175,7 +336,6 @@ export default function ViewAdmissionPage() {
   const sortedCharges = charges;
 
   const enrollmentChargesTemplate = enrollmentDetails?.charges ?? [];
-
 
   const totalFinal = charges.reduce((sum, c) => sum + parseFloat(c.finalAmount || "0"), 0);
   const totalPaid = charges.reduce((sum, c) => sum + parseFloat(c.paidAmount || "0"), 0);
@@ -211,7 +371,6 @@ export default function ViewAdmissionPage() {
             </p>
           </div>
         </div>
-
       </div>
 
       <div className="space-y-6">
@@ -368,8 +527,9 @@ export default function ViewAdmissionPage() {
                 return (
                   <TableRow
                     key={charge.id}
-                    className={`border-slate-100 dark:border-slate-800/50 ${CHARGE_ROW_ACCENT[charge.status] ?? ""
-                      }`}
+                    className={`border-slate-100 dark:border-slate-800/50 ${
+                      CHARGE_ROW_ACCENT[charge.status] ?? ""
+                    }`}
                   >
                     <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
                       {charge.description}
@@ -380,9 +540,7 @@ export default function ViewAdmissionPage() {
                     </TableCell>
 
                     <TableCell className="text-right text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                      {
-                        formatCurrency(paid)
-                      }
+                      {formatCurrency(paid)}
                     </TableCell>
 
                     <TableCell className="text-right text-sm font-semibold text-slate-950 dark:text-slate-100">

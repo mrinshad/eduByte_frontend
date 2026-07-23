@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { ACCOUNT_TYPES, type AccountType } from "@/lib/services/accounts"
+import { parseApiError } from "@/lib/api-error"
 import {
     Table,
     TableBody,
@@ -26,6 +27,9 @@ import {
 // 👇 the reusable component
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
+const ACCOUNT_DUPLICATE_MAP = {
+    name: { field: "name", message: "An account with this name already exists" },
+}
 const tableHeaders = [
     "Id",
     "Account Name",
@@ -41,6 +45,37 @@ const EMPTY_FORM: AccountInput = {
     description: "",
     isActive: true,
 }
+
+// ── Field-level validators (same pattern as the Create Staff form) ──
+
+const ACCOUNT_NAME_PATTERN = /^[a-zA-Z0-9\s.,'()/-]+$/;
+
+function validateAccountName(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) return "Account name is required";
+    if (trimmed.length < 2) return "Must be at least 2 characters";
+    if (trimmed.length > 100) return "Must be under 100 characters";
+    if (!ACCOUNT_NAME_PATTERN.test(trimmed)) return "Only letters, numbers, spaces and . , ' ( ) - / are allowed";
+    return undefined;
+}
+
+function validateAccountType(value: string): string | undefined {
+    if (!value.trim()) return "Please select an account type";
+    if (!ACCOUNT_TYPES.includes(value as AccountType)) return "Select a valid account type";
+    return undefined;
+}
+
+function validateAccountDescription(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (trimmed.length > 300) return "Must be under 300 characters";
+    return undefined;
+}
+
+type AccountFieldErrors = {
+    name?: string;
+    type?: string;
+    description?: string;
+};
 
 export default function Page() {
     const badgeColors = [
@@ -64,6 +99,10 @@ export default function Page() {
     const [editingId, setEditingId] = useState<string | null>(null)
     const [formData, setFormData] = useState<AccountInput>({ ...EMPTY_FORM })
 
+    // Field-level errors, populated on submit and cleared the moment the
+    // user edits that field — same pattern as the Create Staff form.
+    const [fieldErrors, setFieldErrors] = useState<AccountFieldErrors>({})
+
     useEffect(() => {
         loadAccounts()
     }, [])
@@ -85,6 +124,7 @@ export default function Page() {
     function resetForm() {
         setFormData({ ...EMPTY_FORM })
         setEditingId(null)
+        setFieldErrors({})
     }
 
     function openCreate() {
@@ -100,21 +140,43 @@ export default function Page() {
             description: account.description ?? "",
             isActive: account.isActive ?? true,
         })
+        setFieldErrors({})
         setFormOpen(true)
     }
 
+    function handleFieldChange(name: string, value: unknown) {
+        setFormData((prev) => ({ ...prev, [name]: value }))
+        if (name in fieldErrors) {
+            setFieldErrors((prev) => ({ ...prev, [name]: undefined }))
+        }
+    }
+
     async function handleSave() {
-        if (!formData.name.trim() || !formData.type.trim()) {
-            toast.warning("Please fill all required fields")
+        const nextFieldErrors: AccountFieldErrors = {
+            name: validateAccountName(formData.name),
+            type: validateAccountType(formData.type),
+            description: validateAccountDescription(formData.description),
+        }
+        setFieldErrors(nextFieldErrors)
+
+        const firstFieldError = Object.values(nextFieldErrors).find(Boolean)
+        if (firstFieldError) {
+            toast.error(firstFieldError)
             return
         }
+
         try {
             setIsSaving(true)
+            const payload: AccountInput = {
+                ...formData,
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+            }
             if (editingId) {
-                await updateAccount(editingId, formData)
+                await updateAccount(editingId, payload)
                 toast.success("Account updated successfully")
             } else {
-                await createAccount(formData)
+                await createAccount(payload)
                 toast.success("Account created successfully")
             }
             setFormOpen(false)
@@ -122,7 +184,17 @@ export default function Page() {
             await loadAccounts()
         } catch (err) {
             console.error(err)
-            toast.error(editingId ? "Failed to update account" : "Failed to create account")
+            const fallback = editingId ? "Failed to update account" : "Failed to create account"
+            const parsed = parseApiError(err, fallback, ACCOUNT_DUPLICATE_MAP)
+
+            if (parsed.field && parsed.field in nextFieldErrors) {
+                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof AccountFieldErrors]: parsed.message }))
+            }
+            toast.error(parsed.message)
+
+            if (parsed.isAuthError) {
+                router.push("/login")
+            }
         } finally {
             setIsSaving(false)
         }
@@ -130,7 +202,12 @@ export default function Page() {
 
     // 👇 this is the only "new" piece — describe the form once, declaratively
     const accountFields: FormField[] = [
-        { type: "text", name: "name", label: "Account Name", placeholder: "Enter account name" },
+        {
+            type: "text",
+            name: "name",
+            label: "Account Name",
+            placeholder: "Enter account name",
+        },
         {
             type: "select",
             name: "type",
@@ -143,7 +220,12 @@ export default function Page() {
                     : []),
             ].map((t) => ({ label: t, value: t })),
         },
-        { type: "text", name: "description", label: "Description", placeholder: "Enter description" },
+        {
+            type: "text",
+            name: "description",
+            label: "Description",
+            placeholder: "Enter description",
+        },
         { type: "checkbox", name: "isActive", label: "Active" },
     ]
 
@@ -294,7 +376,7 @@ export default function Page() {
                 }
                 fields={accountFields}
                 values={formData}
-                onChange={(name, value) => setFormData((prev) => ({ ...prev, [name]: value }))}
+                onChange={handleFieldChange}
                 onSubmit={handleSave}
                 isSaving={isSaving}
                 isEditing={!!editingId}
