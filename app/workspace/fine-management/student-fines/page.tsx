@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { parseApiError } from "@/lib/api-error"
 import {
   ArrowLeft,
   ChevronLeft,
@@ -68,6 +69,24 @@ type StudentEnrollmentOption = Omit<StudentAdmissionAndNameWithEnrollment, "enro
   enrollmentId: string
 }
 
+// ---------------------------------------------------------------------
+// Shared validation UI bits (same pattern as the Create Expense form)
+// ---------------------------------------------------------------------
+
+const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus-visible:!ring-red-400"
+
+const FieldError = ({ children }: { children?: string }) => {
+  if (!children) return null
+  return <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-0.5 mt-1">{children}</p>
+}
+
+type FineFieldErrors = {
+  studentId?: string
+  fineTypeId?: string
+  amount?: string
+  reason?: string
+}
+
 export default function Page() {
   const router = useRouter()
 
@@ -89,7 +108,9 @@ export default function Page() {
       const data = await getFineTypes()
       setFineTypes(data)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load fine types")
+      const parsed = parseApiError(error, "Failed to load fine types")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
     } finally {
       setLoading(false)
     }
@@ -154,13 +175,12 @@ export default function Page() {
 
       resetAndCloseCreate()
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : editingFineType
-            ? "Failed to update fine type"
-            : "Failed to create fine type"
-      )
+      const fallback = editingFineType ? "Failed to update fine type" : "Failed to create fine type"
+      const parsed = parseApiError(error, fallback, {
+        name: { field: "name", message: "A fine type with this name already exists" },
+      })
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
     } finally {
       setSubmitting(false)
     }
@@ -204,8 +224,10 @@ export default function Page() {
         setServerTotalPages(null)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load student fines")
-      toast.error(err instanceof Error ? err.message : "Failed to load student fines")
+      const parsed = parseApiError(err, "Failed to load student fines")
+      setError(parsed.message)
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
     } finally {
       setIsLoading(false)
     }
@@ -252,6 +274,10 @@ export default function Page() {
     reason: "",
   })
 
+  // Field-level validation errors — mirrors the Create Expense form pattern.
+  const [fineFieldErrors, setFineFieldErrors] = useState<FineFieldErrors>({})
+  const [fineSubmitting, setFineSubmitting] = useState(false)
+
   const resetFineForm = () => {
     setEditingFineId(null)
     setFineForm({
@@ -260,6 +286,7 @@ export default function Page() {
       amount: "",
       reason: "",
     })
+    setFineFieldErrors({})
   }
 
   async function loadStudents() {
@@ -269,7 +296,9 @@ export default function Page() {
         data.filter((student): student is StudentEnrollmentOption => Boolean(student.enrollmentId))
       )
     } catch (error) {
-      toast.error("Failed to load students")
+      const parsed = parseApiError(error, "Failed to load students")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
     }
   }
 
@@ -280,13 +309,58 @@ export default function Page() {
     }
   }, [newFineOpen])
 
+  // Validates each field individually (instead of one big boolean) so we can
+  // toast a specific, actionable message and highlight exactly the field
+  // that's missing — e.g. "Please select a student" instead of a generic
+  // "fill in the form" message. Same approach as validateExpenseForm().
+  function validateFineForm(): {
+    valid: boolean
+    fieldErrors: FineFieldErrors
+    firstError?: string
+  } {
+    const nextFieldErrors: FineFieldErrors = {}
+
+    if (!fineForm.studentId) nextFieldErrors.studentId = "Please select a student"
+    if (!fineForm.fineTypeId) nextFieldErrors.fineTypeId = "Please select a fine type"
+
+    const amountNum = Number(fineForm.amount)
+    if (fineForm.amount === "" || Number.isNaN(amountNum) || amountNum <= 0) {
+      nextFieldErrors.amount = "Please enter a valid amount"
+    }
+
+    if (!fineForm.reason.trim()) nextFieldErrors.reason = "Please enter a reason"
+
+    const firstError =
+      nextFieldErrors.studentId ??
+      nextFieldErrors.fineTypeId ??
+      nextFieldErrors.amount ??
+      nextFieldErrors.reason
+
+    return {
+      valid: !firstError,
+      fieldErrors: nextFieldErrors,
+      firstError,
+    }
+  }
+
   const handleSaveFine = async () => {
+    const { valid, fieldErrors: nextFieldErrors, firstError } = validateFineForm()
+
+    setFineFieldErrors(nextFieldErrors)
+
+    if (!valid) {
+      toast.error(firstError!)
+      return
+    }
+
     try {
+      setFineSubmitting(true)
+
       const payload = {
         enrollmentId: fineForm.studentId,
         fineTypeId: fineForm.fineTypeId,
         amount: Number(fineForm.amount),
-        reason: fineForm.reason,
+        reason: fineForm.reason.trim(),
       }
 
       if (editingFineId) {
@@ -302,9 +376,12 @@ export default function Page() {
       setNewFineOpen(false)
       await loadFines()
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save student fine"
-      )
+      const fallback = "Failed to save student fine"
+      const parsed = parseApiError(error, fallback)
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setFineSubmitting(false)
     }
   }
 
@@ -591,6 +668,7 @@ export default function Page() {
                               amount: row.amount ?? "",
                               reason: row.reason ?? "",
                             })
+                            setFineFieldErrors({})
                             setNewFineOpen(true)
                           }}
                           className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
@@ -711,13 +789,19 @@ export default function Page() {
           <div className="space-y-4 py-3">
             {/* Student Dropdown */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Student<span className="text-red-600 ml-0.5">*</span>
+              </label>
               <select
                 value={fineForm.studentId}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFineForm((prev) => ({ ...prev, studentId: e.target.value }))
-                }
-                className="h-8 w-full min-w-0 rounded-xl border border-input bg-transparent px-2.5 py-1 text-sm text-slate-950 outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-slate-50"
+                  setFineFieldErrors((prev) => ({ ...prev, studentId: undefined }))
+                }}
+                className={cn(
+                  "h-8 w-full min-w-0 rounded-xl border border-input bg-transparent px-2.5 py-1 text-sm text-slate-950 outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-slate-50",
+                  fineFieldErrors.studentId && fieldErrorClass
+                )}
               >
                 <option value="" disabled>
                   Select Student
@@ -734,18 +818,27 @@ export default function Page() {
                   ))
                 )}
               </select>
+              <FieldError>{fineFieldErrors.studentId}</FieldError>
             </div>
 
             {/* Fine Type Dropdown */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Fine Type</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Fine Type<span className="text-red-600 ml-0.5">*</span>
+              </label>
               <Select
                 value={fineForm.fineTypeId}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   setFineForm((prev) => ({ ...prev, fineTypeId: value }))
-                }
+                  setFineFieldErrors((prev) => ({ ...prev, fineTypeId: undefined }))
+                }}
               >
-                <SelectTrigger className="w-full min-w-0 overflow-hidden rounded-xl">
+                <SelectTrigger
+                  className={cn(
+                    "w-full min-w-0 overflow-hidden rounded-xl",
+                    fineFieldErrors.fineTypeId && fieldErrorClass
+                  )}
+                >
                   <SelectValue placeholder="Select Fine Type" className="truncate" />
                 </SelectTrigger>
                 <SelectContent>
@@ -756,34 +849,44 @@ export default function Page() {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError>{fineFieldErrors.fineTypeId}</FieldError>
             </div>
 
             {/* Amount */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Amount</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Amount<span className="text-red-600 ml-0.5">*</span>
+              </label>
               <Input
                 type="number"
-                className="appearance-none rounded-xl"
+                min={0}
+                className={cn("appearance-none rounded-xl", fineFieldErrors.amount && fieldErrorClass)}
                 onWheel={(e) => e.currentTarget.blur()}
                 placeholder="Enter Amount"
                 value={fineForm.amount}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFineForm((prev) => ({ ...prev, amount: e.target.value }))
-                }
+                  setFineFieldErrors((prev) => ({ ...prev, amount: undefined }))
+                }}
               />
+              <FieldError>{fineFieldErrors.amount}</FieldError>
             </div>
 
             {/* Reason */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Reason</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Reason<span className="text-red-600 ml-0.5">*</span>
+              </label>
               <Input
                 placeholder="Enter Reason"
                 value={fineForm.reason}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFineForm((prev) => ({ ...prev, reason: e.target.value }))
-                }
-                className="rounded-xl"
+                  setFineFieldErrors((prev) => ({ ...prev, reason: undefined }))
+                }}
+                className={cn("rounded-xl", fineFieldErrors.reason && fieldErrorClass)}
               />
+              <FieldError>{fineFieldErrors.reason}</FieldError>
             </div>
           </div>
 
@@ -791,6 +894,7 @@ export default function Page() {
             <Button
               variant="outline"
               className="w-full sm:w-auto rounded-xl"
+              disabled={fineSubmitting}
               onClick={() => {
                 resetFineForm()
                 setNewFineOpen(false)
@@ -798,8 +902,17 @@ export default function Page() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveFine} className="w-full sm:w-auto rounded-xl">
-              {editingFineId ? "Update Fine" : "Create Fine"}
+            <Button onClick={() => void handleSaveFine()} disabled={fineSubmitting} className="w-full sm:w-auto rounded-xl">
+              {fineSubmitting ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {editingFineId ? "Updating..." : "Creating..."}
+                </span>
+              ) : editingFineId ? (
+                "Update Fine"
+              ) : (
+                "Create Fine"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

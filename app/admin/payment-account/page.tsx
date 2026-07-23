@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { ACCOUNT_TYPES, type AccountType } from "@/lib/services/accounts"
+import { parseApiError } from "@/lib/api-error"
 import {
     Table,
     TableBody,
@@ -26,6 +27,9 @@ import {
 // 👇 the reusable component
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
+const ACCOUNT_DUPLICATE_MAP = {
+    name: { field: "name", message: "An account with this name already exists" },
+}
 const tableHeaders = [
     "Id",
     "Account Name",
@@ -122,7 +126,13 @@ export default function Page() {
             await loadAccounts()
         } catch (err) {
             console.error(err)
-            toast.error(editingId ? "Failed to update account" : "Failed to create account")
+            const fallback = editingId ? "Failed to update account" : "Failed to create account"
+            const parsed = parseApiError(err, fallback, ACCOUNT_DUPLICATE_MAP)
+            toast.error(parsed.message)
+
+            if (parsed.isAuthError) {
+                router.push("/login")
+            }
         } finally {
             setIsSaving(false)
         }

@@ -4,6 +4,7 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { parseApiError } from "@/lib/api-error";
 
 import {
     Command,
@@ -50,7 +51,9 @@ import {
 import { cn } from "@/lib/utils";
 
 // --- Shared UI Components from Admission Page ---
-
+const FEE_STRUCTURE_DUPLICATE_MAP = {
+  name: { field: "name", message: "A fee structure with this name already exists" },
+};
 const inputClass = `
   h-14
   w-full
@@ -337,7 +340,16 @@ export default function Page() {
             const fallback = isEditMode
                 ? "Failed to update fee structure"
                 : "Failed to create fee structure";
-            toast.error(getErrorMessage(error, fallback));
+            const parsed = parseApiError(error, fallback, FEE_STRUCTURE_DUPLICATE_MAP);
+
+            if (parsed.field) {
+                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
+            }
+            toast.error(parsed.message);
+
+            if (parsed.isAuthError) {
+                router.push("/login");
+            }
         } finally {
             setSubmitting(false);
         }
