@@ -36,10 +36,12 @@ import { formatDateOnly } from "@/lib/utils"
 
 function InfoSection({
     icon: Icon,
+    eyebrow = "Profile section",
     title,
     children,
 }: {
     icon: React.ElementType
+    eyebrow?: string
     title: string
     children: React.ReactNode
 }) {
@@ -47,12 +49,12 @@ function InfoSection({
         <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
             <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#556043]/10 text-[#556043]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#556043]/10 text-[#556043]">
                         <Icon className="h-4 w-4" />
                     </div>
                     <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                            Profile section
+                            {eyebrow}
                         </div>
                         <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">{title}</div>
                     </div>
@@ -87,6 +89,8 @@ function statusTone(isActive: boolean) {
 /* ------------------------------------------------------------------ */
 /*  Skeleton loading state — mirrors the final layout so there is no   */
 /*  layout shift once data arrives. Built with shadcn/ui <Skeleton />  */
+/*  The Fee Items block below mirrors the exact InfoSection header     */
+/*  (icon badge + eyebrow + title) and a responsive table body.        */
 /* ------------------------------------------------------------------ */
 
 function FeeStructureSkeleton() {
@@ -151,29 +155,50 @@ function FeeStructureSkeleton() {
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Table skeleton */}
-                    <Card className="shadow-sm">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <Skeleton className="h-5 w-24" />
-                                <Skeleton className="h-4 w-16" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="divide-y">
-                                {Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className="flex items-center justify-between px-4 py-4">
-                                        <Skeleton className="h-4 w-6" />
-                                        <Skeleton className="h-4 w-40" />
-                                        <Skeleton className="h-4 w-20" />
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
+
+            {/* Fee Items card skeleton — exact match to the real InfoSection header */}
+            <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 w-full">
+                <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-9 w-9 shrink-0 rounded-2xl" />
+                            <div className="space-y-1.5">
+                                <Skeleton className="h-3 w-24" />
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                </CardHeader>
+
+                <CardContent className="p-0">
+                    {/* Table header skeleton (hidden on very small screens, rows below stack instead) */}
+                    <div className="hidden items-center gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-3 sm:flex dark:border-slate-800/60 dark:bg-slate-950/40">
+                        <Skeleton className="h-3 w-6" />
+                        <Skeleton className="h-3 w-32 flex-1" />
+                        <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="flex items-center justify-between gap-4 px-5 py-4"
+                            >
+                                <Skeleton className="h-4 w-6" />
+                                <Skeleton className="h-4 flex-1 max-w-[10rem]" />
+                                <Skeleton className="h-4 w-20" />
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+
+                <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/80 px-5 py-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-6 w-24" />
+                </div>
+            </Card>
         </div>
     )
 }
@@ -215,8 +240,8 @@ export default function Page() {
         feeStructure?.items?.reduce((sum, item) => sum + Number(item.amount || 0), 0) ?? 0
 
     return (
-        <section className="w-full px-6 py-4">
-            <div className="mb-2 flex items-start justify-between gap-4">
+        <section className="w-full px-4 py-4 sm:px-6">
+            <div className="mb-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-center gap-4">
                     <Button
                         className="bg-background text-foreground hover:opacity-90 shadow-sm"
@@ -226,7 +251,7 @@ export default function Page() {
                         <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <h1 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                             View Fee Structure
                         </h1>
                         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
@@ -349,26 +374,26 @@ export default function Page() {
                         </div>
 
                     </div>
+
+                    {/* Fee Items — now uses the same "Profile section" theme as InfoSection above */}
                     <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 w-full">
-                        <CardHeader className="border-b border-[#d9dfd1] bg-gradient-to-r from-[#f8faf6] to-white dark:from-slate-900 dark:to-slate-900 px-6 py-4">
+                        <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#556043]/10 text-[#556043]">
-                                        <Receipt className="h-5 w-5" />
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#556043]/10 text-[#556043]">
+                                        <Receipt className="h-4 w-4" />
                                     </div>
-
                                     <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7b856a]">
-                                            Fee Management
-                                        </p>
-
-                                        <h3 className="text-lg font-bold text-[#2f3a25] dark:text-slate-100">
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                                            Profile section
+                                        </div>
+                                        <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                                             Fee Items
-                                        </h3>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <span className="rounded-full bg-[#556043]/10 px-3 py-1 text-sm font-semibold text-[#556043]">
+                                <span className="w-fit rounded-full bg-[#556043]/10 px-3 py-1 text-sm font-semibold text-[#556043]">
                                     {feeStructure.items.length} Items
                                 </span>
                             </div>
@@ -376,14 +401,16 @@ export default function Page() {
 
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <Table className="w-full">
-                                    <TableHeader className="bg-[#f6f8f3] dark:bg-slate-900">
-                                        <TableRow>
-                                            <TableHead className="font-semibold text-[#556043]">#</TableHead>
-                                            <TableHead className="font-semibold text-[#556043]">
+                                <Table className="w-full min-w-[420px]">
+                                    <TableHeader className="bg-slate-50/80 dark:bg-slate-950/40">
+                                        <TableRow className="border-slate-100 dark:border-slate-800/60">
+                                            <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
+                                                #
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
                                                 Charge Type
                                             </TableHead>
-                                            <TableHead className="text-right font-semibold text-[#556043]">
+                                            <TableHead className="text-right font-semibold text-slate-500 dark:text-slate-400">
                                                 Amount
                                             </TableHead>
                                         </TableRow>
@@ -391,8 +418,11 @@ export default function Page() {
 
                                     <TableBody>
                                         {feeStructure.items.map((item, index) => (
-                                            <TableRow className="hover:bg-[#f8faf6] dark:hover:bg-slate-800" key={index}>
-                                                <TableCell className="font-medium text-slate-600">
+                                            <TableRow
+                                                className="border-slate-100 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-950/40"
+                                                key={index}
+                                            >
+                                                <TableCell className="font-medium text-slate-600 dark:text-slate-400">
                                                     {index + 1}
                                                 </TableCell>
 
@@ -410,12 +440,12 @@ export default function Page() {
                             </div>
                         </CardContent>
 
-                        <div className="flex items-center justify-between border-t border-[#d9dfd1] bg-[#f8faf6] px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
-                            <span className="text-base font-semibold text-slate-700 dark:text-slate-300">
+                        <div className="flex flex-col gap-1 border-t border-slate-100 bg-slate-50/80 px-5 py-4 dark:border-slate-800/60 dark:bg-slate-950/40 sm:flex-row sm:items-center sm:justify-between">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 sm:text-base">
                                 Total Amount
                             </span>
 
-                            <span className="text-xl font-bold text-[#556043]">
+                            <span className="text-lg font-bold text-[#556043] sm:text-xl">
                                 ₹ {total.toLocaleString()}
                             </span>
                         </div>
