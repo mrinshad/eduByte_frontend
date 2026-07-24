@@ -16,6 +16,7 @@ import { refreshLateFines } from "@/lib/services/lateFine"
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -76,6 +77,105 @@ function formatDob(dob: string) {
 }
  
 // ---------------------------------------------------------------------------
+// Skeleton loading state
+// ---------------------------------------------------------------------------
+ 
+function ViewAdmissionSkeleton() {
+  return (
+    <section className="w-full px-6 py-4">
+      {/* Header skeleton */}
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-9 rounded-md" />
+          <div>
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="mt-2 h-4 w-28" />
+          </div>
+        </div>
+        <Skeleton className="h-8 w-20 rounded-md" />
+      </div>
+
+      <div className="space-y-6">
+        {/* Student information skeleton */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+            <Skeleton className="h-4 w-4 rounded-sm" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="px-4 py-3">
+                <Skeleton className="mb-2 h-3 w-20" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Enrollment details skeleton */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+            <Skeleton className="h-4 w-4 rounded-sm" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+
+          <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800/50 dark:border-slate-800/50 md:grid-cols-4 md:divide-y-0">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="px-4 py-4">
+                <Skeleton className="mb-2 h-3 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3 md:divide-x md:divide-y-0">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-4">
+                <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="mb-2 h-3 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Student fee table skeleton */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+            <Skeleton className="h-4 w-4 rounded-sm" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+
+          <div className="px-4 py-3">
+            <div className="mb-3 grid grid-cols-5 gap-4 border-b border-slate-100 pb-2 dark:border-slate-800/50">
+              <Skeleton className="h-3 w-10" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-20 justify-self-end" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-5 items-center gap-4 border-b border-slate-100 py-3 last:border-b-0 dark:border-slate-800/50"
+              >
+                <Skeleton className="h-4 w-6" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-16 justify-self-end" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+ 
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
  
@@ -107,11 +207,7 @@ export default function ViewAdmissionPage() {
   }, [id]);
  
   if (loading) {
-    return (
-      <section className="w-full px-6 py-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-      </section>
-    );
+    return <ViewAdmissionSkeleton />;
   }
  
   if (!enrollment) {
