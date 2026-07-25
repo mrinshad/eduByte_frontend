@@ -416,3 +416,78 @@ export async function getExpenseSummaryByCategoryReport(
     }
   );
 }
+
+
+// Daily fee collection report - by transaction (with pagination and filters)
+export interface DailyCollectionPaymentMethod {
+  paymentMethod: string;
+  amount: number;
+}
+
+export interface DailyCollectionItem {
+  type?: string;
+  chargeType?: string;
+  category?: string;
+  fineType?: string;
+  amount: number;
+}
+
+export interface DailyCollectionTransaction {
+  transactionNumber: string;
+  transactionDate: string;
+  studentName: string;
+  class: string;
+  paymentMethods: DailyCollectionPaymentMethod[];
+  Totalamount_from_allocations: number;
+  Totalamount_from_transaction: number;
+  collections: DailyCollectionItem[];
+}
+
+export interface DailyCollectionPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface DailyCollectionReportResponse {
+  fromDate: string;
+  toDate: string;
+  totalCollection: number;
+  pagination: DailyCollectionPagination;
+  studentCollections: DailyCollectionTransaction[];
+}
+
+export async function getDailyFeeCollectionReport(params: {
+  fromDate: string;
+  toDate: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  className?: string;
+  paymentMethod?: string;
+}) {
+  const query = new URLSearchParams({
+    fromDate: params.fromDate,
+    toDate: params.toDate,
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 10),
+    search: params.search ?? "",
+    className: params.className ?? "",
+    paymentMethod: params.paymentMethod ?? "",
+  });
+
+  const payload = (await apiFetch(
+    `/api/reports/daily-collection?${query.toString()}`
+  )) as ApiSuccess<DailyCollectionReportResponse>;
+
+  return (
+    payload.data ?? {
+      fromDate: params.fromDate,
+      toDate: params.toDate,
+      totalCollection: 0,
+      pagination: { page: params.page ?? 1, limit: params.limit ?? 10, total: 0, totalPages: 1 },
+      studentCollections: [],
+    }
+  );
+}
