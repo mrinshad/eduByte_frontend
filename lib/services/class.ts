@@ -34,3 +34,12 @@ export async function updateClass(id: string, name: string) {
 
   return payload
 }
+
+
+export async function deleteClass(id: string){
+  const response = (await apiFetch(`/api/classes/${id}`,{
+    method: "DELETE"
+  })) as ApiSuccess<null>
+
+  return response
+}
