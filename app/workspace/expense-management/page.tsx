@@ -309,7 +309,7 @@ export default function Page() {
                 </div>
 
                 <AddAction onAdd={() =>
-              router.push("/workspace/expense-management/expenses/createExpense")
+              router.push("/workspace/expense-management/createExpense")
             } />
               </div>
             </CardHeader>

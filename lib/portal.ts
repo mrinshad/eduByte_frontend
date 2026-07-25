@@ -80,7 +80,7 @@ export const portalSections: PortalSection[] = [
   { slug: "students", label: "Students", area: "workspace", purpose: "Manage student records", roles: ["Office Staff", "Admin"], group: "Academic Setup" },
   
   { slug: "fee-management/collection", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", roles: ["Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-  { slug: "expense-management/expenses", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
+  { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
   
@@ -92,7 +92,8 @@ export const portalSections: PortalSection[] = [
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   
   
-  { slug: "reports/daily-collection", label: "Daily collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/daily-fee-collection", label: "Daily Fee Collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   
   { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   
