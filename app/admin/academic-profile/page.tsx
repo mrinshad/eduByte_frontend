@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
 import {
   Layers3,
   Pencil,
@@ -9,9 +10,9 @@ import {
   Check,
   X,
   Loader2,
+  Trash2,
 } from "lucide-react"
 import DatePicker from "react-datepicker"
-import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -30,6 +31,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -42,6 +53,7 @@ import {
   getDefaultAcademicYear,
   setDefaultAcademicYear,
   updateAcademicYear,
+  deleteAcademicYear,
 } from "@/lib/services/academicYear"
 import { refreshCurrentAcademicYear } from "@/lib/academic-year-store"
 import {
@@ -49,20 +61,22 @@ import {
   getClasses,
   type SchoolClass,
   updateClass,
+  deleteClass,
 } from "@/lib/services/class"
 import {
   createDivisions,
   getDivisions,
   type Division,
   updateDivision,
+  deleteDivision,
 } from "@/lib/services/division"
 
-// These styles remain for non-dialog cards
 const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
 const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
 const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
-
+const deleteIconClass = "rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
+const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
 const datePickerClassName =
   "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950"
@@ -122,16 +136,28 @@ export default function Page() {
   const [divisionDialogMode, setDivisionDialogMode] = React.useState<"add" | "edit">("add")
   const [classNameDraft, setClassNameDraft] = React.useState("")
   const [divisionNameDraft, setDivisionNameDraft] = React.useState("")
+  // Track which class/division is actually being edited, independent of
+  // the "selected" (highlighted) row. This is what fixes the bug where
+  // clicking edit on one row would show the currently-selected row's data.
   const [editingClassId, setEditingClassId] = React.useState("")
   const [editingDivisionId, setEditingDivisionId] = React.useState("")
 
+  // Loading state for the very first data fetch, used to render skeletons.
   const [isInitialLoading, setIsInitialLoading] = React.useState(true)
 
+  // Per-action loading/disabled flags so a button can't be clicked twice
+  // while its request is still in flight.
   const [isCreatingYear, setIsCreatingYear] = React.useState(false)
   const [savingYearId, setSavingYearId] = React.useState<string | null>(null)
   const [settingDefaultYearId, setSettingDefaultYearId] = React.useState<string | null>(null)
   const [isSavingClass, setIsSavingClass] = React.useState(false)
   const [isSavingDivision, setIsSavingDivision] = React.useState(false)
+
+  // Delete confirmation state for classes and divisions.
+  const [classToDelete, setClassToDelete] = React.useState<SchoolClass | null>(null)
+  const [divisionToDelete, setDivisionToDelete] = React.useState<Division | null>(null)
+  const [isDeletingClass, setIsDeletingClass] = React.useState(false)
+  const [isDeletingDivision, setIsDeletingDivision] = React.useState(false)
 
   const selectedClass = React.useMemo(
     () => classes.find((entry) => entry.id === selectedClassId) ?? null,
@@ -152,6 +178,10 @@ export default function Page() {
   const [editingYearStartDate, setEditingYearStartDate] = React.useState<Date>()
   const [editingYearEndDate, setEditingYearEndDate] = React.useState<Date>()
 
+
+  const [yearToDelete, setYearToDelete] = useState<AcademicYearSummary | null>(null)
+  const [isDeletingYear, setIsDeletingYear] = useState(false)
+
   async function openYearEdit(year: AcademicYearSummary) {
     setEditingYearId(year.id)
 
@@ -164,8 +194,13 @@ export default function Page() {
         setEditingYearEndDate(new Date(details.endDate))
         return
       }
-    } catch {
+    } catch (error) {
       // fall back to the summary data already available in the row
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't load full details for this academic year — dates may be inaccurate until you re-select them."
+      )
     }
 
     setEditingYearNameDraft(year.name)
@@ -194,10 +229,6 @@ export default function Page() {
         setDefaultAcademicYearName(defaultYear?.name ?? "")
         setClasses(classList)
 
-        if (classList.length > 0) {
-          setSelectedClassId((current) => current || classList[0].id)
-        }
-
         const divisionEntries = await Promise.all(
           classList.map(async (schoolClass) => [schoolClass.id, await getDivisions(schoolClass.id)] as const),
         )
@@ -211,6 +242,19 @@ export default function Page() {
 
     void loadInitialData()
   }, [])
+
+  // Keep selectedClassId valid whenever the classes list changes — this is
+  // what makes the Division panel recover as soon as the first class is
+  // added, and re-targets selection if the selected class gets deleted.
+  React.useEffect(() => {
+    if (classes.length === 0) {
+      setSelectedClassId("")
+      return
+    }
+    setSelectedClassId((current) =>
+      current && classes.some((entry) => entry.id === current) ? current : classes[0].id,
+    )
+  }, [classes])
 
   React.useEffect(() => {
     const currentDivisions = divisionsByClassId[selectedClassId] ?? []
@@ -229,6 +273,9 @@ export default function Page() {
     }
   }, [yearDialogOpen])
 
+  // `target` lets the caller pass the exact row that was clicked, instead
+  // of relying on `selectedClass`, which may not have updated yet if
+  // `setSelectedClassId` was just called in the same event handler.
   function openClassDialog(mode: "add" | "edit", target?: SchoolClass) {
     const classToEdit = target ?? selectedClass ?? undefined
     setClassDialogMode(mode)
@@ -255,6 +302,74 @@ export default function Page() {
     setDivisionDialogOpen(false)
     setDivisionNameDraft("")
     setEditingDivisionId("")
+  }
+
+  async function handleDeleteClass() {
+    if (!classToDelete) return
+    setIsDeletingClass(true)
+    try {
+      await deleteClass(classToDelete.id)
+
+      const updatedClasses = await getClasses()
+      setClasses(updatedClasses)
+
+      // If the deleted class was selected, fall back to the first remaining class
+      // and drop its cached divisions so stale data isn't shown.
+      if (selectedClassId === classToDelete.id) {
+        const nextClassId = updatedClasses[0]?.id ?? ""
+        setSelectedClassId(nextClassId)
+        setDivisionsByClassId((current) => {
+          const next = { ...current }
+          delete next[classToDelete.id]
+          return next
+        })
+      }
+
+      toast.success("Class deleted successfully")
+      setClassToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete class")
+    } finally {
+      setIsDeletingClass(false)
+    }
+  }
+  const handleDeleteYear = async () => {
+    if (!yearToDelete) return
+    setIsDeletingYear(true)
+    try {
+      const result = await deleteAcademicYear(yearToDelete.id)
+      if (!result.success) throw new Error(result.message || "Failed to delete academic year")
+      setAcademicYears(await getAcademicYears())
+      toast.success("Academic year deleted")
+      setYearToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete academic year")
+    } finally {
+      setIsDeletingYear(false)
+    }
+  }
+  async function handleDeleteDivision() {
+    if (!divisionToDelete || !selectedClassId) return
+    setIsDeletingDivision(true)
+    try {
+      await deleteDivision(divisionToDelete.id)
+
+      const updatedClasses = await getClasses()
+      const updatedDivisions = await getDivisions(selectedClassId)
+
+      setClasses(updatedClasses)
+      setDivisionsByClassId((current) => ({
+        ...current,
+        [selectedClassId]: updatedDivisions,
+      }))
+
+      toast.success("Division deleted successfully")
+      setDivisionToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete division")
+    } finally {
+      setIsDeletingDivision(false)
+    }
   }
 
   return (
@@ -302,14 +417,12 @@ export default function Page() {
                   </TooltipContent>
                 </Tooltip>
 
-                {/* Removed dark theme styling from DialogContent */}
-                <DialogContent showCloseButton={false} className="sm:max-w-2xl">
+                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50 dark:bg-background">
                   <DialogHeader>
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        {/* Removed shadow and dark-themed specific classes */}
-                        <DialogTitle>Academic Year</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>Academic Year</DialogTitle>
+                        <DialogDescription className={supportingTextClass}>
                           Select the year you want to work in or create a new one.
                         </DialogDescription>
                       </div>
@@ -339,13 +452,13 @@ export default function Page() {
                             <div className="w-full">
                               <div className="space-y-3">
                                 <div>
-                                  <label className="text-sm font-medium">Academic Name</label>
+                                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
                                   <Input className="mt-2" value={editingYearNameDraft} onChange={(e) => setEditingYearNameDraft(e.target.value)} disabled={savingYearId === year.id} />
                                 </div>
 
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium">From</label>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
                                     <DatePicker
                                       selected={editingYearStartDate}
                                       onChange={(date: Date | null) => setEditingYearStartDate(date ?? undefined)}
@@ -368,7 +481,7 @@ export default function Page() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium">To</label>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
                                     <DatePicker
                                       selected={editingYearEndDate}
                                       onChange={(date: Date | null) => setEditingYearEndDate(date ?? undefined)}
@@ -398,7 +511,6 @@ export default function Page() {
 
                                   <Button
                                     size="icon"
-                                    className="bg-[#556043] text-white hover:bg-[#4a533b]"
                                     disabled={savingYearId === year.id}
                                     onClick={() => {
                                       void (async () => {
@@ -444,11 +556,22 @@ export default function Page() {
                                 <Button
                                   variant="outline"
                                   size="icon-sm"
-                                  className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")}
+                                  className="rounded-xl border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20 dark:hover:text-amber-300"
                                   disabled={settingDefaultYearId === year.id}
                                   onClick={() => { void openYearEdit(year) }}
                                 >
                                   <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className={deleteIconClass}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setYearToDelete(year)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
 
                                 {year.isActive ? (
@@ -457,7 +580,6 @@ export default function Page() {
                                   </Button>
                                 ) : (
                                   <Button
-                                    className="bg-[#556043] text-white hover:bg-[#4a533b]"
                                     disabled={settingDefaultYearId === year.id}
                                     onClick={() => {
                                       void (async () => {
@@ -503,23 +625,23 @@ export default function Page() {
               </Dialog>
 
               <Dialog open={createYearOpen} onOpenChange={setCreateYearOpen}>
-                <DialogContent className="sm:max-w-xl">
+                <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
                   <DialogHeader>
-                    <DialogTitle>Create Academic Year</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className={titleTextClass}>Create Academic Year</DialogTitle>
+                    <DialogDescription className={supportingTextClass}>
                       Create a new academic year.
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="space-y-4 py-2">
                     <div>
-                      <label className="text-sm font-medium">Academic Name</label>
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
                       <Input placeholder="2026 - 2027" className="mt-2" value={yearNameDraft} onChange={(event) => setYearNameDraft(event.target.value)} disabled={isCreatingYear} />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">From</label>
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
                         <DatePicker
                           selected={fromDate}
                           onChange={(date: Date | null) => setFromDate(date ?? undefined)}
@@ -542,7 +664,7 @@ export default function Page() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">To</label>
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
                         <DatePicker
                           selected={toDate}
                           onChange={(date: Date | null) => setToDate(date ?? undefined)}
@@ -572,7 +694,6 @@ export default function Page() {
                     </Button>
 
                     <Button
-                      className="bg-[#556043] text-white hover:bg-[#4a533b]"
                       disabled={isCreatingYear}
                       onClick={() => {
                         void (async () => {
@@ -646,7 +767,7 @@ export default function Page() {
                     <p className={`mt-1 text-sm ${supportingTextClass}`}>
                       Click here to add classes before creating divisions.
                     </p>
-                    <Button className="mt-4 rounded-xl bg-[#556043] text-white hover:bg-[#4a533b]" onClick={() => openClassDialog("add")}>
+                    <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
                       Click here to add classes
                     </Button>
                   </div>
@@ -695,6 +816,32 @@ export default function Page() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className={deleteIconClass}
+                                  disabled={schoolClass.divisionCount > 0}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setClassToDelete(schoolClass)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {schoolClass.divisionCount > 0 && (
+                              <TooltipContent>
+                                <p>
+                                  Can't delete — {schoolClass.divisionCount} division{schoolClass.divisionCount === 1 ? "" : "s"} under this class
+                                </p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                         </div>
                       </div>
                     )
@@ -737,14 +884,19 @@ export default function Page() {
                 ) : !selectedClass ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No class selected</p>
-                    <Button className="mt-4 rounded-xl bg-[#556043] text-white hover:bg-[#4a533b]" onClick={() => openClassDialog("add")}>
-                      Add class
-                    </Button>
+                    <p className={`mt-1 text-sm ${supportingTextClass}`}>
+                      {classes.length === 0 ? "Add a class to get started." : "Select a class from the left to see its divisions."}
+                    </p>
+                    {classes.length === 0 && (
+                      <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
+                        Add class
+                      </Button>
+                    )}
                   </div>
                 ) : selectedDivisions.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No divisions yet</p>
-                    <Button className="mt-4 rounded-xl bg-[#556043] text-white hover:bg-[#4a533b]" onClick={() => openDivisionDialog("add")}>
+                    <Button className="mt-4 rounded-xl" onClick={() => openDivisionDialog("add")}>
                       Add division
                     </Button>
                   </div>
@@ -787,18 +939,32 @@ export default function Page() {
                           </div>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setSelectedDivisionId(division.id)
-                            openDivisionDialog("edit", division)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSelectedDivisionId(division.id)
+                              openDivisionDialog("edit", division)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={deleteIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setDivisionToDelete(division)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     )
                   })
@@ -809,110 +975,256 @@ export default function Page() {
           </div>
         </div>
 
-        <ReusableFormDialog
-          open={classDialogOpen}
-          onOpenChange={setClassDialogOpen}
-          theme="vehicle"
-          title={classDialogMode === "add" ? "Add Class" : "Edit Class"}
-          description={
-            classDialogMode === "add"
-              ? "Create a new class and keep the same styling language."
-              : "Update the selected class details."
-          }
-          isEditing={classDialogMode === "edit"}
-          isSaving={isSavingClass}
-          submitLabel="Add"
-          editSubmitLabel="Save"
-          fields={[
-            {
-              type: "text",
-              name: "className",
-              label: "Class Name",
-              placeholder: "Example: Grade 5 - Morning Session",
-            },
-          ]}
-          values={{ className: classNameDraft }}
-          onChange={(_, value) => setClassNameDraft(value)}
-          onSubmit={async () => {
-            setIsSavingClass(true)
-            try {
-              const classIdToUpdate = editingClassId || selectedClassId
+        <Dialog open={classDialogOpen} onOpenChange={setClassDialogOpen}>
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
+            <DialogHeader>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
+                {classDialogMode === "add" ? "Add Class" : "Edit Class"}
+              </DialogTitle>
+              <DialogDescription className={supportingTextClass}>
+                {classDialogMode === "add"
+                  ? "Create a new class and keep the same styling language."
+                  : "Update the selected class details."}
+              </DialogDescription>
+            </DialogHeader>
 
-              if (classDialogMode === "add") {
-                await createClass(classNameDraft)
-              } else if (classIdToUpdate) {
-                await updateClass(classIdToUpdate, classNameDraft)
-              }
+            <div className="space-y-4 py-2">
+              <div className="space-y-3">
+                <label className={cn("text-sm font-medium", supportingTextClass)}>Class Name</label>
+                <Input
+                  className={cn(inputTextClass, "mt-2")}
+                  value={classNameDraft}
+                  onChange={(event) => setClassNameDraft(event.target.value)}
+                  placeholder="Example: Grade 5 - Morning Session"
+                  disabled={isSavingClass}
+                />
+              </div>
+            </div>
 
-              setClasses(await getClasses())
-              if (classIdToUpdate) {
-                toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
-              }
-              closeClassDialog()
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Failed to save class")
-            } finally {
-              setIsSavingClass(false)
-            }
+            <DialogFooter>
+              <Button variant="outline" disabled={isSavingClass} onClick={closeClassDialog}>
+                Cancel
+              </Button>
+              <Button
+                disabled={isSavingClass}
+                onClick={() => {
+                  void (async () => {
+                    setIsSavingClass(true)
+                    try {
+                      const classIdToUpdate = editingClassId || selectedClassId
+
+                      if (classDialogMode === "add") {
+                        await createClass(classNameDraft)
+                      } else if (classIdToUpdate) {
+                        await updateClass(classIdToUpdate, classNameDraft)
+                      }
+
+                      setClasses(await getClasses())
+                      if (classIdToUpdate) {
+                        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
+                      }
+                      closeClassDialog()
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Failed to save class")
+                    } finally {
+                      setIsSavingClass(false)
+                    }
+                  })()
+                }}
+              >
+                {isSavingClass ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {classDialogMode === "add" ? "Adding..." : "Saving..."}
+                  </>
+                ) : (
+                  classDialogMode === "add" ? "Add" : "Save"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={divisionDialogOpen} onOpenChange={setDivisionDialogOpen}>
+          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
+            <DialogHeader>
+              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
+                {divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
+              </DialogTitle>
+              <DialogDescription className={supportingTextClass}>
+                {divisionDialogMode === "add"
+                  ? `Create a division under ${selectedClass?.name || "the selected class"}.`
+                  : "Update the selected division details."}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-3">
+                <label className={cn("text-sm font-medium", supportingTextClass)}>Division Name</label>
+                <Input
+                  className={cn(inputTextClass, "mt-2")}
+                  value={divisionNameDraft}
+                  onChange={(event) => setDivisionNameDraft(event.target.value)}
+                  placeholder="Example: Division A - Primary Block"
+                  disabled={isSavingDivision}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" disabled={isSavingDivision} onClick={closeDivisionDialog}>
+                Cancel
+              </Button>
+              <Button
+                disabled={isSavingDivision}
+                onClick={() => {
+                  void (async () => {
+                    setIsSavingDivision(true)
+                    try {
+                      if (!selectedClassId) {
+                        throw new Error("Select a class first")
+                      }
+
+                      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
+
+                      if (divisionDialogMode === "add") {
+                        await createDivisions(selectedClassId, [divisionNameDraft])
+                      } else if (divisionIdToUpdate) {
+                        await updateDivision(divisionIdToUpdate, divisionNameDraft)
+                      }
+
+                      const updatedClasses = await getClasses()
+                      const updatedDivisions = await getDivisions(selectedClassId)
+
+                      setClasses(updatedClasses)
+                      setDivisionsByClassId((current) => ({
+                        ...current,
+                        [selectedClassId]: updatedDivisions,
+                      }))
+                      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
+                      closeDivisionDialog()
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Failed to save division")
+                    } finally {
+                      setIsSavingDivision(false)
+                    }
+                  })()
+                }}
+              >
+                {isSavingDivision ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {divisionDialogMode === "add" ? "Adding..." : "Saving..."}
+                  </>
+                ) : (
+                  divisionDialogMode === "add" ? "Add" : "Save"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog
+          open={!!classToDelete}
+          onOpenChange={(open) => {
+            if (!open) setClassToDelete(null)
           }}
-        />
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete "{classToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this class
+                {classToDelete?.divisionCount ? ` and its ${classToDelete.divisionCount} division(s)` : ""}.
+                This can't be undone, and it will fail if students are enrolled under it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingClass}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingClass}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteClass()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingClass ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-        <ReusableFormDialog
-          open={divisionDialogOpen}
-          theme="vehicle"
-          onOpenChange={setDivisionDialogOpen}
-          title={divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
-          description={
-            divisionDialogMode === "add"
-              ? `Create a division under ${selectedClass?.name || "the selected class"}.`
-              : "Update the selected division details."
-          }
-          isEditing={divisionDialogMode === "edit"}
-          isSaving={isSavingDivision}
-          submitLabel="Add"
-          editSubmitLabel="Save"
-          fields={[
-            {
-              type: "text",
-              name: "divisionName",
-              label: "Division Name",
-              placeholder: "Example: Division A - Primary Block",
-            },
-          ]}
-          values={{ divisionName: divisionNameDraft }}
-          onChange={(_, value) => setDivisionNameDraft(value)}
-          onSubmit={async () => {
-            setIsSavingDivision(true)
-            try {
-              if (!selectedClassId) {
-                throw new Error("Select a class first")
-              }
-
-              const divisionIdToUpdate = editingDivisionId || selectedDivisionId
-
-              if (divisionDialogMode === "add") {
-                await createDivisions(selectedClassId, [divisionNameDraft])
-              } else if (divisionIdToUpdate) {
-                await updateDivision(divisionIdToUpdate, divisionNameDraft)
-              }
-
-              const updatedClasses = await getClasses()
-              const updatedDivisions = await getDivisions(selectedClassId)
-
-              setClasses(updatedClasses)
-              setDivisionsByClassId((current) => ({
-                ...current,
-                [selectedClassId]: updatedDivisions,
-              }))
-              toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
-              closeDivisionDialog()
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Failed to save division")
-            } finally {
-              setIsSavingDivision(false)
-            }
+        <AlertDialog
+          open={!!divisionToDelete}
+          onOpenChange={(open) => {
+            if (!open) setDivisionToDelete(null)
           }}
-        />
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Division "{divisionToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this division. This can't be undone, and it will
+                fail if students are enrolled under it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingDivision}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingDivision}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteDivision()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingDivision ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* confirmation dialog — same shape as your class one */}
+        <AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete "{yearToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Warning: Deleting "{yearToDelete?.name}" will permanently remove all student admission data linked to this academic year.
+
+                Terms, enrollments, and other related records will also be deleted. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingYear}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingYear}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteYear()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingYear ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </TooltipProvider>
   )

@@ -78,3 +78,10 @@ export async function setDefaultAcademicYear(id: string) {
 
   return payload
 }
+export async function deleteAcademicYear(id: string) {
+  const payload = (await apiFetch(`/api/academicyear/${id}`, {
+    method: "DELETE",
+  })) as ApiSuccess<null>
+
+  return payload
+}

@@ -6,7 +6,7 @@ export interface StaffInput {
   phone: string;
   email: string;
   joiningDate: string; // ISO date-time string, e.g. "2026-07-01T00:00:00Z"
-  status: "ACTIVE" | "INACTIVE";
+  status ?: "ACTIVE" | "INACTIVE";
 }
 
 export interface Staff {
@@ -21,9 +21,24 @@ export interface Staff {
   updatedAt?: string;
 }
 
-// The GET /api/staff endpoint returns the full staff list directly under
-// `data`, so the list item shape is the same as the full Staff record.
-export type StaffListItem = Staff;
+export interface StaffListItem {
+  id: string;
+  employeeCode: string;
+  name: string;
+  phone: string;
+  email: string;
+  joiningDate: string;
+  status: "ACTIVE" | "INACTIVE";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StaffPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 type ApiSuccess<T> = {
   success: boolean;
@@ -34,7 +49,20 @@ type ApiSuccess<T> = {
 export interface StaffListResponse {
   success: boolean;
   message?: string;
-  data: StaffListItem[];
+  data: {
+    items: StaffListItem[];
+    pagination: StaffPagination;
+  };
+}
+
+
+export interface GetStaffParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  sortBy?: string;
+  order?: "asc" | "desc";
 }
 
 // POST /api/staff and PUT /api/staff/:id only return { success, message } —
@@ -44,18 +72,32 @@ export interface StaffMutationResponse {
   message: string;
 }
 
+const DEFAULT_PAGINATION: StaffPagination = { page: 1, limit: 10, total: 0, totalPages: 1 };
+
 // ── Get All Staff ──
-// NOTE: unlike /api/students, /api/staff does not currently return
-// pagination metadata — it returns the full array in `data`. If the
-// backend adds page/limit/search/pagination later, mirror getStudents()
-// in student.ts (send params, read payload.data.items + pagination).
-export async function getStaff(): Promise<StaffListResponse> {
-  const payload = (await apiFetch("/api/staff")) as ApiSuccess<StaffListItem[]>;
+// Server-side pagination, search, status filter, and sort.
+export async function getStaff(params: GetStaffParams = {}): Promise<StaffListResponse> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.search) query.set("search", params.search);
+  if (params.status) query.set("status", params.status);
+  if (params.sortBy) query.set("sortBy", params.sortBy);
+  if (params.order) query.set("order", params.order);
+
+  const qs = query.toString();
+  const payload = (await apiFetch(`/api/staff${qs ? `?${qs}` : ""}`)) as ApiSuccess<{
+    items: StaffListItem[];
+    pagination: StaffPagination;
+  }>;
 
   return {
     success: payload.success,
     message: payload.message,
-    data: Array.isArray(payload.data) ? payload.data : [],
+    data: {
+      items: payload.data?.items ?? [],
+      pagination: payload.data?.pagination ?? DEFAULT_PAGINATION,
+    },
   };
 }
 

@@ -33,3 +33,11 @@ export async function updateDivision(id: string, name: string) {
 
   return payload
 }
+
+export async function deleteDivision(id: string){
+  const response = (await apiFetch(`/api/divisions/${id}`,{
+    method: "DELETE"
+  })) as ApiSuccess<null>
+
+  return response
+}
