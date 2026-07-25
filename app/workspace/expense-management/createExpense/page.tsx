@@ -402,7 +402,7 @@ export default function Page() {
                 if (printAfterCreate) {
                     router.push(`/print/expenses/${result.data.id}`);
                 } else {
-                    router.push("/workspace/expense-management/expenses/createExpense");
+                    router.push("/workspace/expense-management/createExpense");
                 }
             } else {
                 toast.error(result.message || "An error occurred during submission.");

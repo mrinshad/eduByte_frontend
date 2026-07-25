@@ -16,7 +16,7 @@ const quickLinks = [
     Icon: FileCheck2,
   },
   {
-    href: "/workspace/expense-management/expenses/createExpense",
+    href: "/workspace/expense-management/createExpense",
     title: "New Expense",
     description: "Log a new expense and how it was paid.",
     Icon: BanknoteArrowDown,
