@@ -446,14 +446,14 @@ export default function Page() {
 
                             <div className="flex items-center gap-2">
                               <Button
-                                variant="outline"
-                                size="icon-sm"
-                                className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")}
-                                disabled={settingDefaultYearId === year.id}
-                                onClick={() => { void openYearEdit(year) }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+  variant="outline"
+  size="icon-sm"
+  className="rounded-xl border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20 dark:hover:text-amber-300"
+  disabled={settingDefaultYearId === year.id}
+  onClick={() => { void openYearEdit(year) }}
+>
+  <Pencil className="h-4 w-4" />
+</Button>
 
                               {year.isActive ? (
                                 <Button variant="secondary" disabled>
