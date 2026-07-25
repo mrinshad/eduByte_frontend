@@ -9,6 +9,7 @@ import {
   Check,
   X,
   Loader2,
+  Trash2,
 } from "lucide-react"
 import DatePicker from "react-datepicker"
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
@@ -30,6 +31,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -49,12 +60,14 @@ import {
   getClasses,
   type SchoolClass,
   updateClass,
+  deleteClass,
 } from "@/lib/services/class"
 import {
   createDivisions,
   getDivisions,
   type Division,
   updateDivision,
+  deleteDivision,
 } from "@/lib/services/division"
 
 // These styles remain for non-dialog cards
@@ -62,7 +75,8 @@ const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)
 const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
 const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
-
+const deleteIconClass = "rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
+const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
 const datePickerClassName =
   "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
 const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950"
@@ -133,6 +147,12 @@ export default function Page() {
   const [isSavingClass, setIsSavingClass] = React.useState(false)
   const [isSavingDivision, setIsSavingDivision] = React.useState(false)
 
+  // Delete confirmation state for classes and divisions.
+  const [classToDelete, setClassToDelete] = React.useState<SchoolClass | null>(null)
+  const [divisionToDelete, setDivisionToDelete] = React.useState<Division | null>(null)
+  const [isDeletingClass, setIsDeletingClass] = React.useState(false)
+  const [isDeletingDivision, setIsDeletingDivision] = React.useState(false)
+
   const selectedClass = React.useMemo(
     () => classes.find((entry) => entry.id === selectedClassId) ?? null,
     [classes, selectedClassId],
@@ -164,8 +184,13 @@ export default function Page() {
         setEditingYearEndDate(new Date(details.endDate))
         return
       }
-    } catch {
+    } catch (error) {
       // fall back to the summary data already available in the row
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't load full details for this academic year — dates may be inaccurate until you re-select them."
+      )
     }
 
     setEditingYearNameDraft(year.name)
@@ -257,6 +282,60 @@ export default function Page() {
     setEditingDivisionId("")
   }
 
+  async function handleDeleteClass() {
+    if (!classToDelete) return
+    setIsDeletingClass(true)
+    try {
+      await deleteClass(classToDelete.id)
+
+      const updatedClasses = await getClasses()
+      setClasses(updatedClasses)
+
+      // If the deleted class was selected, fall back to the first remaining class
+      // and drop its cached divisions so stale data isn't shown.
+      if (selectedClassId === classToDelete.id) {
+        const nextClassId = updatedClasses[0]?.id ?? ""
+        setSelectedClassId(nextClassId)
+        setDivisionsByClassId((current) => {
+          const next = { ...current }
+          delete next[classToDelete.id]
+          return next
+        })
+      }
+
+      toast.success("Class deleted successfully")
+      setClassToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete class")
+    } finally {
+      setIsDeletingClass(false)
+    }
+  }
+
+  async function handleDeleteDivision() {
+    if (!divisionToDelete || !selectedClassId) return
+    setIsDeletingDivision(true)
+    try {
+      await deleteDivision(divisionToDelete.id)
+
+      const updatedClasses = await getClasses()
+      const updatedDivisions = await getDivisions(selectedClassId)
+
+      setClasses(updatedClasses)
+      setDivisionsByClassId((current) => ({
+        ...current,
+        [selectedClassId]: updatedDivisions,
+      }))
+
+      toast.success("Division deleted successfully")
+      setDivisionToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete division")
+    } finally {
+      setIsDeletingDivision(false)
+    }
+  }
+
   return (
     <TooltipProvider>
       <section className="px-6 py-4">
@@ -339,13 +418,13 @@ export default function Page() {
                             <div className="w-full">
                               <div className="space-y-3">
                                 <div>
-                                  <label className="text-sm font-medium">Academic Name</label>
+                                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
                                   <Input className="mt-2" value={editingYearNameDraft} onChange={(e) => setEditingYearNameDraft(e.target.value)} disabled={savingYearId === year.id} />
                                 </div>
 
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium">From</label>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
                                     <DatePicker
                                       selected={editingYearStartDate}
                                       onChange={(date: Date | null) => setEditingYearStartDate(date ?? undefined)}
@@ -368,7 +447,7 @@ export default function Page() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium">To</label>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
                                     <DatePicker
                                       selected={editingYearEndDate}
                                       onChange={(date: Date | null) => setEditingYearEndDate(date ?? undefined)}
@@ -395,10 +474,13 @@ export default function Page() {
                                   <Button variant="ghost" size="icon" disabled={savingYearId === year.id} onClick={() => { closeYearEdit(); toast.message("Cancelled"); }}>
                                     <X className="h-4 w-4" />
                                   </Button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button variant="ghost" size="icon" disabled={savingYearId === year.id} onClick={() => { closeYearEdit(); toast.message("Cancelled"); }}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
 
                                   <Button
                                     size="icon"
-                                    className="bg-[#556043] text-white hover:bg-[#4a533b]"
                                     disabled={savingYearId === year.id}
                                     onClick={() => {
                                       void (async () => {
@@ -439,12 +521,41 @@ export default function Page() {
                                   {year.isActive ? "Current active year" : "Archived year"}
                                 </p>
                               </div>
+                                          setAcademicYears((prev) => prev.map((item) => item.id === year.id ? { ...item, name: editingYearNameDraft || item.name } : item))
+                                          await refreshCurrentAcademicYear()
+                                          closeYearEdit()
+                                          toast.success("Saved")
+                                        } catch (error) {
+                                          toast.error(error instanceof Error ? error.message : "Failed to save academic year")
+                                        } finally {
+                                          setSavingYearId(null)
+                                        }
+                                      })()
+                                    }}
+                                  >
+                                    {savingYearId === year.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <h3 className={cn("font-semibold", year.isActive ? "text-slate-950 dark:text-slate-50" : "text-slate-950 dark:text-slate-100")}>{year.name}</h3>
+                                <p className={cn("mt-1 text-xs", year.isActive ? "font-medium text-slate-700 dark:text-slate-200" : "text-slate-600 dark:text-slate-400")}>
+                                  {year.isActive ? "Current active year" : "Archived year"}
+                                </p>
+                              </div>
 
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="icon-sm"
-                                  className={cn(editIconClass, "border-white/30 bg-white/10 hover:bg-white/20")}
+                                  className="rounded-xl border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20 dark:hover:text-amber-300"
                                   disabled={settingDefaultYearId === year.id}
                                   onClick={() => { void openYearEdit(year) }}
                                 >
@@ -457,7 +568,6 @@ export default function Page() {
                                   </Button>
                                 ) : (
                                   <Button
-                                    className="bg-[#556043] text-white hover:bg-[#4a533b]"
                                     disabled={settingDefaultYearId === year.id}
                                     onClick={() => {
                                       void (async () => {
@@ -695,6 +805,32 @@ export default function Page() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className={deleteIconClass}
+                                  disabled={schoolClass.divisionCount > 0}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setClassToDelete(schoolClass)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {schoolClass.divisionCount > 0 && (
+                              <TooltipContent>
+                                <p>
+                                  Can't delete — {schoolClass.divisionCount} division{schoolClass.divisionCount === 1 ? "" : "s"} under this class
+                                </p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                         </div>
                       </div>
                     )
@@ -787,18 +923,32 @@ export default function Page() {
                           </div>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setSelectedDivisionId(division.id)
-                            openDivisionDialog("edit", division)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSelectedDivisionId(division.id)
+                              openDivisionDialog("edit", division)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={deleteIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setDivisionToDelete(division)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     )
                   })
@@ -899,20 +1049,108 @@ export default function Page() {
               const updatedClasses = await getClasses()
               const updatedDivisions = await getDivisions(selectedClassId)
 
-              setClasses(updatedClasses)
-              setDivisionsByClassId((current) => ({
-                ...current,
-                [selectedClassId]: updatedDivisions,
-              }))
-              toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
-              closeDivisionDialog()
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Failed to save division")
-            } finally {
-              setIsSavingDivision(false)
-            }
+                      setClasses(updatedClasses)
+                      setDivisionsByClassId((current) => ({
+                        ...current,
+                        [selectedClassId]: updatedDivisions,
+                      }))
+                      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
+                      closeDivisionDialog()
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Failed to save division")
+                    } finally {
+                      setIsSavingDivision(false)
+                    }
+                  })()
+                }}
+              >
+                {isSavingDivision ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {divisionDialogMode === "add" ? "Adding..." : "Saving..."}
+                  </>
+                ) : (
+                  divisionDialogMode === "add" ? "Add" : "Save"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog
+          open={!!classToDelete}
+          onOpenChange={(open) => {
+            if (!open) setClassToDelete(null)
           }}
-        />
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete "{classToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this class
+                {classToDelete?.divisionCount ? ` and its ${classToDelete.divisionCount} division(s)` : ""}.
+                This can't be undone, and it will fail if students are enrolled under it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingClass}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingClass}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteClass()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingClass ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={!!divisionToDelete}
+          onOpenChange={(open) => {
+            if (!open) setDivisionToDelete(null)
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Division "{divisionToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this division. This can't be undone, and it will
+                fail if students are enrolled under it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingDivision}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingDivision}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteDivision()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingDivision ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </TooltipProvider>
   )
