@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getStudentById, type Student } from "@/lib/services/student"
 import { refreshLateFines } from "@/lib/services/lateFine"
 import { formatDateOnly } from "@/lib/utils"
@@ -104,6 +105,120 @@ function statusTone(status: Student["status"]) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Skeleton loading state
+// ---------------------------------------------------------------------------
+
+function ViewStudentSkeleton() {
+  return (
+    <section className="w-full px-6 py-4 space-y-6">
+      {/* Header skeleton */}
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-9 rounded-md" />
+          <div>
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="mt-2 h-4 w-28" />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        {/* Sidebar profile card skeleton */}
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <CardContent className="p-6 text-center">
+              <Skeleton className="mx-auto h-20 w-20 rounded-full" />
+              <Skeleton className="mx-auto mt-4 h-5 w-36" />
+              <Skeleton className="mx-auto mt-2 h-4 w-40" />
+
+              <div className="mt-6 divide-y border-t pt-2 text-left">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4 rounded-sm" />
+                      <Skeleton className="h-3.5 w-20" />
+                    </div>
+                    <Skeleton className="h-3.5 w-20" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Info section skeleton */}
+        <div className="space-y-6">
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-2xl" />
+                <div>
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="mt-2 h-4 w-36" />
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40"
+                  >
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="mt-2 h-4 w-28" />
+                  </div>
+                ))}
+
+                <div className="sm:col-span-2 xl:col-span-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="mt-0.5 h-4 w-4 shrink-0 rounded-sm" />
+                    <div className="w-full">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="mt-2 h-4 w-full max-w-md" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Parent contacts skeleton */}
+              <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+                <div className="mb-4 flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded-sm" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50"
+                    >
+                      <div className="flex items-start gap-4">
+                        <Skeleton className="h-11 w-11 shrink-0 rounded-2xl" />
+                        <div className="min-w-0 flex-1">
+                          <Skeleton className="h-3 w-12" />
+                          <Skeleton className="mt-2 h-4 w-32" />
+                          <Skeleton className="mt-2 h-3.5 w-24" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function Page() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -140,11 +255,7 @@ export default function Page() {
   }, [studentId])
 
   if (loading) {
-    return (
-      <section className="w-full px-6 py-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-      </section>
-    )
+    return <ViewStudentSkeleton />
   }
 
   if (!student) {

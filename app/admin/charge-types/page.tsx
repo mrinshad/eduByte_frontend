@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react"
+import { Plus, Pencil, Trash2, ArrowLeft, Loader2 } from "lucide-react"
 import { freequencyOptions, categoryOptions } from "@/lib/constant"
 import { getAccountTypes, type accountName } from "@/lib/services/accountTypes"
 import {
@@ -27,6 +27,7 @@ export default function Page() {
   const [chargeTypes, setChargeTypes] = useState<ChargeTypes[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // ← added loading state
   const [formData, setFormData] = useState<chargeType>({
     name: "",
     category: "",
@@ -40,11 +41,14 @@ export default function Page() {
 
   const loadChargeTypes = async () => {
     try {
+      setIsLoading(true) // ← start loading
       const data = await getChargeTypes()
       setChargeTypes(data)
     } catch (error) {
       console.error("Failed to load charge types:", error)
       toast.error("Failed to load charge types")
+    } finally {
+      setIsLoading(false) // ← stop loading
     }
   }
 
@@ -150,7 +154,16 @@ export default function Page() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {chargeTypes.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-40 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
+                      <p className="text-sm">Loading charge types...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : chargeTypes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-40 text-center text-slate-500">
                     <p className="text-sm">No charge types found.</p>

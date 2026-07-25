@@ -196,6 +196,7 @@ export default function FeeCollectionPage() {
 
       {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Left: Title */}
         <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="outline"
@@ -215,20 +216,56 @@ export default function FeeCollectionPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center w-full">
-
-          <div className="relative flex-1 lg:max-w-xs">
+        {/* Right: Search + Filters — pushed to the right on desktop */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:ml-auto w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none lg:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
             <Input
               placeholder="Search student..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+              className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700 w-full sm:w-[240px]"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Class */}
+            <Select
+              value={classFilter}
+              onValueChange={(value) => {
+                setClassFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classOptions.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Vehicle */}
+            <Select
+              value={vehicleFilter}
+              onValueChange={(value) => {
+                setVehicleFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
+                <SelectValue placeholder="All Vehicles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vehicles</SelectItem>
+                {vehicleOptions.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Status */}
             <Select
@@ -241,7 +278,6 @@ export default function FeeCollectionPage() {
               <SelectTrigger className="h-10 w-[130px] rounded-lg border-slate-300">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
-
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -260,13 +296,13 @@ export default function FeeCollectionPage() {
                 Clear
               </Button>
             )}
-
           </div>
         </div>
       </div>
+
+      {/* Active filter chips */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-
           <span className="text-xs font-medium text-slate-400">
             Filters:
           </span>
@@ -311,7 +347,6 @@ export default function FeeCollectionPage() {
               }}
             />
           )}
-
         </div>
       )}
 
