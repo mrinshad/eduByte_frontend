@@ -400,7 +400,7 @@ export default function FeeCollectionPage() {
                       <Button
                         size="sm"
                         className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                        onClick={() => router.push(`/workspace/fee-management/collection/viewCollection?id=${student.enrollmentId}`)}
+                        onClick={() => router.push(`/workspace/fee-management/viewCollection?id=${student.enrollmentId}`)}
                       >
                         Collect
                       </Button>
