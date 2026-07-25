@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { toast } from "sonner"
 
 import {
@@ -86,7 +86,6 @@ export default function Page() {
         "bg-purple-50 text-purple-700 border-purple-200",
         "bg-pink-50 text-pink-700 border-pink-200",
     ]
-    const getRandomBadgeColor = () => badgeColors[Math.floor(Math.random() * badgeColors.length)]
 
     const router = useRouter()
 
@@ -102,6 +101,19 @@ export default function Page() {
     // Field-level errors, populated on submit and cleared the moment the
     // user edits that field — same pattern as the Create Staff form.
     const [fieldErrors, setFieldErrors] = useState<AccountFieldErrors>({})
+
+    // ✅ Deterministic color map: same Account Type = same color every time
+    const typeColorMap = useMemo(() => {
+        const map = new Map<string, string>()
+        ACCOUNT_TYPES.forEach((type, index) => {
+            map.set(type, badgeColors[index % badgeColors.length])
+        })
+        return map
+    }, [])
+
+    const getBadgeColorForType = (type: string): string => {
+        return typeColorMap.get(type) ?? "bg-slate-50 text-slate-700 border-slate-200"
+    }
 
     useEffect(() => {
         loadAccounts()
@@ -315,7 +327,8 @@ export default function Page() {
                                             {account.name}
                                         </TableCell>
                                         <TableCell className="px-6 py-4">
-                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRandomBadgeColor()}`}>
+                                            {/* ✅ Same type = same color */}
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getBadgeColorForType(account.type)}`}>
                                                 {account.type}
                                             </span>
                                         </TableCell>
