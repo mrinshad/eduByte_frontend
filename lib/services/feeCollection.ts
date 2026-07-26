@@ -246,3 +246,40 @@ export async function collectFee(payload: CollectFeePayload) {
   })) as CollectFeeResponse;
   return response.data;
 }
+
+export interface FeeCollectionPrintItem {
+  type: "CHARGE" | "FINE";
+  name: string;
+  period: { month: number; year: number } | null;
+  description: string | null;
+  amount: number;
+}
+
+export interface FeeCollectionPrintPayment {
+  account: string;
+  amount: number;
+}
+
+export interface FeeCollectionPrintResponse {
+  id: string;
+  transactionNumber: string;
+  transactionDate: string;
+  totalAmount: number;
+  status: string;
+  student: {
+    studentName: string;
+    admissionNumber: string;
+    class: string;
+    division: string;
+    rollNumber: string;
+  };
+  items: FeeCollectionPrintItem[];
+  payments: FeeCollectionPrintPayment[];
+}
+
+export async function getFeeCollectionPrint(transactionId: string) {
+  const payload = (await apiFetch(
+    `/api/feecollection/print/${transactionId}`
+  )) as { success: boolean; data: FeeCollectionPrintResponse };
+  return payload.data;
+}

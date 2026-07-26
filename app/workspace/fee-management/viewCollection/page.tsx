@@ -225,6 +225,8 @@ export default function Page() {
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([])
   const [chargesLoading, setChargesLoading] = useState(true)
   const [chargesError, setChargesError] = useState<string | null>(null)
+  // near your other useState declarations
+  const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(true)
 
   // Selection: id -> amount to collect (keys prefixed to avoid charge/fine id collisions)
   const [selected, setSelected] = useState<Record<string, number>>({})
@@ -466,10 +468,14 @@ export default function Page() {
         allocations,
         zeroChargeIds: selectedZeroChargeIds,
       })
-
-      setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
+      console.log("collectFee result:", result)
       toast.success(`Fee collected successfully. Txn ${result.transactionNumber} for ${formatCurrency(result.totalAmount)}.`)
-      router.push("/workspace/reports/daily-collection");
+
+      if (printAfterCreate) {
+        router.push(`/print/fee-collection/${result.id}`)
+        return // skip resetting local state — we're navigating away
+      }
+      setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
       setSelected({})
       setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
 
@@ -871,6 +877,16 @@ export default function Page() {
                   {submitError && (
                     <p className="mt-2 text-xs font-medium text-red-600">{submitError}</p>
                   )}
+
+                  <label className="mt-3 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={printAfterCreate}
+                      onChange={(e) => setPrintAfterCreate(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 accent-[#556043]"
+                    />
+                    Print receipt after collecting
+                  </label>
 
                   <Button
                     className="mt-4 w-full gap-2 bg-[#556043] text-white hover:bg-[#4a533b] disabled:opacity-40"
