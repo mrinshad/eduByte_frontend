@@ -575,9 +575,10 @@ export default function Page() {
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Student Charges
                 </h3>
-                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800/50">
+                {/* ✅ Scrollable container with sticky header */}
+                <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[400px]">
                   <table className="w-full min-w-[640px] text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60">
+                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
                       <tr className="text-left text-slate-500 dark:text-slate-400">
                         <th className="px-3 py-2 font-medium w-10"></th>
                         <th className="px-3 py-2 font-medium">Charge</th>
@@ -594,7 +595,7 @@ export default function Page() {
                           <tr>
                             <td
                               colSpan={7}
-                              className="bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400"
+                              className="bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 sticky top-[37px] z-10"
                             >
                               {group.label}
                             </td>
@@ -681,9 +682,10 @@ export default function Page() {
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Fines
                 </h3>
-                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800/50">
+                {/* ✅ Scrollable container with sticky header */}
+                <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[200px]">
                   <table className="w-full min-w-[520px] text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60">
+                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
                       <tr className="text-left text-slate-500 dark:text-slate-400">
                         <th className="px-3 py-2 font-medium w-10"></th>
                         <th className="px-3 py-2 font-medium">Fine</th>
