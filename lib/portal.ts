@@ -93,6 +93,7 @@ export const portalSections: PortalSection[] = [
   
   
   { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/term-fee-collection-report", label: "Term Fee Collection Report", area: "workspace", purpose: "View term-wise fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   { slug: "reports/daily-fee-collection", label: "Daily Fee Collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   
   { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
