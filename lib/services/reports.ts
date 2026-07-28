@@ -134,47 +134,82 @@ export async function getFinancialByVehicleReport(
 }
 
 //
-// Daily Collection Report (now a date range: fromDate -> toDate)
+// Daily Collection Report (transaction list with pagination)
 //
 
 export interface PaymentMethodData {
-    paymentMethod: string;
-    amount: number;
+  paymentMethod: string;
+  amount: number;
 }
 
-export interface ChargeTypeData {
-    chargeType: string;
-    amount: number;
+export interface CollectionItem {
+  type: "Fee" | "Fine";
+  chargeType?: string;
+  category?: string;
+  fineType?: string;
+  amount: number;
 }
 
-export interface DailyCollectionData {
-    fromDate: string;
-    toDate: string;
-    totalCollection: number;
-    paymentMethodData: PaymentMethodData[];
-    collectionByChargeType: ChargeTypeData[];
+export interface DailyCollectionTransaction {
+  transactionNumber: string;
+  transactionDate: string;
+  studentName: string;
+  class: string;
+  paymentMethods: PaymentMethodData[];
+  Totalamount_from_allocations: number;
+  Totalamount_from_transaction: number;
+  collections: CollectionItem[];
 }
 
-// Get Daily Collection Report
-export async function getDailyCollectionReport(
-    fromDate: string,
-    toDate: string
-): Promise<DailyCollectionData> {
-    const payload = (await apiFetch(
-        `/api/reports/daily-collection?fromDate=${fromDate}&toDate=${toDate}`
-    )) as ApiSuccess<DailyCollectionData>;
-
-    return (
-        payload.data ?? {
-            fromDate,
-            toDate,
-            totalCollection: 0,
-            paymentMethodData: [],
-            collectionByChargeType: [],
-        }
-    );
+export interface DailyCollectionPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
+export interface DailyCollectionReportResponse {
+  fromDate: string;
+  toDate: string;
+  totalCollection: number;
+  pagination: DailyCollectionPagination;
+  studentCollections: DailyCollectionTransaction[];
+}
+
+// Get Daily Collection Report — paginated transaction list
+export async function getDailyFeeCollectionReport(params: {
+  fromDate: string;
+  toDate: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<DailyCollectionReportResponse> {
+  const { fromDate, toDate, page = 1, limit = 10, search = "" } = params;
+
+  const query = new URLSearchParams({
+    fromDate,
+    toDate,
+    page: String(page),
+    limit: String(limit),
+  });
+  if (search.trim()) {
+    query.set("search", search.trim());
+  }
+
+  const payload = (await apiFetch(
+    `/api/reports/daily-collection?${query.toString()}`
+  )) as ApiSuccess<DailyCollectionReportResponse>;
+
+  return (
+    payload.data ?? {
+      fromDate,
+      toDate,
+      totalCollection: 0,
+      pagination: { page, limit, total: 0, totalPages: 1 },
+      studentCollections: [],
+    }
+  );
+}
 
 //
 // Expense By Category Report

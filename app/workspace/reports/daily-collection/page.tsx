@@ -1,45 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
     ArrowRight,
-    Banknote,
     Calendar,
+    ChevronLeft,
+    ChevronRight,
     IndianRupee,
     Loader2,
     Receipt,
     RefreshCcw,
-    Smartphone,
+    Search,
     Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-    getDailyCollectionReport,
-    type DailyCollectionData,
-} from "@/lib/services/reports"; // <-- adjust to wherever you saved the API file
+    getDailyFeeCollectionReport,
+    type DailyCollectionReportResponse,
+    type DailyCollectionTransaction,
+} from "@/lib/services/reports";
 
 const BRAND = "#556043";
-
-// Icon + accent per payment method. Falls back to a generic wallet icon
-// for any method the backend adds later that we haven't styled yet.
-const PAYMENT_METHOD_STYLES: Record<string, { icon: React.ElementType; accent: string }> = {
-    cash: { icon: Banknote, accent: "#556043" },
-    upi: { icon: Smartphone, accent: "#3b6e91" },
-};
-
-// Charge types are dynamic (school-defined), so instead of a lookup map
-// we rotate a small accent palette and use one consistent icon.
-const CHARGE_TYPE_ACCENTS = [
-    "#556043", // brand green
-    "#3b6e91", // steel blue
-    "#a8763e", // amber/bronze
-    "#7a4a8f", // violet
-    "#b0524a", // rust
-];
+const PAGE_SIZE = 10;
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -47,25 +33,6 @@ function formatCurrency(amount: number) {
         currency: "INR",
         maximumFractionDigits: 0,
     }).format(amount);
-}
-
-function tomorrowISO() {
-    const date = new Date();
-
-    const indiaToday = new Date(
-        date.toLocaleString("en-US", {
-            timeZone: "Asia/Kolkata",
-        })
-    );
-
-    indiaToday.setDate(indiaToday.getDate() + 1);
-
-    return new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    }).format(indiaToday);
 }
 
 function todayISO() {
@@ -77,13 +44,23 @@ function todayISO() {
     }).format(new Date());
 }
 
-// The API returns date fields as full ISO timestamps (e.g.
-// "2026-07-12T00:00:00.000Z"). Take just the yyyy-mm-dd part before
-// building a display date, otherwise appending "T00:00:00" again
-// produces an invalid string.
+function tomorrowISO() {
+    const date = new Date();
+    const indiaToday = new Date(
+        date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+    indiaToday.setDate(indiaToday.getDate() + 1);
+
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(indiaToday);
+}
+
 function formatDisplayDate(date: string) {
     if (!date) return "";
-
     const datePart = date.slice(0, 10);
     return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
@@ -93,15 +70,15 @@ function formatDisplayDate(date: string) {
     });
 }
 
-function formatDisplayDateRange(fromDate: string, toDate: string) {
-    if (!fromDate || !toDate) return "Fee collection, at a glance";
-
-    const fromPart = fromDate.slice(0, 10);
-    const toPart = toDate.slice(0, 10);
-
-    if (fromPart === toPart) return formatDisplayDate(fromPart);
-
-    return `${formatDisplayDate(fromPart)} — ${formatDisplayDate(toPart)}`;
+function formatDisplayDateTime(date: string) {
+    if (!date) return "";
+    const datePart = date.slice(0, 10);
+    return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
 }
 
 export default function DailyCollectionReportPage() {
@@ -109,25 +86,40 @@ export default function DailyCollectionReportPage() {
 
     const [fromDate, setFromDate] = useState<string>(todayISO());
     const [toDate, setToDate] = useState<string>(todayISO());
-    const [report, setReport] = useState<DailyCollectionData | null>(null);
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState("");
+    const [searchInput, setSearchInput] = useState("");
+    const [report, setReport] = useState<DailyCollectionReportResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Re-fetches every time either end of the range changes, so switching
-    // dates always replaces (never merges with) the previous numbers.
-    useEffect(() => {
-        if (!fromDate || !toDate) return;
+    const isRangeInvalid = fromDate > toDate;
 
-        // Guard against an inverted range (e.g. user picks "to" before "from")
-        if (fromDate > toDate) return;
+    // Debounce search input → actual search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchInput);
+            setPage(1);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    useEffect(() => {
+        if (!fromDate || !toDate || fromDate > toDate) return;
 
         let cancelled = false;
 
-        async function load(from: string, to: string) {
+        async function load(from: string, to: string, pageNum: number) {
             try {
                 setIsLoading(true);
                 setError(null);
-                const data = await getDailyCollectionReport(from, to);
+                const data = await getDailyFeeCollectionReport({
+                    fromDate: from,
+                    toDate: to,
+                    page: pageNum,
+                    limit: PAGE_SIZE,
+                    search: search.trim(),
+                });
                 if (!cancelled) setReport(data);
             } catch (err) {
                 if (!cancelled) {
@@ -139,29 +131,38 @@ export default function DailyCollectionReportPage() {
             }
         }
 
-        load(fromDate, toDate);
+        load(fromDate, toDate, page);
 
         return () => {
             cancelled = true;
         };
-    }, [fromDate, toDate]);
+    }, [fromDate, toDate, page, search]);
 
-    const paymentMethods = report?.paymentMethodData ?? [];
-    const chargeTypes = report?.collectionByChargeType ?? [];
-    const total = report?.totalCollection ?? 0;
-    const isRangeInvalid = fromDate > toDate;
+    const transactions = report?.studentCollections ?? [];
+    const totalCollection = report?.totalCollection ?? 0;
+    const pagination = report?.pagination ?? {
+        page: 1,
+        limit: PAGE_SIZE,
+        total: 0,
+        totalPages: 1,
+    };
 
-    // Sorted so the largest contributor leads the list — makes the
-    // breakdown scannable without the user having to hunt for it.
-    const sortedChargeTypes = useMemo(
-        () => [...chargeTypes].sort((a, b) => b.amount - a.amount),
-        [chargeTypes]
-    );
+    const rangeStart =
+        transactions.length === 0
+            ? 0
+            : (pagination.page - 1) * pagination.limit + 1;
+    const rangeEnd =
+        transactions.length === 0 ? 0 : rangeStart + transactions.length - 1;
 
     function handleFromDateChange(value: string) {
         setFromDate(value);
-        // Keep the range valid: pull "to" forward if it now precedes "from"
         if (value > toDate) setToDate(value);
+        setPage(1);
+    }
+
+    function handleToDateChange(value: string) {
+        setToDate(value);
+        setPage(1);
     }
 
     function handleRefresh() {
@@ -169,11 +170,30 @@ export default function DailyCollectionReportPage() {
 
         setIsLoading(true);
         setError(null);
-        getDailyCollectionReport(fromDate, toDate)
+        getDailyFeeCollectionReport({
+            fromDate,
+            toDate,
+            page,
+            limit: PAGE_SIZE,
+            search: search.trim(),
+        })
             .then(setReport)
-            .catch(() => setError("Could not load the collection report. Please try again."))
+            .catch(() =>
+                setError("Could not load the collection report. Please try again.")
+            )
             .finally(() => setIsLoading(false));
     }
+
+    // Derive unique payment methods for hero badges from current page transactions
+    const paymentMethodTotals = transactions.reduce<Record<string, number>>(
+        (acc, tx) => {
+            tx.paymentMethods.forEach((pm) => {
+                acc[pm.paymentMethod] = (acc[pm.paymentMethod] ?? 0) + pm.amount;
+            });
+            return acc;
+        },
+        {}
+    );
 
     return (
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
@@ -194,14 +214,14 @@ export default function DailyCollectionReportPage() {
                                 Daily Collection Report
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                {report
-                                    ? formatDisplayDateRange(report.fromDate, report.toDate)
-                                    : "Fee collection, at a glance"}
+                                {fromDate === toDate
+                                    ? formatDisplayDate(fromDate)
+                                    : `${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
                             </p>
                         </div>
                     </div>
 
-                    {/* Date range picker — stacks on mobile, inline from tablet up */}
+                    {/* Date range picker */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
                             <div className="relative w-full sm:w-40">
@@ -228,7 +248,7 @@ export default function DailyCollectionReportPage() {
                                     value={toDate}
                                     min={fromDate}
                                     max={tomorrowISO()}
-                                    onChange={(e) => setToDate(e.target.value)}
+                                    onChange={(e) => handleToDateChange(e.target.value)}
                                     className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
                                 />
                             </div>
@@ -241,7 +261,9 @@ export default function DailyCollectionReportPage() {
                             onClick={handleRefresh}
                             disabled={isLoading || isRangeInvalid}
                         >
-                            <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                            <RefreshCcw
+                                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                            />
                         </Button>
                     </div>
                 </div>
@@ -249,205 +271,239 @@ export default function DailyCollectionReportPage() {
 
             {isRangeInvalid ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
-                    The "from" date must be before the "to" date.
+                    The &quot;from&quot; date must be before the &quot;to&quot; date.
                 </div>
             ) : error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
                     {error}
                 </div>
-            ) : isLoading ? (
-                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-24 text-slate-500 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
-                    <p className="text-sm">Loading collection report...</p>
-                </div>
             ) : (
                 <div className="space-y-4 sm:space-y-6">
-                    {/* Total collection — modern full-width hero */}
-                    <div
-                        className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
-                        style={{
-                            background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
-                        }}
-                    >
-                        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-                        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+                    {/* Search — right-aligned, always mounted, brand focus colour */}
+                    <div className="flex justify-end">
+                        <div className="relative w-full sm:max-w-xs">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Search student..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700
+                                    focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20
+                                    dark:focus-visible:border-[#6b7a55] dark:focus-visible:ring-[#6b7a55]/30"
+                            />
+                        </div>
+                    </div>
 
-                        <div className="relative flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                            <div>
-                                <div className="mb-2 flex items-center gap-2">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
-                                        <IndianRupee className="h-4 w-4 text-white" />
-                                    </span>
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-24 text-slate-500 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                            <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
+                            <p className="text-sm">Loading collection report...</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Total collection — hero */}
+                            <div
+                                className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
+                                style={{
+                                    background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
+                                }}
+                            >
+                                <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+                                <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
-                                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
-                                        Total Collection
-                                    </p>
+                                <div className="relative flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                                    <div>
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+                                                <IndianRupee className="h-4 w-4 text-white" />
+                                            </span>
+                                            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
+                                                Total Collection
+                                            </p>
+                                        </div>
+
+                                        <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                                            {formatCurrency(totalCollection)}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(paymentMethodTotals).map(
+                                            ([method, amount]) => (
+                                                <span
+                                                    key={method}
+                                                    className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm"
+                                                >
+                                                    <span className="capitalize">{method}</span>
+                                                    <span className="ml-1.5 font-semibold">
+                                                        {formatCurrency(amount)}
+                                                    </span>
+                                                </span>
+                                            )
+                                        )}
+                                        {transactions.length === 0 && (
+                                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70 ring-1 ring-white/15 backdrop-blur-sm">
+                                                No transactions
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-
-                                <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                                    {formatCurrency(total)}
-                                </p>
                             </div>
 
-                            {paymentMethods.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {paymentMethods.map((pm) => (
-                                        <span
-                                            key={pm.paymentMethod}
-                                            className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm"
-                                        >
-                                            <span className="capitalize">{pm.paymentMethod}</span>
-                                            <span className="ml-1.5 font-semibold">
-                                                {formatCurrency(pm.amount)}
+                            {/* Transaction list — ERP-style table */}
+                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                                <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:border-slate-800/50 sm:px-5">
+                                    Transactions
+                                </p>
+
+                                {transactions.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500">
+                                        <Receipt className="h-7 w-7 text-slate-300" />
+                                        <p className="text-sm">
+                                            No collections recorded for this range.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full min-w-[1000px] text-sm">
+                                            <thead className="bg-slate-50 dark:bg-slate-900/60">
+                                                <tr className="text-left text-slate-500 dark:text-slate-400">
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Transaction #
+                                                    </th>
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Date
+                                                    </th>
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Student
+                                                    </th>
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Class
+                                                    </th>
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Payment Methods
+                                                    </th>
+                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                        Collections
+                                                    </th>
+                                                    <th className="px-4 py-2.5 text-right font-medium sm:px-5">
+                                                        Amount
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                                {transactions.map((tx) => (
+                                                    <TransactionRow key={tx.transactionNumber} tx={tx} />
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Pagination footer */}
+                                {transactions.length > 0 && (
+                                    <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-800/50 sm:flex-row sm:px-5">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Showing {rangeStart}–{rangeEnd} of {pagination.total}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="h-8 w-8"
+                                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                                disabled={pagination.page <= 1}
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                                Page {pagination.page} of {pagination.totalPages}
                                             </span>
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Payment methods + charge type — both card-list style now,
-                        matched height on large screens, each scrolls internally */}
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:h-[480px]">
-                        {/* Payment method breakdown */}
-                        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5 lg:h-full">
-                            <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                By Payment Method
-                            </p>
-
-                            {paymentMethods.length === 0 ? (
-                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-slate-500 lg:py-0">
-                                    <Wallet className="h-7 w-7 text-slate-300" />
-                                    <p className="text-sm">No payments recorded for this range.</p>
-                                </div>
-                            ) : (
-                                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
-                                    {paymentMethods.map((pm) => {
-                                        const key = pm.paymentMethod.toLowerCase();
-                                        const style = PAYMENT_METHOD_STYLES[key] ?? {
-                                            icon: Wallet,
-                                            accent: "#556043",
-                                        };
-                                        const Icon = style.icon;
-                                        const pct = total > 0 ? Math.round((pm.amount / total) * 100) : 0;
-
-                                        return (
-                                            <div
-                                                key={pm.paymentMethod}
-                                                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800/50"
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="h-8 w-8"
+                                                onClick={() =>
+                                                    setPage((p) =>
+                                                        Math.min(pagination.totalPages, p + 1)
+                                                    )
+                                                }
+                                                disabled={pagination.page >= pagination.totalPages}
                                             >
-                                                <span
-                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                                                    style={{ backgroundColor: style.accent }}
-                                                >
-                                                    <Icon className="h-4.5 w-4.5" />
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="flex items-center justify-between gap-2">
-                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
-                                                            {pm.paymentMethod}
-                                                        </span>
-                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                            {formatCurrency(pm.amount)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                        <span
-                                                            className="block h-full rounded-full transition-all"
-                                                            style={{
-                                                                width: `${pct}%`,
-                                                                backgroundColor: style.accent,
-                                                            }}
-                                                        />
-                                                    </span>
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                                                >
-                                                    {pct}%
-                                                </Badge>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Charge type breakdown — card list, matched to Payment Method styling */}
-                        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5 lg:h-full">
-                            <p className="mb-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                By Charge Type
-                            </p>
-
-                            {sortedChargeTypes.length === 0 ? (
-                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-slate-500 lg:py-0">
-                                    <Receipt className="h-7 w-7 text-slate-300" />
-                                    <p className="text-sm">No collections recorded for this range.</p>
-                                </div>
-                            ) : (
-                                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
-                                    {sortedChargeTypes.map((c, i) => {
-                                        const accent = CHARGE_TYPE_ACCENTS[i % CHARGE_TYPE_ACCENTS.length];
-                                        const pct = total > 0 ? Math.round((c.amount / total) * 100) : 0;
-
-                                        return (
-                                            <div
-                                                key={c.chargeType}
-                                                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800/50"
-                                            >
-                                                <span
-                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                                                    style={{ backgroundColor: accent }}
-                                                >
-                                                    <Receipt className="h-4.5 w-4.5" />
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="flex items-center justify-between gap-2">
-                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
-                                                            {c.chargeType}
-                                                        </span>
-                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                            {formatCurrency(c.amount)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                        <span
-                                                            className="block h-full rounded-full transition-all"
-                                                            style={{
-                                                                width: `${pct}%`,
-                                                                backgroundColor: accent,
-                                                            }}
-                                                        />
-                                                    </span>
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                                                >
-                                                    {pct}%
-                                                </Badge>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {sortedChargeTypes.length > 0 && (
-                                <div className="mt-3 flex shrink-0 items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/50">
-                                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                        Total
-                                    </span>
-                                    <span className="text-sm font-bold text-[#556043]">
-                                        {formatCurrency(total)}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </section>
+    );
+}
+
+function TransactionRow({ tx }: { tx: DailyCollectionTransaction }) {
+    return (
+        <tr>
+            <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100 sm:px-5">
+                {tx.transactionNumber}
+            </td>
+            <td className="px-4 py-2.5 whitespace-nowrap text-slate-600 dark:text-slate-300 sm:px-5">
+                {formatDisplayDateTime(tx.transactionDate)}
+            </td>
+            <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100 sm:px-5">
+                {tx.studentName}
+            </td>
+            <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 sm:px-5">
+                {tx.class}
+            </td>
+            <td className="px-4 py-2.5 sm:px-5">
+                <div className="flex flex-wrap gap-1.5">
+                    {tx.paymentMethods.map((pm) => (
+                        <Badge
+                            key={pm.paymentMethod}
+                            variant="secondary"
+                            className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                        >
+                            <Wallet className="mr-1 h-3 w-3" />
+                            <span className="capitalize">{pm.paymentMethod}</span>
+                            <span className="ml-1 font-semibold">
+                                {formatCurrency(pm.amount)}
+                            </span>
+                        </Badge>
+                    ))}
+                </div>
+            </td>
+            <td className="px-4 py-2.5 sm:px-5">
+                <div className="flex flex-col gap-1">
+                    {tx.collections.map((c, idx) => (
+                        <div
+                            key={idx}
+                            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+                        >
+                            {c.type === "Fee" ? (
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            ) : (
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            )}
+                            <span className="font-medium">{c.type}:</span>
+                            <span>
+                                {c.type === "Fee"
+                                    ? c.chargeType ?? c.category
+                                    : c.fineType}
+                            </span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {formatCurrency(c.amount)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </td>
+            <td className="px-4 py-2.5 text-right font-semibold text-slate-950 dark:text-slate-100 sm:px-5">
+                {formatCurrency(tx.Totalamount_from_transaction)}
+            </td>
+        </tr>
     );
 }

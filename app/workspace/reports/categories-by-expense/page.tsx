@@ -1,53 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
     ArrowRight,
     Calendar,
+    ChevronDown,
+    ChevronUp,
     IndianRupee,
     Layers3,
     Loader2,
+    Receipt,
     RefreshCcw,
     Search,
     Tags,
-    X,
+    TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import {
     getExpenseByCategoryReport,
     type CategoryExpense,
     type ExpenseByCategoryData,
-} from "@/lib/services/reports"; // <-- adjust to wherever you saved the API file
+} from "@/lib/services/reports";
 
-const BRAND = "#556043"; // Kidscove olive-green — same shade used across the Daily Collection Report
+const BRAND = "#556043";
+const PAGE_SIZE = 10;
 
-// Same amber accent language as the Expense Management page, so this
-// report feels like the same product rather than a bolted-on screen.
-const titleTextClass = "text-slate-950 dark:text-slate-100";
-const supportingTextClass = "text-slate-700 dark:text-slate-300";
-
-// Categories and sub categories are dynamic (school-defined), so instead of
-// a lookup map we rotate a small accent palette — the exact same palette
-// and rotation logic the Daily Collection Report uses for charge types, so
-// both reports read as one consistent visual language.
 const ACCENT_PALETTE = [
-    "#556043", // brand green
-    "#3b6e91", // steel blue
-    "#a8763e", // amber/bronze
-    "#7a4a8f", // violet
-    "#b0524a", // rust
+    "#556043",
+    "#3b6e91",
+    "#a8763e",
+    "#7a4a8f",
+    "#b0524a",
 ];
 
 function formatCurrency(amount: number) {
@@ -60,15 +48,10 @@ function formatCurrency(amount: number) {
 
 function tomorrowISO() {
     const date = new Date();
-
     const indiaToday = new Date(
-        date.toLocaleString("en-US", {
-            timeZone: "Asia/Kolkata",
-        })
+        date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
     );
-
     indiaToday.setDate(indiaToday.getDate() + 1);
-
     return new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Kolkata",
         year: "numeric",
@@ -86,13 +69,8 @@ function todayISO() {
     }).format(new Date());
 }
 
-// The API returns date fields as full ISO timestamps (e.g.
-// "2026-07-12T00:00:00.000Z"). Take just the yyyy-mm-dd part before
-// building a display date, otherwise appending "T00:00:00" again
-// produces an invalid string.
 function formatDisplayDate(date: string) {
     if (!date) return "";
-
     const datePart = date.slice(0, 10);
     return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
@@ -103,41 +81,41 @@ function formatDisplayDate(date: string) {
 }
 
 function formatDisplayDateRange(fromDate: string, toDate: string) {
-    if (!fromDate || !toDate) return "Expense breakdown, at a glance";
-
+    if (!fromDate || !toDate) return "Expense breakdown";
     const fromPart = fromDate.slice(0, 10);
     const toPart = toDate.slice(0, 10);
-
     if (fromPart === toPart) return formatDisplayDate(fromPart);
-
     return `${formatDisplayDate(fromPart)} — ${formatDisplayDate(toPart)}`;
 }
 
 export default function ExpenseByCategoryReportPage() {
     const router = useRouter();
 
-    const [fromDate, setFromDate] = useState<string>(todayISO());
-    const [toDate, setToDate] = useState<string>(todayISO());
+    const [fromDate, setFromDate] = useState(todayISO());
+    const [toDate, setToDate] = useState(todayISO());
+    const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
     const [report, setReport] = useState<ExpenseByCategoryData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    // Category name of the row currently selected on the left. The sub
-    // category card on the right is scoped to this — same relationship the
-    // Category/Sub Category cards have on the Expense Management page.
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     const isRangeInvalid = fromDate > toDate;
 
-    // Re-fetches every time either end of the range changes, so switching
-    // dates always replaces (never merges with) the previous numbers.
+    /* ---- debounce search ---- */
     useEffect(() => {
-        if (!fromDate || !toDate) return;
-        if (fromDate > toDate) return;
+        const t = setTimeout(() => {
+            setSearch(searchInput);
+            setPage(1);
+        }, 400);
+        return () => clearTimeout(t);
+    }, [searchInput]);
 
+    /* ---- load report ---- */
+    useEffect(() => {
+        if (!fromDate || !toDate || fromDate > toDate) return;
         let cancelled = false;
-
         async function load(from: string, to: string) {
             try {
                 setIsLoading(true);
@@ -145,12 +123,9 @@ export default function ExpenseByCategoryReportPage() {
                 const data = await getExpenseByCategoryReport(from, to);
                 if (!cancelled) {
                     setReport(data);
-                    // A fresh range may not contain the previously selected
-                    // category — clear the selection so the right card
-                    // doesn't show stale sub categories.
-                    setSelectedCategory(null);
+                    setExpandedIds(new Set());
                 }
-            } catch (err) {
+            } catch {
                 if (!cancelled) {
                     setError("Could not load the expense report. Please try again.");
                     setReport(null);
@@ -159,9 +134,7 @@ export default function ExpenseByCategoryReportPage() {
                 if (!cancelled) setIsLoading(false);
             }
         }
-
         load(fromDate, toDate);
-
         return () => {
             cancelled = true;
         };
@@ -170,53 +143,55 @@ export default function ExpenseByCategoryReportPage() {
     const categories = report?.categories ?? [];
     const total = report?.totalExpense ?? 0;
 
-    // Sorted so the largest category leads the list — makes the
-    // breakdown scannable without the user having to hunt for it.
     const sortedCategories = useMemo(
         () => [...categories].sort((a, b) => b.amount - a.amount),
         [categories]
     );
 
-    // Client-side filter by category name. The endpoint itself has no
-    // search param, so we narrow the already-fetched range in the browser.
-    const filteredCategories = useMemo(() => {
+    const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
         if (!q) return sortedCategories;
         return sortedCategories.filter((c) => c.category.toLowerCase().includes(q));
     }, [sortedCategories, search]);
 
-    const activeCategoryData: CategoryExpense | null = useMemo(
-        () => categories.find((c) => c.category === selectedCategory) ?? null,
-        [categories, selectedCategory]
-    );
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const pageSafe = Math.min(page, totalPages);
+    const paged = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
-    // Sub categories inside the right card, largest first, so the same
-    // "biggest contributor leads" convention holds one level down too.
-    const activeSubCategories = useMemo(() => {
-        if (!activeCategoryData) return [];
-        return [...activeCategoryData.subCategories].sort((a, b) => b.amount - a.amount);
-    }, [activeCategoryData]);
+    const topCategory = sortedCategories[0];
+    const avgExpense = categories.length > 0 ? total / categories.length : 0;
 
     function handleFromDateChange(value: string) {
         setFromDate(value);
-        // Keep the range valid: pull "to" forward if it now precedes "from"
         if (value > toDate) setToDate(value);
+        setPage(1);
     }
 
     function handleRefresh() {
         if (isRangeInvalid) return;
-
         setIsLoading(true);
         setError(null);
         getExpenseByCategoryReport(fromDate, toDate)
-            .then(setReport)
+            .then((data) => {
+                setReport(data);
+                setExpandedIds(new Set());
+            })
             .catch(() => setError("Could not load the expense report. Please try again."))
             .finally(() => setIsLoading(false));
     }
 
+    function toggleExpand(cat: string) {
+        setExpandedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(cat)) next.delete(cat);
+            else next.add(cat);
+            return next;
+        });
+    }
+
     return (
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
-            {/* Header */}
+            {/* ==================== HEADER ==================== */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
@@ -235,12 +210,11 @@ export default function ExpenseByCategoryReportPage() {
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {report
                                     ? formatDisplayDateRange(report.fromDate, report.toDate)
-                                    : "Expense breakdown, at a glance"}
+                                    : "Expense breakdown"}
                             </p>
                         </div>
                     </div>
 
-                    {/* Date range picker — stacks on mobile, inline from tablet up */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="flex flex-1 flex-col gap-2 sm:flex-row">
                             <div className="relative w-full sm:w-40">
@@ -254,11 +228,9 @@ export default function ExpenseByCategoryReportPage() {
                                     className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
                                 />
                             </div>
-
                             <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
                                 <ArrowRight className="h-4 w-4" />
                             </div>
-
                             <div className="relative w-full sm:w-40">
                                 <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                 <Input
@@ -267,7 +239,10 @@ export default function ExpenseByCategoryReportPage() {
                                     value={toDate}
                                     min={fromDate}
                                     max={tomorrowISO()}
-                                    onChange={(e) => setToDate(e.target.value)}
+                                    onChange={(e) => {
+                                        setToDate(e.target.value);
+                                        setPage(1);
+                                    }}
                                     className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
                                 />
                             </div>
@@ -288,303 +263,413 @@ export default function ExpenseByCategoryReportPage() {
 
             {isRangeInvalid ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
-                    The "from" date must be before the "to" date.
+                    The &quot;from&quot; date must be before the &quot;to&quot; date.
                 </div>
             ) : error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
                     {error}
                 </div>
-            ) : isLoading ? (
-                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-24 text-slate-500 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
-                    <p className="text-sm">Loading expense report...</p>
-                </div>
             ) : (
                 <div className="space-y-4 sm:space-y-6">
-                    {/* Total expense — full-width hero, same gradient + glow
-                        treatment as the Daily Collection Report's hero. */}
-                    <div
-                        className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
-                        style={{
-                            background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
-                        }}
-                    >
-                        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-                        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+                    {/* ==================== SUMMARY CARDS ==================== */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                        <SummaryCard
+                            label="Total Expense"
+                            value={formatCurrency(total)}
+                            icon={<IndianRupee className="h-4 w-4" />}
+                            accent={BRAND}
+                        />
+                        <SummaryCard
+                            label="Categories"
+                            value={String(categories.length)}
+                            icon={<Tags className="h-4 w-4" />}
+                            accent="#3b6e91"
+                        />
+                        <SummaryCard
+                            label="Top Category"
+                            value={topCategory ? formatCurrency(topCategory.amount) : "—"}
+                            subValue={topCategory?.category}
+                            icon={<TrendingUp className="h-4 w-4" />}
+                            accent="#a8763e"
+                        />
+                        <SummaryCard
+                            label="Average"
+                            value={formatCurrency(avgExpense)}
+                            icon={<Receipt className="h-4 w-4" />}
+                            accent="#7a4a8f"
+                        />
+                    </div>
 
-                        <div className="relative">
-                            <div className="mb-2 flex items-center gap-2">
-                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
-                                    <IndianRupee className="h-4 w-4 text-white" />
-                                </span>
-                                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
-                                    Total Expense
-                                </p>
-                            </div>
-                            <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                                {formatCurrency(total)}
-                            </p>
-                            <p className="mt-1.5 text-xs text-white/70">
-                                Across {categories.length} categor{categories.length === 1 ? "y" : "ies"}
-                            </p>
+                    {/* ==================== SEARCH ==================== */}
+                    <div className="flex justify-end">
+                        <div className="relative w-full sm:max-w-xs">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Search category..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 dark:focus-visible:border-[#6b7a55] dark:focus-visible:ring-[#6b7a55]/30"
+                            />
                         </div>
                     </div>
 
-                    {/* Category (left) + Sub Category (right) — matched height on
-                        large screens, each card scrolls internally. */}
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:h-[520px]">
-                        {/* ----------------------------------------------------- */}
-                        {/* Category — full list on load, click to scope the      */}
-                        {/* sub category card on the right.                        */}
-                        {/* ----------------------------------------------------- */}
-                        <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
-                            <CardHeader className="flex flex-col gap-3 border-b border-black/5 dark:border-white/10">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
-                                        <Tags className="h-4.5 w-4.5 text-[#556043] dark:text-emerald-300" />
-                                    </span>
-                                    <div>
-                                        <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>
+                    {/* ==================== TABLE ==================== */}
+                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[700px] text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/60">
+                                        <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 sm:px-5 w-12">
+                                            #
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 sm:px-5">
                                             Category
-                                        </CardTitle>
-                                        <CardDescription className={supportingTextClass}>
-                                            Select a category to see its sub categories.
-                                        </CardDescription>
-                                    </div>
-                                </div>
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5">
+                                            Amount
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5">
+                                            % of Total
+                                        </th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300 sm:px-5 w-24">
+                                            Subs
+                                        </th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300 sm:px-5 w-16">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    {isLoading && categories.length === 0 ? (
+                                        <SkeletonRows count={6} />
+                                    ) : filtered.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6}>
+                                                <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500">
+                                                    <Receipt className="h-7 w-7 text-slate-300" />
+                                                    <p className="text-sm">
+                                                        {search
+                                                            ? `No categories match "${search}"`
+                                                            : "No expenses recorded for this range."}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        paged.map((cat, idx) => {
+                                            const isExpanded = expandedIds.has(cat.category);
+                                            const accent = ACCENT_PALETTE[idx % ACCENT_PALETTE.length];
+                                            const pct = total > 0 ? Math.round((cat.amount / total) * 100) : 0;
+                                            const subCount = cat.subCategories?.length ?? 0;
 
-                                <div className="relative w-full">
-                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                    <Input
-                                        type="text"
-                                        placeholder="Search category name..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="h-10 rounded-lg pl-9 pr-8 shadow-sm"
-                                    />
-                                    {search && (
-                                        <button
-                                            type="button"
-                                            aria-label="Clear search"
-                                            onClick={() => setSearch("")}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
+                                            return (
+                                                <Fragment key={cat.category}>
+                                                    <tr
+                                                        className={cn(
+                                                            "transition-colors",
+                                                            isExpanded
+                                                                ? "bg-[#556043]/[0.03] dark:bg-emerald-400/[0.03]"
+                                                                : "hover:bg-slate-50/60 dark:hover:bg-white/[0.03]"
+                                                        )}
+                                                    >
+                                                        <td className="px-4 py-3.5 text-sm text-slate-500 dark:text-slate-400 sm:px-5">
+                                                            {(pageSafe - 1) * PAGE_SIZE + idx + 1}
+                                                        </td>
+                                                        <td className="px-4 py-3.5 sm:px-5">
+                                                            <div className="flex items-center gap-3">
+                                                                <span
+                                                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
+                                                                    style={{ backgroundColor: accent }}
+                                                                >
+                                                                    <Tags className="h-4 w-4" />
+                                                                </span>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                                                        {cat.category}
+                                                                    </p>
+                                                                    <div className="mt-1.5 flex items-center gap-2">
+                                                                        <span className="block h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:w-32">
+                                                                            <span
+                                                                                className="block h-full rounded-full"
+                                                                                style={{
+                                                                                    width: `${pct}%`,
+                                                                                    backgroundColor: accent,
+                                                                                }}
+                                                                            />
+                                                                        </span>
+                                                                        <span className="text-[11px] text-slate-400">
+                                                                            {pct}%
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3.5 text-right font-semibold text-slate-950 dark:text-slate-100 sm:px-5">
+                                                            {formatCurrency(cat.amount)}
+                                                        </td>
+                                                        <td className="px-4 py-3.5 text-right sm:px-5">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                                            >
+                                                                {pct}%
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3.5 text-center sm:px-5">
+                                                            <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                                                <Layers3 className="h-3 w-3" />
+                                                                {subCount}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3.5 text-center sm:px-5">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => toggleExpand(cat.category)}
+                                                                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                                                            >
+                                                                {isExpanded ? (
+                                                                    <ChevronUp className="h-4 w-4" />
+                                                                ) : (
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+
+                                                    {/* Expanded sub-categories */}
+                                                    {isExpanded && (
+                                                        <tr className="bg-[#556043]/[0.02] dark:bg-emerald-400/[0.02]">
+                                                            <td colSpan={6} className="px-4 py-4 sm:px-5">
+                                                                <ExpandedSubCategories
+                                                                    category={cat}
+                                                                    accent={accent}
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </Fragment>
+                                            );
+                                        })
                                     )}
-                                </div>
-                            </CardHeader>
+                                </tbody>
+                            </table>
+                        </div>
 
-                            <CardContent
-                                className="
-                                space-y-3 pt-4 overflow-y-auto
-                                max-h-[420px] lg:max-h-none lg:flex-1
-                                scrollbar-thin
-                                scrollbar-thumb-slate-300
-                                scrollbar-track-transparent
-                                hover:scrollbar-thumb-slate-400
-                                dark:scrollbar-thumb-slate-700
-                                dark:hover:scrollbar-thumb-slate-600
-                            "
-                            >
-                                {sortedCategories.length === 0 ? (
-                                    <div className="rounded-3xl border border-dashed border-[#556043]/25 bg-[#556043]/5 px-5 py-6 text-center shadow-sm dark:border-emerald-400/25 dark:bg-emerald-400/10">
-                                        <p className={`text-sm font-medium ${titleTextClass}`}>
-                                            No expenses recorded
-                                        </p>
-                                        <p className={`mt-1 text-sm ${supportingTextClass}`}>
-                                            No categories have expense in this date range.
-                                        </p>
-                                    </div>
-                                ) : filteredCategories.length === 0 ? (
-                                    <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
-                                        <p className={`text-sm font-medium ${titleTextClass}`}>
-                                            No categories match &quot;{search}&quot;
-                                        </p>
-                                    </div>
-                                ) : (
-                                    filteredCategories.map((category, i) => {
-                                        const isActive = category.category === selectedCategory;
-                                        const accent = ACCENT_PALETTE[i % ACCENT_PALETTE.length];
-                                        const pct = total > 0 ? Math.round((category.amount / total) * 100) : 0;
-                                        const subCount = category.subCategories?.length ?? 0;
-
-                                        return (
-                                            <div
-                                                key={category.category}
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => setSelectedCategory(category.category)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === "Enter" || event.key === " ") {
-                                                        event.preventDefault();
-                                                        setSelectedCategory(category.category);
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    "flex cursor-pointer items-center gap-3 rounded-xl border p-3 shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#556043]/30",
-                                                    isActive
-                                                        ? "border-[#556043]/40 bg-[#556043]/[0.06] shadow-md dark:border-emerald-400/30 dark:bg-emerald-400/10"
-                                                        : "border-slate-100 hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-white/[0.06]"
-                                                )}
-                                            >
-                                                <span
-                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
-                                                    style={{ backgroundColor: accent }}
-                                                >
-                                                    <Tags className="h-4.5 w-4.5" />
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="flex items-center justify-between gap-2">
-                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
-                                                            {category.category}
-                                                        </span>
-                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                            {formatCurrency(category.amount)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="mt-1.5 flex items-center gap-2">
-                                                        <span className="block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                            <span
-                                                                className="block h-full rounded-full transition-all"
-                                                                style={{
-                                                                    width: `${pct}%`,
-                                                                    backgroundColor: accent,
-                                                                }}
-                                                            />
-                                                        </span>
-                                                        <span className="shrink-0 text-[11px] text-slate-400">
-                                                            {subCount} sub
-                                                        </span>
-                                                    </span>
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                                                >
-                                                    {pct}%
-                                                </Badge>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* ----------------------------------------------------- */}
-                        {/* Sub Category — scoped to the selected category, asks   */}
-                        {/* the user to pick one first.                             */}
-                        {/* ----------------------------------------------------- */}
-                        <Card className="flex flex-col bg-white shadow-md dark:bg-background lg:h-full">
-                            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-[#556043]/10 shadow-sm">
-                                        <Layers3 className="h-4.5 w-4.5 text-[#556043] dark:text-emerald-300" />
+                        {/* Pagination */}
+                        {!isLoading && filtered.length > 0 && (
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-800/50 sm:flex-row sm:px-5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Showing {(pageSafe - 1) * PAGE_SIZE + 1}–
+                                    {Math.min(pageSafe * PAGE_SIZE, filtered.length)} of{" "}
+                                    {filtered.length}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8"
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                        disabled={pageSafe <= 1}
+                                    >
+                                        <ArrowLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Page {pageSafe} of {totalPages}
                                     </span>
-                                    <div className="min-w-0">
-                                        <CardTitle className={`text-2xl font-semibold truncate capitalize ${titleTextClass}`}>
-                                            {activeCategoryData ? activeCategoryData.category : "Sub Category"}
-                                        </CardTitle>
-                                        <CardDescription className={supportingTextClass}>
-                                            {!activeCategoryData
-                                                ? "Please select a category to see its sub categories."
-                                                : activeSubCategories.length === 0
-                                                    ? "No sub categories for this category."
-                                                    : `${activeSubCategories.length} sub categor${activeSubCategories.length === 1 ? "y" : "ies"} in this range.`}
-                                        </CardDescription>
-                                    </div>
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8"
+                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={pageSafe >= totalPages}
+                                    >
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
                                 </div>
-
-                                {activeCategoryData && (
-                                    <span className="shrink-0 text-sm font-bold" style={{ color: BRAND }}>
-                                        {formatCurrency(activeCategoryData.amount)}
-                                    </span>
-                                )}
-                            </CardHeader>
-
-                            <CardContent
-                                className="
-                                space-y-3 pt-4 overflow-y-auto
-                                max-h-[420px] lg:max-h-none lg:flex-1
-                                scrollbar-thin
-                                scrollbar-thumb-slate-300
-                                scrollbar-track-transparent
-                                hover:scrollbar-thumb-slate-400
-                                dark:scrollbar-thumb-slate-700
-                                dark:hover:scrollbar-thumb-slate-600
-                            "
-                            >
-                                {!activeCategoryData ? (
-                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
-                                        <Layers3 className="h-7 w-7 text-slate-300" />
-                                        <p className={`mt-2 text-sm font-medium ${titleTextClass}`}>
-                                            Please select a category
-                                        </p>
-                                        <p className={`mt-1 text-sm ${supportingTextClass}`}>
-                                            Its sub category breakdown will show up here.
-                                        </p>
-                                    </div>
-                                ) : activeSubCategories.length === 0 ? (
-                                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center shadow-sm dark:border-white/10">
-                                        <Layers3 className="h-7 w-7 text-slate-300" />
-                                        <p className={`mt-2 text-sm font-medium ${titleTextClass}`}>
-                                            No sub categories yet
-                                        </p>
-                                        <p className={`mt-1 text-sm ${supportingTextClass}`}>
-                                            This category has no sub category breakdown in this range.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    activeSubCategories.map((sc, i) => {
-                                        const categoryTotal = activeCategoryData.amount;
-                                        const accent = ACCENT_PALETTE[i % ACCENT_PALETTE.length];
-                                        const pct = categoryTotal > 0 ? Math.round((sc.amount / categoryTotal) * 100) : 0;
-
-                                        return (
-                                            <div
-                                                key={sc.name}
-                                                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 shadow-sm transition-all hover:shadow-md dark:border-slate-800/50"
-                                            >
-                                                <span
-                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
-                                                    style={{ backgroundColor: accent }}
-                                                >
-                                                    <Layers3 className="h-4.5 w-4.5" />
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="flex items-center justify-between gap-2">
-                                                        <span className="truncate text-sm font-semibold capitalize text-slate-950 dark:text-slate-100">
-                                                            {sc.name}
-                                                        </span>
-                                                        <span className="shrink-0 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                                                            {formatCurrency(sc.amount)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                        <span
-                                                            className="block h-full rounded-full transition-all"
-                                                            style={{
-                                                                width: `${pct}%`,
-                                                                backgroundColor: accent,
-                                                            }}
-                                                        />
-                                                    </span>
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                                                >
-                                                    {pct}%
-                                                </Badge>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
         </section>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sub-components                                                     */
+/* ------------------------------------------------------------------ */
+
+function SummaryCard({
+    label,
+    value,
+    subValue,
+    icon,
+    accent,
+}: {
+    label: string;
+    value: string;
+    subValue?: string;
+    icon: React.ReactNode;
+    accent: string;
+}) {
+    return (
+        <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-4">
+            <div
+                className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full opacity-10 blur-xl"
+                style={{ backgroundColor: accent }}
+            />
+            <div className="relative flex items-center gap-2">
+                <span
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-sm"
+                    style={{ backgroundColor: accent }}
+                >
+                    {icon}
+                </span>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+            </div>
+            <p className="relative mt-2 text-lg font-bold tracking-tight text-slate-950 dark:text-slate-100 sm:text-xl">
+                {value}
+            </p>
+            {subValue && (
+                <p className="mt-0.5 truncate text-[11px] font-medium capitalize text-slate-500 dark:text-slate-400">
+                    {subValue}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function SkeletonRows({ count }: { count: number }) {
+    return (
+        <>
+            {Array.from({ length: count }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-3.5 sm:px-5">
+                        <div className="h-4 w-6 rounded bg-slate-200 dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-3.5 sm:px-5">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-800" />
+                            <div className="space-y-1.5">
+                                <div className="h-3.5 w-24 rounded bg-slate-200 dark:bg-slate-800" />
+                                <div className="h-2 w-20 rounded bg-slate-200 dark:bg-slate-800" />
+                            </div>
+                        </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-right sm:px-5">
+                        <div className="ml-auto h-4 w-16 rounded bg-slate-200 dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-3.5 text-right sm:px-5">
+                        <div className="ml-auto h-5 w-10 rounded bg-slate-200 dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-3.5 text-center sm:px-5">
+                        <div className="mx-auto h-4 w-8 rounded bg-slate-200 dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-3.5 text-center sm:px-5">
+                        <div className="mx-auto h-8 w-8 rounded bg-slate-200 dark:bg-slate-800" />
+                    </td>
+                </tr>
+            ))}
+        </>
+    );
+}
+
+function ExpandedSubCategories({
+    category,
+    accent,
+}: {
+    category: CategoryExpense;
+    accent: string;
+}) {
+    const total = category.amount;
+    const subs = useMemo(
+        () => [...(category.subCategories ?? [])].sort((a, b) => b.amount - a.amount),
+        [category.subCategories]
+    );
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <span
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                        style={{ backgroundColor: accent }}
+                    >
+                        <Tags className="h-3 w-3" />
+                    </span>
+                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                        {category.category}
+                    </p>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {subs.length} sub-categor{subs.length === 1 ? "y" : "ies"} •{" "}
+                    {formatCurrency(total)}
+                </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <div className="max-h-[260px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 dark:hover:scrollbar-thumb-slate-600">
+                        <table className="w-full min-w-[400px] text-xs">
+                            <thead className="sticky top-0 z-10">
+                                <tr className="bg-[#556043]">
+                                    <th className="px-3 py-2.5 text-left font-semibold text-white w-10">
+                                        #
+                                    </th>
+                                    <th className="px-3 py-2.5 text-left font-semibold text-white">
+                                        Sub Category
+                                    </th>
+                                    <th className="px-3 py-2.5 text-right font-semibold text-white">
+                                        Amount
+                                    </th>
+                                    <th className="px-3 py-2.5 text-right font-semibold text-white">
+                                        %
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                {subs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-6 text-center text-slate-500">
+                                            <Layers3 className="mx-auto h-5 w-5 text-slate-300" />
+                                            <p className="mt-1 text-xs">No sub-categories found.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    subs.map((sc, i) => {
+                                        const pct = total > 0 ? Math.round((sc.amount / total) * 100) : 0;
+                                        return (
+                                            <tr
+                                                key={`${sc.name}-${i}`}
+                                                className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
+                                            >
+                                                <td className="px-3 py-2.5 font-medium text-slate-500 dark:text-slate-400">
+                                                    {i + 1}
+                                                </td>
+                                                <td className="px-3 py-2.5 font-medium capitalize text-slate-950 dark:text-slate-100">
+                                                    {sc.name}
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right font-semibold text-slate-900 dark:text-slate-100">
+                                                    {formatCurrency(sc.amount)}
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-[10px] border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                                    >
+                                                        {pct}%
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
