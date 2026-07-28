@@ -19,7 +19,10 @@ export interface StudentFeeCollection {
   student: string;
   class: string;
   vehicle: string;
+  feeDue: number;
+  fineDue: number;
   TotalDue: number;
+  status: "PAID" | "PENDING" | "PARTIAL";
 }
 
 export interface StudentDetailsResponse {
