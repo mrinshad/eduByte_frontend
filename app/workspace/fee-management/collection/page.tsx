@@ -70,7 +70,7 @@ export default function FeeCollectionPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  const [classFilter, setClassFilter] = useState("all");
+
   const [vehicleFilter, setVehicleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,7 +103,7 @@ export default function FeeCollectionPage() {
           page: currentPage,
           limit: rowsPerPage,
           search,
-          className: classFilter === "all" ? "" : classFilter,
+          
           vehicle: vehicleFilter === "all" ? "" : vehicleFilter,
           status: statusFilter as "all" | "paid" | "pending",
         });
@@ -146,7 +146,7 @@ export default function FeeCollectionPage() {
     currentPage,
     rowsPerPage,
     search,
-    classFilter,
+   
     vehicleFilter,
     statusFilter,
   ]);
@@ -169,17 +169,17 @@ export default function FeeCollectionPage() {
 
   const hasActiveFilters = useMemo(
     () =>
-      classFilter !== "all" ||
+     
       vehicleFilter !== "all" ||
       statusFilter !== "all" ||
       search.trim().length > 0,
-    [classFilter, vehicleFilter, statusFilter, search]
+    [ vehicleFilter, statusFilter, search]
   );
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearch("");
-    setClassFilter("all");
+    
     setVehicleFilter("all");
     setStatusFilter("all");
     setCurrentPage(1);
@@ -229,24 +229,7 @@ export default function FeeCollectionPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Class */}
-            <Select
-              value={classFilter}
-              onValueChange={(value) => {
-                setClassFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classOptions.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+           
 
             {/* Vehicle */}
             <Select
@@ -307,15 +290,7 @@ export default function FeeCollectionPage() {
             Filters:
           </span>
 
-          {classFilter !== "all" && (
-            <FilterChip
-              label={`Class: ${classFilter}`}
-              onRemove={() => {
-                setClassFilter("all");
-                setCurrentPage(1);
-              }}
-            />
-          )}
+         
 
           {vehicleFilter !== "all" && (
             <FilterChip
