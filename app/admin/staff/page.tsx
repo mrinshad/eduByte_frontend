@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
-  Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
+  ChevronLeft, ChevronRight, Search, Loader2, Users,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getStaff, type StaffListItem } from "@/lib/services/staff";
+import { getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
 
 export default function Page() {
   const router = useRouter();
@@ -21,57 +22,67 @@ export default function Page() {
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [pagination, setPagination] = useState<StaffPagination>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
 
-  const loadStaff = async () => {
-    try {
-      setLoading(true);
-      const response = await getStaff();
-      setStaff(response.data ?? []);
-    } catch (error) {
-      console.error(error);
-      setStaff([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Debounce search input -> committed search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
       setCurrentPage(1);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Refetch whenever any query param changes. Guards against
+  // out-of-order responses if requests overlap (e.g. rapid clicks).
   useEffect(() => {
+    let cancelled = false;
+
+    const loadStaff = async () => {
+      try {
+        setLoading(true);
+        const response = await getStaff({
+          page: currentPage,
+          limit: rowsPerPage,
+          search: search || undefined,
+          status: statusFilter || undefined,
+          sortBy,
+          order,
+        });
+        if (!cancelled) {
+          setStaff(response.data.items);
+          setPagination(response.data.pagination);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error(error);
+          setStaff([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     loadStaff();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPage, rowsPerPage, search, sortBy, order, statusFilter]);
 
-  // The staff API returns the full list at once (no server-side
-  // search/pagination), so both are handled client-side here.
-  const filteredStaff = useMemo(() => {
-    if (!search) return staff;
-    const q = search.toLowerCase();
-    return staff.filter((s) =>
-      [s.name, s.employeeCode, s.phone, s.email, s.status]
-        .filter((field): field is string => Boolean(field))
-        .some((field) => field.toLowerCase().includes(q))
-    );
-  }, [staff, search]);
-
-  const total = filteredStaff.length;
-  const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
-  const safePage = Math.min(currentPage, totalPages);
+  const { total, totalPages, page: safePage } = pagination;
   const startEntry = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endEntry = total === 0 ? 0 : Math.min(safePage * rowsPerPage, total);
-  const pagedStaff = useMemo(
-    () => filteredStaff.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage),
-    [filteredStaff, safePage, rowsPerPage]
-  );
 
   const formatDate = (value?: string | null) => {
     if (!value) return "-";
@@ -85,6 +96,16 @@ export default function Page() {
   };
 
   const formatText = (value?: string | null) => (value && value.trim() !== "" ? value : "-");
+
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setOrder("asc");
+    }
+    setCurrentPage(1);
+  };
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
@@ -119,6 +140,15 @@ export default function Page() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+          >
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
@@ -138,11 +168,23 @@ export default function Page() {
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Employee Code
+                <TableHead
+                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
+                  onClick={() => toggleSort("employeeCode")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Employee Code
+                    {sortBy === "employeeCode" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+                  </span>
                 </TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Name
+                <TableHead
+                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
+                  onClick={() => toggleSort("name")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Name
+                    {sortBy === "name" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+                  </span>
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
@@ -150,11 +192,23 @@ export default function Page() {
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Joining Date
+                <TableHead
+                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
+                  onClick={() => toggleSort("joiningDate")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Joining Date
+                    {sortBy === "joiningDate" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+                  </span>
                 </TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Status
+                <TableHead
+                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
+                  onClick={() => toggleSort("status")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Status
+                    {sortBy === "status" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+                  </span>
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
@@ -172,7 +226,7 @@ export default function Page() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : pagedStaff.length === 0 ? (
+              ) : staff.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -182,7 +236,7 @@ export default function Page() {
                   </TableCell>
                 </TableRow>
               ) : (
-                pagedStaff.map((member, index) => (
+                staff.map((member, index) => (
                   <TableRow
                     key={member.id}
                     className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
@@ -235,15 +289,6 @@ export default function Page() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        {/* <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
-                          title="View Staff"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button> */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -263,7 +308,7 @@ export default function Page() {
 
         {/* ── Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{total}</span> entries
