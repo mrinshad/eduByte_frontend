@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type FieldOption = { label: string; value: string }
@@ -36,6 +50,22 @@ export type FormField =
       triggerClassName?: string
       contentClassName?: string
       itemClassName?: string
+    }
+  | {
+      // Searchable version of "select" — renders a Popover + Command list
+      // with a filter input, for fields with long option lists (e.g. students).
+      type: "combobox"
+      name: string
+      label: string
+      placeholder?: string
+      searchPlaceholder?: string
+      emptyText?: string
+      options: FieldOption[]
+      required?: boolean
+      triggerClassName?: string
+      contentClassName?: string
+      /** Shown inside the popover while options are still loading. */
+      loading?: boolean
     }
   | { type: "checkbox"; name: string; label: string; required?: boolean }
 
@@ -76,8 +106,9 @@ const vehicleInputClass = `
 
 /**
  * Generic create/edit dialog driven entirely by a `fields` config.
- * Supports "text", "number", "select", and "checkbox" field types,
- * optional per-field required markers, and optional field-level errors.
+ * Supports "text", "number", "select", "combobox" (searchable select),
+ * and "checkbox" field types, optional per-field required markers,
+ * and optional field-level errors.
  */
 export function ReusableFormDialog({
   open,
@@ -98,6 +129,10 @@ export function ReusableFormDialog({
   theme = "default",
 }: ReusableFormDialogProps) {
   const isVehicleTheme = theme === "vehicle"
+
+  // Tracks which single combobox field (by name) currently has its popover
+  // open — dialogs typically only have one combobox field open at a time.
+  const [openCombobox, setOpenCombobox] = useState<string | null>(null)
 
   const contentThemeClass = isVehicleTheme
     ? "bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 border border-[#6a7459] dark:border-slate-800 rounded-2xl p-0 overflow-hidden"
@@ -168,6 +203,83 @@ export function ReusableFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+
+              {field.type === "combobox" && (
+                <Popover
+                  open={openCombobox === field.name}
+                  onOpenChange={(next) => setOpenCombobox(next ? field.name : null)}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCombobox === field.name}
+                      className={cn(
+                        "w-full justify-between font-normal rounded-xl",
+                        field.triggerClassName,
+                        inputThemeClass,
+                        error && fieldErrorClass,
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "truncate text-left",
+                          !values[field.name] && (isVehicleTheme ? "text-slate-300" : "text-slate-400"),
+                        )}
+                      >
+                        {values[field.name]
+                          ? field.options.find((opt) => opt.value === values[field.name])?.label ??
+                            field.placeholder ??
+                            "Select..."
+                          : field.placeholder ?? "Select..."}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className={cn("w-[--radix-popover-trigger-width] p-0 rounded-xl", field.contentClassName)}
+                    align="start"
+                  >
+                    <Command>
+                      <CommandInput placeholder={field.searchPlaceholder ?? "Search..."} />
+                      <CommandList>
+                        {field.loading ? (
+                          <div className="flex items-center justify-center gap-2 p-4 text-xs text-slate-500">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Loading...
+                          </div>
+                        ) : (
+                          <>
+                            <CommandEmpty>{field.emptyText ?? "No results found."}</CommandEmpty>
+                            <CommandGroup>
+                              {field.options.map((opt) => (
+                                <CommandItem
+                                  key={opt.value}
+                                  value={opt.label}
+                                  onSelect={() => {
+                                    onChange(field.name, opt.value)
+                                    setOpenCombobox(null)
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      values[field.name] === opt.value ? "opacity-100" : "opacity-0",
+                                    )}
+                                  />
+                                  {opt.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
 
               {field.type === "checkbox" && (

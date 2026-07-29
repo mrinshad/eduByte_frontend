@@ -786,11 +786,13 @@ export default function Page() {
         errors={fineFieldErrors}
         fields={[
           {
-            type: "select",
+            type: "combobox",
             name: "studentId",
             label: "Student",
             required: true,
             placeholder: "Select Student",
+            searchPlaceholder: "Search by name or admission no...",   // ← new
+            emptyText: "No matching students found.",
             options: students.map((s) => ({
               label: `${s.admissionNumber} - ${s.studentName}`,
               value: s.enrollmentId,

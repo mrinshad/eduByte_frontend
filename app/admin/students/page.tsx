@@ -1,20 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ArrowUpAZ, ArrowDownAZ,
+  ArrowUpAZ, ArrowDownAZ, X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { getStudents, type StudentListItem } from "@/lib/services/student";
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      {label}
+      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
 
 export default function Page() {
   const router = useRouter();
@@ -23,6 +41,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortByClass, setSortByClass] = useState(false); // ← off by default
@@ -34,6 +53,11 @@ export default function Page() {
     totalPages: 1,
   });
 
+  // Accumulated class options — NOT derived solely from the current filtered
+  // page, so a selected filter value doesn't disappear from the dropdown
+  // once the fetched list narrows down to a subset that no longer contains it.
+  const [classOptions, setClassOptions] = useState<string[]>([]);
+
   const loadStudents = async () => {
     try {
       setLoading(true);
@@ -41,11 +65,23 @@ export default function Page() {
         page: currentPage,
         limit: rowsPerPage,
         search,
+        className: classFilter === "all" ? "" : classFilter,
         sortBy: sortByClass ? "className" : "admissionNumber",
         order: sortByClass ? order : "desc",
       });
       setStudents(response.data ?? []);
       setPagination(response.pagination);
+
+     setClassOptions((prev) =>
+  Array.from(
+    new Set([
+      ...prev,
+      ...(response.data ?? [])
+        .map((s) => s.className)
+        .filter((c): c is string => Boolean(c)),   // ← type predicate
+    ])
+  )
+);
     } catch (error) {
       console.error(error);
       setStudents([]);
@@ -66,7 +102,7 @@ export default function Page() {
 
   useEffect(() => {
     loadStudents();
-  }, [currentPage, rowsPerPage, search, sortByClass, order]); // ← added
+  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]); // ← added classFilter
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -79,6 +115,18 @@ export default function Page() {
     } else {
       setOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     }
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = useMemo(
+    () => classFilter !== "all" || search.trim().length > 0,
+    [classFilter, search]
+  );
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setClassFilter("all");
     setCurrentPage(1);
   };
 
@@ -116,24 +164,38 @@ export default function Page() {
             />
           </div>
 
-          {/* 👇 Sort by Class toggle */}
-          <Button
-            variant="outline"
-            className={
-              sortByClass
-                ? "bg-[#556043]/10 border-[#556043] text-[#556043] hover:bg-[#556043]/20 dark:bg-[#556043]/20 dark:text-slate-100 gap-2 shrink-0"
-                : "border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 gap-2 shrink-0"
-            }
-            onClick={handleClassSortClick}
-            title="Sort by Class"
+          {/* 👇 Class filter dropdown */}
+          <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value);
+              setCurrentPage(1);
+            }}
           >
-            {order === "asc" ? (
-              <ArrowUpAZ className="h-4 w-4" />
-            ) : (
-              <ArrowDownAZ className="h-4 w-4" />
-            )}
-            Class {sortByClass ? (order === "asc" ? "A–Z" : "Z–A") : ""}
-          </Button>
+            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
 
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
@@ -144,6 +206,22 @@ export default function Page() {
           </Button>
         </div>
       </div>
+
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          <span className="text-xs font-medium text-slate-400">Filters:</span>
+          {classFilter !== "all" && (
+            <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
+          )}
+          {search.trim() && (
+            <FilterChip
+              label={`Search: ${search}`}
+              onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
