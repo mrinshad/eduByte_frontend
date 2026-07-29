@@ -5,6 +5,9 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
 import { Plus, Pencil, Trash2, ArrowLeft, Loader2 } from "lucide-react"
 import { freequencyOptions, categoryOptions } from "@/lib/constant"
 import { getAccountTypes, type accountName } from "@/lib/services/accountTypes"
@@ -16,7 +19,6 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
-// 👇 the reusable component
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
 export default function Page() {
@@ -27,7 +29,8 @@ export default function Page() {
   const [chargeTypes, setChargeTypes] = useState<ChargeTypes[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // ← added loading state
+  const [isLoading, setIsLoading] = useState(true)
+  const [frequencyFilter, setFrequencyFilter] = useState<string>("ALL") // ← new
   const [formData, setFormData] = useState<chargeType>({
     name: "",
     category: "",
@@ -36,19 +39,21 @@ export default function Page() {
   })
 
   useEffect(() => {
-    loadChargeTypes()
-  }, [])
+    loadChargeTypes(frequencyFilter)
+  }, [frequencyFilter])
 
-  const loadChargeTypes = async () => {
+  const loadChargeTypes = async (frequency?: string) => {
     try {
-      setIsLoading(true) // ← start loading
-      const data = await getChargeTypes()
+      setIsLoading(true)
+      const data = await getChargeTypes(
+        frequency && frequency !== "ALL" ? frequency : undefined
+      )
       setChargeTypes(data)
     } catch (error) {
       console.error("Failed to load charge types:", error)
       toast.error("Failed to load charge types")
     } finally {
-      setIsLoading(false) // ← stop loading
+      setIsLoading(false)
     }
   }
 
@@ -81,7 +86,7 @@ export default function Page() {
         await createChargeType(formData)
         toast.success("Charge Type Created Successfully")
       }
-      await loadChargeTypes()
+      await loadChargeTypes(frequencyFilter)
       resetForm()
       setOpen(false)
     } catch (error) {
@@ -91,7 +96,6 @@ export default function Page() {
     }
   }
 
-  // 👇 form shape described once — swap in `accounts` once it's loaded
   const chargeTypeFields: FormField[] = [
     { type: "text", name: "name", label: "Fee Type Name", placeholder: "Tuition Fee" },
     {
@@ -129,13 +133,45 @@ export default function Page() {
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage charge types and account mappings.</p>
           </div>
         </div>
-        <Button
-          className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-          onClick={async () => { resetForm(); await loadAccounts(); setOpen(true) }}
-        >
-          <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-          Create Fee Type
-        </Button>
+
+        <div className="flex items-center gap-3">
+          {/* 👇 frequency filter */}
+          {/* 👇 frequency filter — styled to match brand color */}
+          <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
+            <SelectTrigger
+              className="w-[180px] border-[#556043]/30 text-[#556043] font-medium
+               focus:ring-[#556043] focus:border-[#556043]
+               dark:border-slate-700 dark:text-slate-100"
+            >
+              <SelectValue placeholder="Filter by Frequency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                value="ALL"
+                className="focus:bg-[#556043]/10 focus:text-[#556043]"
+              >
+                All Frequencies
+              </SelectItem>
+              {freequencyOptions.map((o) => (
+                <SelectItem
+                  key={o.value}
+                  value={o.value}
+                  className="focus:bg-[#556043]/10 focus:text-[#556043]"
+                >
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            onClick={async () => { resetForm(); await loadAccounts(); setOpen(true) }}
+          >
+            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+            Create Fee Type
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -219,14 +255,13 @@ export default function Page() {
         </div>
       </div>
 
-      {/* 👇 same component as the Accounts page, different field config */}
       <ReusableFormDialog
         open={open}
         onOpenChange={(value) => {
           setOpen(value)
           if (!value) resetForm()
         }}
-      theme="vehicle"
+        theme="vehicle"
         title={editingId ? "Edit Fee Type" : "Create Fee Type"}
         description="Add a new fee type and map it to an account."
         fields={chargeTypeFields}

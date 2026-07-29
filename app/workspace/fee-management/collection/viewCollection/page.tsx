@@ -469,6 +469,7 @@ export default function Page() {
 
       setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
       toast.success(`Fee collected successfully. Txn ${result.transactionNumber} for ${formatCurrency(result.totalAmount)}.`)
+      router.push("/workspace/reports/daily-collection");
       setSelected({})
       setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
 
