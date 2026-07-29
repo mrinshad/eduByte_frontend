@@ -226,6 +226,7 @@ export default function Page() {
           setOpen(value)
           if (!value) resetForm()
         }}
+      theme="vehicle"
         title={editingId ? "Edit Fee Type" : "Create Fee Type"}
         description="Add a new fee type and map it to an account."
         fields={chargeTypeFields}

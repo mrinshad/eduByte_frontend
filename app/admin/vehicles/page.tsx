@@ -204,6 +204,7 @@ export default function Page() {
         <ReusableFormDialog
           open={open}
           onOpenChange={setOpen}
+          theme="vehicle"
           title={editingId ? "Edit Vehicle" : "Create Vehicle"}
           description={
             editingId

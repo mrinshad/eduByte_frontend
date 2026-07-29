@@ -812,6 +812,7 @@ export default function Page() {
         <ReusableFormDialog
           open={classDialogOpen}
           onOpenChange={setClassDialogOpen}
+          theme="vehicle"
           title={classDialogMode === "add" ? "Add Class" : "Edit Class"}
           description={
             classDialogMode === "add"
@@ -858,6 +859,7 @@ export default function Page() {
 
         <ReusableFormDialog
           open={divisionDialogOpen}
+          theme="vehicle"
           onOpenChange={setDivisionDialogOpen}
           title={divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
           description={

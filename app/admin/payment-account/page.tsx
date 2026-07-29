@@ -381,6 +381,7 @@ export default function Page() {
                     setFormOpen(value)
                     if (!value) resetForm()
                 }}
+                theme="vehicle"
                 title={editingId ? "Edit Account" : "Create Account"}
                 description={
                     editingId
