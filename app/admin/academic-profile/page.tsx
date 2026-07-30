@@ -229,10 +229,6 @@ export default function Page() {
         setDefaultAcademicYearName(defaultYear?.name ?? "")
         setClasses(classList)
 
-        if (classList.length > 0) {
-          setSelectedClassId((current) => current || classList[0].id)
-        }
-
         const divisionEntries = await Promise.all(
           classList.map(async (schoolClass) => [schoolClass.id, await getDivisions(schoolClass.id)] as const),
         )
@@ -246,6 +242,19 @@ export default function Page() {
 
     void loadInitialData()
   }, [])
+
+  // Keep selectedClassId valid whenever the classes list changes — this is
+  // what makes the Division panel recover as soon as the first class is
+  // added, and re-targets selection if the selected class gets deleted.
+  React.useEffect(() => {
+    if (classes.length === 0) {
+      setSelectedClassId("")
+      return
+    }
+    setSelectedClassId((current) =>
+      current && classes.some((entry) => entry.id === current) ? current : classes[0].id,
+    )
+  }, [classes])
 
   React.useEffect(() => {
     const currentDivisions = divisionsByClassId[selectedClassId] ?? []
@@ -875,9 +884,14 @@ export default function Page() {
                 ) : !selectedClass ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No class selected</p>
-                    <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
-                      Add class
-                    </Button>
+                    <p className={`mt-1 text-sm ${supportingTextClass}`}>
+                      {classes.length === 0 ? "Add a class to get started." : "Select a class from the left to see its divisions."}
+                    </p>
+                    {classes.length === 0 && (
+                      <Button className="mt-4 rounded-xl" onClick={() => openClassDialog("add")}>
+                        Add class
+                      </Button>
+                    )}
                   </div>
                 ) : selectedDivisions.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
@@ -1184,32 +1198,33 @@ export default function Page() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        // confirmation dialog — same shape as your class one
-<AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete "{yearToDelete?.name}"?</AlertDialogTitle>
-      <AlertDialogDescription>
-        Warning: Deleting "{yearToDelete?.name}" will permanently remove all student admission data linked to this academic year. 
 
-Terms, enrollments, and other related records will also be deleted. This action cannot be undone.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel disabled={isDeletingYear}>Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        disabled={isDeletingYear}
-        onClick={(event) => {
-          event.preventDefault()
-          void handleDeleteYear()
-        }}
-        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-      >
-        {isDeletingYear ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+        {/* confirmation dialog — same shape as your class one */}
+        <AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete "{yearToDelete?.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Warning: Deleting "{yearToDelete?.name}" will permanently remove all student admission data linked to this academic year.
+
+                Terms, enrollments, and other related records will also be deleted. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingYear}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingYear}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDeleteYear()
+                }}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeletingYear ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </TooltipProvider>
   )
