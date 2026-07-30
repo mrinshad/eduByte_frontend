@@ -95,30 +95,43 @@ export default function Page() {
       setIsDeleting(false)
     }
   }
-  const handleSave = async () => {
-    if (!formData.name || !formData.category || !formData.frequency || !formData.incomeAccountId) {
-      toast.warning("Please fill all fields")
-      return
-    }
-    try {
-      setIsSaving(true)
-      if (editingId) {
-        await updateChargeType(editingId, formData)
-        toast.success("Charge Type Updated Successfully")
-      } else {
-        await createChargeType(formData)
-        toast.success("Charge Type Created Successfully")
-      }
-      await loadChargeTypes(frequencyFilter)
-      resetForm()
-      setOpen(false)
-    } catch (error) {
-      toast.error("Operation failed")
-    } finally {
-      setIsSaving(false)
-    }
+  const fieldLabels: Record<keyof chargeType, string> = {
+  name: "Fee Type Name",
+  category: "Category",
+  frequency: "Frequency",
+  incomeAccountId: "Income Account",
+}
+
+const handleSave = async () => {
+  const missingFields = (Object.keys(fieldLabels) as (keyof chargeType)[])
+    .filter((key) => !formData[key])
+    .map((key) => fieldLabels[key])
+
+  if (missingFields.length > 0) {
+    toast.warning(`Please fill: ${missingFields.join(", ")}`)
+    return
   }
 
+  try {
+    setIsSaving(true)
+    if (editingId) {
+      await updateChargeType(editingId, formData)
+      toast.success("Charge Type Updated Successfully")
+    } else {
+      await createChargeType(formData)
+      toast.success("Charge Type Created Successfully")
+    }
+    await loadChargeTypes()
+    resetForm()
+    setOpen(false)
+  } catch (error) {
+    toast.error("Operation failed")
+  } finally {
+    setIsSaving(false)
+  }
+}
+
+  // 👇 form shape described once — swap in `accounts` once it's loaded
   const chargeTypeFields: FormField[] = [
     { type: "text", name: "name", label: "Fee Type Name", placeholder: "Tuition Fee" },
     {
