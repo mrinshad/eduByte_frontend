@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
 import {
   Layers3,
   Pencil,
@@ -53,6 +54,7 @@ import {
   getDefaultAcademicYear,
   setDefaultAcademicYear,
   updateAcademicYear,
+  deleteAcademicYear,
 } from "@/lib/services/academicYear"
 import { refreshCurrentAcademicYear } from "@/lib/academic-year-store"
 import {
@@ -171,6 +173,10 @@ export default function Page() {
   const [editingYearNameDraft, setEditingYearNameDraft] = React.useState("")
   const [editingYearStartDate, setEditingYearStartDate] = React.useState<Date>()
   const [editingYearEndDate, setEditingYearEndDate] = React.useState<Date>()
+
+
+  const [yearToDelete, setYearToDelete] = useState<AcademicYearSummary | null>(null)
+  const [isDeletingYear, setIsDeletingYear] = useState(false)
 
   async function openYearEdit(year: AcademicYearSummary) {
     setEditingYearId(year.id)
@@ -311,7 +317,21 @@ export default function Page() {
       setIsDeletingClass(false)
     }
   }
-
+  const handleDeleteYear = async () => {
+    if (!yearToDelete) return
+    setIsDeletingYear(true)
+    try {
+      const result = await deleteAcademicYear(yearToDelete.id)
+      if (!result.success) throw new Error(result.message || "Failed to delete academic year")
+      setAcademicYears(await getAcademicYears())
+      toast.success("Academic year deleted")
+      setYearToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete academic year")
+    } finally {
+      setIsDeletingYear(false)
+    }
+  }
   async function handleDeleteDivision() {
     if (!divisionToDelete || !selectedClassId) return
     setIsDeletingDivision(true)
@@ -560,6 +580,17 @@ export default function Page() {
                                   onClick={() => { void openYearEdit(year) }}
                                 >
                                   <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className={deleteIconClass}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setYearToDelete(year)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
 
                                 {year.isActive ? (
@@ -1151,6 +1182,32 @@ export default function Page() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        // confirmation dialog — same shape as your class one
+<AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete "{yearToDelete?.name}"?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Warning: Deleting "{yearToDelete?.name}" will permanently remove all student admission data linked to this academic year. 
+
+Terms, enrollments, and other related records will also be deleted. This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={isDeletingYear}>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        disabled={isDeletingYear}
+        onClick={(event) => {
+          event.preventDefault()
+          void handleDeleteYear()
+        }}
+        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+      >
+        {isDeletingYear ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
       </section>
     </TooltipProvider>
   )
