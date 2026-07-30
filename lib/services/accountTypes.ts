@@ -13,3 +13,7 @@ export async function getAccountTypes() {
     const payload = (await apiFetch("/api/accounts")) as ApiSuccess<accountName[]>
     return payload.data ?? []
 }
+export async function getNonPayment() {
+    const payload = (await apiFetch("/api/accounts/non-payment-accounts")) as ApiSuccess<accountName[]>
+    return payload.data ?? []
+}

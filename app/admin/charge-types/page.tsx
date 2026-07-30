@@ -9,10 +9,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Plus, Pencil, Trash2, ArrowLeft, Loader2 } from "lucide-react"
-import { freequencyOptions, categoryOptions } from "@/lib/constant"
-import { getAccountTypes, type accountName } from "@/lib/services/accountTypes"
 import {
-  createChargeType, getChargeTypes, updateChargeType,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { freequencyOptions, categoryOptions } from "@/lib/constant"
+import { getNonPayment, type accountName } from "@/lib/services/accountTypes"
+import {
+  createChargeType, getChargeTypes, updateChargeType, deleteChargeType,
   type chargeType, type ChargeTypes,
 } from "@/lib/services/chargeTypes"
 import { useEffect, useState } from "react"
@@ -23,6 +27,11 @@ import { ReusableFormDialog, type FormField } from "@/components/common/resusabl
 
 export default function Page() {
   const router = useRouter()
+
+
+  const [chargeTypeToDelete, setChargeTypeToDelete] = useState<ChargeTypes | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
 
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<accountName[]>([])
@@ -59,7 +68,7 @@ export default function Page() {
 
   const loadAccounts = async () => {
     try {
-      const data = await getAccountTypes()
+      const data = await getNonPayment()
       setAccounts(data)
     } catch (error) {
       console.error("Failed to load accounts:", error)
@@ -71,7 +80,21 @@ export default function Page() {
     setFormData({ name: "", category: "", frequency: "", incomeAccountId: "" })
     setEditingId(null)
   }
-
+  const handleDelete = async () => {
+    if (!chargeTypeToDelete) return
+    try {
+      setIsDeleting(true)
+      const result = (await deleteChargeType(chargeTypeToDelete.id)) as { success: boolean; message?: string }
+      if (result?.success === false) throw new Error(result.message || "Failed to delete charge type")
+      await loadChargeTypes()
+      toast.success("Charge Type Deleted Successfully")
+      setChargeTypeToDelete(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete charge type")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
   const handleSave = async () => {
     if (!formData.name || !formData.category || !formData.frequency || !formData.incomeAccountId) {
       toast.warning("Please fill all fields")
@@ -242,7 +265,12 @@ export default function Page() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          onClick={() => setChargeTypeToDelete(data)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -271,6 +299,31 @@ export default function Page() {
         isSaving={isSaving}
         isEditing={!!editingId}
       />
+      <AlertDialog open={!!chargeTypeToDelete} onOpenChange={(open) => { if (!open) setChargeTypeToDelete(null) }}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete "{chargeTypeToDelete?.name}"?</AlertDialogTitle>
+      <AlertDialogDescription>
+       Warning: Deleting "{chargeTypeToDelete?.name}" will permanently remove it from fee structures and related records.
+
+If fees using this charge type are already assigned to student admissions, the deletion will fail. This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        disabled={isDeleting}
+        onClick={(event) => {
+          event.preventDefault()
+          void handleDelete()
+        }}
+        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+      >
+        {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
     </section>
   )
 }
