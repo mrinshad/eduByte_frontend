@@ -49,3 +49,8 @@ return apiFetch(`/api/chargetype/${id}`, {
     body: JSON.stringify(input),
   })
 }
+export function deleteChargeType(id: string) {
+  return apiFetch(`/api/chargetype/${id}`, {
+    method: "DELETE",
+  })
+}
