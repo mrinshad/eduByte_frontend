@@ -2,9 +2,14 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   createVehicle,
   getVehicles,
   updateVehicle,
+  deleteVehicle,
   type Vehicle,
 } from "@/lib/services/vehicle";
 
@@ -137,6 +142,10 @@ export default function Page() {
 
   const [loadingVehicles, setLoadingVehicles] = useState(true);
 
+
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     loadVehicles();
   }, []);
@@ -163,6 +172,21 @@ export default function Page() {
     setDriverName(vehicle.driverName);
 
     setOpen(true);
+  };
+  const handleDeleteVehicle = async () => {
+    if (!vehicleToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteVehicle(vehicleToDelete.id);
+      toast.success("Vehicle deleted successfully");
+      setVehicleToDelete(null);
+      loadVehicles();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete vehicle");
+    } finally {
+      setIsDeleting(false);
+    }
   };
   return (
     <section className="px-6 py-4">
@@ -404,18 +428,19 @@ export default function Page() {
                     <Button
                       size="icon"
                       variant="ghost"
+                      onClick={() => setVehicleToDelete(vehicle)}
                       className="
-              h-7
-              w-7
-              shrink-0
-              rounded-md
-              text-slate-400
-              hover:bg-slate-50
-              hover:text-orange-600
-              dark:text-slate-500
-              dark:hover:bg-slate-800
-              dark:hover:text-orange-400
-            "
+          h-7
+          w-7
+          shrink-0
+          rounded-md
+          text-slate-400
+          hover:bg-slate-50
+          hover:text-red-600
+          dark:text-slate-500
+          dark:hover:bg-slate-800
+          dark:hover:text-red-400
+        "
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -443,6 +468,29 @@ export default function Page() {
           ))}
         </div>
       )}
+      <AlertDialog open={!!vehicleToDelete} onOpenChange={(open) => { if (!open) setVehicleToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{vehicleToDelete?.vehicleName}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this vehicle ({vehicleToDelete?.vehicleNumber}). This can't be undone, and it may fail if the vehicle is linked to routes or students.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteVehicle()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
 
   )

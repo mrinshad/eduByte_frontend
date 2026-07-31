@@ -130,3 +130,10 @@ export async function EditFeeStructure(
         body: JSON.stringify(input),
     });
 }
+export async function deleteFeeStructure(id: string) {
+  const payload = (await apiFetch(`/api/feestructure/${id}`, {
+    method: "DELETE",
+  })) as ApiSuccess<null>;
+
+  return payload;
+}

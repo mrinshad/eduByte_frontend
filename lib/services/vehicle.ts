@@ -53,3 +53,8 @@ export async function updateVehicle(
     body: JSON.stringify(input),
   });
 }
+export async function deleteVehicle(id: string) {
+  return apiFetch(`/api/vehicles/${id}`, {
+    method: "DELETE",
+  });
+}

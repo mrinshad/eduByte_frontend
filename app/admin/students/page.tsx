@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
@@ -13,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getStudents, type StudentListItem } from "@/lib/services/student";
+import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
 
 export default function Page() {
   const router = useRouter();
@@ -30,6 +35,8 @@ export default function Page() {
     total: 0,
     totalPages: 1,
   });
+  const [studentToDelete, setStudentToDelete] = useState<StudentListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadStudents = async () => {
     try {
@@ -68,6 +75,28 @@ export default function Page() {
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const endEntry = pagination.total === 0 ? 0 : Math.min(currentPage * rowsPerPage, pagination.total);
+  const handleDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    try {
+      setIsDeleting(true);
+      const result = await deleteStudent(studentToDelete.id);
+      if (!result.success) throw new Error(result.message || "Failed to delete student");
+
+      toast.success("Student deleted successfully");
+      setStudentToDelete(null);
+
+      // If this was the last row on the page, step back a page so it's not left empty
+      if (students.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        await loadStudents();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete student");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
@@ -241,6 +270,7 @@ export default function Page() {
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="Delete Student"
+                          onClick={() => setStudentToDelete(student)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -255,7 +285,7 @@ export default function Page() {
 
         {/* ── Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
@@ -304,7 +334,29 @@ export default function Page() {
           </div>
         </div>
       </div>
-
+      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => { if (!open) setStudentToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{studentToDelete?.studentName}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this student record ({studentToDelete?.admissionNumber}). This can't be undone, and it may fail if the student has enrollment, fee, or attendance records linked to them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteStudent();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
