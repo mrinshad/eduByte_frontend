@@ -1,108 +1,83 @@
 import Link from "next/link"
 import {
-  BanknoteArrowDown,
-  FileCheck2,
-  Wallet,
-  Wrench,
-  Clock,
-  FileText,
+  GraduationCap,
+  Receipt,
+  Users,
+  TrendingUp,
+  CalendarDays,
+  FileCheck,
+  Bus,
+  Megaphone,
   Search,
-  BarChart3,
-  Send,
-  Settings,
 } from "lucide-react"
 
-/* ─── Stats ─── */
+/* ─── Stats (workspace-relevant) ─── */
 const stats = [
-  { label: "Today's Collection", value: "₹48,250", change: "↑ 8.5%", positive: true },
-  { label: "Pending Dues", value: "₹3.2L", change: "142 invoices", positive: false },
-  { label: "Today's Expenses", value: "₹12,800", change: "8 entries", positive: false },
-  { label: "Receipts Issued", value: "86", change: "All verified", positive: true },
+  { label: "Total Students", value: "2,847", change: "View only", positive: true },
+  { label: "Fee Collected Today", value: "₹48,200", change: "↑ 8%", positive: true },
+  { label: "Attendance Today", value: "94.6%", change: "↓ 1.1%", positive: false },
+  { label: "Pending Dues", value: "142 students", change: "₹3.2L total", positive: false },
 ]
 
-/* ─── Quick Links (10 items) ─── */
+/* ─── Quick Links — daily operations only ─── */
 const quickLinks = [
   {
-    href: "/workspace/fee-management/collection",
-    title: "Collect Fees",
-    description: "Open due invoices & collect payments.",
-    Icon: Wallet,
+    href: "/workspace/fees/collect",
+    title: "Fee Collection",
+    description: "Collect & record fee payments.",
+    Icon: Receipt,
   },
   {
-    href: "/workspace/fee-management/receipts",
-    title: "Receipt Register",
-    description: "Review and verify daily receipts.",
-    Icon: FileCheck2,
+    href: "/workspace/attendance",
+    title: "Attendance",
+    description: "Daily class-wise attendance entry.",
+    Icon: TrendingUp,
   },
   {
-    href: "/workspace/expense-management/createExpense",
-    title: "New Expense",
-    description: "Log expense & payment method.",
-    Icon: BanknoteArrowDown,
-  },
-  {
-    href: "/workspace/reports/vehicle-allocation",
-    title: "Vehicle Allocation",
-    description: "Manage routes & daily operations.",
-    Icon: Wrench,
-  },
-  {
-    href: "/workspace/daily-closure",
-    title: "Daily Closure",
-    description: "End-of-day cash & summary.",
-    Icon: Clock,
-  },
-  {
-    href: "/workspace/reports/fee",
-    title: "Fee Reports",
-    description: "Collection & dues analytics.",
-    Icon: FileText,
-  },
-  {
-    href: "/workspace/students/search",
-    title: "Student Search",
-    description: "Find student & fee status.",
+    href: "/workspace/students",
+    title: "Student Lookup",
+    description: "Search & view student profiles.",
     Icon: Search,
   },
   {
-    href: "/workspace/reports/expense",
-    title: "Expense Report",
-    description: "Monthly spending summary.",
-    Icon: BarChart3,
+    href: "/workspace/exams",
+    title: "Exams & Results",
+    description: "Enter & publish marks.",
+    Icon: FileCheck,
   },
   {
-    href: "/workspace/notices/send",
-    title: "Send Reminder",
-    description: "Fee due SMS & notices.",
-    Icon: Send,
+    href: "/workspace/timetable",
+    title: "Timetable",
+    description: "View class & exam schedules.",
+    Icon: CalendarDays,
   },
   {
-    href: "/workspace/settings",
-    title: "Settings",
-    description: "Workspace preferences.",
-    Icon: Settings,
+    href: "/workspace/vehicles",
+    title: "Vehicle Info",
+    description: "Routes & transport assignments.",
+    Icon: Bus,
+  },
+  {
+    href: "/workspace/notices",
+    title: "Notices",
+    description: "Post announcements & circulars.",
+    Icon: Megaphone,
   },
 ]
 
 /* ─── Chart Data ─── */
-const dailyData = [
-  { day: "Mon", amount: 35 },
-  { day: "Tue", amount: 42 },
-  { day: "Wed", amount: 48 },
-  { day: "Thu", amount: 30 },
-  { day: "Fri", amount: 45 },
-  { day: "Sat", amount: 52 },
-  { day: "Sun", amount: 38 },
+const classData = [
+  { class: "1st", count: 320 },
+  { class: "2nd", count: 380 },
+  { class: "3rd", count: 420 },
+  { class: "4th", count: 350 },
+  { class: "5th", count: 400 },
+  { class: "6th", count: 370 },
+  { class: "7th", count: 310 },
+  { class: "8th", count: 280 },
 ]
 
-const expenseBreakdown = [
-  { label: "Salaries", value: 40, color: "#4b563d" },
-  { label: "Utilities", value: 24, color: "#6b7a5a" },
-  { label: "Transport", value: 16, color: "#8a9a78" },
-  { label: "Misc", value: 12, color: "#a8b896" },
-]
-
-const monthlyFee = [
+const feeData = [
   { month: "Apr", collected: 12, target: 20 },
   { month: "May", collected: 14, target: 20 },
   { month: "Jun", collected: 16, target: 20 },
@@ -118,19 +93,19 @@ const monthlyFee = [
 ]
 
 /* ─── Reusable Charts ─── */
-function DailyBarChart() {
-  const max = Math.max(...dailyData.map((d) => d.amount))
-  const barW = 32
-  const gap = 18
+function BarChart() {
+  const max = Math.max(...classData.map((d) => d.count))
+  const barW = 28
+  const gap = 16
   const chartH = 140
-  const chartW = dailyData.length * (barW + gap) + gap
+  const chartW = classData.length * (barW + gap) + gap
   const startX = gap
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Daily Collection (Last 7 Days)</h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400">in ₹ thousands</span>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Students by Class</h3>
+        <span className="text-xs text-slate-500 dark:text-slate-400">Current Academic Year</span>
       </div>
       <svg viewBox={`0 0 ${chartW} ${chartH + 30}`} className="w-full">
         {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
@@ -145,13 +120,21 @@ function DailyBarChart() {
             strokeWidth={0.5}
           />
         ))}
-        {dailyData.map((d, i) => {
-          const h = (d.amount / max) * chartH
+        {classData.map((d, i) => {
+          const h = (d.count / max) * chartH
           const x = startX + i * (barW + gap)
           const y = chartH - h + 10
           return (
-            <g key={d.day}>
-              <rect x={x} y={y} width={barW} height={h} rx={4} fill="#4b563d" opacity={i % 2 === 0 ? 0.9 : 0.7} />
+            <g key={d.class}>
+              <rect
+                x={x}
+                y={y}
+                width={barW}
+                height={h}
+                rx={4}
+                className="fill-slate-900 dark:fill-white"
+                opacity={i % 2 === 0 ? 0.9 : 0.6}
+              />
               <text
                 x={x + barW / 2}
                 y={chartH + 24}
@@ -159,7 +142,7 @@ function DailyBarChart() {
                 className="fill-slate-500 dark:fill-slate-400"
                 fontSize={10}
               >
-                {d.day}
+                {d.class}
               </text>
             </g>
           )
@@ -169,83 +152,83 @@ function DailyBarChart() {
   )
 }
 
-function ExpenseDonut() {
-  const radius = 52
+function DonutChart() {
+  const boys = 60
+  const girls = 40
+  const radius = 50
   const circumference = 2 * Math.PI * radius
-  let offset = 0
+  const boysDash = (boys / 100) * circumference
+  const girlsDash = (girls / 100) * circumference
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Expense Breakdown</h3>
-      <svg viewBox="0 0 200 170" className="mx-auto w-full max-w-[200px]">
+      <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Gender Ratio</h3>
+      <svg viewBox="0 0 200 160" className="mx-auto w-full max-w-[200px]">
         <g transform="rotate(-90 100 75)">
-          {expenseBreakdown.map((seg) => {
-            const dash = (seg.value / 100) * circumference
-            const el = (
-              <circle
-                key={seg.label}
-                cx="100"
-                cy="75"
-                r={radius}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={20}
-                strokeDasharray={`${dash} ${circumference - dash}`}
-                strokeDashoffset={-offset}
-              />
-            )
-            offset += dash
-            return el
-          })}
+          <circle
+            cx="100"
+            cy="75"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            className="text-slate-900 dark:text-white"
+            strokeWidth={18}
+            strokeDasharray={`${boysDash} ${circumference - boysDash}`}
+            opacity={0.85}
+          />
+          <circle
+            cx="100"
+            cy="75"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            className="text-slate-400 dark:text-slate-500"
+            strokeWidth={18}
+            strokeDasharray={`${girlsDash} ${circumference - girlsDash}`}
+            strokeDashoffset={-boysDash}
+            opacity={0.85}
+          />
         </g>
-        <text x="100" y="68" textAnchor="middle" className="fill-slate-900 dark:fill-white" fontSize={18} fontWeight={700}>
-          ₹3.8L
+        <text x="100" y="70" textAnchor="middle" className="fill-slate-900 dark:fill-white" fontSize={20} fontWeight={700}>
+          2,847
         </text>
-        <text x="100" y="86" textAnchor="middle" className="fill-slate-500 dark:fill-slate-400" fontSize={10}>
-          This Month
+        <text x="100" y="88" textAnchor="middle" className="fill-slate-500 dark:fill-slate-400" fontSize={10}>
+          Total Students
         </text>
-        {/* Legend */}
-        <rect x="20" y="138" width="10" height="10" rx={2} fill="#4b563d" />
-        <text x="35" y="147" className="fill-slate-600 dark:fill-slate-300" fontSize={10}>
-          Salaries 40%
+        <rect x="45" y="135" width="10" height="10" rx={2} className="fill-slate-900 dark:fill-white" />
+        <text x="60" y="144" className="fill-slate-600 dark:fill-slate-300" fontSize={11}>
+          Boys {boys}%
         </text>
-        <rect x="105" y="138" width="10" height="10" rx={2} fill="#6b7a5a" />
-        <text x="120" y="147" className="fill-slate-600 dark:fill-slate-300" fontSize={10}>
-          Utilities 24%
-        </text>
-        <rect x="20" y="155" width="10" height="10" rx={2} fill="#8a9a78" />
-        <text x="35" y="164" className="fill-slate-600 dark:fill-slate-300" fontSize={10}>
-          Transport 16%
-        </text>
-        <rect x="105" y="155" width="10" height="10" rx={2} fill="#a8b896" />
-        <text x="120" y="164" className="fill-slate-600 dark:fill-slate-300" fontSize={10}>
-          Misc 12%
+        <rect x="115" y="135" width="10" height="10" rx={2} className="fill-slate-400 dark:fill-slate-500" />
+        <text x="130" y="144" className="fill-slate-600 dark:fill-slate-300" fontSize={11}>
+          Girls {girls}%
         </text>
       </svg>
     </div>
   )
 }
 
-function FeeLineChart() {
+function LineChart() {
   const chartW = 560
   const chartH = 120
   const padding = { left: 40, right: 20, top: 10, bottom: 30 }
-  const maxVal = Math.max(...monthlyFee.map((d) => Math.max(d.collected, d.target)))
-  const xStep = (chartW - padding.left - padding.right) / (monthlyFee.length - 1)
+
+  const maxVal = Math.max(...feeData.map((d) => Math.max(d.collected, d.target)))
+  const xStep = (chartW - padding.left - padding.right) / (feeData.length - 1)
 
   const toX = (i: number) => padding.left + i * xStep
   const toY = (v: number) => padding.top + chartH - (v / maxVal) * chartH
 
-  const collectedPoints = monthlyFee.map((d, i) => `${toX(i)},${toY(d.collected)}`).join(" ")
-  const targetPoints = monthlyFee.map((d, i) => `${toX(i)},${toY(d.target)}`).join(" ")
+  const collectedPoints = feeData.map((d, i) => `${toX(i)},${toY(d.collected)}`).join(" ")
+  const targetPoints = feeData.map((d, i) => `${toX(i)},${toY(d.target)}`).join(" ")
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Monthly Collection vs Target</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Monthly Fee Collection</h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-sm bg-[#4b563d]" />
+            <div className="h-2 w-2 rounded-sm bg-slate-900 dark:bg-white" />
             <span className="text-xs text-slate-500 dark:text-slate-400">Collected</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -278,20 +261,27 @@ function FeeLineChart() {
         <polyline
           points={collectedPoints}
           fill="none"
-          stroke="#4b563d"
+          stroke="currentColor"
+          className="text-slate-900 dark:text-white"
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <polygon
-          points={`${padding.left},${padding.top + chartH} ${collectedPoints} ${toX(monthlyFee.length - 1)},${padding.top + chartH}`}
-          fill="#4b563d"
+          points={`${padding.left},${padding.top + chartH} ${collectedPoints} ${toX(feeData.length - 1)},${padding.top + chartH}`}
+          className="fill-slate-900 dark:fill-white"
           opacity={0.06}
         />
-        {monthlyFee.map((d, i) => (
-          <circle key={d.month} cx={toX(i)} cy={toY(d.collected)} r={3} fill="#4b563d" />
+        {feeData.map((d, i) => (
+          <circle
+            key={d.month}
+            cx={toX(i)}
+            cy={toY(d.collected)}
+            r={3}
+            className="fill-slate-900 dark:fill-white"
+          />
         ))}
-        {monthlyFee.map((d, i) => (
+        {feeData.map((d, i) => (
           <text
             key={d.month}
             x={toX(i)}
@@ -309,19 +299,17 @@ function FeeLineChart() {
 }
 
 /* ─── Page ─── */
-export default function WorkspaceDashboardPage() {
+export default function Page() {
   return (
     <section className="space-y-6 px-4 py-4">
       {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-            Workspace Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Daily operations, payments, and academic controls.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          Workspace
+        </h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Daily operations & student-facing tools.
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -337,9 +325,7 @@ export default function WorkspaceDashboardPage() {
             </div>
             <div
               className={`mt-0.5 text-[11px] font-medium ${
-                s.positive
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
+                s.positive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
               }`}
             >
               {s.change}
@@ -348,19 +334,19 @@ export default function WorkspaceDashboardPage() {
         ))}
       </div>
 
-      {/* Quick Links — 5 columns, smaller cards, green gradient */}
+      {/* Quick Links */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {quickLinks.map(({ href, title, description, Icon }) => (
             <Link
               key={href}
               href={href}
-              className="group rounded-xl bg-gradient-to-br from-[#3f4a32] via-[#4b563d] to-[#2f3726] p-3.5 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+              className="group rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-3.5 shadow-md transition hover:shadow-lg dark:from-slate-800 dark:via-slate-900 dark:to-slate-950"
             >
-              <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 text-white">
+              <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white">
                 <Icon className="h-4 w-4" />
               </div>
               <h2 className="text-sm font-semibold text-white">{title}</h2>
@@ -373,11 +359,11 @@ export default function WorkspaceDashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <DailyBarChart />
+          <BarChart />
         </div>
-        <ExpenseDonut />
+        <DonutChart />
       </div>
-      <FeeLineChart />
+      <LineChart />
     </section>
   )
 }

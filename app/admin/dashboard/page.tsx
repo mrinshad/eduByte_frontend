@@ -1,85 +1,64 @@
 import Link from "next/link"
 import {
-  CircleDollarSign,
-  GraduationCap,
   Receipt,
-  UserPlus,
-  Users,
   TrendingUp,
-  CalendarDays,
+  Search,
   FileCheck,
+  CalendarDays,
   Bus,
   Megaphone,
 } from "lucide-react"
 
-/* ─── Stats ─── */
+/* ─── Workspace Stats ─── */
 const stats = [
-  { label: "Total Students", value: "2,847", change: "↑ 4.2%", positive: true },
-  { label: "Fee Collected", value: "₹18.4L", change: "↑ 12%", positive: true },
+  { label: "Total Students", value: "2,847", change: "View only", positive: true },
+  { label: "Fee Collected Today", value: "₹48,200", change: "↑ 8%", positive: true },
   { label: "Attendance Today", value: "94.6%", change: "↓ 1.1%", positive: false },
-  { label: "Pending Dues", value: "₹3.2L", change: "142 students", positive: false },
+  { label: "Pending Dues", value: "142 students", change: "₹3.2L total", positive: false },
 ]
 
-/* ─── Quick Links (10 items) ─── */
+/* ─── Quick Links — Daily Operations Only ─── */
 const quickLinks = [
   {
-    href: "/admin/admissions/createAdmission",
-    title: "New Admission",
-    description: "Create admission with class & fee mapping.",
-    Icon: UserPlus,
-  },
-  {
-    href: "/admin/students/createStudent",
-    title: "New Student",
-    description: "Register a new student profile.",
-    Icon: GraduationCap,
-  },
-  {
-    href: "/admin/academic-profile",
-    title: "Academic Profile",
-    description: "Manage years, classes & divisions.",
-    Icon: CircleDollarSign,
-  },
-  {
-    href: "/admin/vehicles",
-    title: "Vehicle Mgmt",
-    description: "Routes, assignments & transport.",
-    Icon: Bus,
-  },
-  {
-    href: "/admin/fees/collect",
+    href: "/workspace/fees/collect",
     title: "Fee Collection",
-    description: "Collect & track fee payments.",
+    description: "Collect fees, print receipts & view dues.",
     Icon: Receipt,
   },
   {
-    href: "/admin/staff",
-    title: "Staff Mgmt",
-    description: "Teachers & employee records.",
-    Icon: Users,
-  },
-  {
-    href: "/admin/attendance",
+    href: "/workspace/attendance",
     title: "Attendance",
-    description: "Daily class-wise attendance.",
+    description: "Daily class-wise attendance entry.",
     Icon: TrendingUp,
   },
   {
-    href: "/admin/exams",
+    href: "/workspace/students",
+    title: "Student Lookup",
+    description: "Search profiles, enrollment & charges.",
+    Icon: Search,
+  },
+  {
+    href: "/workspace/exams",
     title: "Exams & Results",
-    description: "Schedule & publish marks.",
+    description: "Enter marks & publish results.",
     Icon: FileCheck,
   },
   {
-    href: "/admin/timetable",
+    href: "/workspace/timetable",
     title: "Timetable",
-    description: "Class & exam schedules.",
+    description: "View & manage class schedules.",
     Icon: CalendarDays,
   },
   {
-    href: "/admin/notices",
+    href: "/workspace/vehicles",
+    title: "Transport",
+    description: "Student vehicle assignments & routes.",
+    Icon: Bus,
+  },
+  {
+    href: "/workspace/notices",
     title: "Notices",
-    description: "Announcements & circulars.",
+    description: "Post announcements & circulars.",
     Icon: Megaphone,
   },
 ]
@@ -111,7 +90,7 @@ const feeData = [
   { month: "Mar", collected: 25, target: 20 },
 ]
 
-/* ─── Reusable Charts ─── */
+/* ─── Charts (unchanged) ─── */
 function BarChart() {
   const max = Math.max(...classData.map((d) => d.count))
   const barW = 28
@@ -127,7 +106,6 @@ function BarChart() {
         <span className="text-xs text-slate-500 dark:text-slate-400">Current Academic Year</span>
       </div>
       <svg viewBox={`0 0 ${chartW} ${chartH + 30}`} className="w-full">
-        {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
           <line
             key={i}
@@ -140,7 +118,6 @@ function BarChart() {
             strokeWidth={0.5}
           />
         ))}
-        {/* Bars */}
         {classData.map((d, i) => {
           const h = (d.count / max) * chartH
           const x = startX + i * (barW + gap)
@@ -216,7 +193,6 @@ function DonutChart() {
         <text x="100" y="88" textAnchor="middle" className="fill-slate-500 dark:fill-slate-400" fontSize={10}>
           Total Students
         </text>
-        {/* Legend */}
         <rect x="45" y="135" width="10" height="10" rx={2} className="fill-slate-900 dark:fill-white" />
         <text x="60" y="144" className="fill-slate-600 dark:fill-slate-300" fontSize={11}>
           Boys {boys}%
@@ -260,7 +236,6 @@ function LineChart() {
         </div>
       </div>
       <svg viewBox={`0 0 ${chartW} ${chartH + 20}`} className="w-full">
-        {/* Grid */}
         {[0, 0.33, 0.66, 1].map((p, i) => (
           <line
             key={i}
@@ -273,7 +248,6 @@ function LineChart() {
             strokeWidth={0.5}
           />
         ))}
-        {/* Target line */}
         <polyline
           points={targetPoints}
           fill="none"
@@ -282,7 +256,6 @@ function LineChart() {
           strokeWidth={1.5}
           strokeDasharray="4 4"
         />
-        {/* Collected line */}
         <polyline
           points={collectedPoints}
           fill="none"
@@ -292,13 +265,11 @@ function LineChart() {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Area under collected */}
         <polygon
           points={`${padding.left},${padding.top + chartH} ${collectedPoints} ${toX(feeData.length - 1)},${padding.top + chartH}`}
           className="fill-slate-900 dark:fill-white"
           opacity={0.06}
         />
-        {/* Data points */}
         {feeData.map((d, i) => (
           <circle
             key={d.month}
@@ -308,7 +279,6 @@ function LineChart() {
             className="fill-slate-900 dark:fill-white"
           />
         ))}
-        {/* X labels */}
         {feeData.map((d, i) => (
           <text
             key={d.month}
@@ -333,10 +303,10 @@ export default function Page() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-          Admin Dashboard
+          Workspace
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Quick access to critical operations & real-time insights.
+          Daily operations, fee collection & student-facing tools.
         </p>
       </div>
 
@@ -362,12 +332,12 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Quick Links — 5 columns, smaller cards */}
+      {/* Quick Links */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {quickLinks.map(({ href, title, description, Icon }) => (
             <Link
               key={href}
