@@ -174,3 +174,14 @@ export function reverseStudentFine(
     }),
   });
 }
+export function deleteFineType(id: string) {
+  return apiFetch(`/api/finetypes/${id}`, {
+    method: "DELETE",
+  })
+}
+
+export function deleteStudentFine(id: string) {
+  return apiFetch(`/api/stdfines/${id}`, {
+    method: "DELETE",
+  })
+}

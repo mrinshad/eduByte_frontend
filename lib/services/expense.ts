@@ -245,3 +245,15 @@ export async function getPaymentMethodAccounts() {
 
   return payload.data ?? [];
 }
+
+export async function deleteExpenseCategory(id: string) {
+  return apiFetch(`/api/expensecategory/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function deleteExpenseSubCategory(id: string) {
+  return apiFetch(`/api/expensesubcategory/${id}`, {
+    method: "DELETE",
+  });
+}

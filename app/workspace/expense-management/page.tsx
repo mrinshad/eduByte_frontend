@@ -2,13 +2,17 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Tags, Layers3, Pencil, Plus } from "lucide-react"
+import { Tags, Layers3, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import PageHeader from "@/components/common/pageHeader"
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Card,
   CardContent,
@@ -41,6 +45,8 @@ import {
   getExpenseSubCategories,
   updateExpenseSubCategory,
   getExpenseAccountsNamesandIds,
+  deleteExpenseCategory,
+  deleteExpenseSubCategory,
   type ExpenseCategory,
   type ExpenseSubCategory,
   type AccountName,
@@ -76,6 +82,12 @@ export default function Page() {
   const [categories, setCategories] = React.useState<ExpenseCategory[]>([])
   const [subCategories, setSubCategories] = React.useState<ExpenseSubCategory[]>([])
   const [accounts, setAccounts] = React.useState<AccountName[]>([])
+
+  const [categoryToDelete, setCategoryToDelete] = React.useState<ExpenseCategory | null>(null)
+  const [categoryDeleting, setCategoryDeleting] = React.useState(false)
+
+  const [subCategoryToDelete, setSubCategoryToDelete] = React.useState<ExpenseSubCategory | null>(null)
+  const [subCategoryDeleting, setSubCategoryDeleting] = React.useState(false)
 
   const router = useRouter();
 
@@ -121,13 +133,13 @@ export default function Page() {
   }
 
   async function loadAccounts() {
-  try {
-    const data = await getExpenseAccountsNamesandIds()
-    setAccounts(data)
-  } catch (error) {
-    toast.error("Failed to load accounts")
+    try {
+      const data = await getExpenseAccountsNamesandIds()
+      setAccounts(data)
+    } catch (error) {
+      toast.error("Failed to load accounts")
+    }
   }
-}
 
   React.useEffect(() => {
     void loadCategories()
@@ -182,6 +194,39 @@ export default function Page() {
       toast.error(error instanceof Error ? error.message : "Failed to save category")
     } finally {
       setCategorySaving(false)
+    }
+  }
+  async function handleDeleteCategory() {
+    if (!categoryToDelete) return
+    setCategoryDeleting(true)
+    try {
+      await deleteExpenseCategory(categoryToDelete.id)
+      toast.success("Category deleted")
+      setCategoryToDelete(null)
+      if (selectedCategoryId === categoryToDelete.id) {
+        setSelectedCategoryId("")
+      }
+      await loadCategories()
+      await loadSubCategories()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete category")
+    } finally {
+      setCategoryDeleting(false)
+    }
+  }
+
+  async function handleDeleteSubCategory() {
+    if (!subCategoryToDelete) return
+    setSubCategoryDeleting(true)
+    try {
+      await deleteExpenseSubCategory(subCategoryToDelete.id)
+      toast.success("Sub category deleted")
+      setSubCategoryToDelete(null)
+      await loadSubCategories()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete sub category")
+    } finally {
+      setSubCategoryDeleting(false)
     }
   }
 
@@ -280,8 +325,8 @@ export default function Page() {
                 </div>
 
                 <AddAction onAdd={() =>
-              router.push("/workspace/expense-management/createExpense")
-            } />
+                  router.push("/workspace/expense-management/createExpense")
+                } />
               </div>
             </CardHeader>
           </Card>
@@ -376,18 +421,32 @@ export default function Page() {
                             {subCount} sub
                           </span>
 
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className={editIconClass}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setSelectedCategoryId(category.id)
-                              openCategoryDialog("edit")
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={editIconClass}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedCategoryId(category.id)
+                                openCategoryDialog("edit")
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-red-300 dark:text-slate-300 dark:hover:text-red-400"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setCategoryToDelete(category)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )
@@ -463,20 +522,31 @@ export default function Page() {
                             {subCategory.name}
                           </p>
                           <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
-                            
+
                             {subCategory.description ? `  ${subCategory.description}` : ""}
                           </p>
                         </div>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className={editIconClass}
-                        onClick={() => openSubCategoryDialog("edit", subCategory)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className={editIconClass}
+                          onClick={() => openSubCategoryDialog("edit", subCategory)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-xl text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
+                          onClick={() => setSubCategoryToDelete(subCategory)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -599,6 +669,57 @@ export default function Page() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => { if (!open) setCategoryToDelete(null) }}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete "{categoryToDelete?.name}"?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This will permanently delete this category
+        {categoryToDelete
+          ? ` and its ${subCategories.filter((sc) => sc.categoryId === categoryToDelete.id).length} sub categor${subCategories.filter((sc) => sc.categoryId === categoryToDelete.id).length === 1 ? "y" : "ies"}`
+          : ""}
+        . This can't be undone, and it will fail if expenses are already recorded against it.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={categoryDeleting}>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        disabled={categoryDeleting}
+        onClick={(event) => {
+          event.preventDefault()
+          void handleDeleteCategory()
+        }}
+        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+      >
+        {categoryDeleting ? "Deleting..." : "Delete"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
+<AlertDialog open={!!subCategoryToDelete} onOpenChange={(open) => { if (!open) setSubCategoryToDelete(null) }}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete "{subCategoryToDelete?.name}"?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This will permanently delete this sub category. This can't be undone, and it will fail if expenses are already recorded against it.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={subCategoryDeleting}>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        disabled={subCategoryDeleting}
+        onClick={(event) => {
+          event.preventDefault()
+          void handleDeleteSubCategory()
+        }}
+        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+      >
+        {subCategoryDeleting ? "Deleting..." : "Delete"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
       </section>
     </TooltipProvider>
   )

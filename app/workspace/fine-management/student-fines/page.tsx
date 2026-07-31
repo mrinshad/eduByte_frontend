@@ -29,6 +29,10 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -60,6 +64,8 @@ import {
   getStudentAdmissionAndNameWithEnrollment,
   createStudentFine,
   updateStudentFine,
+  deleteFineType,
+  deleteStudentFine,
   type FineType,
   type StudentFine,
   type StudentAdmissionAndNameWithEnrollment,
@@ -101,6 +107,12 @@ export default function Page() {
   const [editingFineType, setEditingFineType] = useState<FineType | null>(null)
   const [names, setNames] = useState<string[]>([""])
   const [submitting, setSubmitting] = useState(false)
+
+  const [fineTypeToDelete, setFineTypeToDelete] = useState<FineType | null>(null)
+  const [isDeletingFineType, setIsDeletingFineType] = useState(false)
+
+  const [fineToDelete, setFineToDelete] = useState<StudentFine | null>(null)
+  const [isDeletingFine, setIsDeletingFine] = useState(false)
 
   async function loadFineTypes() {
     setLoading(true)
@@ -385,6 +397,39 @@ export default function Page() {
     }
   }
 
+  async function handleDeleteFineType() {
+    if (!fineTypeToDelete) return
+    try {
+      setIsDeletingFineType(true)
+      await deleteFineType(fineTypeToDelete.id)
+      toast.success("Fine Type Deleted")
+      setFineTypeToDelete(null)
+      await loadFineTypes()
+    } catch (error) {
+      const parsed = parseApiError(error, "Failed to delete fine type")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setIsDeletingFineType(false)
+    }
+  }
+
+  async function handleDeleteFine() {
+    if (!fineToDelete) return
+    try {
+      setIsDeletingFine(true)
+      await deleteStudentFine(fineToDelete.id)
+      toast.success("Student Fine Deleted")
+      setFineToDelete(null)
+      await loadFines()
+    } catch (error) {
+      const parsed = parseApiError(error, "Failed to delete student fine")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setIsDeletingFine(false)
+    }
+  }
   // ---------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------
@@ -492,9 +537,19 @@ export default function Page() {
                   <h3 className="font-semibold text-sm sm:text-base text-slate-950 dark:text-slate-100 truncate">
                     {fineType.name}
                   </h3>
-                  <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={() => setFineTypeToDelete(fineType)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -691,6 +746,7 @@ export default function Page() {
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="Delete Fine"
+                          onClick={() => setFineToDelete(row)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -917,6 +973,53 @@ export default function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!fineTypeToDelete} onOpenChange={(open) => { if (!open) setFineTypeToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{fineTypeToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this fine type. This can't be undone, and it will fail if any student fines already use it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFineType}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingFineType}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteFineType()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingFineType ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!fineToDelete} onOpenChange={(open) => { if (!open) setFineToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this fine for "{fineToDelete?.student}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the "{fineToDelete?.fine}" fine ({fineToDelete?.amount}) for admission no. {fineToDelete?.admissionNumber}. This can't be undone, and it may fail if a payment has already been recorded against it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFine}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingFine}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteFine()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingFine ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
