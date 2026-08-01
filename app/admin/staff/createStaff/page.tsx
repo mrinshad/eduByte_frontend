@@ -234,7 +234,23 @@ export default function Page() {
                 // (same call the staff listing page uses) and find the
                 // record client-side, rather than calling getStaffById.
                 const response = await getStaff();
-                const record = response.data.find((s) => s.id === staffId);
+
+                // `staffId` from the URL is always a string, but the API may
+                // return `id` as a number (or as a string that has whitespace,
+                // etc). Compare as normalized strings so a type mismatch
+                // doesn't silently fail to find the record.
+                const list = Array.isArray(response?.data) ? response.data : [];
+                const record = list.find(
+                    (s) => String(s.id).trim() === String(staffId).trim()
+                );
+
+                if (process.env.NODE_ENV !== "production") {
+                    // Temporary diagnostics — safe to remove once loading is confirmed working.
+                    console.log("[staff/edit] staffId from URL:", staffId);
+                    console.log("[staff/edit] staff list length:", list.length);
+                    console.log("[staff/edit] matched record:", record);
+                }
+
                 if (record) {
                     setEmployeeCode(record.employeeCode ?? "");
                     setName(record.name ?? "");
@@ -247,7 +263,7 @@ export default function Page() {
                 }
             } catch (error) {
                 console.error("Failed to load staff:", error);
-                toast.error("Failed to load staff record");
+                toast.error(getErrorMessage(error, "Failed to load staff record"));
             } finally {
                 setLoadingStaff(false);
             }
@@ -299,17 +315,17 @@ export default function Page() {
             }
         } catch (error) {
             console.error("Submit error:", error);
-    const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
-    const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
+            const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
+            const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
 
-    if (parsed.field) {
-        setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
-    }
-    toast.error(parsed.message);
+            if (parsed.field) {
+                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
+            }
+            toast.error(parsed.message);
 
-    if (parsed.isAuthError) {
-        router.push("/login"); // or wherever your login route is
-    }
+            if (parsed.isAuthError) {
+                router.push("/login"); // or wherever your login route is
+            }
         } finally {
             setSubmitting(false);
         }
