@@ -177,10 +177,12 @@ export async function getExpenseAccountsNamesandIds() {
 // Staff (for the Staff dropdown on the Create Expense form)
 // ---------------------------------------------------------------------
 
-export async function getStaffNamesAndIds() {
-  const payload = (await apiFetch("/api/staff")) as ApiSuccess<StaffName[]>;
-
-  return payload.data ?? [];
+export async function getStaffNamesAndIds(): Promise<StaffName[]> {
+  const payload = (await apiFetch("/api/staff")) as ApiSuccess<{
+    items: StaffName[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }>;
+  return payload.data?.items ?? [];
 }
 
 // ---------------------------------------------------------------------
