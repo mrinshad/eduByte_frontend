@@ -74,6 +74,7 @@ export interface GetStudentsParams {
   page?: number;
   limit?: number;
   search?: string;
+  className?: string;
   sortBy?: string;
   order?: "asc" | "desc";
 }
@@ -99,6 +100,7 @@ export async function getStudents({
   page = 1,
   limit = 10,
   search = "",
+  className = "", 
   sortBy = "admissionNumber",
   order = "desc",
 }: GetStudentsParams = {}) {
@@ -109,7 +111,9 @@ export async function getStudents({
     sortBy,
     order,
   });
-
+   if (className) {
+    params.set("className", className);   // ← add this
+  }
   const payload = (await apiFetch(
     `/api/students?${params.toString()}`
   )) as {

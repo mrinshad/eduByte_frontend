@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import {
   Dialog,
   DialogContent,
@@ -389,7 +390,7 @@ export default function Page() {
   // Render
   // ---------------------------------------------------------------------
   return (
-    <section className="w-full px-4 sm:px-6 py-4 space-y-6 max-w-7xl mx-auto">
+    <section className="w-full px-2 sm:px-6 py-4 space-y-6  mx-auto">
 
       {/* Header Panel — title/description on left, search + button on right */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -769,154 +770,64 @@ export default function Page() {
       </div>
 
       {/* New / Edit Fine Primary Form Dialog */}
-      <Dialog
+      <ReusableFormDialog
         open={newFineOpen}
         onOpenChange={(value) => {
           setNewFineOpen(value)
-          if (!value) {
-            resetFineForm()
-          }
+          if (!value) resetFineForm()
         }}
-      >
-        <DialogContent className="w-[92vw] sm:max-w-[500px] rounded-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">
-              {editingFineId ? "Edit Student Fine" : "Create Student Fine"}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">Create a fine and assign it to a student.</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-3">
-            {/* Student Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Student<span className="text-red-600 ml-0.5">*</span>
-              </label>
-              <select
-                value={fineForm.studentId}
-                onChange={(e) => {
-                  setFineForm((prev) => ({ ...prev, studentId: e.target.value }))
-                  setFineFieldErrors((prev) => ({ ...prev, studentId: undefined }))
-                }}
-                className={cn(
-                  "h-8 w-full min-w-0 rounded-xl border border-input bg-transparent px-2.5 py-1 text-sm text-slate-950 outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-slate-50",
-                  fineFieldErrors.studentId && fieldErrorClass
-                )}
-              >
-                <option value="" disabled>
-                  Select Student
-                </option>
-                {students.length === 0 ? (
-                  <option value="" disabled>
-                    No students found
-                  </option>
-                ) : (
-                  students.map((student) => (
-                    <option key={student.id} value={student.enrollmentId}>
-                      {student.admissionNumber} - {student.studentName}
-                    </option>
-                  ))
-                )}
-              </select>
-              <FieldError>{fineFieldErrors.studentId}</FieldError>
-            </div>
-
-            {/* Fine Type Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Fine Type<span className="text-red-600 ml-0.5">*</span>
-              </label>
-              <Select
-                value={fineForm.fineTypeId}
-                onValueChange={(value) => {
-                  setFineForm((prev) => ({ ...prev, fineTypeId: value }))
-                  setFineFieldErrors((prev) => ({ ...prev, fineTypeId: undefined }))
-                }}
-              >
-                <SelectTrigger
-                  className={cn(
-                    "w-full min-w-0 overflow-hidden rounded-xl",
-                    fineFieldErrors.fineTypeId && fieldErrorClass
-                  )}
-                >
-                  <SelectValue placeholder="Select Fine Type" className="truncate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fineTypes.map((fine) => (
-                    <SelectItem key={fine.id} value={fine.id}>
-                      {fine.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError>{fineFieldErrors.fineTypeId}</FieldError>
-            </div>
-
-            {/* Amount */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Amount<span className="text-red-600 ml-0.5">*</span>
-              </label>
-              <Input
-                type="number"
-                min={0}
-                className={cn("appearance-none rounded-xl", fineFieldErrors.amount && fieldErrorClass)}
-                onWheel={(e) => e.currentTarget.blur()}
-                placeholder="Enter Amount"
-                value={fineForm.amount}
-                onChange={(e) => {
-                  setFineForm((prev) => ({ ...prev, amount: e.target.value }))
-                  setFineFieldErrors((prev) => ({ ...prev, amount: undefined }))
-                }}
-              />
-              <FieldError>{fineFieldErrors.amount}</FieldError>
-            </div>
-
-            {/* Reason */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Reason<span className="text-red-600 ml-0.5">*</span>
-              </label>
-              <Input
-                placeholder="Enter Reason"
-                value={fineForm.reason}
-                onChange={(e) => {
-                  setFineForm((prev) => ({ ...prev, reason: e.target.value }))
-                  setFineFieldErrors((prev) => ({ ...prev, reason: undefined }))
-                }}
-                className={cn("rounded-xl", fineFieldErrors.reason && fieldErrorClass)}
-              />
-              <FieldError>{fineFieldErrors.reason}</FieldError>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto rounded-xl"
-              disabled={fineSubmitting}
-              onClick={() => {
-                resetFineForm()
-                setNewFineOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => void handleSaveFine()} disabled={fineSubmitting} className="w-full sm:w-auto rounded-xl">
-              {fineSubmitting ? (
-                <span className="flex items-center gap-1.5">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {editingFineId ? "Updating..." : "Creating..."}
-                </span>
-              ) : editingFineId ? (
-                "Update Fine"
-              ) : (
-                "Create Fine"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        theme="vehicle"
+        title={editingFineId ? "Edit Student Fine" : "Create Student Fine"}
+        description="Create a fine and assign it to a student."
+        isEditing={!!editingFineId}
+        isSaving={fineSubmitting}
+        submitLabel="Create Fine"
+        editSubmitLabel="Update Fine"
+        errors={fineFieldErrors}
+        fields={[
+          {
+            type: "combobox",
+            name: "studentId",
+            label: "Student",
+            required: true,
+            placeholder: "Select Student",
+            searchPlaceholder: "Search by name or admission no...",   // ← new
+            emptyText: "No matching students found.",
+            options: students.map((s) => ({
+              label: `${s.admissionNumber} - ${s.studentName}`,
+              value: s.enrollmentId,
+            })),
+          },
+          {
+            type: "select",
+            name: "fineTypeId",
+            label: "Fine Type",
+            required: true,
+            placeholder: "Select Fine Type",
+            options: fineTypes.map((f) => ({ label: f.name, value: f.id })),
+          },
+          {
+            type: "number",
+            name: "amount",
+            label: "Amount",
+            required: true,
+            placeholder: "Enter Amount",
+          },
+          {
+            type: "text",
+            name: "reason",
+            label: "Reason",
+            required: true,
+            placeholder: "Enter Reason",
+          },
+        ]}
+        values={fineForm}
+        onChange={(name, value) => {
+          setFineForm((prev) => ({ ...prev, [name]: value }))
+          setFineFieldErrors((prev) => ({ ...prev, [name]: undefined }))
+        }}
+        onSubmit={() => void handleSaveFine()}
+      />
     </section>
   )
 }

@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/vehicle";
 
 import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2 } from "lucide-react"
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -166,26 +167,26 @@ export default function Page() {
   };
   return (
     <section className="px-6 py-4">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Vehicles</h1>
-          <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Manage vehicle records, assignments, routes, and transport-related information.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Vehicles</h1>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Manage vehicle records, assignments, routes, and transport-related information.</p>
+          </div>
         </div>
-      </div>
-      <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditingId(null);
-                setVehicleName("");
-                setVehicleNumber("");
-                setDriverName("");
-              }}
-              className="
+        <Button
+          onClick={() => {
+            setEditingId(null);
+            setVehicleName("");
+            setVehicleNumber("");
+            setDriverName("");
+            setOpen(true);   // <-- Add this line
+            console.log("Create Vehicle clicked");
+          }}
+          className="
                           bg-[#556043]
                           text-white
                           hover:bg-[#4a533b]
@@ -193,130 +194,40 @@ export default function Page() {
                           dark:text-slate-900
                           dark:hover:bg-slate-200
                         "
-            >
-              <Plus className="h-4 w-4 mr-2 dark:text-slate-900" />
-              Create Vehicle
-            </Button>
-          </DialogTrigger>
+        
+        >
+          Create Vehicle
+        </Button>
+      </div>
 
-          <DialogContent
-            className="
-                          w-[95vw]
-                          max-w-md
-                          sm:max-w-lg
-                          bg-[#5f694d]
-                          dark:bg-slate-900
-                          text-white
-                          dark:text-slate-100
-                          border
-                          border-[#6a7459]
-                          dark:border-slate-800
-                          rounded-2xl
-                          p-0
-                          overflow-hidden
-                        "
-          >
-            <div className="p-6">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-white">
-                  {editingId ? "Edit Vehicle" : "Create Vehicle"}
-                </DialogTitle>
-
-                <DialogDescription className="text-slate-200">
-                  {editingId
-                    ? "Update vehicle information."
-                    : "Add a new vehicle and assign driver information."}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="mt-6 space-y-5">
-                <div className="space-y-2">
-                  <Label className="text-white">Vehicle Name</Label>
-                  <Input
-                    value={vehicleName}
-                    onChange={(e) => setVehicleName(e.target.value)}
-                    placeholder="School Bus"
-                    className="
-                                bg-[#667155]
-                                border-[#8b9478]
-                                text-white
-                                dark:bg-slate-800
-                                dark:border-slate-700
-                                dark:text-slate-100
-                              "
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-white">Vehicle Number</Label>
-                  <Input
-                    value={vehicleNumber}
-                    onChange={(e) => setVehicleNumber(e.target.value)}
-                    placeholder="KL 01 AB 1234"
-                    className="
-                                bg-[#667155]
-                                border-[#8b9478]
-                                text-white
-                                dark:bg-slate-800
-                                dark:border-slate-700
-                                dark:text-slate-100
-                              "
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-white">Driver Name</Label>
-                  <Input
-                    value={driverName}
-                    onChange={(e) => setDriverName(e.target.value)}
-                    placeholder="John Mathew"
-                    className="
-                                bg-[#667155]
-                                border-[#8b9478]
-                                text-white
-                                dark:bg-slate-800
-                                dark:border-slate-700
-                                dark:text-slate-100
-                              "
-                  />
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter
-              className="
-                            bg-[#6a7459]
-                            dark:bg-slate-950
-                            border-t
-                            dark:border-slate-800
-                            p-6
-                            flex-row
-                            justify-end
-                            gap-3
-                          "
-            >
-              <Button
-                variant="outline"
-                onClick={() => setOpen(false)}
-                className="rounded-full border-[#8b9478] bg-transparent text-white"
-              >
-                Cancel
-              </Button>
-
-              <Button
-                onClick={handleSaveVehicle}
-                disabled={loading}
-                className="rounded-full bg-white text-[#556043]"
-              >
-                {loading
-                  ? "Saving..."
-                  : editingId
-                    ? "Update"
-                    : "Save"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <div className="flex justify-end">
+        <ReusableFormDialog
+          open={open}
+          onOpenChange={setOpen}
+          theme="vehicle"
+          title={editingId ? "Edit Vehicle" : "Create Vehicle"}
+          description={
+            editingId
+              ? "Update vehicle information."
+              : "Add a new vehicle and assign driver information."
+          }
+          isEditing={!!editingId}
+          isSaving={loading}
+          submitLabel="Save"
+          editSubmitLabel="Update"
+          fields={[
+            { type: "text", name: "vehicleName", label: "Vehicle Name", placeholder: "School Bus" },
+            { type: "text", name: "vehicleNumber", label: "Vehicle Number", placeholder: "KL 01 AB 1234" },
+            { type: "text", name: "driverName", label: "Driver Name", placeholder: "John Mathew" },
+          ]}
+          values={{ vehicleName, vehicleNumber, driverName }}
+          onChange={(name, value) => {
+            if (name === "vehicleName") setVehicleName(value)
+            if (name === "vehicleNumber") setVehicleNumber(value)
+            if (name === "driverName") setDriverName(value)
+          }}
+          onSubmit={handleSaveVehicle}
+        />
       </div>
 
       {loadingVehicles ? (

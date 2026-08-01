@@ -6,7 +6,6 @@ import { Tags, Layers3, Pencil, Plus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import PageHeader from "@/components/common/pageHeader"
 import { useRouter } from "next/navigation";
 import {
@@ -16,22 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
 import {
   createExpenseCategory,
@@ -50,9 +35,7 @@ import {
 // text-shadow on colored headers so it stays legible over any background).
 const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
 const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
-const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
-const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
@@ -78,12 +61,6 @@ export default function Page() {
   const [accounts, setAccounts] = React.useState<AccountName[]>([])
 
   const router = useRouter();
-
-  const accountNameById = React.useMemo(() => {
-    const map = new Map<string, string>()
-    accounts.forEach((a) => map.set(a.id, a.name))
-    return map
-  }, [accounts])
 
   // The category selected in the left card scopes the sub category card on
   // the right — same relationship the Class card has with the Division card.
@@ -121,13 +98,13 @@ export default function Page() {
   }
 
   async function loadAccounts() {
-  try {
-    const data = await getExpenseAccountsNamesandIds()
-    setAccounts(data)
-  } catch (error) {
-    toast.error("Failed to load accounts")
+    try {
+      const data = await getExpenseAccountsNamesandIds()
+      setAccounts(data)
+    } catch (error) {
+      toast.error("Failed to load accounts")
+    }
   }
-}
 
   React.useEffect(() => {
     void loadCategories()
@@ -136,32 +113,51 @@ export default function Page() {
   }, [])
 
   // ---------------------------------------------------------------------
-  // Expense Category — add/edit dialog
+  // Expense Category — add/edit dialog (now via ReusableFormDialog)
   // ---------------------------------------------------------------------
   const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false)
   const [categoryDialogMode, setCategoryDialogMode] = React.useState<"add" | "edit">("add")
-  const [categoryNameDraft, setCategoryNameDraft] = React.useState("")
-  const [categoryDescriptionDraft, setCategoryDescriptionDraft] = React.useState("")
+  const [categoryValues, setCategoryValues] = React.useState<{ name: string; description: string }>({
+    name: "",
+    description: "",
+  })
+  const [categoryErrors, setCategoryErrors] = React.useState<Record<string, string | undefined>>({})
   const [categorySaving, setCategorySaving] = React.useState(false)
+
+  const categoryFields: FormField[] = [
+    { type: "text", name: "name", label: "Category Name", placeholder: "e.g. Office Expense", required: true },
+    { type: "text", name: "description", label: "Description", placeholder: "e.g. Category for office expense" },
+  ]
 
   function openCategoryDialog(mode: "add" | "edit") {
     setCategoryDialogMode(mode)
-    setCategoryNameDraft(mode === "edit" ? selectedCategory?.name ?? "" : "")
-    setCategoryDescriptionDraft(mode === "edit" ? selectedCategory?.description ?? "" : "")
+    setCategoryValues({
+      name: mode === "edit" ? selectedCategory?.name ?? "" : "",
+      description: mode === "edit" ? selectedCategory?.description ?? "" : "",
+    })
+    setCategoryErrors({})
     setCategoryDialogOpen(true)
   }
 
   function closeCategoryDialog() {
     setCategoryDialogOpen(false)
-    setCategoryNameDraft("")
-    setCategoryDescriptionDraft("")
+    setCategoryValues({ name: "", description: "" })
+    setCategoryErrors({})
+  }
+
+  function handleCategoryFieldChange(name: string, value: string) {
+    setCategoryValues((prev) => ({ ...prev, [name]: value }))
+    if (categoryErrors[name]) {
+      setCategoryErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
   }
 
   async function handleSaveCategory() {
-    const name = categoryNameDraft.trim()
-    const description = categoryDescriptionDraft.trim()
+    const name = categoryValues.name.trim()
+    const description = categoryValues.description.trim()
 
     if (!name) {
+      setCategoryErrors({ name: "Enter a category name" })
       toast.error("Enter a category name")
       return
     }
@@ -191,42 +187,75 @@ export default function Page() {
   const [subCategoryDialogOpen, setSubCategoryDialogOpen] = React.useState(false)
   const [subCategoryDialogMode, setSubCategoryDialogMode] = React.useState<"add" | "edit">("add")
   const [editingSubCategoryId, setEditingSubCategoryId] = React.useState<string | null>(null)
-  const [subCategoryNameDraft, setSubCategoryNameDraft] = React.useState("")
-  const [subCategoryAccountDraft, setSubCategoryAccountDraft] = React.useState("")
-  const [subCategoryDescriptionDraft, setSubCategoryDescriptionDraft] = React.useState("")
+  const [subCategoryValues, setSubCategoryValues] = React.useState<{
+    name: string
+    expenseAccountId: string
+    description: string
+  }>({ name: "", expenseAccountId: "", description: "" })
+  const [subCategoryErrors, setSubCategoryErrors] = React.useState<Record<string, string | undefined>>({})
   const [subCategorySaving, setSubCategorySaving] = React.useState(false)
+
+  const subCategoryFields: FormField[] = [
+    { type: "text", name: "name", label: "Sub Category Name", placeholder: "e.g. Fuel Expense", required: true },
+    {
+      type: "select",
+      name: "expenseAccountId",
+      label: "Expense Account",
+      placeholder: "Select Expense Account",
+      required: true,
+      options: accounts.map((account) => ({ label: account.name, value: account.id })),
+    },
+    {
+      type: "text",
+      name: "description",
+      label: "Description",
+      placeholder: "e.g. Vehicle subcategory: fuel expense",
+    },
+  ]
 
   function openSubCategoryDialog(mode: "add" | "edit", subCategory?: ExpenseSubCategory) {
     setSubCategoryDialogMode(mode)
     setEditingSubCategoryId(mode === "edit" ? subCategory?.id ?? null : null)
-    setSubCategoryNameDraft(mode === "edit" ? subCategory?.name ?? "" : "")
-    setSubCategoryAccountDraft(mode === "edit" ? subCategory?.expenseAccountId ?? "" : "")
-    setSubCategoryDescriptionDraft(mode === "edit" ? subCategory?.description ?? "" : "")
+    setSubCategoryValues({
+      name: mode === "edit" ? subCategory?.name ?? "" : "",
+      expenseAccountId: mode === "edit" ? subCategory?.expenseAccountId ?? "" : "",
+      description: mode === "edit" ? subCategory?.description ?? "" : "",
+    })
+    setSubCategoryErrors({})
     setSubCategoryDialogOpen(true)
   }
 
   function closeSubCategoryDialog() {
     setSubCategoryDialogOpen(false)
     setEditingSubCategoryId(null)
-    setSubCategoryNameDraft("")
-    setSubCategoryAccountDraft("")
-    setSubCategoryDescriptionDraft("")
+    setSubCategoryValues({ name: "", expenseAccountId: "", description: "" })
+    setSubCategoryErrors({})
+  }
+
+  function handleSubCategoryFieldChange(name: string, value: string) {
+    setSubCategoryValues((prev) => ({ ...prev, [name]: value }))
+    if (subCategoryErrors[name]) {
+      setSubCategoryErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
   }
 
   async function handleSaveSubCategory() {
-    const name = subCategoryNameDraft.trim()
-    const description = subCategoryDescriptionDraft.trim()
+    const name = subCategoryValues.name.trim()
+    const description = subCategoryValues.description.trim()
+    const expenseAccountId = subCategoryValues.expenseAccountId
 
     if (!selectedCategoryId) {
       toast.error("Select a category first")
       return
     }
-    if (!name) {
-      toast.error("Enter a sub category name")
-      return
-    }
-    if (!subCategoryAccountDraft) {
-      toast.error("Select an expense account")
+
+    const nextErrors: Record<string, string | undefined> = {}
+    if (!name) nextErrors.name = "Enter a sub category name"
+    if (!expenseAccountId) nextErrors.expenseAccountId = "Select an expense account"
+
+    if (Object.keys(nextErrors).length > 0) {
+      setSubCategoryErrors(nextErrors)
+      toast.error(nextErrors.name ?? nextErrors.expenseAccountId ?? "Fix the highlighted fields")
       return
     }
 
@@ -236,14 +265,14 @@ export default function Page() {
         await createExpenseSubCategory({
           categoryId: selectedCategoryId,
           name,
-          expenseAccountId: subCategoryAccountDraft,
+          expenseAccountId,
           description,
         })
         toast.success("Sub category created")
       } else if (editingSubCategoryId) {
         await updateExpenseSubCategory(editingSubCategoryId, {
           name,
-          expenseAccountId: subCategoryAccountDraft,
+          expenseAccountId,
           description,
         })
         toast.success("Sub category updated")
@@ -463,7 +492,6 @@ export default function Page() {
                             {subCategory.name}
                           </p>
                           <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
-                            
                             {subCategory.description ? `  ${subCategory.description}` : ""}
                           </p>
                         </div>
@@ -485,120 +513,53 @@ export default function Page() {
           </div>
         </div>
 
-
         {/* ------------------------------------------------------------- */}
         {/* Create / Edit Expense Category Dialog */}
         {/* ------------------------------------------------------------- */}
-        <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {categoryDialogMode === "add" ? "Add Category" : "Edit Category"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {categoryDialogMode === "add"
-                  ? "Create a new expense category."
-                  : "Update the selected expense category."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Category Name</label>
-                <Input
-                  className="mt-2"
-                  value={categoryNameDraft}
-                  onChange={(event) => setCategoryNameDraft(event.target.value)}
-                  placeholder="e.g. Office Expense"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Description</label>
-                <Input
-                  className="mt-2"
-                  value={categoryDescriptionDraft}
-                  onChange={(event) => setCategoryDescriptionDraft(event.target.value)}
-                  placeholder="e.g. Category for office expense"
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={closeCategoryDialog}>
-                Cancel
-              </Button>
-              <Button onClick={() => void handleSaveCategory()} disabled={categorySaving}>
-                {categorySaving ? "Saving..." : categoryDialogMode === "add" ? "Add" : "Save"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ReusableFormDialog
+          open={categoryDialogOpen}
+          onOpenChange={(open) => (open ? setCategoryDialogOpen(true) : closeCategoryDialog())}
+          theme="vehicle"
+          title={categoryDialogMode === "add" ? "Add Category" : "Edit Category"}
+          description={
+            categoryDialogMode === "add"
+              ? "Create a new expense category."
+              : "Update the selected expense category."
+          }
+          fields={categoryFields}
+          values={categoryValues}
+          errors={categoryErrors}
+          onChange={handleCategoryFieldChange}
+          onSubmit={handleSaveCategory}
+          isSaving={categorySaving}
+          isEditing={categoryDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
 
         {/* ------------------------------------------------------------- */}
         {/* Create / Edit Expense Sub Category Dialog */}
         {/* ------------------------------------------------------------- */}
-        <Dialog open={subCategoryDialogOpen} onOpenChange={setSubCategoryDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {subCategoryDialogMode === "add" ? "Add Sub Category" : "Edit Sub Category"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {subCategoryDialogMode === "add"
-                  ? `Create a sub category under ${selectedCategory?.name || "the selected category"}.`
-                  : "Update the selected sub category."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Sub Category Name</label>
-                <Input
-                  className="mt-2"
-                  value={subCategoryNameDraft}
-                  onChange={(event) => setSubCategoryNameDraft(event.target.value)}
-                  placeholder="e.g. Fuel Expense"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Expense Account</label>
-                <Select value={subCategoryAccountDraft} onValueChange={setSubCategoryAccountDraft}>
-                  <SelectTrigger className="w-full rounded-xl mt-2">
-                    <SelectValue placeholder="Select Expense Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Description</label>
-                <Input
-                  className="mt-2"
-                  value={subCategoryDescriptionDraft}
-                  onChange={(event) => setSubCategoryDescriptionDraft(event.target.value)}
-                  placeholder="e.g. Vehicle subcategory: fuel expense"
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={closeSubCategoryDialog}>
-                Cancel
-              </Button>
-              <Button onClick={() => void handleSaveSubCategory()} disabled={subCategorySaving}>
-                {subCategorySaving ? "Saving..." : subCategoryDialogMode === "add" ? "Add" : "Save"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ReusableFormDialog
+          open={subCategoryDialogOpen}
+          onOpenChange={(open) => (open ? setSubCategoryDialogOpen(true) : closeSubCategoryDialog())}
+          theme="vehicle"
+          title={subCategoryDialogMode === "add" ? "Add Sub Category" : "Edit Sub Category"}
+          description={
+            subCategoryDialogMode === "add"
+              ? `Create a sub category under ${selectedCategory?.name || "the selected category"}.`
+              : "Update the selected sub category."
+          }
+          fields={subCategoryFields}
+          values={subCategoryValues}
+          errors={subCategoryErrors}
+          onChange={handleSubCategoryFieldChange}
+          onSubmit={handleSaveSubCategory}
+          isSaving={subCategorySaving}
+          isEditing={subCategoryDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
       </section>
     </TooltipProvider>
   )

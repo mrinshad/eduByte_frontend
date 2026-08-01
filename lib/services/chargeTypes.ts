@@ -32,13 +32,14 @@ return apiFetch("/api/chargetype", {
         body: JSON.stringify(input)
     })
 }
-export async function getChargeTypes() {
-const payload = (await apiFetch("/api/chargetype")) as {
-        success: boolean,
-        message?: string,
-        data?: ChargeTypes[]
-    }
-return payload.data ?? []
+export async function getChargeTypes(frequency?: string) {
+  const query = frequency ? `?frequency=${frequency}` : ""
+  const payload = (await apiFetch(`/api/chargetype${query}`)) as {
+    success: boolean,
+    message?: string,
+    data?: ChargeTypes[]
+  }
+  return payload.data ?? []
 }
 export async function updateChargeType(
   id: string,
