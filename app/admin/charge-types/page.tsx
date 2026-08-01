@@ -96,40 +96,40 @@ export default function Page() {
     }
   }
   const fieldLabels: Record<keyof chargeType, string> = {
-  name: "Fee Type Name",
-  category: "Category",
-  frequency: "Frequency",
-  incomeAccountId: "Income Account",
-}
-
-const handleSave = async () => {
-  const missingFields = (Object.keys(fieldLabels) as (keyof chargeType)[])
-    .filter((key) => !formData[key])
-    .map((key) => fieldLabels[key])
-
-  if (missingFields.length > 0) {
-    toast.warning(`Please fill: ${missingFields.join(", ")}`)
-    return
+    name: "Fee Type Name",
+    category: "Category",
+    frequency: "Frequency",
+    incomeAccountId: "Income Account",
   }
 
-  try {
-    setIsSaving(true)
-    if (editingId) {
-      await updateChargeType(editingId, formData)
-      toast.success("Charge Type Updated Successfully")
-    } else {
-      await createChargeType(formData)
-      toast.success("Charge Type Created Successfully")
+  const handleSave = async () => {
+    const missingFields = (Object.keys(fieldLabels) as (keyof chargeType)[])
+      .filter((key) => !formData[key])
+      .map((key) => fieldLabels[key])
+
+    if (missingFields.length > 0) {
+      toast.warning(`Please fill: ${missingFields.join(", ")}`)
+      return
     }
-    await loadChargeTypes()
-    resetForm()
-    setOpen(false)
-  } catch (error) {
-    toast.error("Operation failed")
-  } finally {
-    setIsSaving(false)
+
+    try {
+      setIsSaving(true)
+      if (editingId) {
+        await updateChargeType(editingId, formData)
+        toast.success("Charge Type Updated Successfully")
+      } else {
+        await createChargeType(formData)
+        toast.success("Charge Type Created Successfully")
+      }
+      await loadChargeTypes()
+      resetForm()
+      setOpen(false)
+    } catch (error) {
+      toast.error("Operation failed")
+    } finally {
+      setIsSaving(false)
+    }
   }
-}
 
   // 👇 form shape described once — swap in `accounts` once it's loaded
   const chargeTypeFields: FormField[] = [
@@ -313,30 +313,30 @@ const handleSave = async () => {
         isEditing={!!editingId}
       />
       <AlertDialog open={!!chargeTypeToDelete} onOpenChange={(open) => { if (!open) setChargeTypeToDelete(null) }}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete "{chargeTypeToDelete?.name}"?</AlertDialogTitle>
-      <AlertDialogDescription>
-       Warning: Deleting "{chargeTypeToDelete?.name}" will permanently remove it from fee structures and related records.
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{chargeTypeToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Warning: Deleting "{chargeTypeToDelete?.name}" will permanently remove it from fee structures and related records.
 
-If fees using this charge type are already assigned to student admissions, the deletion will fail. This action cannot be undone.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        disabled={isDeleting}
-        onClick={(event) => {
-          event.preventDefault()
-          void handleDelete()
-        }}
-        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-      >
-        {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+              If fees using this charge type are already assigned to student admissions, the deletion will fail. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDelete()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" />Deleting...</>) : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

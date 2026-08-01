@@ -130,3 +130,12 @@ export async function EditFeeStructure(
         body: JSON.stringify(input),
     });
 }
+
+export async function deleteFeeStructure(id: string) {
+  return apiFetch(`/api/feestructure/${id}`, {
+    method: "DELETE",
+  }) as Promise<{
+    success: boolean;
+    message: string;
+  }>;
+}

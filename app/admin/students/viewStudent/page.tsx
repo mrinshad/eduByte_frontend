@@ -10,13 +10,29 @@ import {
   Phone,
   User,
   Users,
+  Pencil,
+  Trash2,
+  Loader2,
 } from "lucide-react"
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+import { toast } from "sonner"
+import { getStudentById, deleteStudent, type Student } from "@/lib/services/student"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getStudentById, type Student } from "@/lib/services/student"
 import { refreshLateFines } from "@/lib/services/lateFine"
 import { formatDateOnly } from "@/lib/utils"
 
@@ -226,6 +242,8 @@ export default function Page() {
 
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   useEffect(() => {
     async function loadStudent() {
@@ -269,6 +287,30 @@ export default function Page() {
     )
   }
 
+  const handleDeleteStudent = async () => {
+  if (!student) return
+
+  setIsDeleting(true)
+
+  try {
+    await deleteStudent(student.id)
+
+    toast.success("Student deleted successfully")
+
+    router.push("/admin/students")
+  } catch (error) {
+    console.error(error)
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Failed to delete student"
+    )
+  } finally {
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+}
+
   const admissionStatus = student.admissionStatus ?? "NOT_ADMITTED"
 
   return (
@@ -290,6 +332,7 @@ export default function Page() {
           <Badge variant="outline" className={statusTone(student.status)}>
             {student.status}
           </Badge>
+
           <Badge
             variant="outline"
             className={
@@ -300,6 +343,26 @@ export default function Page() {
           >
             {admissionStatus}
           </Badge>
+
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() =>
+              router.push(`/admin/students/createStudent?id=${student.id}`)
+            }
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
+
+          <Button
+            variant="destructive"
+            className="gap-2"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -395,6 +458,48 @@ export default function Page() {
           </InfoSection>
         </div>
       </div>
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete "{student.studentName}"?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
+              This will permanently delete this student record. This can't be
+              undone, and it will fail if the student has associated fee,
+              admission, or academic records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault()
+                void handleDeleteStudent()
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
