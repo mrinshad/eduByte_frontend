@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import {
     createStaff,
     updateStaff,
-    getStaff,
+    getStaffById,
     StaffInput,
 } from "@/lib/services/staff";
 
@@ -224,53 +224,33 @@ export default function Page() {
 
     // ── Edit mode: load existing staff record ──────────────────────────────
     useEffect(() => {
-        if (!isEditMode || !staffId) return;
+    if (!isEditMode || !staffId) return;
+    const id = staffId; // narrowed to string, safe to use in the closure below
 
-        async function loadStaff() {
-            try {
-                setLoadingStaff(true);
-                // NOTE: GET /api/staff/:id isn't a documented endpoint — only
-                // list, create, and update are. So we fetch the full list
-                // (same call the staff listing page uses) and find the
-                // record client-side, rather than calling getStaffById.
-                const response = await getStaff();
-
-                // `staffId` from the URL is always a string, but the API may
-                // return `id` as a number (or as a string that has whitespace,
-                // etc). Compare as normalized strings so a type mismatch
-                // doesn't silently fail to find the record.
-                const list = Array.isArray(response?.data) ? response.data : [];
-                const record = list.find(
-                    (s) => String(s.id).trim() === String(staffId).trim()
-                );
-
-                if (process.env.NODE_ENV !== "production") {
-                    // Temporary diagnostics — safe to remove once loading is confirmed working.
-                    console.log("[staff/edit] staffId from URL:", staffId);
-                    console.log("[staff/edit] staff list length:", list.length);
-                    console.log("[staff/edit] matched record:", record);
-                }
-
-                if (record) {
-                    setEmployeeCode(record.employeeCode ?? "");
-                    setName(record.name ?? "");
-                    setEmail(record.email ?? "");
-                    setPhone(record.phone ?? "");
-                    setJoiningDate(toDateInputValue(record.joiningDate));
-                    setStatus(record.status ?? "ACTIVE");
-                } else {
-                    toast.error("Staff record not found");
-                }
-            } catch (error) {
-                console.error("Failed to load staff:", error);
-                toast.error(getErrorMessage(error, "Failed to load staff record"));
-            } finally {
-                setLoadingStaff(false);
+    async function loadStaff() {
+        try {
+            setLoadingStaff(true);
+            const record = await getStaffById(id);
+            if (record) {
+                setEmployeeCode(record.employeeCode ?? "");
+                setName(record.name ?? "");
+                setEmail(record.email ?? "");
+                setPhone(record.phone ?? "");
+                setJoiningDate(toDateInputValue(record.joiningDate));
+                setStatus(record.status ?? "ACTIVE");
+            } else {
+                toast.error("Staff record not found");
             }
+        } catch (error) {
+            console.error("Failed to load staff:", error);
+            toast.error("Failed to load staff record");
+        } finally {
+            setLoadingStaff(false);
         }
+    }
 
-        loadStaff();
-    }, [isEditMode, staffId]);
+    loadStaff();
+}, [isEditMode, staffId]);
 
     // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
@@ -315,17 +295,17 @@ export default function Page() {
             }
         } catch (error) {
             console.error("Submit error:", error);
-            const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
-            const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
+    const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
+    const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
 
-            if (parsed.field) {
-                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
-            }
-            toast.error(parsed.message);
+    if (parsed.field) {
+        setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
+    }
+    toast.error(parsed.message);
 
-            if (parsed.isAuthError) {
-                router.push("/login"); // or wherever your login route is
-            }
+    if (parsed.isAuthError) {
+        router.push("/login"); // or wherever your login route is
+    }
         } finally {
             setSubmitting(false);
         }
