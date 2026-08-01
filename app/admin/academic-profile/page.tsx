@@ -335,6 +335,11 @@ export default function Page() {
   }
   const handleDeleteYear = async () => {
     if (!yearToDelete) return
+    if (yearToDelete.isActive) {
+      toast.error("Can't delete the current default academic year")
+      setYearToDelete(null)
+      return
+    }
     setIsDeletingYear(true)
     try {
       const result = await deleteAcademicYear(yearToDelete.id)
@@ -562,17 +567,29 @@ export default function Page() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className={deleteIconClass}
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    setYearToDelete(year)
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className={deleteIconClass}
+                                        disabled={year.isActive}
+                                        onClick={(event) => {
+                                          event.stopPropagation()
+                                          setYearToDelete(year)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {year.isActive && (
+                                    <TooltipContent>
+                                      <p>Can't delete the current default academic year</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
 
                                 {year.isActive ? (
                                   <Button variant="secondary" disabled>
