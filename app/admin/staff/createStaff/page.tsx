@@ -227,31 +227,39 @@ export default function Page() {
         if (!isEditMode || !staffId) return;
 
         async function loadStaff() {
-            try {
-                setLoadingStaff(true);
-                // NOTE: GET /api/staff/:id isn't a documented endpoint — only
-                // list, create, and update are. So we fetch the full list
-                // (same call the staff listing page uses) and find the
-                // record client-side, rather than calling getStaffById.
-                const response = await getStaff();
-                const record = response.data.find((s) => s.id === staffId);
-                if (record) {
-                    setEmployeeCode(record.employeeCode ?? "");
-                    setName(record.name ?? "");
-                    setEmail(record.email ?? "");
-                    setPhone(record.phone ?? "");
-                    setJoiningDate(toDateInputValue(record.joiningDate));
-                    setStatus(record.status ?? "ACTIVE");
-                } else {
-                    toast.error("Staff record not found");
-                }
-            } catch (error) {
-                console.error("Failed to load staff:", error);
-                toast.error("Failed to load staff record");
-            } finally {
-                setLoadingStaff(false);
-            }
+    try {
+        setLoadingStaff(true);
+        const response = await getStaff();
+
+        // response.data is { items: StaffListItem[]; pagination: ... }
+        // — the array lives at response.data.items, not response.data itself.
+        const record = response.data.items.find(
+            (s) => String(s.id) === String(staffId)
+        );
+
+        if (record) {
+            setEmployeeCode(record.employeeCode ?? "");
+            setName(record.name ?? "");
+            setEmail(record.email ?? "");
+            setPhone(record.phone ?? "");
+            setJoiningDate(toDateInputValue(record.joiningDate));
+            setStatus(record.status ?? "ACTIVE");
+        } else {
+            console.warn(
+                "[staff/edit] No record matched. Looking for id:",
+                staffId,
+                "Available ids:",
+                response.data.items.map((s) => s.id)
+            );
+            toast.error("Staff record not found");
         }
+    } catch (error) {
+        console.error("Failed to load staff:", error);
+        toast.error("Failed to load staff record");
+    } finally {
+        setLoadingStaff(false);
+    }
+}
 
         loadStaff();
     }, [isEditMode, staffId]);
@@ -299,17 +307,17 @@ export default function Page() {
             }
         } catch (error) {
             console.error("Submit error:", error);
-    const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
-    const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
+            const fallback = isEditMode ? "Failed to update staff" : "Failed to create staff";
+            const parsed = parseApiError(error, fallback, STAFF_DUPLICATE_MAP);
 
-    if (parsed.field) {
-        setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
-    }
-    toast.error(parsed.message);
+            if (parsed.field) {
+                setFieldErrors((prev) => ({ ...prev, [parsed.field as keyof typeof prev]: parsed.message }));
+            }
+            toast.error(parsed.message);
 
-    if (parsed.isAuthError) {
-        router.push("/login"); // or wherever your login route is
-    }
+            if (parsed.isAuthError) {
+                router.push("/login"); // or wherever your login route is
+            }
         } finally {
             setSubmitting(false);
         }
