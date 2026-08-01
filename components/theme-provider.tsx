@@ -47,7 +47,12 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      // Some synthetic keydown events (e.g. dispatched internally by
+      // cmdk/Radix Command components used in popovers like the Staff
+      // selector) can have an undefined `key`. Guard against that before
+      // calling toLowerCase(), or this throws:
+      // "Cannot read properties of undefined (reading 'toLowerCase')"
+      if (!event.key || event.key.toLowerCase() !== "d") {
         return
       }
 

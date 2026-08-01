@@ -80,6 +80,36 @@ const FieldError = ({ children }: { children?: string }) => {
 };
 
 // ---------------------------------------------------------------------
+// Defensive list-response normalizer
+// ---------------------------------------------------------------------
+// Several backend endpoints in this app return a paginated shape like
+// `{ items: T[]; pagination: {...} }` instead of a flat `T[]`. Since the
+// exact shape isn't consistent (and TypeScript's declared return types
+// don't always match runtime reality), normalize every list response
+// through this helper before storing it in state. This is what caused
+// "staffDropdown.find is not a function" — staffDropdown was actually
+// the wrapper object, not an array.
+function normalizeListResponse<T>(data: unknown): T[] {
+    if (Array.isArray(data)) return data;
+    if (
+        data &&
+        typeof data === "object" &&
+        Array.isArray((data as { items?: unknown }).items)
+    ) {
+        return (data as { items: T[] }).items;
+    }
+    if (
+        data &&
+        typeof data === "object" &&
+        Array.isArray((data as { data?: unknown }).data)
+    ) {
+        return (data as { data: T[] }).data;
+    }
+    console.warn("Unexpected list response shape, defaulting to []:", data);
+    return [];
+}
+
+// ---------------------------------------------------------------------
 // Payment split types
 // ---------------------------------------------------------------------
 
@@ -177,7 +207,7 @@ export default function Page() {
             try {
                 setLoadingCategoryList(true);
                 const data = await getExpenseCategories();
-                setCategoriesDropdown(data);
+                setCategoriesDropdown(normalizeListResponse<ExpenseCategory>(data));
             } catch (error) {
                 console.error("Failed to load expense categories:", error);
             } finally {
@@ -192,7 +222,7 @@ export default function Page() {
             try {
                 setLoadingSubCategoryList(true);
                 const data = await getExpenseSubCategories();
-                setSubCategoriesDropdown(data);
+                setSubCategoriesDropdown(normalizeListResponse<ExpenseSubCategory>(data));
             } catch (error) {
                 console.error("Failed to load expense sub categories:", error);
             } finally {
@@ -208,7 +238,7 @@ export default function Page() {
         try {
             setLoadingAccountList(true);
             const data = await getPaymentMethodAccounts();
-            setAccountsDropdown(data);
+            setAccountsDropdown(normalizeListResponse<PaymentMethodAccount>(data));
         } catch (error) {
             console.error("Failed to load accounts:", error);
         } finally {
@@ -227,7 +257,7 @@ export default function Page() {
             try {
                 setLoadingVehicleList(true);
                 const data = await getVehicles();
-                setVehiclesDropdown(data);
+                setVehiclesDropdown(normalizeListResponse<Vehicle>(data));
             } catch (error) {
                 console.error("Failed to load vehicles:", error);
             } finally {
@@ -242,7 +272,7 @@ export default function Page() {
             try {
                 setLoadingStaffList(true);
                 const data = await getStaffNamesAndIds();
-                setStaffDropdown(data);
+                setStaffDropdown(normalizeListResponse<StaffName>(data));
             } catch (error) {
                 console.error("Failed to load staff:", error);
             } finally {
@@ -298,8 +328,8 @@ export default function Page() {
                     getExpenseCategories(),
                     getExpenseSubCategories(),
                 ]);
-                setCategoriesDropdown(cats);
-                setSubCategoriesDropdown(subs);
+                setCategoriesDropdown(normalizeListResponse<ExpenseCategory>(cats));
+                setSubCategoriesDropdown(normalizeListResponse<ExpenseSubCategory>(subs));
             } catch (error) {
                 console.error("Failed to preload category data:", error);
             }
