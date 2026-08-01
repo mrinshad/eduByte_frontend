@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Undo2,
   AlertCircle,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -24,6 +25,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import StudentFineFormDialog from "@/components/common/StudentFineFormDialog";
 
 import { getStudentFineById, reverseStudentFine, type StudentFineDetail } from "@/lib/services/fineTypes";
 import { refreshLateFines } from "@/lib/services/lateFine";
@@ -96,6 +98,10 @@ export default function ViewStudentFinePage() {
   const [reverseReason, setReverseReason] = useState('');
   const [confirmReverse, setConfirmReverse] = useState(false)
 
+  // edit — opens the shared StudentFineFormDialog instead of navigating
+  // to a separate edit route.
+  const [editOpen, setEditOpen] = useState(false)
+
   const handleReverseFine = async () => {
     if (!reverseReason.trim()) {
       toast.error("Please enter a reversal reason")
@@ -132,27 +138,28 @@ export default function ViewStudentFinePage() {
   const [fine, setFine] = useState<StudentFineDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      if (!id) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const data = await getStudentFineById(id)
-        if (data?.enrollmentId) {
-          await refreshLateFines(data.enrollmentId);
-        }
-        setFine(data)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+  async function loadFine() {
+    if (!id) {
+      setLoading(false)
+      return
     }
 
-    loadData()
+    try {
+      const data = await getStudentFineById(id)
+      if (data?.enrollmentId) {
+        await refreshLateFines(data.enrollmentId);
+      }
+      setFine(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadFine()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   if (loading) {
@@ -201,14 +208,25 @@ export default function ViewStudentFinePage() {
           </div>
         </div>
 
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setReverseOpen(true)}
-        >
-          <Undo2 className="h-4 w-4 mr-2" />
-          Reverse Fine
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setReverseOpen(true)}
+          >
+            <Undo2 className="mr-2 h-4 w-4" />
+            Reverse Fine
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -293,6 +311,21 @@ export default function ViewStudentFinePage() {
           </div>
         </InfoSection>
       </div>
+
+      {/* Edit Fine dialog */}
+      <StudentFineFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        editingFineId={fine.id}
+        initialValues={{
+          enrollmentId: fine.enrollmentId ?? "",
+          fineTypeId: fine.fineId ?? "",
+          amount: String(fine.amount ?? ""),
+          reason: fine.reason ?? "",
+        }}
+        onSaved={loadFine}
+      />
+
       <Dialog open={reverseOpen} onOpenChange={setReverseOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
