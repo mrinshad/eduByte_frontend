@@ -9,6 +9,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { parseApiError } from "@/lib/api-error"
 import {
   ArrowLeft,
@@ -22,7 +33,8 @@ import {
   Loader2,
   Eye,
   CreditCard,
-  Settings2
+  Settings2,
+  Undo2
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -56,11 +68,13 @@ import {
 import {
   createFineTypes,
   updateFineType,
+  deleteFineType,
   getFineTypes,
   getStudentFines,
   getStudentAdmissionAndNameWithEnrollment,
   createStudentFine,
   updateStudentFine,
+  reverseStudentFine,
   type FineType,
   type StudentFine,
   type StudentAdmissionAndNameWithEnrollment,
@@ -187,6 +201,23 @@ export default function Page() {
     }
   }
 
+  async function handleDeleteFineType() {
+    if (!fineTypeToDelete) return
+    setIsDeletingFineType(true)
+    try {
+      await deleteFineType(fineTypeToDelete.id)
+      setFineTypes((prev) => prev.filter((item) => item.id !== fineTypeToDelete.id))
+      toast.success("Fine type deleted")
+      setFineTypeToDelete(null)
+    } catch (error) {
+      const parsed = parseApiError(error, "Failed to delete fine type")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setIsDeletingFineType(false)
+    }
+  }
+
   // ---------------------------------------------------------------------
   // Student Fines table (search, pagination, fetch)
   // ---------------------------------------------------------------------
@@ -278,6 +309,42 @@ export default function Page() {
   // Field-level validation errors — mirrors the Create Expense form pattern.
   const [fineFieldErrors, setFineFieldErrors] = useState<FineFieldErrors>({})
   const [fineSubmitting, setFineSubmitting] = useState(false)
+
+  const [reverseTarget, setReverseTarget] = useState<StudentFine | null>(null)
+  const [reverseReason, setReverseReason] = useState("")
+  const [confirmReverse, setConfirmReverse] = useState(false)
+  const [isReversing, setIsReversing] = useState(false)
+
+  function closeReverseDialog() {
+    setReverseTarget(null)
+    setReverseReason("")
+    setConfirmReverse(false)
+  }
+
+  async function handleReverseFine() {
+    if (!reverseTarget) return
+    if (!reverseReason.trim()) {
+      toast.error("Please enter a reversal reason")
+      return
+    }
+
+    setIsReversing(true)
+    try {
+      await reverseStudentFine(reverseTarget.id, reverseReason.trim())
+      toast.success("Fine reversed successfully")
+      closeReverseDialog()
+      await loadFines()
+    } catch (error) {
+      const parsed = parseApiError(error, "Failed to reverse fine")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setIsReversing(false)
+    }
+  }
+
+  const [fineTypeToDelete, setFineTypeToDelete] = useState<FineType | null>(null)
+  const [isDeletingFineType, setIsDeletingFineType] = useState(false)
 
   const resetFineForm = () => {
     setEditingFineId(null)
@@ -493,9 +560,19 @@ export default function Page() {
                   <h3 className="font-semibold text-sm sm:text-base text-slate-950 dark:text-slate-100 truncate">
                     {fineType.name}
                   </h3>
-                  <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={() => setFineTypeToDelete(fineType)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -687,14 +764,17 @@ export default function Page() {
                           <CreditCard className="h-4 w-4" />
                         </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          title="Delete Fine"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {row.status !== "REVERSED" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setReverseTarget(row)}
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:text-slate-400 dark:hover:bg-violet-950/30"
+                            title="Reverse Fine"
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -828,6 +908,43 @@ export default function Page() {
         }}
         onSubmit={() => void handleSaveFine()}
       />
+
+      <AlertDialog
+        open={!!fineTypeToDelete}
+        onOpenChange={(open) => {
+          if (!open) setFineTypeToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{fineTypeToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this fine type. This can't be undone, and it will fail
+              if any student fines are already using it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFineType}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingFineType}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteFineType()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingFineType ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

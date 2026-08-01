@@ -139,6 +139,13 @@ export function updateFineType(id: string, input: FineTypeInput) {
     body: JSON.stringify(input),
   })
 }
+
+export async function deleteFineType(id: string) {
+  return apiFetch(`/api/finetypes/${id}`, {
+    method: "DELETE",
+  })
+}
+
 export async function getStudentAdmissionAndName() {
   const payload = (await apiFetch(
     `/api/stdfines/stdenid-name`
