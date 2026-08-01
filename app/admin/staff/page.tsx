@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, ChevronsUpDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,51 @@ import {
 import { deleteStaff, getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
+// Small helper so every sortable header renders the same way: an always-visible
+// icon (dim double-chevron when inactive, solid single chevron when this is the
+// active sort field/direction) plus a hover highlight on the whole header cell.
+// This makes "this column is sortable" obvious without needing to hover first.
+function SortableHeader({
+  label,
+  field,
+  sortBy,
+  order,
+  onSort,
+}: {
+  label: string;
+  field: string;
+  sortBy: string;
+  order: "asc" | "desc";
+  onSort: (field: string) => void;
+}) {
+  const isActive = sortBy === field;
+
+  return (
+    <TableHead
+      onClick={() => onSort(field)}
+      className={cn(
+        "px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
+        "cursor-pointer select-none transition-colors hover:bg-white/10 dark:hover:bg-white/5"
+      )}
+      title={`Sort by ${label}`}
+    >
+      <span className="inline-flex items-center gap-1.5">
+        {label}
+        {isActive ? (
+          order === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
 
 export default function Page() {
   const router = useRouter();
@@ -206,48 +250,16 @@ export default function Page() {
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("employeeCode")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Employee Code
-                    {sortBy === "employeeCode" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("name")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Name
-                    {sortBy === "name" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
+                <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
+                <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("joiningDate")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Joining Date
-                    {sortBy === "joiningDate" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("status")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Status
-                    {sortBy === "status" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
+                <SortableHeader label="Joining Date" field="joiningDate" sortBy={sortBy} order={order} onSort={toggleSort} />
+                <SortableHeader label="Status" field="status" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
