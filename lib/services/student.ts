@@ -176,3 +176,9 @@ export async function getStudentAdmissionAndName(params?: { page?: number; limit
 
   return payload.data ?? [];
 }
+
+export async function deleteStudent(id: string) {
+  return apiFetch(`/api/students/${id}`, {
+    method: "DELETE",
+  });
+}

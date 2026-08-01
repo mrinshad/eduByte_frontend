@@ -14,7 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
+import { deleteStaff, getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+
 
 export default function Page() {
   const router = useRouter();
@@ -34,6 +37,9 @@ export default function Page() {
     total: 0,
     totalPages: 1,
   });
+
+  const [staffToDelete, setStaffToDelete] = useState<StaffListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Debounce search input -> committed search term
   useEffect(() => {
@@ -83,6 +89,38 @@ export default function Page() {
   const { total, totalPages, page: safePage } = pagination;
   const startEntry = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endEntry = total === 0 ? 0 : Math.min(safePage * rowsPerPage, total);
+
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteStaff(staffToDelete.id);
+      toast.success("Staff deleted successfully");
+      setStaffToDelete(null);
+
+      // Refetch current page. If this was the last row on the page, step back a page.
+      const response = await getStaff({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: search || undefined,
+        status: statusFilter || undefined,
+        sortBy,
+        order,
+      });
+
+      if (response.data.items.length === 0 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        setStaff(response.data.items);
+        setPagination(response.data.pagination);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete staff");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const formatDate = (value?: string | null) => {
     if (!value) return "-";
@@ -294,6 +332,7 @@ export default function Page() {
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="Delete Staff"
+                          onClick={() => setStaffToDelete(member)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -357,7 +396,41 @@ export default function Page() {
           </div>
         </div>
       </div>
-
+      <AlertDialog
+        open={!!staffToDelete}
+        onOpenChange={(open) => {
+          if (!open) setStaffToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{staffToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this staff record. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteStaff();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
