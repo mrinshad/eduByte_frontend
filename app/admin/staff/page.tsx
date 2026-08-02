@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ChevronDown, ChevronUp, ChevronsUpDown,
+  ChevronDown, ChevronUp, ChevronsUpDown, X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -63,13 +70,31 @@ function SortableHeader({
   );
 }
 
+// Same chip used on the Students page, so removing a filter here looks
+// and behaves identically across both list pages.
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      {label}
+      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+};
+
 export default function Page() {
   const router = useRouter();
 
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -106,7 +131,7 @@ export default function Page() {
           page: currentPage,
           limit: rowsPerPage,
           search: search || undefined,
-          status: statusFilter || undefined,
+          status: statusFilter === "all" ? undefined : statusFilter,
           sortBy,
           order,
         });
@@ -134,6 +159,18 @@ export default function Page() {
   const startEntry = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endEntry = total === 0 ? 0 : Math.min(safePage * rowsPerPage, total);
 
+  const hasActiveFilters = useMemo(
+    () => statusFilter !== "all" || search.trim().length > 0,
+    [statusFilter, search]
+  );
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
+
   const handleDeleteStaff = async () => {
     if (!staffToDelete) return;
     setIsDeleting(true);
@@ -147,7 +184,7 @@ export default function Page() {
         page: currentPage,
         limit: rowsPerPage,
         search: search || undefined,
-        status: statusFilter || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
         sortBy,
         order,
       });
@@ -222,15 +259,37 @@ export default function Page() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
-          <select
+
+          {/* 👇 Status filter dropdown, same component/style as Students' class filter */}
+          <Select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
           >
-            <option value="">All Statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
+            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="INACTIVE">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
+
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
@@ -240,6 +299,25 @@ export default function Page() {
           </Button>
         </div>
       </div>
+
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          <span className="text-xs font-medium text-slate-400">Filters:</span>
+          {statusFilter !== "all" && (
+            <FilterChip
+              label={`Status: ${STATUS_LABELS[statusFilter] ?? statusFilter}`}
+              onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
+            />
+          )}
+          {search.trim() && (
+            <FilterChip
+              label={`Search: ${search}`}
+              onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
