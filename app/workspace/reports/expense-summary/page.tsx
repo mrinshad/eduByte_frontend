@@ -224,10 +224,8 @@ export default function ExpenseSummaryPage() {
                 <div className="space-y-4 sm:space-y-6">
                     {/* Total expenses — hero */}
                     <div
-                        className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
-                        style={{
-                            background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
-                        }}
+                        className="relative overflow-hidden rounded-2xl p-4 shadow-lg bg-gradient-to-br from-[#556043] to-[#556043]/90 text-white sm:p-6 "
+                        
                     >
                         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />

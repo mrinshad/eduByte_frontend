@@ -405,7 +405,7 @@ export default function Page() {
 
       {/* Fine Types Management Dialog */}
       <Dialog open={fineTypesOpen} onOpenChange={setFineTypesOpen}>
-        <DialogContent showCloseButton={false} className="w-[92vw] sm:max-w-2xl text-slate-950 dark:text-slate-50 rounded-2xl p-4 sm:p-6">
+        <DialogContent showCloseButton={false} className="w-[92vw] sm:max-w-2xl text-slate-950 dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100 rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <div className="flex items-center justify-between gap-3">
               <div>

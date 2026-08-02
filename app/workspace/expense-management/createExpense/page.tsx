@@ -161,9 +161,9 @@ export default function Page() {
     );
 
     const selectedStaff = useMemo(
-    () => (Array.isArray(staffDropdown) ? staffDropdown.find((s) => s.id === selectedStaffId) : null) ?? null,
-    [staffDropdown, selectedStaffId]
-);
+        () => staffDropdown.find((s) => s.id === selectedStaffId) ?? null,
+        [staffDropdown, selectedStaffId]
+    );
 
     const filteredSubCategories = useMemo(() => {
         if (!selectedCategoryId) return [];
