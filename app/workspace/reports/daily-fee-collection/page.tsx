@@ -181,7 +181,7 @@ export default function DailyCollectionReportPage() {
 
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6">
-      {/* ── Header with date range ── */}
+      {/* ── Header: title + filters + refresh, all together ── */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
@@ -206,42 +206,64 @@ export default function DailyCollectionReportPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {/* <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
-              <div className="relative w-full sm:w-40">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="date"
-                  aria-label="From date"
-                  value={fromDate}
-                  max={todayISO()}
-                  onChange={(e) => handleFromDateChange(e.target.value)}
-                  className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                />
-              </div>
+          {/* ── Filters live here, right next to the refresh button ── */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Select
+              value={classFilter}
+              onValueChange={(v) => {
+                setClassFilter(v);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
-                <ArrowRight className="h-4 w-4" />
-              </div>
+            <Select
+              value={paymentMethodFilter}
+              onValueChange={(v) => {
+                setPaymentMethodFilter(v);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-[160px] rounded-lg border-slate-300">
+                <SelectValue placeholder="All Payment Methods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Payment Methods</SelectItem>
+                {paymentMethodOptions.map((pm) => (
+                  <SelectItem key={pm} value={pm}>
+                    {pm}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <div className="relative w-full sm:w-40">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="date"
-                  aria-label="To date"
-                  value={toDate}
-                  min={fromDate}
-                  max={todayISO()}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                />
-              </div>
-            </div> */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+                onClick={clearAllFilters}
+              >
+                <X className="mr-1 h-3.5 w-3.5" />
+                Clear
+              </Button>
+            )}
 
             <Button
               size="icon"
               variant="outline"
-              className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+              className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
               disabled={loading || isRangeInvalid}
             >
@@ -257,8 +279,8 @@ export default function DailyCollectionReportPage() {
         )}
       </div>
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* ── Search, justified to the end ── */}
+      <div className="flex justify-end">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
@@ -267,60 +289,6 @@ export default function DailyCollectionReportPage() {
             onChange={(e) => setSearchInput(e.target.value)}
             className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
           />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={classFilter}
-            onValueChange={(v) => {
-              setClassFilter(v);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
-              <SelectValue placeholder="All Classes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Classes</SelectItem>
-              {classOptions.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={paymentMethodFilter}
-            onValueChange={(v) => {
-              setPaymentMethodFilter(v);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="h-10 w-[160px] rounded-lg border-slate-300">
-              <SelectValue placeholder="All Payment Methods" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Payment Methods</SelectItem>
-              {paymentMethodOptions.map((pm) => (
-                <SelectItem key={pm} value={pm}>
-                  {pm}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
-              onClick={clearAllFilters}
-            >
-              <X className="mr-1 h-3.5 w-3.5" />
-              Clear
-            </Button>
-          )}
         </div>
       </div>
 
