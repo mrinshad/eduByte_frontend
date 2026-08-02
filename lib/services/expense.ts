@@ -247,3 +247,22 @@ export async function getPaymentMethodAccounts() {
 
   return payload.data ?? [];
 }
+// ---------------------------------------------------------------------
+// Expense Category — delete
+// ---------------------------------------------------------------------
+
+export async function deleteExpenseCategory(id: string) {
+  return apiFetch(`/api/expensecategory/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------
+// Expense Sub Category — delete
+// ---------------------------------------------------------------------
+
+export async function deleteExpenseSubCategory(id: string) {
+  return apiFetch(`/api/expensesubcategory/${id}`, {
+    method: "DELETE",
+  });
+}

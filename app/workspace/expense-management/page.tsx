@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Tags, Layers3, Pencil, Plus } from "lucide-react"
+import { Tags, Layers3, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -17,14 +17,26 @@ import {
 } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import {
   createExpenseCategory,
   getExpenseCategories,
   updateExpenseCategory,
+  deleteExpenseCategory,
   createExpenseSubCategory,
   getExpenseSubCategories,
   updateExpenseSubCategory,
+  deleteExpenseSubCategory,
   getExpenseAccountsNamesandIds,
   type ExpenseCategory,
   type ExpenseSubCategory,
@@ -47,6 +59,41 @@ function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean 
       </TooltipTrigger>
       <TooltipContent>
         <p>Add</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function DeleteAction({
+  onDelete,
+  disabled,
+  disabledReason,
+}: {
+  onDelete: (e: React.MouseEvent) => void
+  disabled?: boolean
+  disabledReason?: string
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {/* span wrapper so the tooltip still works on a disabled button */}
+        <span className="inline-flex">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 disabled:text-slate-400 disabled:hover:bg-transparent dark:disabled:text-slate-600"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(e)
+            }}
+            disabled={disabled}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{disabled && disabledReason ? disabledReason : "Delete"}</p>
       </TooltipContent>
     </Tooltip>
   )
@@ -288,6 +335,63 @@ export default function Page() {
   }
 
   // ---------------------------------------------------------------------
+  // Delete confirmation (shared for category + sub category)
+  // ---------------------------------------------------------------------
+  type DeleteTarget =
+    | { type: "category"; id: string; name: string; subCount: number }
+    | { type: "subCategory"; id: string; name: string }
+    | null
+
+  const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget>(null)
+  const [deleting, setDeleting] = React.useState(false)
+
+  function requestDeleteCategory(category: ExpenseCategory) {
+    const subCount = subCategories.filter((sc) => sc.categoryId === category.id).length
+    if (subCount > 0) {
+      toast.error("Delete all sub categories under this category first")
+      return
+    }
+    setDeleteTarget({ type: "category", id: category.id, name: category.name, subCount })
+  }
+  function requestDeleteSubCategory(subCategory: ExpenseSubCategory) {
+    setDeleteTarget({ type: "subCategory", id: subCategory.id, name: subCategory.name })
+  }
+
+  function closeDeleteDialog() {
+    if (deleting) return
+    setDeleteTarget(null)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return
+
+    setDeleting(true)
+    try {
+      if (deleteTarget.type === "category") {
+        await deleteExpenseCategory(deleteTarget.id)
+        toast.success("Category deleted")
+
+        // If the deleted category was selected, clear selection so the
+        // effect / next load can pick a sensible default.
+        if (selectedCategoryId === deleteTarget.id) {
+          setSelectedCategoryId("")
+        }
+        await loadCategories()
+        await loadSubCategories()
+      } else {
+        await deleteExpenseSubCategory(deleteTarget.id)
+        toast.success("Sub category deleted")
+        await loadSubCategories()
+      }
+      setDeleteTarget(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------
   return (
@@ -309,8 +413,8 @@ export default function Page() {
                 </div>
 
                 <AddAction onAdd={() =>
-              router.push("/workspace/expense-management/createExpense")
-            } />
+                  router.push("/workspace/expense-management/createExpense")
+                } />
               </div>
             </CardHeader>
           </Card>
@@ -417,6 +521,16 @@ export default function Page() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+
+                          <DeleteAction
+                            onDelete={() => requestDeleteCategory(category)}
+                            disabled={subCount > 0}
+                            disabledReason={
+                              subCount > 0
+                                ? `Delete ${subCount} sub ${subCount === 1 ? "category" : "categories"} first`
+                                : undefined
+                            }
+                          />
                         </div>
                       </div>
                     )
@@ -497,14 +611,18 @@ export default function Page() {
                         </div>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className={editIconClass}
-                        onClick={() => openSubCategoryDialog("edit", subCategory)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className={editIconClass}
+                          onClick={() => openSubCategoryDialog("edit", subCategory)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <DeleteAction onDelete={() => requestDeleteSubCategory(subCategory)} />
+                      </div>
                     </div>
                   ))
                 )}
@@ -560,6 +678,37 @@ export default function Page() {
           submitLabel="Add"
           editSubmitLabel="Save"
         />
+
+        {/* ------------------------------------------------------------- */}
+        {/* Delete Confirmation Dialog (shared for category + sub category) */}
+        {/* ------------------------------------------------------------- */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && closeDeleteDialog()}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {deleteTarget?.type === "category" ? "Category" : "Sub Category"}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete{" "}
+                <span className="font-medium text-foreground">{deleteTarget?.name}</span>
+                {deleteTarget?.type === "category"
+                  ? ". Any sub categories under it may also be affected."
+                  : "."}{" "}
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </TooltipProvider>
   )
