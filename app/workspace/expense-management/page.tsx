@@ -399,7 +399,7 @@ export default function Page() {
       <section className="px-4 sm:px-6 py-4">
         <PageHeader title="Expenses" description="Manage your expenses" />
         <div className="mt-6 space-y-6">
-          <Card className="w-full dark:bg-background">
+          <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
               <div className="flex w-full items-start justify-between gap-4">
                 <div className="space-y-1">
@@ -424,7 +424,7 @@ export default function Page() {
             {/* card on the right, the same relationship Class has with     */}
             {/* Division.                                                   */}
             {/* --------------------------------------------------------- */}
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
@@ -542,7 +542,7 @@ export default function Page() {
             {/* --------------------------------------------------------- */}
             {/* Expense Sub Categories — scoped to the selected category. */}
             {/* --------------------------------------------------------- */}
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">

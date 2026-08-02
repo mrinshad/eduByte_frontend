@@ -71,6 +71,9 @@ import {
   deleteDivision,
 } from "@/lib/services/division"
 
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
+
+
 const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
 const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
 const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
@@ -83,6 +86,7 @@ const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-whit
 const datePickerPopperClassName = "z-50"
 const datePickerMinDate = new Date(2020, 0, 1)
 const datePickerMaxDate = new Date(2050, 11, 31)
+
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
@@ -136,6 +140,9 @@ export default function Page() {
   const [divisionDialogMode, setDivisionDialogMode] = React.useState<"add" | "edit">("add")
   const [classNameDraft, setClassNameDraft] = React.useState("")
   const [divisionNameDraft, setDivisionNameDraft] = React.useState("")
+  // Field-level errors surfaced by ReusableFormDialog for the class/division forms.
+  const [classFormErrors, setClassFormErrors] = React.useState<Record<string, string | undefined>>({})
+  const [divisionFormErrors, setDivisionFormErrors] = React.useState<Record<string, string | undefined>>({})
   // Track which class/division is actually being edited, independent of
   // the "selected" (highlighted) row. This is what fixes the bug where
   // clicking edit on one row would show the currently-selected row's data.
@@ -281,6 +288,7 @@ export default function Page() {
     setClassDialogMode(mode)
     setEditingClassId(mode === "edit" ? classToEdit?.id ?? "" : "")
     setClassNameDraft(mode === "edit" ? classToEdit?.name ?? "" : "")
+    setClassFormErrors({})
     setClassDialogOpen(true)
   }
 
@@ -289,6 +297,7 @@ export default function Page() {
     setDivisionDialogMode(mode)
     setEditingDivisionId(mode === "edit" ? divisionToEdit?.id ?? "" : "")
     setDivisionNameDraft(mode === "edit" ? divisionToEdit?.name ?? "" : "")
+    setDivisionFormErrors({})
     setDivisionDialogOpen(true)
   }
 
@@ -296,12 +305,79 @@ export default function Page() {
     setClassDialogOpen(false)
     setClassNameDraft("")
     setEditingClassId("")
+    setClassFormErrors({})
   }
 
   function closeDivisionDialog() {
     setDivisionDialogOpen(false)
     setDivisionNameDraft("")
     setEditingDivisionId("")
+    setDivisionFormErrors({})
+  }
+
+  async function handleSaveClass() {
+    if (!classNameDraft.trim()) {
+      setClassFormErrors({ name: "Class name is required" })
+      return
+    }
+
+    setIsSavingClass(true)
+    try {
+      const classIdToUpdate = editingClassId || selectedClassId
+
+      if (classDialogMode === "add") {
+        await createClass(classNameDraft)
+      } else if (classIdToUpdate) {
+        await updateClass(classIdToUpdate, classNameDraft)
+      }
+
+      setClasses(await getClasses())
+      if (classIdToUpdate) {
+        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
+      }
+      closeClassDialog()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save class")
+    } finally {
+      setIsSavingClass(false)
+    }
+  }
+
+  async function handleSaveDivision() {
+    if (!divisionNameDraft.trim()) {
+      setDivisionFormErrors({ name: "Division name is required" })
+      return
+    }
+
+    setIsSavingDivision(true)
+    try {
+      if (!selectedClassId) {
+        throw new Error("Select a class first")
+      }
+
+      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
+
+      if (divisionDialogMode === "add") {
+        await createDivisions(selectedClassId, [divisionNameDraft])
+      } else if (divisionIdToUpdate) {
+        await updateDivision(divisionIdToUpdate, divisionNameDraft)
+      }
+
+      const updatedClasses = await getClasses()
+      const updatedDivisions = await getDivisions(selectedClassId)
+
+      setClasses(updatedClasses)
+      setDivisionsByClassId((current) => ({
+        ...current,
+        [selectedClassId]: updatedDivisions,
+      }))
+      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
+      closeDivisionDialog()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save division")
+    } finally {
+      setIsSavingDivision(false)
+    }
   }
 
   async function handleDeleteClass() {
@@ -390,7 +466,7 @@ export default function Page() {
         </div>
 
         <div className="mt-6 space-y-6">
-          <Card className="w-full dark:bg-background">
+          <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
               <div>
                 <CardDescription className={`text-xs uppercase tracking-[0.28em] ${subtleTextClass}`}>
@@ -753,7 +829,7 @@ export default function Page() {
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Class</CardTitle>
@@ -867,7 +943,7 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Division</CardTitle>
@@ -992,154 +1068,75 @@ export default function Page() {
           </div>
         </div>
 
-        <Dialog open={classDialogOpen} onOpenChange={setClassDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {classDialogMode === "add" ? "Add Class" : "Edit Class"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {classDialogMode === "add"
-                  ? "Create a new class and keep the same styling language."
-                  : "Update the selected class details."}
-              </DialogDescription>
-            </DialogHeader>
+        {/* Add/Edit Class — now driven by the shared ReusableFormDialog */}
+        <ReusableFormDialog
+          open={classDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) closeClassDialog()
+          }}
+        theme="vehicle"
+          title={classDialogMode === "add" ? "Add Class" : "Edit Class"}
+          description={
+            classDialogMode === "add"
+              ? "Create a new class and keep the same styling language."
+              : "Update the selected class details."
+          }
+          fields={[
+            {
+              type: "text",
+              name: "name",
+              label: "Class Name",
+              placeholder: "Example: Grade 5 - Morning Session",
+              required: true,
+            },
+          ]}
+          values={{ name: classNameDraft }}
+          errors={classFormErrors}
+          onChange={(_, value) => {
+            setClassNameDraft(value)
+            setClassFormErrors({})
+          }}
+          onSubmit={handleSaveClass}
+          isSaving={isSavingClass}
+          isEditing={classDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
 
-            <div className="space-y-4 py-2">
-              <div className="space-y-3">
-                <label className={cn("text-sm font-medium", supportingTextClass)}>Class Name</label>
-                <Input
-                  className={cn(inputTextClass, "mt-2")}
-                  value={classNameDraft}
-                  onChange={(event) => setClassNameDraft(event.target.value)}
-                  placeholder="Example: Grade 5 - Morning Session"
-                  disabled={isSavingClass}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" disabled={isSavingClass} onClick={closeClassDialog}>
-                Cancel
-              </Button>
-              <Button
-                disabled={isSavingClass}
-                onClick={() => {
-                  void (async () => {
-                    setIsSavingClass(true)
-                    try {
-                      const classIdToUpdate = editingClassId || selectedClassId
-
-                      if (classDialogMode === "add") {
-                        await createClass(classNameDraft)
-                      } else if (classIdToUpdate) {
-                        await updateClass(classIdToUpdate, classNameDraft)
-                      }
-
-                      setClasses(await getClasses())
-                      if (classIdToUpdate) {
-                        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
-                      }
-                      closeClassDialog()
-                    } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to save class")
-                    } finally {
-                      setIsSavingClass(false)
-                    }
-                  })()
-                }}
-              >
-                {isSavingClass ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {classDialogMode === "add" ? "Adding..." : "Saving..."}
-                  </>
-                ) : (
-                  classDialogMode === "add" ? "Add" : "Save"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={divisionDialogOpen} onOpenChange={setDivisionDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {divisionDialogMode === "add"
-                  ? `Create a division under ${selectedClass?.name || "the selected class"}.`
-                  : "Update the selected division details."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-3">
-                <label className={cn("text-sm font-medium", supportingTextClass)}>Division Name</label>
-                <Input
-                  className={cn(inputTextClass, "mt-2")}
-                  value={divisionNameDraft}
-                  onChange={(event) => setDivisionNameDraft(event.target.value)}
-                  placeholder="Example: Division A - Primary Block"
-                  disabled={isSavingDivision}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" disabled={isSavingDivision} onClick={closeDivisionDialog}>
-                Cancel
-              </Button>
-              <Button
-                disabled={isSavingDivision}
-                onClick={() => {
-                  void (async () => {
-                    setIsSavingDivision(true)
-                    try {
-                      if (!selectedClassId) {
-                        throw new Error("Select a class first")
-                      }
-
-                      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
-
-                      if (divisionDialogMode === "add") {
-                        await createDivisions(selectedClassId, [divisionNameDraft])
-                      } else if (divisionIdToUpdate) {
-                        await updateDivision(divisionIdToUpdate, divisionNameDraft)
-                      }
-
-                      const updatedClasses = await getClasses()
-                      const updatedDivisions = await getDivisions(selectedClassId)
-
-                      setClasses(updatedClasses)
-                      setDivisionsByClassId((current) => ({
-                        ...current,
-                        [selectedClassId]: updatedDivisions,
-                      }))
-                      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
-                      closeDivisionDialog()
-                    } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to save division")
-                    } finally {
-                      setIsSavingDivision(false)
-                    }
-                  })()
-                }}
-              >
-                {isSavingDivision ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {divisionDialogMode === "add" ? "Adding..." : "Saving..."}
-                  </>
-                ) : (
-                  divisionDialogMode === "add" ? "Add" : "Save"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Add/Edit Division — now driven by the shared ReusableFormDialog */}
+        <ReusableFormDialog
+          open={divisionDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) closeDivisionDialog()
+          }}
+          title={divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
+          theme="vehicle"
+          description={
+            divisionDialogMode === "add"
+              ? `Create a division under ${selectedClass?.name || "the selected class"}.`
+              : "Update the selected division details."
+          }
+          fields={[
+            {
+              type: "text",
+              name: "name",
+              label: "Division Name",
+              placeholder: "Example: Division A - Primary Block",
+              required: true,
+            },
+          ]}
+          values={{ name: divisionNameDraft }}
+          errors={divisionFormErrors}
+          onChange={(_, value) => {
+            setDivisionNameDraft(value)
+            setDivisionFormErrors({})
+          }}
+          onSubmit={handleSaveDivision}
+          isSaving={isSavingDivision}
+          isEditing={divisionDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
 
         <AlertDialog
           open={!!classToDelete}
