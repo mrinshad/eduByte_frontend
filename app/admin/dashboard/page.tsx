@@ -62,11 +62,10 @@ const MOCK_CLASS_DIVISIONS = [
   { name: "Class 10", divisions: 1 },
 ]
 
-const MOCK_ACCOUNT_TYPES = [
-  { name: "Bank", value: 6 },
-  { name: "Cash", value: 3 },
-  { name: "Digital Wallet", value: 4 },
-  { name: "Other", value: 2 },
+const MOCK_STUDENT_STATUS = [
+  { name: "Active", value: 1142 },
+  { name: "Withdrawn", value: 58 },
+  { name: "Alumni", value: 84 },
 ]
 
 // ---------------------------------------------------------------------
@@ -108,10 +107,11 @@ function StatCard({
         </div>
         {hasDelta && (
           <span
-            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${isPositive
-              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-              : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-              }`}
+            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+              isPositive
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+            }`}
           >
             {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(delta!).toFixed(1)}%
@@ -146,7 +146,7 @@ const quickActions: { href: string; label: string; Icon: LucideIcon }[] = [
 // ---------------------------------------------------------------------
 
 export default function Page() {
-  const accountsTotal = MOCK_ACCOUNT_TYPES.reduce((sum, a) => sum + a.value, 0)
+  const studentStatusTotal = MOCK_STUDENT_STATUS.reduce((sum, s) => sum + s.value, 0)
 
   return (
     <section className="space-y-6 px-1 py-1">
@@ -220,37 +220,37 @@ export default function Page() {
           </ResponsiveContainer>
         </div>
 
-        {/* Accounts by type */}
+        {/* Student status */}
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Accounts by Type
+            Student Status
           </h2>
 
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie
-                data={MOCK_ACCOUNT_TYPES}
+                data={MOCK_STUDENT_STATUS}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={45}
                 outerRadius={70}
                 paddingAngle={2}
               >
-                {MOCK_ACCOUNT_TYPES.map((entry, index) => (
+                {MOCK_STUDENT_STATUS.map((entry, index) => (
                   <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip
                 formatter={(value, name) => {
                   const n = Number(value)
-                  return [`${n} account${n === 1 ? "" : "s"}`, String(name)]
+                  return [`${n} student${n === 1 ? "" : "s"}`, String(name)]
                 }}
                 contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
               />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-            {MOCK_ACCOUNT_TYPES.map((entry, index) => (
+            {MOCK_STUDENT_STATUS.map((entry, index) => (
               <span key={entry.name} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <span
                   className="h-2 w-2 rounded-full"
@@ -261,7 +261,7 @@ export default function Page() {
             ))}
           </div>
           <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
-            {accountsTotal} accounts total
+            {studentStatusTotal} students total
           </p>
         </div>
       </div>
