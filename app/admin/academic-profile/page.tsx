@@ -498,7 +498,7 @@ export default function Page() {
                   </TooltipContent>
                 </Tooltip>
 
-                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50 dark:bg-background">
+                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
                   <DialogHeader>
                     <div className="flex items-center justify-between gap-3">
                       <div>
