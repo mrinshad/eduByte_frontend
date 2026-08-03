@@ -60,6 +60,18 @@ import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureVi
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { apiFetch } from "@/lib/api";
 import { formatDateOnly } from "@/lib/utils";
+import { getChargeTypes, ChargeTypes } from "@/lib/services/chargeTypes";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { useSearchParams } from "next/navigation";
 
@@ -194,6 +206,12 @@ export default function Page() {
     const [divisionPopoverOpen, setDivisionPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [feePopoverOpen, setFeePopoverOpen] = useState(false);
+
+    const [chargeTypesList, setChargeTypesList] = useState<ChargeTypes[]>([]);
+    const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
+    const [selectedNewChargeTypeIds, setSelectedNewChargeTypeIds] = useState<string[]>([]);
+    const [isClearFieldsDialogOpen, setIsClearFieldsDialogOpen] = useState(false);
+    const [loadingChargeTypes, setLoadingChargeTypes] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [loadingStudent, setLoadingStudent] = useState(false);
@@ -536,6 +554,50 @@ export default function Page() {
     const totalAmount = useMemo(() => {
         return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     }, [editableFeeItems]);
+
+    useEffect(() => {
+        if (isAddChargeDialogOpen && chargeTypesList.length === 0) {
+            async function fetchChargeTypes() {
+                try {
+                    setLoadingChargeTypes(true);
+                    const types = await getChargeTypes();
+                    setChargeTypesList(types);
+                } catch (error) {
+                    console.error("Failed to load charge types:", error);
+                } finally {
+                    setLoadingChargeTypes(false);
+                }
+            }
+            fetchChargeTypes();
+        }
+    }, [isAddChargeDialogOpen, chargeTypesList.length]);
+
+    const handleClearFields = () => {
+        setSelectedFeeStructureId("");
+        setEditableFeeItems([]);
+        setItemErrors({});
+        setIsClearFieldsDialogOpen(false);
+    };
+
+    const handleAddChargeTypes = () => {
+        const newItems: EditableFeeItem[] = selectedNewChargeTypeIds.map(id => {
+            const chargeDef = chargeTypesList.find(c => c.id === id);
+            return {
+                chargeTypeId: id,
+                frequency: chargeDef?.frequency || "",
+                name: chargeDef?.name || "",
+                originalAmount: 0,
+                baseAmount: 0,
+                amount: 0,
+                dueDay: "",
+                description: "",
+            };
+        });
+        
+        setEditableFeeItems(prev => [...prev, ...newItems]);
+        setSelectedNewChargeTypeIds([]);
+        setIsAddChargeDialogOpen(false);
+    };
 
     // Checks the four required selectors and returns field-keyed messages.
     const validateTopFields = (): { valid: boolean; errors: typeof fieldErrors } => {
@@ -1155,17 +1217,27 @@ export default function Page() {
                                         </span>
                                         <span className="text-xs text-slate-500">All charge items are sent in the payload. Override amounts, set due dates, and add descriptions as needed.</span>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
-                                        onClick={() => {
-                                            setSelectedFeeStructureId("");
-                                            setItemErrors({});
-                                        }}
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" /> Unlink Template
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setSelectedNewChargeTypeIds([]);
+                                                setIsAddChargeDialogOpen(true);
+                                            }}
+                                            className="text-[#6D755F] border-[#6D755F]/30 hover:bg-[#6D755F]/10 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+                                        >
+                                            Add Charge Type
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
+                                            onClick={() => setIsClearFieldsDialogOpen(true)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" /> Clear Fields
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <div className="overflow-x-auto">
@@ -1292,6 +1364,112 @@ export default function Page() {
 
                 </div>
             )}
+
+            {/* Clear Fields Confirmation Dialog */}
+            <AlertDialog open={isClearFieldsDialogOpen} onOpenChange={setIsClearFieldsDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all configured charge types and reset your selected Fee Structure template. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearFields} className="bg-red-600 hover:bg-red-700 text-white">
+                            Yes, clear fields
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Add Charge Type Dialog */}
+            <AlertDialog open={isAddChargeDialogOpen} onOpenChange={setIsAddChargeDialogOpen}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Add Additional Charge Types</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Select one or more charge types to append to the fee structure.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="py-2 max-h-[320px] overflow-y-auto space-y-2">
+                        {loadingChargeTypes ? (
+                            <div className="flex items-center justify-center py-8 gap-2 text-slate-500">
+                                <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
+                                <span className="text-sm font-medium">Loading charge types...</span>
+                            </div>
+                        ) : (
+                            <>
+                                {chargeTypesList
+                                    .filter(ct => !editableFeeItems.some(efi => efi.chargeTypeId === ct.id))
+                                    .map(ct => {
+                                        const isSelected = selectedNewChargeTypeIds.includes(ct.id);
+                                        return (
+                                            <div
+                                                key={ct.id}
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setSelectedNewChargeTypeIds(prev => prev.filter(id => id !== ct.id));
+                                                    } else {
+                                                        setSelectedNewChargeTypeIds(prev => [...prev, ct.id]);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer",
+                                                    isSelected
+                                                        ? "border-[#6D755F] bg-[#6D755F]/10 dark:bg-[#6D755F]/20"
+                                                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                                )}
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <Checkbox
+                                                        id={`charge-${ct.id}`}
+                                                        checked={isSelected}
+                                                        className="h-4 w-4 rounded border-slate-400 dark:border-slate-600 data-[state=checked]:!bg-[#6D755F] data-[state=checked]:!text-white data-[state=checked]:!border-[#6D755F] data-[checked]:!bg-[#6D755F] data-[checked]:!text-white data-[checked]:!border-[#6D755F]"
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) {
+                                                                setSelectedNewChargeTypeIds(prev => [...prev, ct.id]);
+                                                            } else {
+                                                                setSelectedNewChargeTypeIds(prev => prev.filter(id => id !== ct.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                        {ct.name}
+                                                    </span>
+                                                </div>
+                                                {ct.frequency && (
+                                                    <span className="text-xs text-slate-500 capitalize bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-normal">
+                                                        {ct.frequency.toLowerCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                {chargeTypesList.filter(ct => !editableFeeItems.some(efi => efi.chargeTypeId === ct.id)).length === 0 && !loadingChargeTypes && (
+                                    <div className="text-center py-6 text-xs text-slate-500">
+                                        All available charge types are already added.
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setSelectedNewChargeTypeIds([])}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleAddChargeTypes}
+                            disabled={selectedNewChargeTypeIds.length === 0}
+                            className="bg-[#6D755F] hover:bg-[#5b624f] text-white disabled:opacity-50"
+                        >
+                            Done ({selectedNewChargeTypeIds.length})
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
