@@ -199,7 +199,7 @@ export default function Page() {
     <section className="px-6 py-4">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <Button variant="outline" size="icon" className="text-white" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -226,6 +226,7 @@ export default function Page() {
                         "
 
         >
+          <Plus className="mr-2 h-4 w-4" />
           Create Vehicle
         </Button>
       </div>

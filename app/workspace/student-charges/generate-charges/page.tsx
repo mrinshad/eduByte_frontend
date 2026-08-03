@@ -239,7 +239,7 @@
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => router.back()}>
+              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
@@ -251,7 +251,7 @@
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={handleRefreshPreview} disabled={isLoadingPreview || isGenerating}>
+              <Button variant="outline" onClick={handleRefreshPreview} disabled={isLoadingPreview || isGenerating} className="text-white">
                 <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingPreview ? "animate-spin" : ""}`} />
                 Refresh
               </Button>

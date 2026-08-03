@@ -6,7 +6,7 @@ import {
     ArrowLeft,
     ArrowRight,
     Bus,
-    Calendar,
+    Calendar as CalendarIcon,
     ChevronDown,
     ChevronUp,
     Loader2,
@@ -20,10 +20,17 @@ import {
     Receipt,
     AlertCircle,
 } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
     Accordion,
     AccordionContent,
@@ -75,6 +82,28 @@ function tomorrowISO() {
     }).format(india);
 }
 
+function formatDisplayDate(date: string) {
+    if (!date) return "";
+    const datePart = date.slice(0, 10);
+    return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+}
+
+// Convert a plain "YYYY-MM-DD" string into a local Date (no timezone shift),
+// used only to feed the shadcn Calendar component.
+function parseISODate(dateStr: string) {
+    return new Date(`${dateStr}T00:00:00`);
+}
+
+// Convert a Date selected in the Calendar back into "YYYY-MM-DD".
+function toISODate(date: Date) {
+    return format(date, "yyyy-MM-dd");
+}
+
 interface GroupedCategory {
     category: string;
     total: number;
@@ -124,6 +153,8 @@ export default function VehicleFinancialReportPage() {
 
     const [fromDate, setFromDate] = useState<string>(todayISO());
     const [toDate, setToDate] = useState<string>(todayISO());
+    const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
+    const [toCalendarOpen, setToCalendarOpen] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
@@ -137,6 +168,7 @@ export default function VehicleFinancialReportPage() {
     const [sortDir, setSortDir] = useState<SortDir>("asc");
 
     const isRangeInvalid = fromDate > toDate;
+    const maxSelectableDate = useMemo(() => parseISODate(tomorrowISO()), []);
 
     /* ---- debounce search ---- */
     useEffect(() => {
@@ -287,10 +319,20 @@ export default function VehicleFinancialReportPage() {
         });
     }
 
-    function handleFromDateChange(value: string) {
-        setFromDate(value);
-        if (value > toDate) setToDate(value);
+    function handleFromDateSelect(date: Date | undefined) {
+        if (!date) return;
+        const newFrom = toISODate(date);
+        setFromDate(newFrom);
+        if (newFrom > toDate) setToDate(newFrom);
         setPage(1);
+        setFromCalendarOpen(false);
+    }
+
+    function handleToDateSelect(date: Date | undefined) {
+        if (!date) return;
+        setToDate(toISODate(date));
+        setPage(1);
+        setToCalendarOpen(false);
     }
 
     /* ---- render helpers ---- */
@@ -327,37 +369,66 @@ export default function VehicleFinancialReportPage() {
                         </div>
                     </div>
 
+                    {/* Date range picker — separate From / To Calendar popovers */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
-                            <div className="relative w-full sm:w-40">
-                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    type="date"
-                                    aria-label="From date"
-                                    value={fromDate}
-                                    max={tomorrowISO()}
-                                    onChange={(e) => handleFromDateChange(e.target.value)}
-                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                                />
-                            </div>
+                        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                            <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
+                                        <span className="truncate">{formatDisplayDate(fromDate)}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={parseISODate(fromDate)}
+                                        onSelect={handleFromDateSelect}
+                                        disabled={(date) => date > maxSelectableDate}
+                                        defaultMonth={parseISODate(fromDate)}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+
                             <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
                                 <ArrowRight className="h-4 w-4" />
                             </div>
-                            <div className="relative w-full sm:w-40">
-                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    type="date"
-                                    aria-label="To date"
-                                    value={toDate}
-                                    min={fromDate}
-                                    max={tomorrowISO()}
-                                    onChange={(e) => {
-                                        setToDate(e.target.value);
-                                        setPage(1);
-                                    }}
-                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                                />
-                            </div>
+
+                            <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
+                                        <span className="truncate">{formatDisplayDate(toDate)}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={parseISODate(toDate)}
+                                        onSelect={handleToDateSelect}
+                                        disabled={(date) => date > maxSelectableDate || date < parseISODate(fromDate)}
+                                        defaultMonth={parseISODate(toDate)}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                         <Button
@@ -435,8 +506,6 @@ export default function VehicleFinancialReportPage() {
                             accent="#a8763e"
                         />
                     </div>
-
-                    
 
                     {/* ==================== TABLE ==================== */}
                     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">

@@ -189,6 +189,8 @@ export default function ExpenseByCategoryReportPage() {
         });
     }
 
+    
+
     return (
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
             {/* ==================== HEADER ==================== */}

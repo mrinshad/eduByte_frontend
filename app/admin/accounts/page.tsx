@@ -294,7 +294,7 @@ export default function Page() {
                             Accounts
                         </h1>
                         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                            Manage and view all accounts.
+                            Manage Accounts details and records.
                         </p>
                     </div>
                 </div>

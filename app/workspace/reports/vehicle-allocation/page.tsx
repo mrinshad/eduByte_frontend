@@ -156,7 +156,7 @@ export default function VehicleStudentsReportPage() {
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-9 w-9 shrink-0"
+                            className="h-9 w-9 shrink-0 text-white"
                             onClick={() => router.back()}
                         >
                             <ArrowLeft className="h-4 w-4" />

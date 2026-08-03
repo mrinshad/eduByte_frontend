@@ -181,12 +181,12 @@ export default function Page() {
     <section className="w-full px-6 py-4 space-y-6">
 
       {/* Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+      
         <div className="flex flex-col gap-4">
           {/* Title row */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => router.back()}>
+              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
@@ -231,7 +231,7 @@ export default function Page() {
             </div>
           )}
         </div>
-      </div>
+      
       <div className="flex flex-row gap-3 justify-end">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1 lg:max-w-xs">
