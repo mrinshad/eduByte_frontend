@@ -193,7 +193,7 @@ export default function Page() {
         if (!formData.fatherMobile.trim()) {
             errors.fatherMobile = "Father's phone number is required";
         } else if (!PHONE_REGEX.test(formData.fatherMobile.trim())) {
-            errors.fatherMobile = "Enter a valid 10-digit phone number";
+            errors.fatherMobile = "Enter a valid 10-digit father's phone number";
         }
 
         if (!formData.motherName.trim()) {
@@ -202,13 +202,13 @@ export default function Page() {
         if (!formData.motherMobile.trim()) {
             errors.motherMobile = "Mother's phone number is required";
         } else if (!PHONE_REGEX.test(formData.motherMobile.trim())) {
-            errors.motherMobile = "Enter a valid 10-digit phone number";
+            errors.motherMobile = "Enter a valid 10-digit mother's phone number";
         }
 
         if (!formData.whatsappNumber.trim()) {
             errors.whatsappNumber = "Whatsapp number is required";
         } else if (!PHONE_REGEX.test(formData.whatsappNumber.trim())) {
-            errors.whatsappNumber = "Enter a valid 10-digit phone number";
+            errors.whatsappNumber = "Enter a valid 10-digit whatsapp number";
         }
 
         if (!formData.address.trim()) errors.address = "Address is required";

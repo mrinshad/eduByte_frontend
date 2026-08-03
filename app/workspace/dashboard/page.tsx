@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
 import {
   Bar,
   BarChart,
@@ -24,84 +25,62 @@ import {
   TrendingDown,
   Bus,
   Receipt,
+  Loader2,
   type LucideIcon,
 } from "lucide-react"
 
-
-// ---------------------------------------------------------------------
-// MOCK DATA — everything in this block is placeholder. Swap each of
-// these for a real API call once the corresponding endpoint exists;
-// the shapes below are what the UI expects, so wiring real data later
-// should just mean replacing the constant with a fetched value of the
-// same shape (see the workspace dashboard we built earlier for the
-// live-fetch pattern with useEffect + loading states).
-// ---------------------------------------------------------------------
-
-const MOCK_STATS = {
-  todayCollection: 42500,
-  todayCollectionDelta: 8.2, // % vs yesterday
-  weekCollection: 268400,
-  weekCollectionDelta: 12.5, // % vs last week
-  outstandingFees: 184300,
-  outstandingFeesDelta: -4.1, // % vs last week (negative = improving)
-  monthExpenses: 96750,
-  monthExpensesDelta: 3.6, // % vs last month
-  pendingFines: 27,
-  pendingFinesDelta: -9.0, // % vs last week
-}
-
-const MOCK_WEEKLY_COLLECTION = [
-  { label: "Mon", amount: 31200 },
-  { label: "Tue", amount: 28800 },
-  { label: "Wed", amount: 45600 },
-  { label: "Thu", amount: 39100 },
-  { label: "Fri", amount: 52300 },
-  { label: "Sat", amount: 28900 },
-  { label: "Sun", amount: 42500 },
-]
-
-const MOCK_PAYMENT_METHODS = [
-  { name: "UPI", value: 148200 },
-  { name: "Cash", value: 62400 },
-  { name: "Bank Transfer", value: 41800 },
-  { name: "Card", value: 16000 },
-]
-
-const MOCK_EXPENSE_CATEGORIES = [
-  { name: "Salaries & Staff", value: 38500 },
-  { name: "Transport", value: 21200 },
-  { name: "Maintenance", value: 14800 },
-  { name: "Academic Supplies", value: 12600 },
-  { name: "Utilities", value: 9650 },
-]
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  getWorkspaceDashboardStats,
+  getWeeklyCollection,
+  getExpenseByCategory,
+  getPaymentMethodSplit,
+  type WorkspaceDashboardStats,
+  type WeeklyCollectionPoint,
+  type ExpenseByCategoryPoint,
+  type PaymentMethodPoint,
+} from "@/lib/services/workspaceDashboard"
 
 // ---------------------------------------------------------------------
 // Formatting helpers
 // ---------------------------------------------------------------------
 
-function formatCurrency(amount: number) {
+function formatCurrency(amount?: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(amount)
+  }).format(amount ?? 0)
 }
 
-function formatCompactCurrency(amount: number) {
+function formatCompactCurrency(amount?: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(amount)
+  }).format(amount ?? 0)
 }
 
 const BRAND = "#556043"
 const BRAND_LIGHT = "#8a9678"
 const CHART_COLORS = ["#556043", "#8a9678", "#b7c0a8", "#3f4a32", "#d8dfcd"]
 
+const EMPTY_STATS: WorkspaceDashboardStats = {
+  todayCollection: 0,
+  todayCollectionDelta: null,
+  weekCollection: 0,
+  weekCollectionDelta: null,
+  monthExpenses: 0,
+  monthExpensesDelta: null,
+  outstandingFees: 0,
+  pendingFines: 0,
+}
+
 // ---------------------------------------------------------------------
-// Stat card — value plus a small delta badge (up/down vs a prior period)
+// Stat card — delta badge only renders when a delta value is present.
+// The API returns null for deltas it can't compute yet (e.g. no prior
+// period to compare against), so this treats null the same as "absent".
 // ---------------------------------------------------------------------
 
 function StatCard({
@@ -109,17 +88,18 @@ function StatCard({
   value,
   delta,
   deltaGoodDirection = "up",
+  loading,
   Icon,
 }: {
   label: string
   value: string
-  delta: number
+  delta?: number | null
   deltaGoodDirection?: "up" | "down"
+  loading: boolean
   Icon: LucideIcon
 }) {
-  const isPositive = delta >= 0
-  // For most stats, "up" is good (more collected). For outstanding/fines,
-  // a decrease is the good direction — deltaGoodDirection flips the color.
+  const hasDelta = typeof delta === "number"
+  const isPositive = hasDelta && delta! >= 0
   const isGood = deltaGoodDirection === "up" ? isPositive : !isPositive
 
   return (
@@ -128,18 +108,25 @@ function StatCard({
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#556043]/10 text-[#556043] dark:bg-[#556043]/20">
           <Icon className="h-4.5 w-4.5" />
         </div>
-        <span
-          className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${isGood
-            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-            : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+        {!loading && hasDelta && (
+          <span
+            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+              isGood
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
             }`}
-        >
-          {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {Math.abs(delta).toFixed(1)}%
-        </span>
+          >
+            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {Math.abs(delta!).toFixed(1)}%
+          </span>
+        )}
       </div>
       <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-0.5 truncate text-xl font-semibold text-slate-950 dark:text-white">{value}</p>
+      {loading ? (
+        <Skeleton className="mt-1.5 h-6 w-24" />
+      ) : (
+        <p className="mt-0.5 truncate text-xl font-semibold text-slate-950 dark:text-white">{value}</p>
+      )}
     </div>
   )
 }
@@ -164,6 +151,106 @@ const quickActions: { href: string; label: string; Icon: LucideIcon }[] = [
 // ---------------------------------------------------------------------
 
 export default function WorkspaceDashboardPage() {
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [loadingWeekly, setLoadingWeekly] = useState(true)
+  const [loadingExpenseCategory, setLoadingExpenseCategory] = useState(true)
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true)
+
+  const [stats, setStats] = useState<WorkspaceDashboardStats>(EMPTY_STATS)
+  const [weekly, setWeekly] = useState<WeeklyCollectionPoint[]>([])
+  const [expenseByCategory, setExpenseByCategory] = useState<ExpenseByCategoryPoint[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodPoint[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setLoadingStats(true)
+      try {
+        const data = await getWorkspaceDashboardStats()
+        if (!cancelled) setStats(data)
+      } catch (error) {
+        console.error("Failed to load workspace dashboard stats:", error)
+      } finally {
+        if (!cancelled) setLoadingStats(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setLoadingWeekly(true)
+      try {
+        const data = await getWeeklyCollection()
+        if (!cancelled) setWeekly(data)
+      } catch (error) {
+        console.error("Failed to load weekly collection trend:", error)
+      } finally {
+        if (!cancelled) setLoadingWeekly(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setLoadingExpenseCategory(true)
+      try {
+        const data = await getExpenseByCategory()
+        if (!cancelled) setExpenseByCategory(data)
+      } catch (error) {
+        console.error("Failed to load expense by category:", error)
+      } finally {
+        if (!cancelled) setLoadingExpenseCategory(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setLoadingPaymentMethods(true)
+      try {
+        const data = await getPaymentMethodSplit()
+        if (!cancelled) setPaymentMethods(data)
+      } catch (error) {
+        console.error("Failed to load payment method split:", error)
+      } finally {
+        if (!cancelled) setLoadingPaymentMethods(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const weekTotal = useMemo(() => weekly.reduce((sum, d) => sum + d.amount, 0), [weekly])
+  const expenseTotal = useMemo(
+    () => expenseByCategory.reduce((sum, d) => sum + d.value, 0),
+    [expenseByCategory]
+  )
+
   return (
     <section className="space-y-6 px-1 py-1">
       {/* Header */}
@@ -182,35 +269,36 @@ export default function WorkspaceDashboardPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard
           label="Today's Collection"
-          value={formatCurrency(MOCK_STATS.todayCollection)}
-          delta={MOCK_STATS.todayCollectionDelta}
+          value={formatCurrency(stats.todayCollection)}
+          delta={stats.todayCollectionDelta}
+          loading={loadingStats}
           Icon={Wallet}
         />
         <StatCard
           label="This Week's Collection"
-          value={formatCurrency(MOCK_STATS.weekCollection)}
-          delta={MOCK_STATS.weekCollectionDelta}
+          value={formatCurrency(stats.weekCollection)}
+          delta={stats.weekCollectionDelta}
+          loading={loadingStats}
           Icon={TrendingUp}
         />
         <StatCard
           label="Outstanding Fees"
-          value={formatCurrency(MOCK_STATS.outstandingFees)}
-          delta={MOCK_STATS.outstandingFeesDelta}
-          deltaGoodDirection="down"
+          value={formatCurrency(stats.outstandingFees)}
+          loading={loadingStats}
           Icon={AlertCircle}
         />
         <StatCard
           label="This Month's Expenses"
-          value={formatCurrency(MOCK_STATS.monthExpenses)}
-          delta={MOCK_STATS.monthExpensesDelta}
+          value={formatCurrency(stats.monthExpenses)}
+          delta={stats.monthExpensesDelta}
           deltaGoodDirection="down"
+          loading={loadingStats}
           Icon={BanknoteArrowDown}
         />
         <StatCard
           label="Pending Fines"
-          value={MOCK_STATS.pendingFines.toLocaleString()}
-          delta={MOCK_STATS.pendingFinesDelta}
-          deltaGoodDirection="down"
+          value={(stats?.pendingFines ?? 0).toLocaleString()}
+          loading={loadingStats}
           Icon={AlertTriangle}
         />
       </div>
@@ -222,34 +310,46 @@ export default function WorkspaceDashboardPage() {
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Collection — Last 7 Days
             </h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Total: {formatCurrency(MOCK_WEEKLY_COLLECTION.reduce((s, d) => s + d.amount, 0))}
-            </span>
+            {!loadingWeekly && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Total: {formatCurrency(weekTotal)}
+              </span>
+            )}
           </div>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={MOCK_WEEKLY_COLLECTION}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 12, fill: "#64748b" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "#64748b" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => formatCompactCurrency(Number(v))}
-                width={56}
-              />
-              <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
-              />
-              <Bar dataKey="amount" fill={BRAND} radius={[6, 6, 0, 0]} maxBarSize={36} />
-            </BarChart>
-          </ResponsiveContainer>
+          {loadingWeekly ? (
+            <div className="flex h-56 items-center justify-center text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : weekly.length === 0 ? (
+            <div className="flex h-56 items-center justify-center text-sm text-slate-400">
+              No collection data yet.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={weekly}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => formatCompactCurrency(Number(v))}
+                  width={56}
+                />
+                <Tooltip
+                  formatter={(value) => formatCurrency(Number(value))}
+                  contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
+                />
+                <Bar dataKey="amount" fill={BRAND} radius={[6, 6, 0, 0]} maxBarSize={36} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
@@ -257,37 +357,49 @@ export default function WorkspaceDashboardPage() {
             Payment Method Split
           </h2>
 
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie
-                data={MOCK_PAYMENT_METHODS}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={45}
-                outerRadius={70}
-                paddingAngle={2}
-              >
-                {MOCK_PAYMENT_METHODS.map((entry, index) => (
-                  <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+          {loadingPaymentMethods ? (
+            <div className="flex h-56 items-center justify-center text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div className="flex h-56 items-center justify-center text-sm text-slate-400">
+              No payments recorded yet.
+            </div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={paymentMethods}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={2}
+                  >
+                    {paymentMethods.map((entry, index) => (
+                      <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
+                    contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+                {paymentMethods.map((entry, index) => (
+                  <span key={entry.name} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                    />
+                    {entry.name}
+                  </span>
                 ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
-                contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-            {MOCK_PAYMENT_METHODS.map((entry, index) => (
-              <span key={entry.name} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                />
-                {entry.name}
-              </span>
-            ))}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -297,36 +409,48 @@ export default function WorkspaceDashboardPage() {
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Expenses by Category — This Month
           </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Total: {formatCurrency(MOCK_EXPENSE_CATEGORIES.reduce((s, d) => s + d.value, 0))}
-          </span>
+          {!loadingExpenseCategory && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Total: {formatCurrency(expenseTotal)}
+            </span>
+          )}
         </div>
 
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={MOCK_EXPENSE_CATEGORIES} layout="vertical" margin={{ left: 24 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-            <XAxis
-              type="number"
-              tick={{ fontSize: 12, fill: "#64748b" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => formatCompactCurrency(Number(v))}
-            />
-            <YAxis
-              type="category"
-              dataKey="name"
-              tick={{ fontSize: 12, fill: "#64748b" }}
-              axisLine={false}
-              tickLine={false}
-              width={130}
-            />
-            <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
-              contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
-            />
-            <Bar dataKey="value" fill={BRAND_LIGHT} radius={[0, 6, 6, 0]} maxBarSize={22} />
-          </BarChart>
-        </ResponsiveContainer>
+        {loadingExpenseCategory ? (
+          <div className="flex h-52 items-center justify-center text-slate-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : expenseByCategory.length === 0 ? (
+          <div className="flex h-52 items-center justify-center text-sm text-slate-400">
+            No expenses recorded yet.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={expenseByCategory} layout="vertical" margin={{ left: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 12, fill: "#64748b" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => formatCompactCurrency(Number(v))}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "#64748b" }}
+                axisLine={false}
+                tickLine={false}
+                width={130}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(Number(value))}
+                contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
+              />
+              <Bar dataKey="value" fill={BRAND_LIGHT} radius={[0, 6, 6, 0]} maxBarSize={22} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Quick actions — compact chips */}
