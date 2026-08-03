@@ -4,10 +4,11 @@ import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import DatePicker from "react-datepicker";
+import { format } from "date-fns";
 import { parseApiError } from "@/lib/api-error";
 import {
     ArrowLeft,
+    Calendar as CalendarIcon,
     Check,
     ChevronsUpDown,
     Loader2,
@@ -28,6 +29,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
     Command,
     CommandEmpty,
@@ -64,11 +66,6 @@ const fieldClass = `
 `;
 
 const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400";
-
-const datePickerClassName =
-    "w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-300 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
-const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
-const datePickerPopperClassName = "z-50";
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
     <label className="text-[12px] font-medium text-slate-500 dark:text-slate-400">{children}</label>
@@ -110,6 +107,7 @@ export default function Page() {
 
     // ── Form state ──────────────────────────────────────────────────────────
     const [expenseDate, setExpenseDate] = useState<Date>(new Date());
+    const [calendarOpen, setCalendarOpen] = useState(false);
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState<string>("");
     const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(true);
@@ -315,10 +313,6 @@ export default function Page() {
     const allocationPct = amount && Number(amount) > 0 ? Math.min(100, (totalAllocated / Number(amount)) * 100) : 0;
 
     // ── Field-level validation ────────────────────────────────────────────
-    // Checks each field individually (rather than one big boolean) so we can
-    // toast a specific, actionable message and highlight exactly the field
-    // that's missing — e.g. "Please select a category" instead of a generic
-    // "fill in the form" message.
     const validateExpenseForm = (): {
         valid: boolean;
         fieldErrors: typeof fieldErrors;
@@ -340,7 +334,6 @@ export default function Page() {
             }
         });
 
-        // Surface the first problem in the same order fields appear on screen.
         const firstError =
             nextFieldErrors.category ??
             nextFieldErrors.subCategory ??
@@ -367,7 +360,6 @@ export default function Page() {
             return;
         }
 
-        // Fields are individually valid — now check the allocation math.
         if (Math.abs(remaining) >= 0.01) {
             if (remaining > 0) {
                 toast.error(`₹${remaining.toLocaleString()} is still unallocated.`);
@@ -509,23 +501,37 @@ export default function Page() {
 
                     <div className="flex flex-col gap-1.5">
                         <FieldLabel>Date</FieldLabel>
-                        <DatePicker
-                            selected={expenseDate}
-                            onChange={(date: Date | null) => setExpenseDate(date ?? new Date())}
-                            dateFormat="PPP"
-                            className={datePickerClassName}
-                            calendarClassName={datePickerCalendarClassName}
-                            popperClassName={datePickerPopperClassName}
-                            wrapperClassName="w-full"
-                            showMonthDropdown
-                            showYearDropdown
-                            scrollableYearDropdown
-                            yearDropdownItemNumber={15}
-                            dropdownMode="select"
-                            openToDate={expenseDate}
-                        />
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal shadow-sm  hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
+                                        "focus:ring-2 focus:ring-[#6D755F] focus:border-transparent"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                    <span>{format(expenseDate, "PPP")}</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                align="start"
+                            >
+                                <Calendar
+                                    mode="single"
+                                    selected={expenseDate}
+                                    onSelect={(date) => {
+                                        if (date) {
+                                            setExpenseDate(date);
+                                            setCalendarOpen(false);
+                                        }
+                                    }}
+                                    defaultMonth={expenseDate}
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
-
                 </div>
 
                 {/* Category / sub category */}
