@@ -4,9 +4,11 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { parseApiError } from "@/lib/api-error";
 import {
     ArrowLeft,
+    CalendarIcon,
     Check,
     ChevronsUpDown,
     Loader2,
@@ -26,6 +28,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
     Command,
     CommandGroup,
@@ -102,28 +105,6 @@ const fieldClass = `
 
 const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400";
 
-// ── Date helpers ──
-
-// "2026-07-01T00:00:00.000Z" -> "2026-07-01" (for <input type="date">)
-function toDateInputValue(iso?: string | null): string {
-    if (!iso) return "";
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "";
-    return date.toISOString().slice(0, 10);
-}
-
-// "2026-07-01" -> "2026-07-01T00:00:00.000Z" (for the API payload)
-function toIsoDateTime(dateOnly: string): string {
-    return new Date(`${dateOnly}T00:00:00Z`).toISOString();
-}
-
-function formatDateOnly(iso?: string | null): string {
-    if (!iso) return "-";
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
 const STATUS_OPTIONS = [
     { value: "ACTIVE", label: "Active" },
     { value: "INACTIVE", label: "Inactive" },
@@ -167,9 +148,8 @@ function validatePhone(value: string): string | undefined {
     return undefined;
 }
 
-function validateJoiningDate(value: string): string | undefined {
-    if (!value.trim()) return "Joining date is required";
-    const date = new Date(value);
+function validateJoiningDate(date?: Date): string | undefined {
+    if (!date) return "Joining date is required";
     if (Number.isNaN(date.getTime())) return "Enter a valid date";
     if (date.getFullYear() < 1970) return "Enter a realistic date";
     return undefined;
@@ -204,7 +184,8 @@ export default function Page() {
     const [name, setName] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [phone, setPhone] = useState<string>("");
-    const [joiningDate, setJoiningDate] = useState<string>("");
+    const [joiningDate, setJoiningDate] = useState<Date | undefined>(undefined);
+    const [calendarOpen, setCalendarOpen] = useState(false);
     const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
     const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
@@ -236,7 +217,7 @@ export default function Page() {
                 setName(record.name ?? "");
                 setEmail(record.email ?? "");
                 setPhone(record.phone ?? "");
-                setJoiningDate(toDateInputValue(record.joiningDate));
+                setJoiningDate(record.joiningDate ? new Date(record.joiningDate) : undefined);
                 setStatus(record.status ?? "ACTIVE");
             } else {
                 toast.error("Staff record not found");
@@ -276,7 +257,7 @@ export default function Page() {
             name: name.trim(),
             email: email.trim(),
             phone: phone.trim(),
-            joiningDate: toIsoDateTime(joiningDate),
+            joiningDate: joiningDate ? joiningDate.toISOString() : "",
             status,
         };
 
@@ -333,7 +314,7 @@ export default function Page() {
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={submitting || loadingStaff || !employeeCode.trim() || !name.trim() || !email.trim() || !phone.trim() || !joiningDate.trim()}
+                        disabled={submitting || loadingStaff || !employeeCode.trim() || !name.trim() || !email.trim() || !phone.trim() || !joiningDate}
                         className="rounded-xl h-11 px-8 bg-[#6D755F] text-white hover:bg-[#5b624f] shadow-md dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                     >
                         {submitting
@@ -468,16 +449,42 @@ export default function Page() {
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <CalendarDays className="h-3.5 w-3.5 text-[#6D755F]" /> Joining Date<RequiredMark />
                                 </span>
-                                <Input
-                                    type="date"
-                                    value={joiningDate}
-                                    onChange={(e) => {
-                                        setJoiningDate(e.target.value);
-                                        setFieldErrors((prev) => ({ ...prev, joiningDate: undefined }));
-                                    }}
-                                    disabled={submitting}
-                                    className={cn(fieldClass, fieldErrors.joiningDate && fieldErrorClass)}
-                                />
+                                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            disabled={submitting}
+                                            className={cn(
+                                                "h-12 w-full justify-start rounded-xl border-slate-300 bg-white px-3 text-left text-sm font-normal shadow-sm  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
+                                                "focus:ring-2 focus:ring-[#6D755F] focus:border-transparent",
+                                                fieldErrors.joiningDate && fieldErrorClass
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                            <span>
+                                                {joiningDate ? format(joiningDate, "PPP") : "Pick a date"}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                        align="start"
+                                    >
+                                        <Calendar
+                                            mode="single"
+                                            selected={joiningDate}
+                                            onSelect={(date) => {
+                                                if (date) {
+                                                    setJoiningDate(date);
+                                                    setFieldErrors((prev) => ({ ...prev, joiningDate: undefined }));
+                                                }
+                                                setCalendarOpen(false);
+                                            }}
+                                            defaultMonth={joiningDate}
+                                            disabled={(date) => date.getFullYear() < 1970}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                                 {fieldErrors.joiningDate && (
                                     <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
                                         {fieldErrors.joiningDate}
@@ -546,7 +553,7 @@ export default function Page() {
                                     } />
                                     <InfoItem label="Email Address" value={email} />
                                     <InfoItem label="Phone Number" value={phone} />
-                                    <InfoItem label="Joining Date" value={formatDateOnly(joiningDate ? toIsoDateTime(joiningDate) : null)} />
+                                    <InfoItem label="Joining Date" value={joiningDate ? format(joiningDate, "PPP") : "-"} />
                                 </InfoGrid>
                             </div>
                         )}
