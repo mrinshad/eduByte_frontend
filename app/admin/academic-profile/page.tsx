@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
+import { format } from "date-fns"
 import {
   Layers3,
   Pencil,
@@ -11,8 +12,8 @@ import {
   X,
   Loader2,
   Trash2,
+  CalendarIcon,
 } from "lucide-react"
-import DatePicker from "react-datepicker"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,6 +43,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -80,13 +87,9 @@ const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
 const deleteIconClass = "rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
 const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
-const datePickerClassName =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
-const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950"
-const datePickerPopperClassName = "z-50"
-const datePickerMinDate = new Date(2020, 0, 1)
-const datePickerMaxDate = new Date(2050, 11, 31)
 
+const minCalendarDate = new Date(2020, 0, 1)
+const maxCalendarDate = new Date(2050, 11, 31)
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
@@ -140,27 +143,19 @@ export default function Page() {
   const [divisionDialogMode, setDivisionDialogMode] = React.useState<"add" | "edit">("add")
   const [classNameDraft, setClassNameDraft] = React.useState("")
   const [divisionNameDraft, setDivisionNameDraft] = React.useState("")
-  // Field-level errors surfaced by ReusableFormDialog for the class/division forms.
   const [classFormErrors, setClassFormErrors] = React.useState<Record<string, string | undefined>>({})
   const [divisionFormErrors, setDivisionFormErrors] = React.useState<Record<string, string | undefined>>({})
-  // Track which class/division is actually being edited, independent of
-  // the "selected" (highlighted) row. This is what fixes the bug where
-  // clicking edit on one row would show the currently-selected row's data.
   const [editingClassId, setEditingClassId] = React.useState("")
   const [editingDivisionId, setEditingDivisionId] = React.useState("")
 
-  // Loading state for the very first data fetch, used to render skeletons.
   const [isInitialLoading, setIsInitialLoading] = React.useState(true)
 
-  // Per-action loading/disabled flags so a button can't be clicked twice
-  // while its request is still in flight.
   const [isCreatingYear, setIsCreatingYear] = React.useState(false)
   const [savingYearId, setSavingYearId] = React.useState<string | null>(null)
   const [settingDefaultYearId, setSettingDefaultYearId] = React.useState<string | null>(null)
   const [isSavingClass, setIsSavingClass] = React.useState(false)
   const [isSavingDivision, setIsSavingDivision] = React.useState(false)
 
-  // Delete confirmation state for classes and divisions.
   const [classToDelete, setClassToDelete] = React.useState<SchoolClass | null>(null)
   const [divisionToDelete, setDivisionToDelete] = React.useState<Division | null>(null)
   const [isDeletingClass, setIsDeletingClass] = React.useState(false)
@@ -184,7 +179,8 @@ export default function Page() {
   const [editingYearNameDraft, setEditingYearNameDraft] = React.useState("")
   const [editingYearStartDate, setEditingYearStartDate] = React.useState<Date>()
   const [editingYearEndDate, setEditingYearEndDate] = React.useState<Date>()
-
+  const [editFromOpen, setEditFromOpen] = React.useState(false)
+  const [editToOpen, setEditToOpen] = React.useState(false)
 
   const [yearToDelete, setYearToDelete] = useState<AcademicYearSummary | null>(null)
   const [isDeletingYear, setIsDeletingYear] = useState(false)
@@ -202,7 +198,6 @@ export default function Page() {
         return
       }
     } catch (error) {
-      // fall back to the summary data already available in the row
       toast.error(
         error instanceof Error
           ? error.message
@@ -250,9 +245,6 @@ export default function Page() {
     void loadInitialData()
   }, [])
 
-  // Keep selectedClassId valid whenever the classes list changes — this is
-  // what makes the Division panel recover as soon as the first class is
-  // added, and re-targets selection if the selected class gets deleted.
   React.useEffect(() => {
     if (classes.length === 0) {
       setSelectedClassId("")
@@ -280,9 +272,6 @@ export default function Page() {
     }
   }, [yearDialogOpen])
 
-  // `target` lets the caller pass the exact row that was clicked, instead
-  // of relying on `selectedClass`, which may not have updated yet if
-  // `setSelectedClassId` was just called in the same event handler.
   function openClassDialog(mode: "add" | "edit", target?: SchoolClass) {
     const classToEdit = target ?? selectedClass ?? undefined
     setClassDialogMode(mode)
@@ -389,8 +378,6 @@ export default function Page() {
       const updatedClasses = await getClasses()
       setClasses(updatedClasses)
 
-      // If the deleted class was selected, fall back to the first remaining class
-      // and drop its cached divisions so stale data isn't shown.
       if (selectedClassId === classToDelete.id) {
         const nextClassId = updatedClasses[0]?.id ?? ""
         setSelectedClassId(nextClassId)
@@ -452,6 +439,12 @@ export default function Page() {
       setIsDeletingDivision(false)
     }
   }
+
+  const calendarTriggerClass = cn(
+    "h-10 w-full justify-start rounded-xl border border-slate-300 bg-white px-3 text-left text-sm font-normal shadow-sm outline-none transition",
+    "hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40",
+    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
+  )
 
   return (
     <TooltipProvider>
@@ -540,48 +533,62 @@ export default function Page() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                                    <DatePicker
-                                      selected={editingYearStartDate}
-                                      onChange={(date: Date | null) => setEditingYearStartDate(date ?? undefined)}
-                                      placeholderText="Select date"
-                                      dateFormat="PPP"
-                                      className={datePickerClassName}
-                                      calendarClassName={datePickerCalendarClassName}
-                                      popperClassName={datePickerPopperClassName}
-                                      wrapperClassName="w-full"
-                                      showMonthDropdown
-                                      showYearDropdown
-                                      scrollableYearDropdown
-                                      yearDropdownItemNumber={30}
-                                      dropdownMode="select"
-                                      minDate={datePickerMinDate}
-                                      maxDate={datePickerMaxDate}
-                                      openToDate={editingYearStartDate ?? new Date()}
-                                      disabled={savingYearId === year.id}
-                                    />
+                                    <Popover open={editFromOpen} onOpenChange={setEditFromOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          disabled={savingYearId === year.id}
+                                          className={calendarTriggerClass}
+                                        >
+                                          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                          <span>
+                                            {editingYearStartDate ? format(editingYearStartDate, "PPP") : "Select date"}
+                                          </span>
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={editingYearStartDate}
+                                          onSelect={(date) => {
+                                            setEditingYearStartDate(date ?? undefined)
+                                            setEditFromOpen(false)
+                                          }}
+                                          defaultMonth={editingYearStartDate}
+                                          disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
 
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                                    <DatePicker
-                                      selected={editingYearEndDate}
-                                      onChange={(date: Date | null) => setEditingYearEndDate(date ?? undefined)}
-                                      placeholderText="Select date"
-                                      dateFormat="PPP"
-                                      className={datePickerClassName}
-                                      calendarClassName={datePickerCalendarClassName}
-                                      popperClassName={datePickerPopperClassName}
-                                      wrapperClassName="w-full"
-                                      showMonthDropdown
-                                      showYearDropdown
-                                      scrollableYearDropdown
-                                      yearDropdownItemNumber={30}
-                                      dropdownMode="select"
-                                      minDate={datePickerMinDate}
-                                      maxDate={datePickerMaxDate}
-                                      openToDate={editingYearEndDate ?? new Date()}
-                                      disabled={savingYearId === year.id}
-                                    />
+                                    <Popover open={editToOpen} onOpenChange={setEditToOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          disabled={savingYearId === year.id}
+                                          className={calendarTriggerClass}
+                                        >
+                                          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                          <span>
+                                            {editingYearEndDate ? format(editingYearEndDate, "PPP") : "Select date"}
+                                          </span>
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={editingYearEndDate}
+                                          onSelect={(date) => {
+                                            setEditingYearEndDate(date ?? undefined)
+                                            setEditToOpen(false)
+                                          }}
+                                          defaultMonth={editingYearEndDate}
+                                          disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
                                 </div>
 
@@ -735,48 +742,58 @@ export default function Page() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                        <DatePicker
-                          selected={fromDate}
-                          onChange={(date: Date | null) => setFromDate(date ?? undefined)}
-                          placeholderText="Select date"
-                          dateFormat="PPP"
-                          className={datePickerClassName}
-                          calendarClassName={datePickerCalendarClassName}
-                          popperClassName={datePickerPopperClassName}
-                          wrapperClassName="w-full"
-                          showMonthDropdown
-                          showYearDropdown
-                          scrollableYearDropdown
-                          yearDropdownItemNumber={30}
-                          dropdownMode="select"
-                          minDate={datePickerMinDate}
-                          maxDate={datePickerMaxDate}
-                          openToDate={fromDate ?? new Date()}
-                          disabled={isCreatingYear}
-                        />
+                        <Popover open={fromOpen} onOpenChange={setFromOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCreatingYear}
+                              className={calendarTriggerClass}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                              <span>{fromDate ? format(fromDate, "PPP") : "Select date"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={fromDate}
+                              onSelect={(date) => {
+                                setFromDate(date ?? undefined)
+                                setFromOpen(false)
+                              }}
+                              defaultMonth={fromDate}
+                              disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                        <DatePicker
-                          selected={toDate}
-                          onChange={(date: Date | null) => setToDate(date ?? undefined)}
-                          placeholderText="Select date"
-                          dateFormat="PPP"
-                          className={datePickerClassName}
-                          calendarClassName={datePickerCalendarClassName}
-                          popperClassName={datePickerPopperClassName}
-                          wrapperClassName="w-full"
-                          showMonthDropdown
-                          showYearDropdown
-                          scrollableYearDropdown
-                          yearDropdownItemNumber={30}
-                          dropdownMode="select"
-                          minDate={datePickerMinDate}
-                          maxDate={datePickerMaxDate}
-                          openToDate={toDate ?? new Date()}
-                          disabled={isCreatingYear}
-                        />
+                        <Popover open={toOpen} onOpenChange={setToOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCreatingYear}
+                              className={calendarTriggerClass}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                              <span>{toDate ? format(toDate, "PPP") : "Select date"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={toDate}
+                              onSelect={(date) => {
+                                setToDate(date ?? undefined)
+                                setToOpen(false)
+                              }}
+                              defaultMonth={toDate}
+                              disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
@@ -1068,7 +1085,6 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Add/Edit Class — now driven by the shared ReusableFormDialog */}
         <ReusableFormDialog
           open={classDialogOpen}
           onOpenChange={(open) => {
@@ -1103,7 +1119,6 @@ export default function Page() {
           editSubmitLabel="Save"
         />
 
-        {/* Add/Edit Division — now driven by the shared ReusableFormDialog */}
         <ReusableFormDialog
           open={divisionDialogOpen}
           onOpenChange={(open) => {
@@ -1213,7 +1228,6 @@ export default function Page() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* confirmation dialog — same shape as your class one */}
         <AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
           <AlertDialogContent>
             <AlertDialogHeader>
