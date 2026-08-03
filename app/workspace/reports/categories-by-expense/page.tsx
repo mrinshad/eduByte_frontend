@@ -615,7 +615,7 @@ function ExpandedSubCategories({
                     <div className="max-h-[260px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 dark:hover:scrollbar-thumb-slate-600">
                         <table className="w-full min-w-[400px] text-xs">
                             <thead className="sticky top-0 z-10">
-                                <tr className="bg-[#556043]">
+                                <tr className="bg-[#556043] dark:bg-slate-800/60 text-white">
                                     <th className="px-3 py-2.5 text-left font-semibold text-white w-10">
                                         #
                                     </th>
