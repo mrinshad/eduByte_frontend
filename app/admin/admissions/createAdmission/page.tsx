@@ -115,9 +115,9 @@ interface EditableFeeItem {
 }
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
-    <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+    <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold text-sm">
                 {stepNumber}
             </div>
             <div>
@@ -125,7 +125,7 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
                 {description && <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>}
             </div>
         </div>
-        <div className="flex flex-col gap-6">{children}</div>
+        <div className="flex flex-col gap-5">{children}</div>
     </div>
 );
 
@@ -750,7 +750,12 @@ export default function Page() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                    <Button
+                        variant="outline"
+                        onClick={() => router.back()}
+                        disabled={submitting}
+                        className="rounded-xl h-11 px-6 bg-white border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
                         Discard
                     </Button>
                     <Button
@@ -800,8 +805,8 @@ export default function Page() {
                         title="Select Target Student Profile"
                         description="Extract lightweight items from index directory list frames securely on-click."
                     >
-                        <div className="w-full">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                        <div className="w-full flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <User className="h-3.5 w-3.5 text-[#6D755F]" /> Target Student<RequiredMark />
                             </span>
                             <Popover open={studentPopoverOpen} onOpenChange={handleStudentPopoverChange}>
@@ -1114,9 +1119,9 @@ export default function Page() {
                                         <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                                     </h3>
                                     <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="sm"
-                                        className="h-8 bg-white border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                        className="h-8 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/50"
                                         onClick={() => setSelectedVehicle(null)}
                                     >
                                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove Vehicle
@@ -1137,8 +1142,8 @@ export default function Page() {
                         title="Configure Fee Structure Template"
                         description="Load templates dynamically scoped to your selected class. All charge items are included in the submission."
                     >
-                        <div className="md:w-1/2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                        <div className="md:w-1/2 flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <Wallet className="h-3.5 w-3.5 text-[#6D755F]" /> Fee Structure Template<RequiredMark />
                             </span>
                             <Popover open={feePopoverOpen} onOpenChange={handleFeePopoverChange}>
@@ -1225,7 +1230,7 @@ export default function Page() {
                                                 setSelectedNewChargeTypeIds([]);
                                                 setIsAddChargeDialogOpen(true);
                                             }}
-                                            className="text-[#6D755F] border-[#6D755F]/30 hover:bg-[#6D755F]/10 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+                                            className="bg-[#6D755F]/10 text-[#6D755F] border border-[#6D755F] font-medium hover:bg-[#6D755F]/20 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
                                         >
                                             Add Charge Type
                                         </Button>
@@ -1393,7 +1398,7 @@ export default function Page() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    <div className="py-2 max-h-[320px] overflow-y-auto space-y-2">
+                    <div className="py-2 max-h-[320px] overflow-y-auto space-y-2 pr-1">
                         {loadingChargeTypes ? (
                             <div className="flex items-center justify-center py-8 gap-2 text-slate-500">
                                 <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
@@ -1416,31 +1421,36 @@ export default function Page() {
                                                     }
                                                 }}
                                                 className={cn(
-                                                    "flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer",
+                                                    "flex items-center justify-between p-3 rounded-xl border-2 transition-colors cursor-pointer",
                                                     isSelected
-                                                        ? "border-[#6D755F] bg-[#6D755F]/10 dark:bg-[#6D755F]/20"
-                                                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                                        ? "border-[#6D755F] bg-[#6D755F] shadow-sm"
+                                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800"
                                                 )}
                                             >
                                                 <div className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`charge-${ct.id}`}
                                                         checked={isSelected}
-                                                        className="h-4 w-4 rounded border-slate-400 dark:border-slate-600 data-[state=checked]:!bg-[#6D755F] data-[state=checked]:!text-white data-[state=checked]:!border-[#6D755F] data-[checked]:!bg-[#6D755F] data-[checked]:!text-white data-[checked]:!border-[#6D755F]"
-                                                        onCheckedChange={(checked) => {
-                                                            if (checked) {
-                                                                setSelectedNewChargeTypeIds(prev => [...prev, ct.id]);
-                                                            } else {
-                                                                setSelectedNewChargeTypeIds(prev => prev.filter(id => id !== ct.id));
-                                                            }
-                                                        }}
+                                                        tabIndex={-1}
+                                                        className={cn(
+                                                            "h-4 w-4 rounded border-slate-400 dark:border-slate-600 pointer-events-none data-[state=checked]:!bg-white data-[state=checked]:!text-[#6D755F] data-[state=checked]:!border-white",
+                                                            isSelected && "border-white"
+                                                        )}
                                                     />
-                                                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                    <span className={cn(
+                                                        "text-sm font-medium",
+                                                        isSelected ? "text-white" : "text-slate-900 dark:text-slate-100"
+                                                    )}>
                                                         {ct.name}
                                                     </span>
                                                 </div>
                                                 {ct.frequency && (
-                                                    <span className="text-xs text-slate-500 capitalize bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-normal">
+                                                    <span className={cn(
+                                                        "text-xs capitalize px-2 py-0.5 rounded-md font-normal",
+                                                        isSelected
+                                                            ? "bg-white/20 text-white"
+                                                            : "text-slate-500 bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+                                                    )}>
                                                         {ct.frequency.toLowerCase()}
                                                     </span>
                                                 )}
@@ -1463,7 +1473,8 @@ export default function Page() {
                         <AlertDialogAction
                             onClick={handleAddChargeTypes}
                             disabled={selectedNewChargeTypeIds.length === 0}
-                            className="bg-[#6D755F] hover:bg-[#5b624f] text-white disabled:opacity-50"
+                            style={{ backgroundColor: "#6D755F" }}
+                            className="!text-white font-medium shadow-sm hover:!bg-[#5b624f] disabled:opacity-40 disabled:shadow-none disabled:hover:!bg-[#6D755F]"
                         >
                             Done ({selectedNewChargeTypeIds.length})
                         </AlertDialogAction>
