@@ -312,7 +312,7 @@ export default function VehicleFinancialReportPage() {
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-9 w-9 shrink-0"
+                            className="h-9 w-9 shrink-0 text-white"
                             onClick={() => router.back()}
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -363,7 +363,7 @@ export default function VehicleFinancialReportPage() {
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+                            className="h-10 w-10 shrink-0 self-end text-white hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
                             onClick={loadAll}
                             disabled={isLoading || isRangeInvalid}
                         >
