@@ -717,7 +717,7 @@ export default function Page() {
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setYearDialogOpen(false)}>
+                    <Button variant="outline" className='text-white' onClick={() => setYearDialogOpen(false)}>
                       Close
                     </Button>
                   </DialogFooter>
