@@ -12,6 +12,7 @@ import {
     CommandGroup,
     CommandInput,
     CommandItem,
+    CommandList,
 } from "@/components/ui/command";
 import {
     Popover,
@@ -41,13 +42,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 // --- Shared UI Components from Admission Page ---
@@ -69,35 +63,13 @@ const inputClass = `
   focus:border-[#6D755F]
 `;
 
-const selectClass = `
-  h-14
-  w-full
-  rounded-xl
-  border border-slate-300 dark:border-slate-700
-  px-4
-  text-base
-  !bg-white dark:!bg-slate-900
-  !text-slate-900 dark:!text-slate-100
-  justify-between
-  focus:ring-2
-  focus:ring-[#6D755F]
-  focus:border-[#6D755F]
-`;
-
-// Dropdown panel styling (shared across all selects)
-const selectContentClass = `
+// Dropdown panel styling (shared across all popovers)
+const popoverContentClass = `
   rounded-xl
   border border-slate-200 dark:border-slate-800
   bg-white dark:bg-slate-900
   shadow-lg
-`;
-
-// Updated SelectItem theme styling
-const selectItemClass = `
-  rounded-lg cursor-pointer text-slate-900 dark:text-slate-100
-  focus:bg-[#6D755F]/10 dark:focus:bg-[#6D755F]/20
-  data-[highlighted]:bg-[#6D755F] data-[highlighted]:text-white
-  data-[state=checked]:bg-[#6D755F] data-[state=checked]:text-white
+  p-0
 `;
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
@@ -183,8 +155,10 @@ export default function Page() {
     const [description, setDescription] = useState("");
     const [isActive, setIsActive] = useState(true);
 
-
-    const [open, setOpen] = useState(false);
+    // Popover open states
+    const [classOpen, setClassOpen] = useState(false);
+    const [yearOpen, setYearOpen] = useState(false);
+    const [openChargeIndex, setOpenChargeIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -444,34 +418,48 @@ export default function Page() {
                                 <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <Layers className="h-3.5 w-3.5 text-[#6D755F]" /> Target Class<RequiredMark />
                                 </Label>
-                                <Select
-                                    value={selectedClass}
-                                    onValueChange={(value) => {
-                                        setSelectedClass(value);
-                                        setFieldErrors((prev) => ({ ...prev, selectedClass: undefined }));
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        className={cn(
-                                            selectClass,
-                                            fieldErrors.selectedClass && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
-                                        )}
-                                    >
-                                        <SelectValue placeholder="Select class name" />
-                                    </SelectTrigger>
-
-                                    <SelectContent className={selectContentClass}>
-                                        {classes.map((cls) => (
-                                            <SelectItem
-                                                key={cls.id}
-                                                value={cls.id}
-                                                className={selectItemClass}
-                                            >
-                                                {cls.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Popover open={classOpen} onOpenChange={setClassOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={classOpen}
+                                            className={cn(
+                                                "h-14 w-full justify-between rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                                                "focus:ring-2 focus:ring-[#6D755F] focus:border-[#6D755F]",
+                                                fieldErrors.selectedClass && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                            )}
+                                        >
+                                            {selectedClass ? classes.find((c) => c.id === selectedClass)?.name : "Select class name"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className={cn(popoverContentClass, "w-[--radix-popover-trigger-width]")} align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search class..." />
+                                            <CommandList>
+                                                <CommandEmpty>No classes found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {classes.map((cls) => (
+                                                        <CommandItem
+                                                            key={cls.id}
+                                                            value={cls.name}
+                                                            onSelect={() => {
+                                                                setSelectedClass(cls.id);
+                                                                setFieldErrors((prev) => ({ ...prev, selectedClass: undefined }));
+                                                                setClassOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedClass === cls.id ? "opacity-100" : "opacity-0")} />
+                                                            <span>{cls.name}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                                 {fieldErrors.selectedClass && (
                                     <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
                                         {fieldErrors.selectedClass}
@@ -484,35 +472,51 @@ export default function Page() {
                                 <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <Calendar className="h-3.5 w-3.5 text-[#6D755F]" /> Academic Year<RequiredMark />
                                 </Label>
-                                <Select
-                                    value={selectedAcademicYear}
-                                    onValueChange={(value) => {
-                                        setSelectedAcademicYear(value);
-                                        setFieldErrors((prev) => ({ ...prev, selectedAcademicYear: undefined }));
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        className={cn(
-                                            selectClass,
-                                            fieldErrors.selectedAcademicYear && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
-                                        )}
-                                    >
-                                        <SelectValue placeholder="Select Academic Year" />
-                                    </SelectTrigger>
-
-                                    <SelectContent className={selectContentClass}>
-                                        {academicYears.map((year) => (
-                                            <SelectItem
-                                                key={year.id}
-                                                value={year.id}
-                                                className={selectItemClass}
-                                            >
-                                                {year.name}
-                                                {year.isActive ? " (Active)" : ""}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Popover open={yearOpen} onOpenChange={setYearOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={yearOpen}
+                                            className={cn(
+                                                "h-14 w-full justify-between rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                                                "focus:ring-2 focus:ring-[#6D755F] focus:border-[#6D755F]",
+                                                fieldErrors.selectedAcademicYear && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                            )}
+                                        >
+                                            {selectedAcademicYear ? academicYears.find((y) => y.id === selectedAcademicYear)?.name : "Select Academic Year"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className={cn(popoverContentClass, "w-[--radix-popover-trigger-width]")} align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search academic year..." />
+                                            <CommandList>
+                                                <CommandEmpty>No academic years found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {academicYears.map((year) => (
+                                                        <CommandItem
+                                                            key={year.id}
+                                                            value={year.name}
+                                                            onSelect={() => {
+                                                                setSelectedAcademicYear(year.id);
+                                                                setFieldErrors((prev) => ({ ...prev, selectedAcademicYear: undefined }));
+                                                                setYearOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedAcademicYear === year.id ? "opacity-100" : "opacity-0")} />
+                                                            <span>
+                                                                {year.name}
+                                                                {year.isActive ? " (Active)" : ""}
+                                                            </span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                                 {fieldErrors.selectedAcademicYear && (
                                     <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-1">
                                         {fieldErrors.selectedAcademicYear}
@@ -638,36 +642,49 @@ export default function Page() {
                                                         )}
                                                     >
                                                         <div className="w-full md:flex-1">
-                                                            <Select
-                                                                value={item.chargeTypeId}
-                                                                onValueChange={(value) => {
-                                                                    const updated = [...feeItems];
-                                                                    updated[index].chargeTypeId = value;
-                                                                    setFeeItems(updated);
-                                                                    clearItemError(index);
-                                                                }}
-                                                            >
-                                                                <SelectTrigger
-                                                                    className={cn(
-                                                                        inputClass,
-                                                                        "h-11",
-                                                                        rowError && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
-                                                                    )}
-                                                                >
-                                                                    <SelectValue placeholder="Select Charge Type" />
-                                                                </SelectTrigger>
-                                                                <SelectContent className={cn(selectContentClass, "p-1")}>
-                                                                    {chargeTypes.map((chargeType) => (
-                                                                        <SelectItem
-                                                                            key={chargeType.id}
-                                                                            value={chargeType.id}
-                                                                            className={selectItemClass}
-                                                                        >
-                                                                            {chargeType.name}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
+                                                            <Popover open={openChargeIndex === index} onOpenChange={(open) => setOpenChargeIndex(open ? index : null)}>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        role="combobox"
+                                                                        className={cn(
+                                                                            inputClass,
+                                                                            "h-11 justify-between",
+                                                                            rowError && "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400"
+                                                                        )}
+                                                                    >
+                                                                        {item.chargeTypeId ? chargeTypes.find((ct) => ct.id === item.chargeTypeId)?.name : "Select Charge Type"}
+                                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className={cn(popoverContentClass, "w-[--radix-popover-trigger-width]")} align="start">
+                                                                    <Command>
+                                                                        <CommandInput placeholder="Search charge type..." />
+                                                                        <CommandList>
+                                                                            <CommandEmpty>No charge types found.</CommandEmpty>
+                                                                            <CommandGroup>
+                                                                                {chargeTypes.map((chargeType) => (
+                                                                                    <CommandItem
+                                                                                        key={chargeType.id}
+                                                                                        value={chargeType.name}
+                                                                                        onSelect={() => {
+                                                                                            const updated = [...feeItems];
+                                                                                            updated[index].chargeTypeId = chargeType.id;
+                                                                                            setFeeItems(updated);
+                                                                                            clearItemError(index);
+                                                                                            setOpenChargeIndex(null);
+                                                                                        }}
+                                                                                        className="cursor-pointer"
+                                                                                    >
+                                                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", item.chargeTypeId === chargeType.id ? "opacity-100" : "opacity-0")} />
+                                                                                        <span>{chargeType.name}</span>
+                                                                                    </CommandItem>
+                                                                                ))}
+                                                                            </CommandGroup>
+                                                                        </CommandList>
+                                                                    </Command>
+                                                                </PopoverContent>
+                                                            </Popover>
                                                         </div>
 
                                                         <div className="w-full md:w-48 relative">

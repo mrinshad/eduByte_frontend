@@ -504,7 +504,7 @@ export default function Page() {
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button className="text-white w-full sm:w-auto" variant="outline" onClick={resetAndCloseCreate}>
-              <X className="h-4 w-4 mr-1.5" />
+              
               Cancel
             </Button>
             <Button onClick={() => void handleCreate()} disabled={submitting} className="w-full sm:w-auto">

@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowLeft,
     CalendarIcon,
+    Check,
+    ChevronsUpDown,
     User,
     Users,
     MapPin,
@@ -20,17 +22,16 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Command,
+    CommandGroup,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import {
@@ -92,13 +93,6 @@ const fieldErrorClass = `
   !border-red-400 dark:!border-red-500/60 focus:!ring-red-400/40 focus:!border-red-400
 `;
 
-// ── Shared Select Item Theme ──
-const selectItemClass = `
-  rounded-lg cursor-pointer text-slate-900 dark:text-slate-100
-  data-[highlighted]:bg-[#556043] data-[highlighted]:text-white
-  data-[state=checked]:bg-[#556043] data-[state=checked]:text-white
-`;
-
 // Small red text shown under an invalid field
 const FieldError = ({ message }: { message?: string }) =>
     message ? (
@@ -107,7 +101,9 @@ const FieldError = ({ message }: { message?: string }) =>
 
 export default function Page() {
     const [date, setDate] = React.useState<Date>();
-    const [open, setOpen] = React.useState(false);
+    const [calendarOpen, setCalendarOpen] = React.useState(false);
+    const [genderOpen, setGenderOpen] = useState(false);
+    const [bloodGroupOpen, setBloodGroupOpen] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams.get("id");
@@ -375,10 +371,11 @@ export default function Page() {
                                 <Label className="text-slate-700 dark:text-slate-300">
                                     Date Of Birth<RequiredMark />
                                 </Label>
-                                <Popover open={open} onOpenChange={setOpen}>
+                                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
+                                            disabled={loading}
                                             className={cn(
                                                 "justify-start text-left font-normal",
                                                 fieldClass,
@@ -408,7 +405,7 @@ export default function Page() {
                                                     delete next.dob;
                                                     return next;
                                                 });
-                                                setOpen(false);
+                                                setCalendarOpen(false);
                                             }}
                                         />
                                     </PopoverContent>
@@ -417,40 +414,96 @@ export default function Page() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="gender" className="text-slate-700 dark:text-slate-300">
+                                <Label className="text-slate-700 dark:text-slate-300">
                                     Gender<RequiredMark />
                                 </Label>
-                                <Select
-                                    value={formData.gender}
-                                    onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value as "Male" | "Female" }))}
-                                >
-                                    <SelectTrigger id="gender" className={fieldClass}>
-                                        <SelectValue placeholder="Select Gender" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 shadow-lg p-1">
-                                        <SelectItem value="Male" className={selectItemClass}>Male</SelectItem>
-                                        <SelectItem value="Female" className={selectItemClass}>Female</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Popover open={genderOpen} onOpenChange={setGenderOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={genderOpen}
+                                            disabled={loading}
+                                            className={cn("w-full justify-between font-normal text-left", fieldClass)}
+                                        >
+                                            {formData.gender || "Select Gender"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                        <Command>
+                                            <CommandList>
+                                                <CommandGroup>
+                                                    {["Male", "Female"].map((gender) => (
+                                                        <CommandItem
+                                                            key={gender}
+                                                            value={gender}
+                                                            onSelect={() => {
+                                                                setFormData((prev) => ({ ...prev, gender: gender as "Male" | "Female" }));
+                                                                setGenderOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#556043]", formData.gender === gender ? "opacity-100" : "opacity-0")} />
+                                                            <span>{gender}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="bloodGroup" className="text-slate-700 dark:text-slate-300">Blood Group</Label>
-                                <Select
-                                    value={formData.bloodGroup}
-                                    onValueChange={(value) => setFormData((prev) => ({ ...prev, bloodGroup: value }))}
-                                >
-                                    <SelectTrigger id="bloodGroup" className={fieldClass}>
-                                        <SelectValue placeholder="Select Blood Group" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 shadow-lg p-1">
-                                        {bloodGroups.map((group) => (
-                                            <SelectItem key={group} value={group} className={selectItemClass}>
-                                                {group}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Label className="text-slate-700 dark:text-slate-300">Blood Group</Label>
+                                <Popover open={bloodGroupOpen} onOpenChange={setBloodGroupOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={bloodGroupOpen}
+                                            disabled={loading}
+                                            className={cn("w-full justify-between font-normal text-left", fieldClass, !formData.bloodGroup && "text-slate-400")}
+                                        >
+                                            {formData.bloodGroup || "Select Blood Group"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                        <Command>
+                                            <CommandList>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="none"
+                                                        onSelect={() => {
+                                                            setFormData((prev) => ({ ...prev, bloodGroup: "" }));
+                                                            setBloodGroupOpen(false);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#556043]", formData.bloodGroup === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-100">Not specified</span>
+                                                    </CommandItem>
+                                                    {bloodGroups.map((group) => (
+                                                        <CommandItem
+                                                            key={group}
+                                                            value={group}
+                                                            onSelect={() => {
+                                                                setFormData((prev) => ({ ...prev, bloodGroup: group }));
+                                                                setBloodGroupOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#556043]", formData.bloodGroup === group ? "opacity-100" : "opacity-0")} />
+                                                            <span>{group}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             <div className="space-y-2">

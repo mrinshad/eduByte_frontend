@@ -1,14 +1,14 @@
 "use client";
 
-import * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { parseApiError } from "@/lib/api-error";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     ArrowLeft,
-    Calendar as CalendarIcon,
+    CalendarIcon,
     Check,
     ChevronsUpDown,
     Loader2,
@@ -19,8 +19,6 @@ import {
     Plus,
     Trash2,
 } from "lucide-react";
-
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -456,7 +454,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingStaffList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -470,8 +468,8 @@ export default function Page() {
                                                         }}
                                                         className="cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4", selectedStaffId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                        <span className="text-slate-500">No staff</span>
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedStaffId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-100">No staff</span>
                                                     </CommandItem>
                                                     {staffDropdown.map((staff) => (
                                                         <CommandItem
@@ -483,9 +481,9 @@ export default function Page() {
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{staff.name}</span>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{staff.name}</span>
                                                                 <span className="text-xs text-slate-400">Code: {staff.employeeCode}</span>
                                                             </div>
                                                         </CommandItem>
@@ -506,7 +504,7 @@ export default function Page() {
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal shadow-sm  hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
+                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal shadow-sm hover:bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
                                         "focus:ring-2 focus:ring-[#6D755F] focus:border-transparent"
                                     )}
                                 >
@@ -563,7 +561,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingCategoryList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -579,7 +577,7 @@ export default function Page() {
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
                                                             <span>{category.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -623,7 +621,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingSubCategoryList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -640,7 +638,7 @@ export default function Page() {
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
                                                             <span>{subCategory.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -697,7 +695,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingVehicleList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -711,8 +709,8 @@ export default function Page() {
                                                         }}
                                                         className="cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                        <span className="text-slate-500">No vehicle</span>
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-200">No vehicle</span>
                                                     </CommandItem>
                                                     {vehiclesDropdown.map((vehicle) => (
                                                         <CommandItem
@@ -724,9 +722,9 @@ export default function Page() {
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                                 <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
                                                             </div>
                                                         </CommandItem>
@@ -823,7 +821,7 @@ export default function Page() {
                                                         <CommandList>
                                                             {loadingAccountList ? (
                                                                 <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                                                 </div>
                                                             ) : (
                                                                 <>
@@ -839,7 +837,7 @@ export default function Page() {
                                                                                 }}
                                                                                 className="cursor-pointer"
                                                                             >
-                                                                                <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
                                                                                 <span>{account.name}</span>
                                                                             </CommandItem>
                                                                         ))}
