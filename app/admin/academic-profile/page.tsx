@@ -725,7 +725,7 @@ export default function Page() {
               </Dialog>
 
               <Dialog open={createYearOpen} onOpenChange={setCreateYearOpen}>
-                <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
+                <DialogContent className="sm:max-w-xl text-slate-950 dark:bg-slate-900 dark:text-slate-50 [&>button:last-child]:hidden">
                   <DialogHeader>
                     <DialogTitle className={titleTextClass}>Create Academic Year</DialogTitle>
                     <DialogDescription className={supportingTextClass}>
@@ -735,13 +735,13 @@ export default function Page() {
 
                   <div className="space-y-4 py-2">
                     <div>
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
+                      <label className="text-sm font-medium text-slate-100 dark:text-slate-200">Academic Name</label>
                       <Input placeholder="2026 - 2027" className="mt-2" value={yearNameDraft} onChange={(event) => setYearNameDraft(event.target.value)} disabled={isCreatingYear} />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
+                        <label className="text-sm font-medium text-slate-100 dark:text-slate-200">From</label>
                         <Popover open={fromOpen} onOpenChange={setFromOpen}>
                           <PopoverTrigger asChild>
                             <Button
@@ -769,7 +769,7 @@ export default function Page() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
+                        <label className="text-sm font-medium text-slate-100 dark:text-slate-200">To</label>
                         <Popover open={toOpen} onOpenChange={setToOpen}>
                           <PopoverTrigger asChild>
                             <Button
@@ -799,7 +799,7 @@ export default function Page() {
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" disabled={isCreatingYear} onClick={() => setCreateYearOpen(false)}>
+                    <Button variant="outline" className="text-white" disabled={isCreatingYear} onClick={() => setCreateYearOpen(false)}>
                       Cancel
                     </Button>
 
