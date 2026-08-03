@@ -424,7 +424,7 @@ export default function Page() {
         <div className="flex w-full rounded-2xl flex-col bg-white dark:bg-slate-950 lg:h-[80vh] lg:flex-row lg:overflow-hidden">
 
             {/* ── Left: form fields ───────────────────────────────────── */}
-            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:p-10">
+            <div className="flex flex-1 flex-col gap-6 h-[590px] overflow-y-auto p-6 lg:p-10">
                 <div className="flex items-center gap-3">
                     <Button
                         className="bg-background text-foreground hover:opacity-90 shadow-sm"
