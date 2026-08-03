@@ -207,7 +207,36 @@ export default function DailyCollectionReportPage() {
           </div>
 
           {/* ── Filters live here, right next to the refresh button ── */}
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
+              disabled={loading || isRangeInvalid}
+            >
+              <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+        </div>
+
+        {isRangeInvalid && (
+          <p className="mt-3 text-xs font-medium text-red-600">
+            &quot;From&quot; date must be before &quot;To&quot; date.
+          </p>
+        )}
+      </div>
+
+      {/* ── Search, justified to the end ── */}
+      <div className="flex justify-end gap-2 sm:gap-3">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search student..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
             <Select
               value={classFilter}
               onValueChange={(v) => {
@@ -260,36 +289,8 @@ export default function DailyCollectionReportPage() {
               </Button>
             )}
 
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-              onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
-              disabled={loading || isRangeInvalid}
-            >
-              <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            
           </div>
-        </div>
-
-        {isRangeInvalid && (
-          <p className="mt-3 text-xs font-medium text-red-600">
-            &quot;From&quot; date must be before &quot;To&quot; date.
-          </p>
-        )}
-      </div>
-
-      {/* ── Search, justified to the end ── */}
-      <div className="flex justify-end">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Search student..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-          />
-        </div>
       </div>
 
       {/* ── Table ── */}

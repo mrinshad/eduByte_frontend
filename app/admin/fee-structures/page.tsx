@@ -207,7 +207,33 @@ export default function Page() {
           </div>
 
           {/* Search + filters row */}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          
+
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <span className="text-xs font-medium text-slate-400">Filters:</span>
+              {classFilter !== "all" && (
+                <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
+              )}
+              {academicYearFilter !== "all" && (
+                <FilterChip label={`Year: ${academicYearFilter}`} onRemove={() => { setAcademicYearFilter("all"); setCurrentPage(1); }} />
+              )}
+              {statusFilter !== "all" && (
+                <FilterChip label={`Status: ${statusFilter}`} onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }} />
+              )}
+              {search.trim() && (
+                <FilterChip
+                  label={`Search: ${search}`}
+                  onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-row gap-3 justify-end">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1 lg:max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -285,29 +311,6 @@ export default function Page() {
               )}
             </div>
           </div>
-
-          {/* Active filter chips */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <span className="text-xs font-medium text-slate-400">Filters:</span>
-              {classFilter !== "all" && (
-                <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
-              )}
-              {academicYearFilter !== "all" && (
-                <FilterChip label={`Year: ${academicYearFilter}`} onRemove={() => { setAcademicYearFilter("all"); setCurrentPage(1); }} />
-              )}
-              {statusFilter !== "all" && (
-                <FilterChip label={`Status: ${statusFilter}`} onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }} />
-              )}
-              {search.trim() && (
-                <FilterChip
-                  label={`Search: ${search}`}
-                  onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
-                />
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Table */}

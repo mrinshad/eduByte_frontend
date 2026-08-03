@@ -383,6 +383,18 @@ export default function VehicleFinancialReportPage() {
                 </div>
             ) : (
                 <div className="space-y-4 sm:space-y-6">
+                    {/* ==================== SEARCH ==================== */}
+                    <div className="flex justify-end">
+                        <div className="relative w-full sm:max-w-xs">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Search vehicle, number or driver..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 dark:focus-visible:border-[#6b7a55] dark:focus-visible:ring-[#6b7a55]/30"
+                            />
+                        </div>
+                    </div>
                     {/* ==================== SUMMARY CARDS ==================== */}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
                         <SummaryCard
@@ -424,18 +436,7 @@ export default function VehicleFinancialReportPage() {
                         />
                     </div>
 
-                    {/* ==================== SEARCH ==================== */}
-                    <div className="flex justify-end">
-                        <div className="relative w-full sm:max-w-xs">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <Input
-                                placeholder="Search vehicle, number or driver..."
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 dark:focus-visible:border-[#6b7a55] dark:focus-visible:ring-[#6b7a55]/30"
-                            />
-                        </div>
-                    </div>
+                    
 
                     {/* ==================== TABLE ==================== */}
                     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
