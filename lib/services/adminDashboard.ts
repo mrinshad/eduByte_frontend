@@ -49,15 +49,15 @@ export async function getAdminDashboardCards(): Promise<AdminDashboardCards> {
       typeof d.totalStudentsDelta === "number"
         ? d.totalStudentsDelta
         : typeof d.studentDelta === "number"
-        ? d.studentDelta
-        : null,
+          ? d.studentDelta
+          : null,
     totalStaff: typeof d.totalStaff === "number" ? d.totalStaff : 0,
     totalStaffDelta:
       typeof d.totalStaffDelta === "number"
         ? d.totalStaffDelta
         : typeof d.staffDelta === "number"
-        ? d.staffDelta
-        : null,
+          ? d.staffDelta
+          : null,
     totalClasses: typeof d.totalClasses === "number" ? d.totalClasses : 0,
     totalVehicles: typeof d.totalVehicles === "number" ? d.totalVehicles : 0,
     activeAcademicYear: d.activeAcademicYear ? String(d.activeAcademicYear) : "—",
