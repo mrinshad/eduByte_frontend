@@ -239,9 +239,13 @@
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+              <Button
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Fee Generation</h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">

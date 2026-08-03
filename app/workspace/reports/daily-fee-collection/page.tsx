@@ -186,12 +186,11 @@ export default function DailyCollectionReportPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Button
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
               size="icon"
-              variant="outline"
-              className="h-9 w-9 shrink-0 text-white"
               onClick={() => router.back()}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
@@ -208,14 +207,14 @@ export default function DailyCollectionReportPage() {
 
           {/* ── Filters live here, right next to the refresh button ── */}
           <Button
-              size="icon"
-              variant="outline"
-              className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white"
-              onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
-              disabled={loading || isRangeInvalid}
-            >
-              <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            size="icon"
+            variant="outline"
+            className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white"
+            onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
+            disabled={loading || isRangeInvalid}
+          >
+            <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
 
         {isRangeInvalid && (
@@ -237,60 +236,60 @@ export default function DailyCollectionReportPage() {
           />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-            <Select
-              value={classFilter}
-              onValueChange={(v) => {
-                setClassFilter(v);
-                setCurrentPage(1);
-              }}
+          <Select
+            value={classFilter}
+            onValueChange={(v) => {
+              setClassFilter(v);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classOptions.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={paymentMethodFilter}
+            onValueChange={(v) => {
+              setPaymentMethodFilter(v);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-[160px] rounded-lg border-slate-300">
+              <SelectValue placeholder="All Payment Methods" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payment Methods</SelectItem>
+              {paymentMethodOptions.map((pm) => (
+                <SelectItem key={pm} value={pm}>
+                  {pm}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+              onClick={clearAllFilters}
             >
-              <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classOptions.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
 
-            <Select
-              value={paymentMethodFilter}
-              onValueChange={(v) => {
-                setPaymentMethodFilter(v);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 w-[160px] rounded-lg border-slate-300">
-                <SelectValue placeholder="All Payment Methods" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Payment Methods</SelectItem>
-                {paymentMethodOptions.map((pm) => (
-                  <SelectItem key={pm} value={pm}>
-                    {pm}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
-                onClick={clearAllFilters}
-              >
-                <X className="mr-1 h-3.5 w-3.5" />
-                Clear
-              </Button>
-            )}
-
-            
-          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -372,8 +371,8 @@ export default function DailyCollectionReportPage() {
                           <span
                             key={i}
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.type === "Fine"
-                                ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-                                : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+                              : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                               }`}
                           >
                             {c.type === "Fine" ? `Fine: ${c.fineType}` : c.chargeType}

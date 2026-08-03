@@ -199,13 +199,12 @@ export default function FeeCollectionPage() {
         {/* Left: Title */}
         <div className="flex items-center gap-3 sm:gap-4">
           <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               Fee Collection

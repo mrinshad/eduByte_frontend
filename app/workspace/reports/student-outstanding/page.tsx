@@ -97,9 +97,8 @@ export default function StudentOutstandingPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
             <Button
-              variant="outline"
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
               size="icon"
-              className="h-9 w-9 shrink-0"
               onClick={() => router.back()}
             >
               <ArrowLeft className="h-4 w-4 text-foreground" />

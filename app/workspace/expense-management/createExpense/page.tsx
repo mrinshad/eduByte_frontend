@@ -426,8 +426,12 @@ export default function Page() {
             {/* ── Left: form fields ───────────────────────────────────── */}
             <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:p-10">
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" size="icon" onClick={() => router.back()} className="h-9 w-9 shrink-0 rounded-lg border-slate-200 dark:border-slate-700">
-                        <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+                    <Button
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>

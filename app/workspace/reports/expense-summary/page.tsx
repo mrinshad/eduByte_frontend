@@ -170,13 +170,12 @@ export default function ExpenseSummaryPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-9 w-9 shrink-0 text-white"
-                            onClick={() => router.back()}
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Expense Summary
