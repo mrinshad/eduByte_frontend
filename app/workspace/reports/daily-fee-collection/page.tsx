@@ -181,17 +181,16 @@ export default function DailyCollectionReportPage() {
 
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6">
-      {/* ── Header with date range ── */}
+      {/* ── Header: title + filters + refresh, all together ── */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Button
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
               size="icon"
-              variant="outline"
-              className="h-9 w-9 shrink-0"
               onClick={() => router.back()}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
@@ -206,48 +205,16 @@ export default function DailyCollectionReportPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {/* <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
-              <div className="relative w-full sm:w-40">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="date"
-                  aria-label="From date"
-                  value={fromDate}
-                  max={todayISO()}
-                  onChange={(e) => handleFromDateChange(e.target.value)}
-                  className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                />
-              </div>
-
-              <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
-                <ArrowRight className="h-4 w-4" />
-              </div>
-
-              <div className="relative w-full sm:w-40">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="date"
-                  aria-label="To date"
-                  value={toDate}
-                  min={fromDate}
-                  max={todayISO()}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                />
-              </div>
-            </div> */}
-
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
-              onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
-              disabled={loading || isRangeInvalid}
-            >
-              <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
+          {/* ── Filters live here, right next to the refresh button ── */}
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white"
+            onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
+            disabled={loading || isRangeInvalid}
+          >
+            <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
 
         {isRangeInvalid && (
@@ -257,8 +224,8 @@ export default function DailyCollectionReportPage() {
         )}
       </div>
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* ── Search, justified to the end ── */}
+      <div className="flex justify-end gap-2 sm:gap-3">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
@@ -268,8 +235,7 @@ export default function DailyCollectionReportPage() {
             className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
           />
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Select
             value={classFilter}
             onValueChange={(v) => {
@@ -321,6 +287,8 @@ export default function DailyCollectionReportPage() {
               Clear
             </Button>
           )}
+
+
         </div>
       </div>
 
@@ -403,8 +371,8 @@ export default function DailyCollectionReportPage() {
                           <span
                             key={i}
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.type === "Fine"
-                                ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-                                : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+                              : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                               }`}
                           >
                             {c.type === "Fine" ? `Fine: ${c.fineType}` : c.chargeType}

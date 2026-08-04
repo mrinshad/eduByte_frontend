@@ -9,6 +9,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { parseApiError } from "@/lib/api-error"
 import {
   ArrowLeft,
@@ -22,13 +33,14 @@ import {
   Loader2,
   Eye,
   CreditCard,
-  Settings2
+  Settings2,
+  Undo2
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
+import StudentFineFormDialog from "@/components/common/StudentFineFormDialog"
 import {
   Dialog,
   DialogContent,
@@ -56,37 +68,13 @@ import {
 import {
   createFineTypes,
   updateFineType,
+  deleteFineType,
   getFineTypes,
   getStudentFines,
-  getStudentAdmissionAndNameWithEnrollment,
-  createStudentFine,
-  updateStudentFine,
+  reverseStudentFine,
   type FineType,
   type StudentFine,
-  type StudentAdmissionAndNameWithEnrollment,
 } from "@/lib/services/fineTypes"
-
-type StudentEnrollmentOption = Omit<StudentAdmissionAndNameWithEnrollment, "enrollmentId"> & {
-  enrollmentId: string
-}
-
-// ---------------------------------------------------------------------
-// Shared validation UI bits (same pattern as the Create Expense form)
-// ---------------------------------------------------------------------
-
-const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus-visible:!ring-red-400"
-
-const FieldError = ({ children }: { children?: string }) => {
-  if (!children) return null
-  return <p className="text-xs font-medium text-red-600 dark:text-red-400 pl-0.5 mt-1">{children}</p>
-}
-
-type FineFieldErrors = {
-  studentId?: string
-  fineTypeId?: string
-  amount?: string
-  reason?: string
-}
 
 export default function Page() {
   const router = useRouter()
@@ -187,6 +175,23 @@ export default function Page() {
     }
   }
 
+  async function handleDeleteFineType() {
+    if (!fineTypeToDelete) return
+    setIsDeletingFineType(true)
+    try {
+      await deleteFineType(fineTypeToDelete.id)
+      setFineTypes((prev) => prev.filter((item) => item.id !== fineTypeToDelete.id))
+      toast.success("Fine type deleted")
+      setFineTypeToDelete(null)
+    } catch (error) {
+      const parsed = parseApiError(error, "Failed to delete fine type")
+      toast.error(parsed.message)
+      if (parsed.isAuthError) router.push("/login")
+    } finally {
+      setIsDeletingFineType(false)
+    }
+  }
+
   // ---------------------------------------------------------------------
   // Student Fines table (search, pagination, fetch)
   // ---------------------------------------------------------------------
@@ -262,129 +267,75 @@ export default function Page() {
   }, [totalPages, page])
 
   // ---------------------------------------------------------------------
-  // New Fine dialog (student picker, fine type, amount, reason)
+  // Create / Edit Fine dialog — now delegated to StudentFineFormDialog.
+  // This page only tracks which row (if any) is being edited, and passes
+  // its values through as `initialValues`; the dialog owns its own form
+  // state, validation, and student/fine-type loading internally.
   // ---------------------------------------------------------------------
-  const [editingFineId, setEditingFineId] = useState<string | null>(null)
   const [newFineOpen, setNewFineOpen] = useState(false)
-  const [students, setStudents] = useState<StudentEnrollmentOption[]>([])
+  const [editingFineId, setEditingFineId] = useState<string | null>(null)
+  const [editingFineInitialValues, setEditingFineInitialValues] = useState<
+    | {
+        enrollmentId: string
+        fineTypeId: string
+        amount: string
+        reason: string
+      }
+    | undefined
+  >(undefined)
 
-  const [fineForm, setFineForm] = useState({
-    studentId: "",
-    fineTypeId: "",
-    amount: "",
-    reason: "",
-  })
-
-  // Field-level validation errors — mirrors the Create Expense form pattern.
-  const [fineFieldErrors, setFineFieldErrors] = useState<FineFieldErrors>({})
-  const [fineSubmitting, setFineSubmitting] = useState(false)
-
-  const resetFineForm = () => {
+  function openCreateFineDialog() {
     setEditingFineId(null)
-    setFineForm({
-      studentId: "",
-      fineTypeId: "",
-      amount: "",
-      reason: "",
+    setEditingFineInitialValues(undefined)
+    setNewFineOpen(true)
+  }
+
+  function openEditFineDialog(row: StudentFine) {
+    setEditingFineId(row.id)
+    setEditingFineInitialValues({
+      enrollmentId: row.enrollmentId ?? "",
+      fineTypeId: row.fineId ?? "",
+      amount: row.amount ?? "",
+      reason: row.reason ?? "",
     })
-    setFineFieldErrors({})
+    setNewFineOpen(true)
   }
 
-  async function loadStudents() {
-    try {
-      const data = await getStudentAdmissionAndNameWithEnrollment()
-      setStudents(
-        data.filter((student): student is StudentEnrollmentOption => Boolean(student.enrollmentId))
-      )
-    } catch (error) {
-      const parsed = parseApiError(error, "Failed to load students")
-      toast.error(parsed.message)
-      if (parsed.isAuthError) router.push("/login")
-    }
+  const [reverseTarget, setReverseTarget] = useState<StudentFine | null>(null)
+  const [reverseReason, setReverseReason] = useState("")
+  const [confirmReverse, setConfirmReverse] = useState(false)
+  const [isReversing, setIsReversing] = useState(false)
+
+  function closeReverseDialog() {
+    setReverseTarget(null)
+    setReverseReason("")
+    setConfirmReverse(false)
   }
 
-  useEffect(() => {
-    if (newFineOpen) {
-      void loadStudents()
-      void loadFineTypes()
-    }
-  }, [newFineOpen])
-
-  // Validates each field individually (instead of one big boolean) so we can
-  // toast a specific, actionable message and highlight exactly the field
-  // that's missing — e.g. "Please select a student" instead of a generic
-  // "fill in the form" message. Same approach as validateExpenseForm().
-  function validateFineForm(): {
-    valid: boolean
-    fieldErrors: FineFieldErrors
-    firstError?: string
-  } {
-    const nextFieldErrors: FineFieldErrors = {}
-
-    if (!fineForm.studentId) nextFieldErrors.studentId = "Please select a student"
-    if (!fineForm.fineTypeId) nextFieldErrors.fineTypeId = "Please select a fine type"
-
-    const amountNum = Number(fineForm.amount)
-    if (fineForm.amount === "" || Number.isNaN(amountNum) || amountNum <= 0) {
-      nextFieldErrors.amount = "Please enter a valid amount"
-    }
-
-    if (!fineForm.reason.trim()) nextFieldErrors.reason = "Please enter a reason"
-
-    const firstError =
-      nextFieldErrors.studentId ??
-      nextFieldErrors.fineTypeId ??
-      nextFieldErrors.amount ??
-      nextFieldErrors.reason
-
-    return {
-      valid: !firstError,
-      fieldErrors: nextFieldErrors,
-      firstError,
-    }
-  }
-
-  const handleSaveFine = async () => {
-    const { valid, fieldErrors: nextFieldErrors, firstError } = validateFineForm()
-
-    setFineFieldErrors(nextFieldErrors)
-
-    if (!valid) {
-      toast.error(firstError!)
+  async function handleReverseFine() {
+    if (!reverseTarget) return
+    if (!reverseReason.trim()) {
+      toast.error("Please enter a reversal reason")
       return
     }
 
+    setIsReversing(true)
     try {
-      setFineSubmitting(true)
-
-      const payload = {
-        enrollmentId: fineForm.studentId,
-        fineTypeId: fineForm.fineTypeId,
-        amount: Number(fineForm.amount),
-        reason: fineForm.reason.trim(),
-      }
-
-      if (editingFineId) {
-        await updateStudentFine(editingFineId, payload)
-        toast.success("Updated Student Fine")
-      } else {
-        await createStudentFine(payload)
-        toast.success("Created Student Fine")
-      }
-
-      resetFineForm()
-      setEditingFineId(null)
-      setNewFineOpen(false)
+      await reverseStudentFine(reverseTarget.id, reverseReason.trim())
+      toast.success("Fine reversed successfully")
+      closeReverseDialog()
       await loadFines()
     } catch (error) {
-      const fallback = "Failed to save student fine"
-      const parsed = parseApiError(error, fallback)
+      const parsed = parseApiError(error, "Failed to reverse fine")
       toast.error(parsed.message)
       if (parsed.isAuthError) router.push("/login")
     } finally {
-      setFineSubmitting(false)
+      setIsReversing(false)
     }
   }
+
+  const [fineTypeToDelete, setFineTypeToDelete] = useState<FineType | null>(null)
+  const [isDeletingFineType, setIsDeletingFineType] = useState(false)
 
   // ---------------------------------------------------------------------
   // Render
@@ -444,7 +395,7 @@ export default function Page() {
           </div>
           <Button
             className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs w-full sm:w-auto"
-            onClick={() => setNewFineOpen(true)}
+            onClick={openCreateFineDialog}
           >
             <Plus className="h-4 w-4 text-white dark:text-slate-900" />
             New Fine
@@ -454,7 +405,7 @@ export default function Page() {
 
       {/* Fine Types Management Dialog */}
       <Dialog open={fineTypesOpen} onOpenChange={setFineTypesOpen}>
-        <DialogContent showCloseButton={false} className="w-[92vw] sm:max-w-2xl text-slate-950 dark:text-slate-50 rounded-2xl p-4 sm:p-6">
+        <DialogContent showCloseButton={false} className="w-[92vw] sm:max-w-2xl text-slate-950 dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100 rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -493,9 +444,19 @@ export default function Page() {
                   <h3 className="font-semibold text-sm sm:text-base text-slate-950 dark:text-slate-100 truncate">
                     {fineType.name}
                   </h3>
-                  <Button className="text-red shrink-0" size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(fineType)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={() => setFineTypeToDelete(fineType)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -543,7 +504,7 @@ export default function Page() {
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button className="text-white w-full sm:w-auto" variant="outline" onClick={resetAndCloseCreate}>
-              <X className="h-4 w-4 mr-1.5" />
+              
               Cancel
             </Button>
             <Button onClick={() => void handleCreate()} disabled={submitting} className="w-full sm:w-auto">
@@ -661,17 +622,7 @@ export default function Page() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            setEditingFineId(row.id)
-                            setFineForm({
-                              studentId: row.enrollmentId ?? "",
-                              fineTypeId: row.fineId ?? "",
-                              amount: row.amount ?? "",
-                              reason: row.reason ?? "",
-                            })
-                            setFineFieldErrors({})
-                            setNewFineOpen(true)
-                          }}
+                          onClick={() => openEditFineDialog(row)}
                           className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
                           title="Edit Fine"
                         >
@@ -687,14 +638,17 @@ export default function Page() {
                           <CreditCard className="h-4 w-4" />
                         </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          title="Delete Fine"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {row.status !== "REVERSED" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setReverseTarget(row)}
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:text-slate-400 dark:hover:bg-violet-950/30"
+                            title="Reverse Fine"
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -769,65 +723,114 @@ export default function Page() {
         </div>
       </div>
 
-      {/* New / Edit Fine Primary Form Dialog */}
-      <ReusableFormDialog
+      {/* Create / Edit Fine dialog */}
+      <StudentFineFormDialog
         open={newFineOpen}
-        onOpenChange={(value) => {
-          setNewFineOpen(value)
-          if (!value) resetFineForm()
+        onOpenChange={(open) => {
+          setNewFineOpen(open)
+          if (!open) {
+            setEditingFineId(null)
+            setEditingFineInitialValues(undefined)
+          }
         }}
-        theme="vehicle"
-        title={editingFineId ? "Edit Student Fine" : "Create Student Fine"}
-        description="Create a fine and assign it to a student."
-        isEditing={!!editingFineId}
-        isSaving={fineSubmitting}
-        submitLabel="Create Fine"
-        editSubmitLabel="Update Fine"
-        errors={fineFieldErrors}
-        fields={[
-          {
-            type: "combobox",
-            name: "studentId",
-            label: "Student",
-            required: true,
-            placeholder: "Select Student",
-            searchPlaceholder: "Search by name or admission no...",   // ← new
-            emptyText: "No matching students found.",
-            options: students.map((s) => ({
-              label: `${s.admissionNumber} - ${s.studentName}`,
-              value: s.enrollmentId,
-            })),
-          },
-          {
-            type: "select",
-            name: "fineTypeId",
-            label: "Fine Type",
-            required: true,
-            placeholder: "Select Fine Type",
-            options: fineTypes.map((f) => ({ label: f.name, value: f.id })),
-          },
-          {
-            type: "number",
-            name: "amount",
-            label: "Amount",
-            required: true,
-            placeholder: "Enter Amount",
-          },
-          {
-            type: "text",
-            name: "reason",
-            label: "Reason",
-            required: true,
-            placeholder: "Enter Reason",
-          },
-        ]}
-        values={fineForm}
-        onChange={(name, value) => {
-          setFineForm((prev) => ({ ...prev, [name]: value }))
-          setFineFieldErrors((prev) => ({ ...prev, [name]: undefined }))
-        }}
-        onSubmit={() => void handleSaveFine()}
+        editingFineId={editingFineId}
+        initialValues={editingFineInitialValues}
+        onSaved={loadFines}
       />
+
+      <AlertDialog
+        open={!!fineTypeToDelete}
+        onOpenChange={(open) => {
+          if (!open) setFineTypeToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{fineTypeToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this fine type. This can't be undone, and it will fail
+              if any student fines are already using it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFineType}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingFineType}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDeleteFineType()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingFineType ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reverse Fine dialog */}
+      <Dialog open={!!reverseTarget} onOpenChange={(open) => { if (!open) closeReverseDialog() }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reverse Fine</DialogTitle>
+            <DialogDescription>
+              Do you want to reverse the fine for {reverseTarget?.student}?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <label className="text-sm font-medium">Reversal Reason</label>
+            <textarea
+              className="w-full min-h-[100px] rounded-md border p-3 text-sm"
+              placeholder="Enter reason for reversing this fine..."
+              value={reverseReason}
+              onChange={(e) => setReverseReason(e.target.value)}
+              disabled={isReversing}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              id="confirm-reverse-list"
+              type="checkbox"
+              checked={confirmReverse}
+              onChange={(e) => setConfirmReverse(e.target.checked)}
+              className="h-4 w-4"
+              disabled={isReversing}
+            />
+            <label htmlFor="confirm-reverse-list" className="text-sm text-muted-foreground">
+              I confirm that I want to reverse this fine
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeReverseDialog} disabled={isReversing}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleReverseFine()}
+              disabled={!confirmReverse || isReversing}
+            >
+              {isReversing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Reversing...
+                </>
+              ) : (
+                "Reverse Fine"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

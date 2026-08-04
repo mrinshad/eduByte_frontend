@@ -1,20 +1,92 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, ChevronsUpDown, X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
+import { deleteStaff, getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+// Small helper so every sortable header renders the same way: an always-visible
+// icon (dim double-chevron when inactive, solid single chevron when this is the
+// active sort field/direction) plus a hover highlight on the whole header cell.
+// This makes "this column is sortable" obvious without needing to hover first.
+function SortableHeader({
+  label,
+  field,
+  sortBy,
+  order,
+  onSort,
+}: {
+  label: string;
+  field: string;
+  sortBy: string;
+  order: "asc" | "desc";
+  onSort: (field: string) => void;
+}) {
+  const isActive = sortBy === field;
+
+  return (
+    <TableHead
+      onClick={() => onSort(field)}
+      className={cn(
+        "px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
+        "cursor-pointer select-none transition-colors hover:bg-white/10 dark:hover:bg-white/5"
+      )}
+      title={`Sort by ${label}`}
+    >
+      <span className="inline-flex items-center gap-1.5">
+        {label}
+        {isActive ? (
+          order === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
+// Same chip used on the Students page, so removing a filter here looks
+// and behaves identically across both list pages.
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      {label}
+      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+};
 
 export default function Page() {
   const router = useRouter();
@@ -22,7 +94,7 @@ export default function Page() {
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -34,6 +106,9 @@ export default function Page() {
     total: 0,
     totalPages: 1,
   });
+
+  const [staffToDelete, setStaffToDelete] = useState<StaffListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Debounce search input -> committed search term
   useEffect(() => {
@@ -56,7 +131,7 @@ export default function Page() {
           page: currentPage,
           limit: rowsPerPage,
           search: search || undefined,
-          status: statusFilter || undefined,
+          status: statusFilter === "all" ? undefined : statusFilter,
           sortBy,
           order,
         });
@@ -83,6 +158,50 @@ export default function Page() {
   const { total, totalPages, page: safePage } = pagination;
   const startEntry = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endEntry = total === 0 ? 0 : Math.min(safePage * rowsPerPage, total);
+
+  const hasActiveFilters = useMemo(
+    () => statusFilter !== "all" || search.trim().length > 0,
+    [statusFilter, search]
+  );
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
+
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteStaff(staffToDelete.id);
+      toast.success("Staff deleted successfully");
+      setStaffToDelete(null);
+
+      // Refetch current page. If this was the last row on the page, step back a page.
+      const response = await getStaff({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: search || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        sortBy,
+        order,
+      });
+
+      if (response.data.items.length === 0 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        setStaff(response.data.items);
+        setPagination(response.data.pagination);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete staff");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const formatDate = (value?: string | null) => {
     if (!value) return "-";
@@ -140,15 +259,37 @@ export default function Page() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
-          <select
+
+          {/* 👇 Status filter dropdown, same component/style as Students' class filter */}
+          <Select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
           >
-            <option value="">All Statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
+            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="INACTIVE">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
+
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
@@ -159,6 +300,25 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          <span className="text-xs font-medium text-slate-400">Filters:</span>
+          {statusFilter !== "all" && (
+            <FilterChip
+              label={`Status: ${STATUS_LABELS[statusFilter] ?? statusFilter}`}
+              onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
+            />
+          )}
+          {search.trim() && (
+            <FilterChip
+              label={`Search: ${search}`}
+              onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+            />
+          )}
+        </div>
+      )}
+
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
         <div className="overflow-x-auto">
@@ -168,48 +328,16 @@ export default function Page() {
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("employeeCode")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Employee Code
-                    {sortBy === "employeeCode" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("name")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Name
-                    {sortBy === "name" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
+                <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
+                <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("joiningDate")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Joining Date
-                    {sortBy === "joiningDate" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
-                <TableHead
-                  className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none"
-                  onClick={() => toggleSort("status")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Status
-                    {sortBy === "status" && (order === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
-                  </span>
-                </TableHead>
+                <SortableHeader label="Joining Date" field="joiningDate" sortBy={sortBy} order={order} onSort={toggleSort} />
+                <SortableHeader label="Status" field="status" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
@@ -294,6 +422,7 @@ export default function Page() {
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="Delete Staff"
+                          onClick={() => setStaffToDelete(member)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -357,7 +486,41 @@ export default function Page() {
           </div>
         </div>
       </div>
-
+      <AlertDialog
+        open={!!staffToDelete}
+        onOpenChange={(open) => {
+          if (!open) setStaffToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{staffToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this staff record. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteStaff();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

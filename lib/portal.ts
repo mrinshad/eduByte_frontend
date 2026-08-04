@@ -36,7 +36,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", roles: ["Admin"], group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", roles: ["Admin"], group: "Fee Configuration" },
-  { slug: "payment-account", label: "Accounts", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
+  { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", roles: ["Admin"], group: "Transport Management" },
   

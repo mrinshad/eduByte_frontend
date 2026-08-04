@@ -36,13 +36,12 @@ return (
       <div className="flex items-center gap-3 sm:gap-4">
         {showBackButton && (
           <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
         )}
 
         <div>

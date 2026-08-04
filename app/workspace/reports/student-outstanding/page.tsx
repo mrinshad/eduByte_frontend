@@ -93,38 +93,41 @@ export default function StudentOutstandingPage() {
     <section className="w-full px-4 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Student Outstanding
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              {academicYear
-                ? `Outstanding fee and fine for ${academicYear}.`
-                : "Outstanding fee and fine for the active academic year."}
-            </p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Button
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
+              size="icon"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Student Outstanding
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                {academicYear
+                  ? `Outstanding fee and fine for ${academicYear}.`
+                  : "Outstanding fee and fine for the active academic year."}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search by name or admission no..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-          </div>
+
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search by name or admission no..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 dark:focus-visible:border-[#6b7a55] dark:focus-visible:ring-[#6b7a55]/30"
+          />
         </div>
       </div>
 

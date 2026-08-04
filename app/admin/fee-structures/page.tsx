@@ -28,8 +28,20 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+import { getFeeStructures, type FeeStructureSummary, deleteFeeStructure } from "@/lib/services/feeStructure";
+
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -63,6 +75,10 @@ export default function Page() {
     totalPages: 1,
   });
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedFeeStructure, setSelectedFeeStructure] =
+    useState<FeeStructureSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
   // Accumulated option lists — NOT derived solely from the current filtered
   // page. This prevents a selected filter value from "disappearing" (and
   // rendering as an empty SelectValue) once the fetched list narrows down
@@ -113,19 +129,29 @@ export default function Page() {
     load();
   }, [currentPage, rowsPerPage, search, classFilter, academicYearFilter, statusFilter]);
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this fee structure? This action cannot be undone.");
-    if (!confirmed) return;
+  const handleDelete = async () => {
+    if (!selectedFeeStructure) return;
 
     try {
-      setDeletingId(id);
+      setDeleting(true);
 
-      setFeeStructures((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Fee structure deleted successfully");
-    } catch (err) {
-      toast.error("Failed to delete fee structure. Please try again.");
+      await deleteFeeStructure(selectedFeeStructure.id);
+
+      toast.success("Fee Structure deleted successfully.");
+
+      setFeeStructures(prev =>
+        prev.filter(item => item.id !== selectedFeeStructure.id)
+      );
+
+      setDeleteDialogOpen(false);
+      setSelectedFeeStructure(null);
+
+    } catch (error: any) {
+      toast.error(
+        error?.message ?? "Failed to delete Fee Structure."
+      );
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   };
 
@@ -155,12 +181,12 @@ export default function Page() {
     <section className="w-full px-6 py-4 space-y-6">
 
       {/* Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+      
         <div className="flex flex-col gap-4">
           {/* Title row */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => router.back()}>
+              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
@@ -181,7 +207,33 @@ export default function Page() {
           </div>
 
           {/* Search + filters row */}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          
+
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <span className="text-xs font-medium text-slate-400">Filters:</span>
+              {classFilter !== "all" && (
+                <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
+              )}
+              {academicYearFilter !== "all" && (
+                <FilterChip label={`Year: ${academicYearFilter}`} onRemove={() => { setAcademicYearFilter("all"); setCurrentPage(1); }} />
+              )}
+              {statusFilter !== "all" && (
+                <FilterChip label={`Status: ${statusFilter}`} onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }} />
+              )}
+              {search.trim() && (
+                <FilterChip
+                  label={`Search: ${search}`}
+                  onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      
+      <div className="flex flex-row gap-3 justify-end">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1 lg:max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -259,29 +311,6 @@ export default function Page() {
               )}
             </div>
           </div>
-
-          {/* Active filter chips */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <span className="text-xs font-medium text-slate-400">Filters:</span>
-              {classFilter !== "all" && (
-                <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
-              )}
-              {academicYearFilter !== "all" && (
-                <FilterChip label={`Year: ${academicYearFilter}`} onRemove={() => { setAcademicYearFilter("all"); setCurrentPage(1); }} />
-              )}
-              {statusFilter !== "all" && (
-                <FilterChip label={`Status: ${statusFilter}`} onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }} />
-              )}
-              {search.trim() && (
-                <FilterChip
-                  label={`Search: ${search}`}
-                  onRemove={() => { setSearchInput(""); setSearch(""); setCurrentPage(1); }}
-                />
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Table */}
@@ -366,8 +395,10 @@ export default function Page() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/40"
-                          onClick={() => handleDelete(item.id)}
-                          disabled={deletingId === item.id}
+                          onClick={() => {
+                            setSelectedFeeStructure(item);
+                            setDeleteDialogOpen(true);
+                          }} disabled={deletingId === item.id}
                         >
                           {deletingId === item.id
                             ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -414,6 +445,50 @@ export default function Page() {
           </div>
         </div>
       </div>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete Fee Structure?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <strong>{selectedFeeStructure?.name}</strong>?
+              <br />
+              This action cannot be undone. If this Fee Structure is already
+              assigned to students, the system will prevent deletion.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              Cancel
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

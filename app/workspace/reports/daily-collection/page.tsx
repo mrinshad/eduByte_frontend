@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
     ArrowRight,
-    Calendar,
+    Calendar as CalendarIcon,
     ChevronLeft,
     ChevronRight,
     IndianRupee,
@@ -15,9 +15,17 @@ import {
     Search,
     Wallet,
 } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import {
     getDailyFeeCollectionReport,
     type DailyCollectionReportResponse,
@@ -81,11 +89,24 @@ function formatDisplayDateTime(date: string) {
     });
 }
 
+// Convert a plain "YYYY-MM-DD" string into a local Date (no timezone shift),
+// used only to feed the shadcn Calendar component.
+function parseISODate(dateStr: string) {
+    return new Date(`${dateStr}T00:00:00`);
+}
+
+// Convert a Date selected in the Calendar back into "YYYY-MM-DD".
+function toISODate(date: Date) {
+    return format(date, "yyyy-MM-dd");
+}
+
 export default function DailyCollectionReportPage() {
     const router = useRouter();
 
     const [fromDate, setFromDate] = useState<string>(todayISO());
     const [toDate, setToDate] = useState<string>(todayISO());
+    const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
+    const [toCalendarOpen, setToCalendarOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
@@ -94,6 +115,7 @@ export default function DailyCollectionReportPage() {
     const [error, setError] = useState<string | null>(null);
 
     const isRangeInvalid = fromDate > toDate;
+    const maxSelectableDate = useMemo(() => parseISODate(tomorrowISO()), []);
 
     // Debounce search input → actual search query
     useEffect(() => {
@@ -154,15 +176,20 @@ export default function DailyCollectionReportPage() {
     const rangeEnd =
         transactions.length === 0 ? 0 : rangeStart + transactions.length - 1;
 
-    function handleFromDateChange(value: string) {
-        setFromDate(value);
-        if (value > toDate) setToDate(value);
+    function handleFromDateSelect(date: Date | undefined) {
+        if (!date) return;
+        const newFrom = toISODate(date);
+        setFromDate(newFrom);
+        if (newFrom > toDate) setToDate(newFrom);
         setPage(1);
+        setFromCalendarOpen(false);
     }
 
-    function handleToDateChange(value: string) {
-        setToDate(value);
+    function handleToDateSelect(date: Date | undefined) {
+        if (!date) return;
+        setToDate(toISODate(date));
         setPage(1);
+        setToCalendarOpen(false);
     }
 
     function handleRefresh() {
@@ -202,13 +229,12 @@ export default function DailyCollectionReportPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-9 w-9 shrink-0"
-                            onClick={() => router.back()}
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Daily Collection Report
@@ -221,43 +247,72 @@ export default function DailyCollectionReportPage() {
                         </div>
                     </div>
 
-                    {/* Date range picker */}
+                    {/* Date range picker — separate From / To Calendar popovers */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div className="flex flex-1 flex-col gap-2 xs:flex-row sm:flex-row">
-                            <div className="relative w-full sm:w-40">
-                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    type="date"
-                                    aria-label="From date"
-                                    value={fromDate}
-                                    max={tomorrowISO()}
-                                    onChange={(e) => handleFromDateChange(e.target.value)}
-                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                                />
-                            </div>
+                        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                            <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400 text-white" />
+                                        <span className="truncate">{formatDisplayDate(fromDate)}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={parseISODate(fromDate)}
+                                        onSelect={handleFromDateSelect}
+                                        disabled={(date) => date > maxSelectableDate}
+                                        defaultMonth={parseISODate(fromDate)}
+                                    />
+                                </PopoverContent>
+                            </Popover>
 
                             <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
                                 <ArrowRight className="h-4 w-4" />
                             </div>
 
-                            <div className="relative w-full sm:w-40">
-                                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    type="date"
-                                    aria-label="To date"
-                                    value={toDate}
-                                    min={fromDate}
-                                    max={tomorrowISO()}
-                                    onChange={(e) => handleToDateChange(e.target.value)}
-                                    className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-                                />
-                            </div>
+                            <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400 text-white" />
+                                        <span className="truncate">{formatDisplayDate(toDate)}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={parseISODate(toDate)}
+                                        onSelect={handleToDateSelect}
+                                        disabled={(date) => date > maxSelectableDate || date < parseISODate(fromDate)}
+                                        defaultMonth={parseISODate(toDate)}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-10 w-10 shrink-0 self-end text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+                            className="h-10 w-10 shrink-0 self-end text-white hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
                             onClick={handleRefresh}
                             disabled={isLoading || isRangeInvalid}
                         >
@@ -303,46 +358,43 @@ export default function DailyCollectionReportPage() {
                         <>
                             {/* Total collection — hero */}
                             <div
-                                className="relative overflow-hidden rounded-2xl p-4 shadow-lg"
-                                style={{
-                                    background: `linear-gradient(120deg, #3d4632 0%, ${BRAND} 55%, #6b7a55 100%)`,
-                                }}
+                                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[#556043] p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-6"
                             >
-                                <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-                                <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+                                {/* Background effects */}
+
 
                                 <div className="relative flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                                     <div>
                                         <div className="mb-2 flex items-center gap-2">
-                                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
-                                                <IndianRupee className="h-4 w-4 text-white" />
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 ring-1 dark:bg-slate-200 dark:ring-white">
+                                                <IndianRupee className="h-4 w-4 dark:text-[#556043]" />
                                             </span>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
+
+                                            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white">
                                                 Total Collection
                                             </p>
                                         </div>
 
-                                        <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                                        <p className="text-3xl font-bold tracking-tight text-slate-100 dark:text-white sm:text-4xl">
                                             {formatCurrency(totalCollection)}
                                         </p>
                                     </div>
 
                                     <div className="flex flex-wrap gap-2">
-                                        {Object.entries(paymentMethodTotals).map(
-                                            ([method, amount]) => (
-                                                <span
-                                                    key={method}
-                                                    className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm"
-                                                >
-                                                    <span className="capitalize">{method}</span>
-                                                    <span className="ml-1.5 font-semibold">
-                                                        {formatCurrency(amount)}
-                                                    </span>
+                                        {Object.entries(paymentMethodTotals).map(([method, amount]) => (
+                                            <span
+                                                key={method}
+                                                className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-[#556043]/15 dark:bg-slate-200 dark:text-[#556043]"
+                                            >
+                                                <span className="capitalize">{method}</span>
+                                                <span className="ml-1.5 font-semibold">
+                                                    {formatCurrency(amount)}
                                                 </span>
-                                            )
-                                        )}
+                                            </span>
+                                        ))}
+
                                         {transactions.length === 0 && (
-                                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70 ring-1 ring-white/15 backdrop-blur-sm">
+                                            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-[#556043]/15 dark:bg-slate-200 dark:text-[#556043]">
                                                 No transactions
                                             </span>
                                         )}

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
+import { format } from "date-fns"
 import {
   Layers3,
   Pencil,
@@ -11,8 +12,8 @@ import {
   X,
   Loader2,
   Trash2,
+  CalendarIcon,
 } from "lucide-react"
-import DatePicker from "react-datepicker"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,6 +43,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -71,18 +78,18 @@ import {
   deleteDivision,
 } from "@/lib/services/division"
 
+import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
+
+
 const titleTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-100"
 const supportingTextClass = "text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-300"
 const subtleTextClass = "text-white/85 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] dark:text-slate-400"
 const editIconClass = "rounded-xl text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] hover:text-white dark:text-slate-300 dark:hover:text-amber-300"
 const deleteIconClass = "rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
 const inputTextClass = "text-white/95 [text-shadow:0_1px_2px_rgba(15,23,42,0.75)] placeholder:text-white/85"
-const datePickerClassName =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
-const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950"
-const datePickerPopperClassName = "z-50"
-const datePickerMinDate = new Date(2020, 0, 1)
-const datePickerMaxDate = new Date(2050, 11, 31)
+
+const minCalendarDate = new Date(2020, 0, 1)
+const maxCalendarDate = new Date(2050, 11, 31)
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {
   return (
@@ -136,24 +143,19 @@ export default function Page() {
   const [divisionDialogMode, setDivisionDialogMode] = React.useState<"add" | "edit">("add")
   const [classNameDraft, setClassNameDraft] = React.useState("")
   const [divisionNameDraft, setDivisionNameDraft] = React.useState("")
-  // Track which class/division is actually being edited, independent of
-  // the "selected" (highlighted) row. This is what fixes the bug where
-  // clicking edit on one row would show the currently-selected row's data.
+  const [classFormErrors, setClassFormErrors] = React.useState<Record<string, string | undefined>>({})
+  const [divisionFormErrors, setDivisionFormErrors] = React.useState<Record<string, string | undefined>>({})
   const [editingClassId, setEditingClassId] = React.useState("")
   const [editingDivisionId, setEditingDivisionId] = React.useState("")
 
-  // Loading state for the very first data fetch, used to render skeletons.
   const [isInitialLoading, setIsInitialLoading] = React.useState(true)
 
-  // Per-action loading/disabled flags so a button can't be clicked twice
-  // while its request is still in flight.
   const [isCreatingYear, setIsCreatingYear] = React.useState(false)
   const [savingYearId, setSavingYearId] = React.useState<string | null>(null)
   const [settingDefaultYearId, setSettingDefaultYearId] = React.useState<string | null>(null)
   const [isSavingClass, setIsSavingClass] = React.useState(false)
   const [isSavingDivision, setIsSavingDivision] = React.useState(false)
 
-  // Delete confirmation state for classes and divisions.
   const [classToDelete, setClassToDelete] = React.useState<SchoolClass | null>(null)
   const [divisionToDelete, setDivisionToDelete] = React.useState<Division | null>(null)
   const [isDeletingClass, setIsDeletingClass] = React.useState(false)
@@ -177,7 +179,8 @@ export default function Page() {
   const [editingYearNameDraft, setEditingYearNameDraft] = React.useState("")
   const [editingYearStartDate, setEditingYearStartDate] = React.useState<Date>()
   const [editingYearEndDate, setEditingYearEndDate] = React.useState<Date>()
-
+  const [editFromOpen, setEditFromOpen] = React.useState(false)
+  const [editToOpen, setEditToOpen] = React.useState(false)
 
   const [yearToDelete, setYearToDelete] = useState<AcademicYearSummary | null>(null)
   const [isDeletingYear, setIsDeletingYear] = useState(false)
@@ -195,7 +198,6 @@ export default function Page() {
         return
       }
     } catch (error) {
-      // fall back to the summary data already available in the row
       toast.error(
         error instanceof Error
           ? error.message
@@ -243,9 +245,6 @@ export default function Page() {
     void loadInitialData()
   }, [])
 
-  // Keep selectedClassId valid whenever the classes list changes — this is
-  // what makes the Division panel recover as soon as the first class is
-  // added, and re-targets selection if the selected class gets deleted.
   React.useEffect(() => {
     if (classes.length === 0) {
       setSelectedClassId("")
@@ -273,14 +272,12 @@ export default function Page() {
     }
   }, [yearDialogOpen])
 
-  // `target` lets the caller pass the exact row that was clicked, instead
-  // of relying on `selectedClass`, which may not have updated yet if
-  // `setSelectedClassId` was just called in the same event handler.
   function openClassDialog(mode: "add" | "edit", target?: SchoolClass) {
     const classToEdit = target ?? selectedClass ?? undefined
     setClassDialogMode(mode)
     setEditingClassId(mode === "edit" ? classToEdit?.id ?? "" : "")
     setClassNameDraft(mode === "edit" ? classToEdit?.name ?? "" : "")
+    setClassFormErrors({})
     setClassDialogOpen(true)
   }
 
@@ -289,6 +286,7 @@ export default function Page() {
     setDivisionDialogMode(mode)
     setEditingDivisionId(mode === "edit" ? divisionToEdit?.id ?? "" : "")
     setDivisionNameDraft(mode === "edit" ? divisionToEdit?.name ?? "" : "")
+    setDivisionFormErrors({})
     setDivisionDialogOpen(true)
   }
 
@@ -296,12 +294,79 @@ export default function Page() {
     setClassDialogOpen(false)
     setClassNameDraft("")
     setEditingClassId("")
+    setClassFormErrors({})
   }
 
   function closeDivisionDialog() {
     setDivisionDialogOpen(false)
     setDivisionNameDraft("")
     setEditingDivisionId("")
+    setDivisionFormErrors({})
+  }
+
+  async function handleSaveClass() {
+    if (!classNameDraft.trim()) {
+      setClassFormErrors({ name: "Class name is required" })
+      return
+    }
+
+    setIsSavingClass(true)
+    try {
+      const classIdToUpdate = editingClassId || selectedClassId
+
+      if (classDialogMode === "add") {
+        await createClass(classNameDraft)
+      } else if (classIdToUpdate) {
+        await updateClass(classIdToUpdate, classNameDraft)
+      }
+
+      setClasses(await getClasses())
+      if (classIdToUpdate) {
+        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
+      }
+      closeClassDialog()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save class")
+    } finally {
+      setIsSavingClass(false)
+    }
+  }
+
+  async function handleSaveDivision() {
+    if (!divisionNameDraft.trim()) {
+      setDivisionFormErrors({ name: "Division name is required" })
+      return
+    }
+
+    setIsSavingDivision(true)
+    try {
+      if (!selectedClassId) {
+        throw new Error("Select a class first")
+      }
+
+      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
+
+      if (divisionDialogMode === "add") {
+        await createDivisions(selectedClassId, [divisionNameDraft])
+      } else if (divisionIdToUpdate) {
+        await updateDivision(divisionIdToUpdate, divisionNameDraft)
+      }
+
+      const updatedClasses = await getClasses()
+      const updatedDivisions = await getDivisions(selectedClassId)
+
+      setClasses(updatedClasses)
+      setDivisionsByClassId((current) => ({
+        ...current,
+        [selectedClassId]: updatedDivisions,
+      }))
+      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
+      closeDivisionDialog()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save division")
+    } finally {
+      setIsSavingDivision(false)
+    }
   }
 
   async function handleDeleteClass() {
@@ -313,8 +378,6 @@ export default function Page() {
       const updatedClasses = await getClasses()
       setClasses(updatedClasses)
 
-      // If the deleted class was selected, fall back to the first remaining class
-      // and drop its cached divisions so stale data isn't shown.
       if (selectedClassId === classToDelete.id) {
         const nextClassId = updatedClasses[0]?.id ?? ""
         setSelectedClassId(nextClassId)
@@ -335,6 +398,11 @@ export default function Page() {
   }
   const handleDeleteYear = async () => {
     if (!yearToDelete) return
+    if (yearToDelete.isActive) {
+      toast.error("Can't delete the current default academic year")
+      setYearToDelete(null)
+      return
+    }
     setIsDeletingYear(true)
     try {
       const result = await deleteAcademicYear(yearToDelete.id)
@@ -372,6 +440,12 @@ export default function Page() {
     }
   }
 
+  const calendarTriggerClass = cn(
+    "h-10 w-full justify-start rounded-xl border border-slate-300 bg-white px-3 text-left text-sm font-normal shadow-sm outline-none transition",
+    "hover:border-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40",
+    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50"
+  )
+
   return (
     <TooltipProvider>
       <section className="px-6 py-4">
@@ -385,7 +459,7 @@ export default function Page() {
         </div>
 
         <div className="mt-6 space-y-6">
-          <Card className="w-full dark:bg-background">
+          <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
               <div>
                 <CardDescription className={`text-xs uppercase tracking-[0.28em] ${subtleTextClass}`}>
@@ -417,7 +491,7 @@ export default function Page() {
                   </TooltipContent>
                 </Tooltip>
 
-                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:text-slate-50 dark:bg-background">
+                <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
                   <DialogHeader>
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -459,48 +533,62 @@ export default function Page() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                                    <DatePicker
-                                      selected={editingYearStartDate}
-                                      onChange={(date: Date | null) => setEditingYearStartDate(date ?? undefined)}
-                                      placeholderText="Select date"
-                                      dateFormat="PPP"
-                                      className={datePickerClassName}
-                                      calendarClassName={datePickerCalendarClassName}
-                                      popperClassName={datePickerPopperClassName}
-                                      wrapperClassName="w-full"
-                                      showMonthDropdown
-                                      showYearDropdown
-                                      scrollableYearDropdown
-                                      yearDropdownItemNumber={30}
-                                      dropdownMode="select"
-                                      minDate={datePickerMinDate}
-                                      maxDate={datePickerMaxDate}
-                                      openToDate={editingYearStartDate ?? new Date()}
-                                      disabled={savingYearId === year.id}
-                                    />
+                                    <Popover open={editFromOpen} onOpenChange={setEditFromOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          disabled={savingYearId === year.id}
+                                          className={calendarTriggerClass}
+                                        >
+                                          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                          <span>
+                                            {editingYearStartDate ? format(editingYearStartDate, "PPP") : "Select date"}
+                                          </span>
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={editingYearStartDate}
+                                          onSelect={(date) => {
+                                            setEditingYearStartDate(date ?? undefined)
+                                            setEditFromOpen(false)
+                                          }}
+                                          defaultMonth={editingYearStartDate}
+                                          disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
 
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                                    <DatePicker
-                                      selected={editingYearEndDate}
-                                      onChange={(date: Date | null) => setEditingYearEndDate(date ?? undefined)}
-                                      placeholderText="Select date"
-                                      dateFormat="PPP"
-                                      className={datePickerClassName}
-                                      calendarClassName={datePickerCalendarClassName}
-                                      popperClassName={datePickerPopperClassName}
-                                      wrapperClassName="w-full"
-                                      showMonthDropdown
-                                      showYearDropdown
-                                      scrollableYearDropdown
-                                      yearDropdownItemNumber={30}
-                                      dropdownMode="select"
-                                      minDate={datePickerMinDate}
-                                      maxDate={datePickerMaxDate}
-                                      openToDate={editingYearEndDate ?? new Date()}
-                                      disabled={savingYearId === year.id}
-                                    />
+                                    <Popover open={editToOpen} onOpenChange={setEditToOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          disabled={savingYearId === year.id}
+                                          className={calendarTriggerClass}
+                                        >
+                                          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                          <span>
+                                            {editingYearEndDate ? format(editingYearEndDate, "PPP") : "Select date"}
+                                          </span>
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={editingYearEndDate}
+                                          onSelect={(date) => {
+                                            setEditingYearEndDate(date ?? undefined)
+                                            setEditToOpen(false)
+                                          }}
+                                          defaultMonth={editingYearEndDate}
+                                          disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
                                 </div>
 
@@ -562,17 +650,29 @@ export default function Page() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className={deleteIconClass}
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    setYearToDelete(year)
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className={deleteIconClass}
+                                        disabled={year.isActive}
+                                        onClick={(event) => {
+                                          event.stopPropagation()
+                                          setYearToDelete(year)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {year.isActive && (
+                                    <TooltipContent>
+                                      <p>Can't delete the current default academic year</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
 
                                 {year.isActive ? (
                                   <Button variant="secondary" disabled>
@@ -617,7 +717,7 @@ export default function Page() {
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setYearDialogOpen(false)}>
+                    <Button variant="outline" className='text-white' onClick={() => setYearDialogOpen(false)}>
                       Close
                     </Button>
                   </DialogFooter>
@@ -625,7 +725,7 @@ export default function Page() {
               </Dialog>
 
               <Dialog open={createYearOpen} onOpenChange={setCreateYearOpen}>
-                <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50">
+                <DialogContent className="sm:max-w-xl text-slate-950 dark:bg-slate-900 dark:text-slate-50 [&>button:last-child]:hidden">
                   <DialogHeader>
                     <DialogTitle className={titleTextClass}>Create Academic Year</DialogTitle>
                     <DialogDescription className={supportingTextClass}>
@@ -635,61 +735,71 @@ export default function Page() {
 
                   <div className="space-y-4 py-2">
                     <div>
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Academic Name</label>
+                      <label className="text-sm font-medium text-slate-100 dark:text-slate-200">Academic Name</label>
                       <Input placeholder="2026 - 2027" className="mt-2" value={yearNameDraft} onChange={(event) => setYearNameDraft(event.target.value)} disabled={isCreatingYear} />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">From</label>
-                        <DatePicker
-                          selected={fromDate}
-                          onChange={(date: Date | null) => setFromDate(date ?? undefined)}
-                          placeholderText="Select date"
-                          dateFormat="PPP"
-                          className={datePickerClassName}
-                          calendarClassName={datePickerCalendarClassName}
-                          popperClassName={datePickerPopperClassName}
-                          wrapperClassName="w-full"
-                          showMonthDropdown
-                          showYearDropdown
-                          scrollableYearDropdown
-                          yearDropdownItemNumber={30}
-                          dropdownMode="select"
-                          minDate={datePickerMinDate}
-                          maxDate={datePickerMaxDate}
-                          openToDate={fromDate ?? new Date()}
-                          disabled={isCreatingYear}
-                        />
+                        <label className="text-sm font-medium text-slate-100 dark:text-slate-200">From</label>
+                        <Popover open={fromOpen} onOpenChange={setFromOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCreatingYear}
+                              className={calendarTriggerClass}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                              <span>{fromDate ? format(fromDate, "PPP") : "Select date"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={fromDate}
+                              onSelect={(date) => {
+                                setFromDate(date ?? undefined)
+                                setFromOpen(false)
+                              }}
+                              defaultMonth={fromDate}
+                              disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">To</label>
-                        <DatePicker
-                          selected={toDate}
-                          onChange={(date: Date | null) => setToDate(date ?? undefined)}
-                          placeholderText="Select date"
-                          dateFormat="PPP"
-                          className={datePickerClassName}
-                          calendarClassName={datePickerCalendarClassName}
-                          popperClassName={datePickerPopperClassName}
-                          wrapperClassName="w-full"
-                          showMonthDropdown
-                          showYearDropdown
-                          scrollableYearDropdown
-                          yearDropdownItemNumber={30}
-                          dropdownMode="select"
-                          minDate={datePickerMinDate}
-                          maxDate={datePickerMaxDate}
-                          openToDate={toDate ?? new Date()}
-                          disabled={isCreatingYear}
-                        />
+                        <label className="text-sm font-medium text-slate-100 dark:text-slate-200">To</label>
+                        <Popover open={toOpen} onOpenChange={setToOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCreatingYear}
+                              className={calendarTriggerClass}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                              <span>{toDate ? format(toDate, "PPP") : "Select date"}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={toDate}
+                              onSelect={(date) => {
+                                setToDate(date ?? undefined)
+                                setToOpen(false)
+                              }}
+                              defaultMonth={toDate}
+                              disabled={(date) => date < minCalendarDate || date > maxCalendarDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" disabled={isCreatingYear} onClick={() => setCreateYearOpen(false)}>
+                    <Button variant="outline" className="text-white" disabled={isCreatingYear} onClick={() => setCreateYearOpen(false)}>
                       Cancel
                     </Button>
 
@@ -736,7 +846,7 @@ export default function Page() {
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Class</CardTitle>
@@ -850,7 +960,7 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            <Card className="w-full dark:bg-background">
+            <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
               <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
                 <div>
                   <CardTitle className={`text-2xl font-semibold ${titleTextClass}`}>Division</CardTitle>
@@ -975,154 +1085,73 @@ export default function Page() {
           </div>
         </div>
 
-        <Dialog open={classDialogOpen} onOpenChange={setClassDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {classDialogMode === "add" ? "Add Class" : "Edit Class"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {classDialogMode === "add"
-                  ? "Create a new class and keep the same styling language."
-                  : "Update the selected class details."}
-              </DialogDescription>
-            </DialogHeader>
+        <ReusableFormDialog
+          open={classDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) closeClassDialog()
+          }}
+        theme="vehicle"
+          title={classDialogMode === "add" ? "Add Class" : "Edit Class"}
+          description={
+            classDialogMode === "add"
+              ? "Create a new class and keep the same styling language."
+              : "Update the selected class details."
+          }
+          fields={[
+            {
+              type: "text",
+              name: "name",
+              label: "Class Name",
+              placeholder: "Example: Grade 5 - Morning Session",
+              required: true,
+            },
+          ]}
+          values={{ name: classNameDraft }}
+          errors={classFormErrors}
+          onChange={(_, value) => {
+            setClassNameDraft(value)
+            setClassFormErrors({})
+          }}
+          onSubmit={handleSaveClass}
+          isSaving={isSavingClass}
+          isEditing={classDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
 
-            <div className="space-y-4 py-2">
-              <div className="space-y-3">
-                <label className={cn("text-sm font-medium", supportingTextClass)}>Class Name</label>
-                <Input
-                  className={cn(inputTextClass, "mt-2")}
-                  value={classNameDraft}
-                  onChange={(event) => setClassNameDraft(event.target.value)}
-                  placeholder="Example: Grade 5 - Morning Session"
-                  disabled={isSavingClass}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" disabled={isSavingClass} onClick={closeClassDialog}>
-                Cancel
-              </Button>
-              <Button
-                disabled={isSavingClass}
-                onClick={() => {
-                  void (async () => {
-                    setIsSavingClass(true)
-                    try {
-                      const classIdToUpdate = editingClassId || selectedClassId
-
-                      if (classDialogMode === "add") {
-                        await createClass(classNameDraft)
-                      } else if (classIdToUpdate) {
-                        await updateClass(classIdToUpdate, classNameDraft)
-                      }
-
-                      setClasses(await getClasses())
-                      if (classIdToUpdate) {
-                        toast.success(classDialogMode === "add" ? "A New Class created" : "Class updated")
-                      }
-                      closeClassDialog()
-                    } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to save class")
-                    } finally {
-                      setIsSavingClass(false)
-                    }
-                  })()
-                }}
-              >
-                {isSavingClass ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {classDialogMode === "add" ? "Adding..." : "Saving..."}
-                  </>
-                ) : (
-                  classDialogMode === "add" ? "Add" : "Save"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={divisionDialogOpen} onOpenChange={setDivisionDialogOpen}>
-          <DialogContent className="sm:max-w-xl text-slate-950 dark:text-slate-50 dark:bg-background">
-            <DialogHeader>
-              <DialogTitle className={`text-xl font-semibold ${titleTextClass}`}>
-                {divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
-              </DialogTitle>
-              <DialogDescription className={supportingTextClass}>
-                {divisionDialogMode === "add"
-                  ? `Create a division under ${selectedClass?.name || "the selected class"}.`
-                  : "Update the selected division details."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-3">
-                <label className={cn("text-sm font-medium", supportingTextClass)}>Division Name</label>
-                <Input
-                  className={cn(inputTextClass, "mt-2")}
-                  value={divisionNameDraft}
-                  onChange={(event) => setDivisionNameDraft(event.target.value)}
-                  placeholder="Example: Division A - Primary Block"
-                  disabled={isSavingDivision}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" disabled={isSavingDivision} onClick={closeDivisionDialog}>
-                Cancel
-              </Button>
-              <Button
-                disabled={isSavingDivision}
-                onClick={() => {
-                  void (async () => {
-                    setIsSavingDivision(true)
-                    try {
-                      if (!selectedClassId) {
-                        throw new Error("Select a class first")
-                      }
-
-                      const divisionIdToUpdate = editingDivisionId || selectedDivisionId
-
-                      if (divisionDialogMode === "add") {
-                        await createDivisions(selectedClassId, [divisionNameDraft])
-                      } else if (divisionIdToUpdate) {
-                        await updateDivision(divisionIdToUpdate, divisionNameDraft)
-                      }
-
-                      const updatedClasses = await getClasses()
-                      const updatedDivisions = await getDivisions(selectedClassId)
-
-                      setClasses(updatedClasses)
-                      setDivisionsByClassId((current) => ({
-                        ...current,
-                        [selectedClassId]: updatedDivisions,
-                      }))
-                      toast.success(divisionDialogMode === "add" ? "A New Division created" : "Division updated")
-                      closeDivisionDialog()
-                    } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to save division")
-                    } finally {
-                      setIsSavingDivision(false)
-                    }
-                  })()
-                }}
-              >
-                {isSavingDivision ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {divisionDialogMode === "add" ? "Adding..." : "Saving..."}
-                  </>
-                ) : (
-                  divisionDialogMode === "add" ? "Add" : "Save"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ReusableFormDialog
+          open={divisionDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) closeDivisionDialog()
+          }}
+          title={divisionDialogMode === "add" ? "Add Division" : "Edit Division"}
+          theme="vehicle"
+          description={
+            divisionDialogMode === "add"
+              ? `Create a division under ${selectedClass?.name || "the selected class"}.`
+              : "Update the selected division details."
+          }
+          fields={[
+            {
+              type: "text",
+              name: "name",
+              label: "Division Name",
+              placeholder: "Example: Division A - Primary Block",
+              required: true,
+            },
+          ]}
+          values={{ name: divisionNameDraft }}
+          errors={divisionFormErrors}
+          onChange={(_, value) => {
+            setDivisionNameDraft(value)
+            setDivisionFormErrors({})
+          }}
+          onSubmit={handleSaveDivision}
+          isSaving={isSavingDivision}
+          isEditing={divisionDialogMode === "edit"}
+          submitLabel="Add"
+          editSubmitLabel="Save"
+        />
 
         <AlertDialog
           open={!!classToDelete}
@@ -1199,7 +1228,6 @@ export default function Page() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* confirmation dialog — same shape as your class one */}
         <AlertDialog open={!!yearToDelete} onOpenChange={(open) => { if (!open) setYearToDelete(null) }}>
           <AlertDialogContent>
             <AlertDialogHeader>

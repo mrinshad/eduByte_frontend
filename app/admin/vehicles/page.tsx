@@ -5,8 +5,20 @@ import {
   createVehicle,
   getVehicles,
   updateVehicle,
+  deleteVehicle,
   type Vehicle,
 } from "@/lib/services/vehicle";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 
 import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2 } from "lucide-react"
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
@@ -155,6 +167,8 @@ export default function Page() {
   };
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEditClick = (vehicle: Vehicle) => {
     setEditingId(vehicle.id);
@@ -165,11 +179,27 @@ export default function Page() {
 
     setOpen(true);
   };
+
+  const handleDeleteVehicle = async () => {
+    if (!vehicleToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteVehicle(vehicleToDelete.id);
+      toast.success("Vehicle deleted successfully");
+      setVehicleToDelete(null);
+      loadVehicles();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete vehicle");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   return (
     <section className="px-6 py-4">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <Button variant="outline" size="icon" className="text-white" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -194,8 +224,9 @@ export default function Page() {
                           dark:text-slate-900
                           dark:hover:bg-slate-200
                         "
-        
+
         >
+          <Plus className="mr-2 h-4 w-4" />
           Create Vehicle
         </Button>
       </div>
@@ -252,22 +283,22 @@ export default function Page() {
             <div
               key={vehicle.id}
               className="
-        group
-        relative
-        overflow-hidden
-        rounded-xl
-        border
-        border-slate-100
-        bg-white
-        p-3
-        shadow-sm
-        transition-all
-        duration-300
-        hover:-translate-y-0.5
-        hover:shadow-md
-        dark:border-slate-800/80
-        dark:bg-slate-900
-      "
+                        group
+                        relative
+                        overflow-hidden
+                        rounded-xl
+                        border
+                        border-slate-100
+                        bg-white
+                        p-3
+                        shadow-sm
+                        transition-all
+                        duration-300
+                        hover:-translate-y-0.5
+                        hover:shadow-md
+                        dark:border-slate-800/80
+                        dark:bg-slate-900
+                      "
             >
               {/* Decorative Top Accent Line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-400 to-amber-500 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -298,35 +329,36 @@ export default function Page() {
                       variant="ghost"
                       onClick={() => handleEditClick(vehicle)}
                       className="
-    h-7
-    w-7
-    shrink-0
-    rounded-md
-    text-slate-400
-    hover:bg-slate-50
-    hover:text-orange-600
-    dark:text-slate-500
-    dark:hover:bg-slate-800
-    dark:hover:text-orange-400
-  "
+                                h-7
+                                w-7
+                                shrink-0
+                                rounded-md
+                                text-slate-400
+                                hover:bg-slate-50
+                                hover:text-orange-600
+                                dark:text-slate-500
+                                dark:hover:bg-slate-800
+                                dark:hover:text-orange-400
+                              "
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
+                      onClick={() => setVehicleToDelete(vehicle)}
                       className="
-              h-7
-              w-7
-              shrink-0
-              rounded-md
-              text-slate-400
-              hover:bg-slate-50
-              hover:text-orange-600
-              dark:text-slate-500
-              dark:hover:bg-slate-800
-              dark:hover:text-orange-400
-            "
+                                h-7
+                                w-7
+                                shrink-0
+                                rounded-md
+                                text-slate-400
+                                hover:bg-red-50
+                                hover:text-red-600
+                                dark:text-slate-500
+                                dark:hover:bg-red-950/30
+                                dark:hover:text-red-400
+                              "
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -354,6 +386,42 @@ export default function Page() {
           ))}
         </div>
       )}
+      <AlertDialog
+        open={!!vehicleToDelete}
+        onOpenChange={(open) => {
+          if (!open) setVehicleToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{vehicleToDelete?.vehicleName}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this vehicle. This can't be undone, and it will fail
+              if students are currently assigned to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteVehicle();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
 
   )

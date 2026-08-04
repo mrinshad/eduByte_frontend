@@ -13,6 +13,20 @@ import {
     Clock,
     FileText,
 } from "lucide-react"
+import { Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { deleteFeeStructure } from "@/lib/services/feeStructure"
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -215,6 +229,28 @@ export default function Page() {
     const [feeStructure, setFeeStructure] = useState<FeeStructureView | null>(null)
     const [loading, setLoading] = useState(true)
 
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!feeStructure) return;
+
+        try {
+            setDeleting(true);
+
+            await deleteFeeStructure(feeStructure.id);
+
+            toast.success("Fee Structure deleted successfully.");
+
+            router.push("/admin/fee-structures");
+        } catch (error: any) {
+            toast.error(error?.message ?? "Failed to delete Fee Structure.");
+        } finally {
+            setDeleting(false);
+            setDeleteDialogOpen(false);
+        }
+    };
+
     useEffect(() => {
         async function loadData() {
             if (!feeStructureId) {
@@ -262,17 +298,32 @@ export default function Page() {
 
                 {feeStructure && (
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className={statusTone(feeStructure.isActive)}>
+                        <Badge
+                            variant="outline"
+                            className={statusTone(feeStructure.isActive)}
+                        >
                             {feeStructure.isActive ? "ACTIVE" : "INACTIVE"}
                         </Badge>
+
                         <Button
                             onClick={() =>
-                                router.push(`/admin/fee-structures/createFee?id=${feeStructure.id}`)
+                                router.push(
+                                    `/admin/fee-structures/createFee?id=${feeStructure.id}`
+                                )
                             }
                             className="gap-2"
                         >
                             <Pencil className="h-4 w-4" />
                             Edit
+                        </Button>
+
+                        <Button
+                            variant="destructive"
+                            className="gap-2"
+                            onClick={() => setDeleteDialogOpen(true)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
                         </Button>
                     </div>
                 )}
@@ -452,6 +503,50 @@ export default function Page() {
                     </Card>
                 </div>
             )}
+            <AlertDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete Fee Structure?
+                        </AlertDialogTitle>
+
+                        <AlertDialogDescription>
+                            Are you sure you want to delete{" "}
+                            <strong>{feeStructure?.name}</strong>?
+                            <br />
+                            This action cannot be undone. If this Fee Structure has already been
+                            assigned to students, the system will prevent deletion.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>
+                            Cancel
+                        </AlertDialogCancel>
+
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void handleDelete();
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={deleting}
+                        >
+                            {deleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </section>
     )
 }

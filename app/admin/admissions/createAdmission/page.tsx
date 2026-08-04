@@ -60,6 +60,18 @@ import { getFeeStructures, viewFeeStructure, FeeStructureSummary, FeeStructureVi
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { apiFetch } from "@/lib/api";
 import { formatDateOnly } from "@/lib/utils";
+import { getChargeTypes, ChargeTypes } from "@/lib/services/chargeTypes";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { useSearchParams } from "next/navigation";
 
@@ -103,9 +115,9 @@ interface EditableFeeItem {
 }
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
-    <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+    <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold text-sm">
                 {stepNumber}
             </div>
             <div>
@@ -113,7 +125,7 @@ const StepSection = ({ stepNumber, title, description, children }: any) => (
                 {description && <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>}
             </div>
         </div>
-        <div className="flex flex-col gap-6">{children}</div>
+        <div className="flex flex-col gap-5">{children}</div>
     </div>
 );
 
@@ -194,6 +206,12 @@ export default function Page() {
     const [divisionPopoverOpen, setDivisionPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [feePopoverOpen, setFeePopoverOpen] = useState(false);
+
+    const [chargeTypesList, setChargeTypesList] = useState<ChargeTypes[]>([]);
+    const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
+    const [selectedNewChargeTypeIds, setSelectedNewChargeTypeIds] = useState<string[]>([]);
+    const [isClearFieldsDialogOpen, setIsClearFieldsDialogOpen] = useState(false);
+    const [loadingChargeTypes, setLoadingChargeTypes] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [loadingStudent, setLoadingStudent] = useState(false);
@@ -537,6 +555,50 @@ export default function Page() {
         return editableFeeItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     }, [editableFeeItems]);
 
+    useEffect(() => {
+        if (isAddChargeDialogOpen && chargeTypesList.length === 0) {
+            async function fetchChargeTypes() {
+                try {
+                    setLoadingChargeTypes(true);
+                    const types = await getChargeTypes();
+                    setChargeTypesList(types);
+                } catch (error) {
+                    console.error("Failed to load charge types:", error);
+                } finally {
+                    setLoadingChargeTypes(false);
+                }
+            }
+            fetchChargeTypes();
+        }
+    }, [isAddChargeDialogOpen, chargeTypesList.length]);
+
+    const handleClearFields = () => {
+        setSelectedFeeStructureId("");
+        setEditableFeeItems([]);
+        setItemErrors({});
+        setIsClearFieldsDialogOpen(false);
+    };
+
+    const handleAddChargeTypes = () => {
+        const newItems: EditableFeeItem[] = selectedNewChargeTypeIds.map(id => {
+            const chargeDef = chargeTypesList.find(c => c.id === id);
+            return {
+                chargeTypeId: id,
+                frequency: chargeDef?.frequency || "",
+                name: chargeDef?.name || "",
+                originalAmount: 0,
+                baseAmount: 0,
+                amount: 0,
+                dueDay: "",
+                description: "",
+            };
+        });
+        
+        setEditableFeeItems(prev => [...prev, ...newItems]);
+        setSelectedNewChargeTypeIds([]);
+        setIsAddChargeDialogOpen(false);
+    };
+
     // Checks the four required selectors and returns field-keyed messages.
     const validateTopFields = (): { valid: boolean; errors: typeof fieldErrors } => {
         const errors: typeof fieldErrors = {};
@@ -688,7 +750,12 @@ export default function Page() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={() => router.back()} disabled={submitting} className="rounded-xl h-11 px-6 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                    <Button
+                        variant="outline"
+                        onClick={() => router.back()}
+                        disabled={submitting}
+                        className="rounded-xl h-11 px-6 bg-white border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
                         Discard
                     </Button>
                     <Button
@@ -738,8 +805,8 @@ export default function Page() {
                         title="Select Target Student Profile"
                         description="Extract lightweight items from index directory list frames securely on-click."
                     >
-                        <div className="w-full">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                        <div className="w-full flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <User className="h-3.5 w-3.5 text-[#6D755F]" /> Target Student<RequiredMark />
                             </span>
                             <Popover open={studentPopoverOpen} onOpenChange={handleStudentPopoverChange}>
@@ -1052,9 +1119,9 @@ export default function Page() {
                                         <Bus className="h-4 w-4 text-[#6D755F]" /> Active Logistics Properties
                                     </h3>
                                     <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="sm"
-                                        className="h-8 bg-white border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                        className="h-8 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/50"
                                         onClick={() => setSelectedVehicle(null)}
                                     >
                                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove Vehicle
@@ -1075,8 +1142,8 @@ export default function Page() {
                         title="Configure Fee Structure Template"
                         description="Load templates dynamically scoped to your selected class. All charge items are included in the submission."
                     >
-                        <div className="md:w-1/2">
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                        <div className="md:w-1/2 flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <Wallet className="h-3.5 w-3.5 text-[#6D755F]" /> Fee Structure Template<RequiredMark />
                             </span>
                             <Popover open={feePopoverOpen} onOpenChange={handleFeePopoverChange}>
@@ -1155,17 +1222,27 @@ export default function Page() {
                                         </span>
                                         <span className="text-xs text-slate-500">All charge items are sent in the payload. Override amounts, set due dates, and add descriptions as needed.</span>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
-                                        onClick={() => {
-                                            setSelectedFeeStructureId("");
-                                            setItemErrors({});
-                                        }}
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" /> Unlink Template
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setSelectedNewChargeTypeIds([]);
+                                                setIsAddChargeDialogOpen(true);
+                                            }}
+                                            className="bg-[#6D755F]/10 text-[#6D755F] border border-[#6D755F] font-medium hover:bg-[#6D755F]/20 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+                                        >
+                                            Add Charge Type
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
+                                            onClick={() => setIsClearFieldsDialogOpen(true)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" /> Clear Fields
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <div className="overflow-x-auto">
@@ -1292,6 +1369,118 @@ export default function Page() {
 
                 </div>
             )}
+
+            {/* Clear Fields Confirmation Dialog */}
+            <AlertDialog open={isClearFieldsDialogOpen} onOpenChange={setIsClearFieldsDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all configured charge types and reset your selected Fee Structure template. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearFields} className="bg-red-600 hover:bg-red-700 text-white">
+                            Yes, clear fields
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Add Charge Type Dialog */}
+            <AlertDialog open={isAddChargeDialogOpen} onOpenChange={setIsAddChargeDialogOpen}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Add Additional Charge Types</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Select one or more charge types to append to the fee structure.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="py-2 max-h-[320px] overflow-y-auto space-y-2 pr-1">
+                        {loadingChargeTypes ? (
+                            <div className="flex items-center justify-center py-8 gap-2 text-slate-500">
+                                <Loader2 className="h-5 w-5 animate-spin text-[#6D755F]" />
+                                <span className="text-sm font-medium">Loading charge types...</span>
+                            </div>
+                        ) : (
+                            <>
+                                {chargeTypesList
+                                    .filter(ct => !editableFeeItems.some(efi => efi.chargeTypeId === ct.id))
+                                    .map(ct => {
+                                        const isSelected = selectedNewChargeTypeIds.includes(ct.id);
+                                        return (
+                                            <div
+                                                key={ct.id}
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setSelectedNewChargeTypeIds(prev => prev.filter(id => id !== ct.id));
+                                                    } else {
+                                                        setSelectedNewChargeTypeIds(prev => [...prev, ct.id]);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-xl border-2 transition-colors cursor-pointer",
+                                                    isSelected
+                                                        ? "border-[#6D755F] bg-[#6D755F] shadow-sm"
+                                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                )}
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <Checkbox
+                                                        id={`charge-${ct.id}`}
+                                                        checked={isSelected}
+                                                        tabIndex={-1}
+                                                        className={cn(
+                                                            "h-4 w-4 rounded border-slate-400 dark:border-slate-600 pointer-events-none data-[state=checked]:!bg-white data-[state=checked]:!text-[#6D755F] data-[state=checked]:!border-white",
+                                                            isSelected && "border-white"
+                                                        )}
+                                                    />
+                                                    <span className={cn(
+                                                        "text-sm font-medium",
+                                                        isSelected ? "text-white" : "text-slate-900 dark:text-slate-100"
+                                                    )}>
+                                                        {ct.name}
+                                                    </span>
+                                                </div>
+                                                {ct.frequency && (
+                                                    <span className={cn(
+                                                        "text-xs capitalize px-2 py-0.5 rounded-md font-normal",
+                                                        isSelected
+                                                            ? "bg-white/20 text-white"
+                                                            : "text-slate-500 bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+                                                    )}>
+                                                        {ct.frequency.toLowerCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                {chargeTypesList.filter(ct => !editableFeeItems.some(efi => efi.chargeTypeId === ct.id)).length === 0 && !loadingChargeTypes && (
+                                    <div className="text-center py-6 text-xs text-slate-500">
+                                        All available charge types are already added.
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setSelectedNewChargeTypeIds([])}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleAddChargeTypes}
+                            disabled={selectedNewChargeTypeIds.length === 0}
+                            style={{ backgroundColor: "#6D755F" }}
+                            className="!text-white font-medium shadow-sm hover:!bg-[#5b624f] disabled:opacity-40 disabled:shadow-none disabled:hover:!bg-[#6D755F]"
+                        >
+                            Done ({selectedNewChargeTypeIds.length})
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

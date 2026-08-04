@@ -16,14 +16,26 @@ import {
 import { useEffect, useState, useMemo } from "react"
 import { toast } from "sonner"
 
+
 import {
     getAllAccounts,
     createAccount,
     updateAccount,
+    deleteAccount,
     type Account,
     type AccountInput,
 } from "@/lib/services/accounts"
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 // 👇 the reusable component
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 
@@ -77,6 +89,7 @@ type AccountFieldErrors = {
     description?: string;
 };
 
+
 export default function Page() {
     const badgeColors = [
         "bg-red-50 text-red-700 border-red-200",
@@ -101,6 +114,9 @@ export default function Page() {
     // Field-level errors, populated on submit and cleared the moment the
     // user edits that field — same pattern as the Create Staff form.
     const [fieldErrors, setFieldErrors] = useState<AccountFieldErrors>({})
+
+    const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     // ✅ Deterministic color map: same Account Type = same color every time
     const typeColorMap = useMemo(() => {
@@ -212,6 +228,26 @@ export default function Page() {
         }
     }
 
+    async function handleDeleteAccount() {
+        if (!accountToDelete) return
+        setIsDeleting(true)
+        try {
+            await deleteAccount(accountToDelete.id)
+            toast.success("Account deleted successfully")
+            setAccountToDelete(null)
+            await loadAccounts()
+        } catch (err) {
+            console.error(err)
+            const parsed = parseApiError(err, "Failed to delete account")
+            toast.error(parsed.message)
+
+            if (parsed.isAuthError) {
+                router.push("/login")
+            }
+        } finally {
+            setIsDeleting(false)
+        }
+    }
     // 👇 this is the only "new" piece — describe the form once, declaratively
     const accountFields: FormField[] = [
         {
@@ -258,7 +294,7 @@ export default function Page() {
                             Accounts
                         </h1>
                         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                            Manage and view all accounts.
+                            Manage Accounts details and records.
                         </p>
                     </div>
                 </div>
@@ -338,8 +374,8 @@ export default function Page() {
                                         <TableCell className="px-6 py-4">
                                             <span
                                                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${account.isActive
-                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
-                                                        : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
+                                                    : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30"
                                                     }`}
                                             >
                                                 {account.isActive ? "Active" : "Inactive"}
@@ -361,6 +397,7 @@ export default function Page() {
                                                     size="icon"
                                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                                     title="Delete"
+                                                    onClick={() => setAccountToDelete(account)}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -397,6 +434,42 @@ export default function Page() {
                 submitLabel="Save Account"
                 editSubmitLabel="Update Account"
             />
+            <AlertDialog
+                open={!!accountToDelete}
+                onOpenChange={(open) => {
+                    if (!open) setAccountToDelete(null)
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete "{accountToDelete?.name}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete this account. This can't be undone, and it will
+                            fail if there are transactions or ledger entries linked to it.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting}
+                            onClick={(event) => {
+                                event.preventDefault()
+                                void handleDeleteAccount()
+                            }}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </section>
     )
 }

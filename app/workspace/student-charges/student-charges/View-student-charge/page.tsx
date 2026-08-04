@@ -130,7 +130,7 @@ function ViewAdmissionSkeleton() {
             <Skeleton className="h-4 w-36" />
           </div>
           <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="px-4 py-3">
                 <Skeleton className="mb-2 h-2.5 w-16" />
                 <Skeleton className="h-4 w-24" />
@@ -374,16 +374,16 @@ export default function ViewAdmissionPage() {
       </div>
 
       <div className="space-y-6">
-        {/* ── Student information (card) ── */}
+        {/* ── Student information (card) — trimmed to fee-relevant fields only.
+             This page's purpose is the fee structure below, not the full
+             admission record, so DOB, gender, blood group, parent details,
+             WhatsApp, and address are intentionally left out. ── */}
         <InfoSection icon={User} title="Student Information">
           <InfoGrid>
             <InfoItem label="Full name" value={studentDetails.studentName} />
             <InfoItem label="Roll number" value={studentDetails.rollNumber} />
             <InfoItem label="Class" value={studentDetails.class} />
             <InfoItem label="Division" value={studentDetails.division} />
-            <InfoItem label="Gender" value={studentDetails.gender} />
-            <InfoItem label="Date of birth" value={formatDateOnly(studentDetails.dob)} />
-            <InfoItem label="Blood group" value={studentDetails.bloodGroup} />
             <InfoItem
               label="Status"
               value={
@@ -399,12 +399,6 @@ export default function ViewAdmissionPage() {
                 </Badge>
               }
             />
-            <InfoItem label="Father name" value={studentDetails.fatherName} />
-            <InfoItem label="Father mobile" value={studentDetails.fatherMobile} />
-            <InfoItem label="Mother name" value={studentDetails.motherName} />
-            <InfoItem label="Mother mobile" value={studentDetails.motherMobile} />
-            <InfoItem label="WhatsApp" value={studentDetails.whatsappNumber} />
-            <InfoItem label="Address" value={studentDetails.address} />
           </InfoGrid>
         </InfoSection>
 

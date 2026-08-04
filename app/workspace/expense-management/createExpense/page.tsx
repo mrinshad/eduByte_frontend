@@ -1,13 +1,14 @@
 "use client";
 
-import * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import DatePicker from "react-datepicker";
+import { format } from "date-fns";
 import { parseApiError } from "@/lib/api-error";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     ArrowLeft,
+    CalendarIcon,
     Check,
     ChevronsUpDown,
     Loader2,
@@ -19,8 +20,6 @@ import {
     Trash2,
 } from "lucide-react";
 
-import { Checkbox } from "@/components/ui/checkbox";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +27,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
     Command,
     CommandEmpty,
@@ -64,11 +64,6 @@ const fieldClass = `
 `;
 
 const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400";
-
-const datePickerClassName =
-    "w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition hover:border-slate-300 focus:border-[#6D755F] focus:ring-2 focus:ring-[#6D755F]/40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50";
-const datePickerCalendarClassName = "rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-950";
-const datePickerPopperClassName = "z-50";
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
     <label className="text-[12px] font-medium text-slate-500 dark:text-slate-400">{children}</label>
@@ -110,6 +105,7 @@ export default function Page() {
 
     // ── Form state ──────────────────────────────────────────────────────────
     const [expenseDate, setExpenseDate] = useState<Date>(new Date());
+    const [calendarOpen, setCalendarOpen] = useState(false);
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState<string>("");
     const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(true);
@@ -315,10 +311,6 @@ export default function Page() {
     const allocationPct = amount && Number(amount) > 0 ? Math.min(100, (totalAllocated / Number(amount)) * 100) : 0;
 
     // ── Field-level validation ────────────────────────────────────────────
-    // Checks each field individually (rather than one big boolean) so we can
-    // toast a specific, actionable message and highlight exactly the field
-    // that's missing — e.g. "Please select a category" instead of a generic
-    // "fill in the form" message.
     const validateExpenseForm = (): {
         valid: boolean;
         fieldErrors: typeof fieldErrors;
@@ -340,7 +332,6 @@ export default function Page() {
             }
         });
 
-        // Surface the first problem in the same order fields appear on screen.
         const firstError =
             nextFieldErrors.category ??
             nextFieldErrors.subCategory ??
@@ -367,7 +358,6 @@ export default function Page() {
             return;
         }
 
-        // Fields are individually valid — now check the allocation math.
         if (Math.abs(remaining) >= 0.01) {
             if (remaining > 0) {
                 toast.error(`₹${remaining.toLocaleString()} is still unallocated.`);
@@ -424,10 +414,14 @@ export default function Page() {
         <div className="flex w-full rounded-2xl flex-col bg-white dark:bg-slate-950 lg:h-[80vh] lg:flex-row lg:overflow-hidden">
 
             {/* ── Left: form fields ───────────────────────────────────── */}
-            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:p-10">
+            <div className="flex flex-1 flex-col gap-6 h-[590px] overflow-y-auto p-6 lg:p-10">
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" size="icon" onClick={() => router.back()} className="h-9 w-9 shrink-0 rounded-lg border-slate-200 dark:border-slate-700">
-                        <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+                    <Button
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>
@@ -460,7 +454,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingStaffList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -474,8 +468,8 @@ export default function Page() {
                                                         }}
                                                         className="cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4", selectedStaffId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                        <span className="text-slate-500">No staff</span>
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedStaffId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-100">No staff</span>
                                                     </CommandItem>
                                                     {staffDropdown.map((staff) => (
                                                         <CommandItem
@@ -487,9 +481,9 @@ export default function Page() {
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{staff.name}</span>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{staff.name}</span>
                                                                 <span className="text-xs text-slate-400">Code: {staff.employeeCode}</span>
                                                             </div>
                                                         </CommandItem>
@@ -505,23 +499,37 @@ export default function Page() {
 
                     <div className="flex flex-col gap-1.5">
                         <FieldLabel>Date</FieldLabel>
-                        <DatePicker
-                            selected={expenseDate}
-                            onChange={(date: Date | null) => setExpenseDate(date ?? new Date())}
-                            dateFormat="PPP"
-                            className={datePickerClassName}
-                            calendarClassName={datePickerCalendarClassName}
-                            popperClassName={datePickerPopperClassName}
-                            wrapperClassName="w-full"
-                            showMonthDropdown
-                            showYearDropdown
-                            scrollableYearDropdown
-                            yearDropdownItemNumber={15}
-                            dropdownMode="select"
-                            openToDate={expenseDate}
-                        />
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal shadow-sm hover:bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
+                                        "focus:ring-2 focus:ring-[#6D755F] focus:border-transparent"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                    <span>{format(expenseDate, "PPP")}</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                align="start"
+                            >
+                                <Calendar
+                                    mode="single"
+                                    selected={expenseDate}
+                                    onSelect={(date) => {
+                                        if (date) {
+                                            setExpenseDate(date);
+                                            setCalendarOpen(false);
+                                        }
+                                    }}
+                                    defaultMonth={expenseDate}
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
-
                 </div>
 
                 {/* Category / sub category */}
@@ -553,7 +561,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingCategoryList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -569,7 +577,7 @@ export default function Page() {
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
                                                             <span>{category.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -613,7 +621,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingSubCategoryList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -630,7 +638,7 @@ export default function Page() {
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
                                                             <span>{subCategory.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -687,7 +695,7 @@ export default function Page() {
                                     <CommandList>
                                         {loadingVehicleList ? (
                                             <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                             </div>
                                         ) : (
                                             <>
@@ -701,8 +709,8 @@ export default function Page() {
                                                         }}
                                                         className="cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
-                                                        <span className="text-slate-500">No vehicle</span>
+                                                        <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedVehicleId === "" ? "opacity-100" : "opacity-0")} />
+                                                        <span className="text-slate-200">No vehicle</span>
                                                     </CommandItem>
                                                     {vehiclesDropdown.map((vehicle) => (
                                                         <CommandItem
@@ -714,9 +722,9 @@ export default function Page() {
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                                 <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
                                                             </div>
                                                         </CommandItem>
@@ -813,7 +821,7 @@ export default function Page() {
                                                         <CommandList>
                                                             {loadingAccountList ? (
                                                                 <div className="flex items-center justify-center p-4 text-xs text-slate-500 gap-2">
-                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: SAGE }} /> Loading...
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6D755F]" /> Loading...
                                                                 </div>
                                                             ) : (
                                                                 <>
@@ -829,7 +837,7 @@ export default function Page() {
                                                                                 }}
                                                                                 className="cursor-pointer"
                                                                             >
-                                                                                <Check className={cn("mr-2 h-4 w-4", row.accountId === account.id ? "opacity-100" : "opacity-0")} style={{ color: SAGE }} />
+                                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
                                                                                 <span>{account.name}</span>
                                                                             </CommandItem>
                                                                         ))}
