@@ -49,7 +49,7 @@ function SortableHeader({
     <TableHead
       onClick={() => onSort(field)}
       className={cn(
-        "px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
+        "px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
         "cursor-pointer select-none transition-colors hover:bg-white/10 dark:hover:bg-white/5"
       )}
       title={`Sort by ${label}`}
@@ -227,23 +227,23 @@ export default function Page() {
   };
 
   return (
-    <section className="w-full px-6 py-4 space-y-6">
+    <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             size="icon"
-            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               Staff
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               View and manage staff records, contact details, and employment status.
             </p>
           </div>
@@ -268,7 +268,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -291,7 +291,7 @@ export default function Page() {
           )}
 
           <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
           >
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
@@ -321,24 +321,24 @@ export default function Page() {
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+          <Table className="w-full min-w-[900px]">
             <TableHeader>
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
                 <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
                 <SortableHeader label="Joining Date" field="joiningDate" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Status" field="status" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -369,31 +369,31 @@ export default function Page() {
                     key={member.id}
                     className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                   >
-                    <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-500">
                       {startEntry + index}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       {formatText(member.employeeCode)}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 max-w-[180px] truncate">
                       {formatText(member.name)}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       {formatText(member.phone)}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[200px] truncate">
                       {formatText(member.email)}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       {formatDate(member.joiningDate)}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4">
+                    <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <Badge
                         variant="outline"
                         className={
@@ -406,7 +406,7 @@ export default function Page() {
                       </Badge>
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-right">
+                    <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -436,14 +436,14 @@ export default function Page() {
         </div>
 
         {/* ── Pagination ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col lg:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 sm:px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center lg:text-left order-2 lg:order-1">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{total}</span> entries
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 sm:justify-end order-1 lg:order-2 w-full lg:w-auto">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="text-xs font-medium">Rows per page:</span>
               <select
@@ -458,9 +458,9 @@ export default function Page() {
               </select>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 justify-between w-full sm:w-auto">
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safePage === 1 || loading}
@@ -474,7 +474,7 @@ export default function Page() {
               </div>
 
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={safePage === totalPages || loading}
@@ -492,22 +492,22 @@ export default function Page() {
           if (!open) setStaffToDelete(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{staffToDelete?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete this staff record. This can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
               onClick={(event) => {
                 event.preventDefault();
                 void handleDeleteStaff();
               }}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
               {isDeleting ? (
                 <>

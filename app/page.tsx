@@ -59,8 +59,11 @@ export default function Page() {
     setIsSubmitting(true)
     setStatusMessage("Signing in...")
 
+    const trimmedUsername = username.trim()
+    const trimmedPassword = password.trim()
+
     try {
-      const currentSession = await loginUser(username, password)
+      const currentSession = await loginUser(trimmedUsername, trimmedPassword)
       setSession({ user: currentSession.user })
       setStatusMessage(`Welcome, ${currentSession.user.name}`)
       router.replace(getPortalRoute(currentSession.user.role))

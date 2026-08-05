@@ -1,5 +1,5 @@
 "use client";
- 
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,14 +25,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
- 
+
 import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
 import { formatDateOnly } from "@/lib/utils";
- 
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
- 
+
 function InfoSection({
   icon: Icon,
   title,
@@ -52,7 +52,7 @@ function InfoSection({
     </div>
   );
 }
- 
+
 function InfoGrid({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
@@ -60,7 +60,7 @@ function InfoGrid({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
- 
+
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="px-4 py-3">
@@ -71,15 +71,15 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
- 
+
 function formatDob(dob: string) {
   return formatDateOnly(dob);
 }
- 
+
 // ---------------------------------------------------------------------------
 // Skeleton loading state
 // ---------------------------------------------------------------------------
- 
+
 function ViewAdmissionSkeleton() {
   return (
     <section className="w-full px-6 py-4">
@@ -174,19 +174,19 @@ function ViewAdmissionSkeleton() {
     </section>
   );
 }
- 
+
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
- 
+
 export default function ViewAdmissionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
- 
+
   const [enrollment, setEnrollment] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
- 
+
   useEffect(() => {
     async function loadData() {
       if (!id) return;
@@ -205,11 +205,11 @@ export default function ViewAdmissionPage() {
     }
     loadData();
   }, [id]);
- 
+
   if (loading) {
     return <ViewAdmissionSkeleton />;
   }
- 
+
   if (!enrollment) {
     return (
       <section className="w-full px-6 py-4">
@@ -220,13 +220,13 @@ export default function ViewAdmissionPage() {
       </section>
     );
   }
- 
+
   const { student, charges } = enrollment;
- 
+
   return (
     <section className="w-full px-6 py-4">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             className="bg-background text-foreground hover:opacity-90 shadow-sm"
@@ -235,6 +235,7 @@ export default function ViewAdmissionPage() {
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
+
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               {student.studentName}
@@ -244,19 +245,19 @@ export default function ViewAdmissionPage() {
             </p>
           </div>
         </div>
- 
+
         <Button
-          className="shrink-0 gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
+          className="shrink-0 flex items-center gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
           size="sm"
           onClick={() => router.push(`/admin/admissions/createAdmission?id=${id}`)}
         >
-          <Pencil className="h-3.5 w-3.5 text-foreground" />
+          <Pencil className="h-3.5 w-3.5" />
           Edit
         </Button>
       </div>
- 
+
       <div className="space-y-6">
- 
+
         {/* ── Student information ── */}
         <InfoSection icon={User} title="Student Information">
           <InfoGrid>
@@ -288,7 +289,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Address" value={student.address} />
           </InfoGrid>
         </InfoSection>
- 
+
         {/* ── Enrollment details ── */}
         <InfoSection icon={GraduationCap} title="Enrollment Details">
           <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800/50 dark:border-slate-800/50 md:grid-cols-4 md:divide-y-0">
@@ -308,7 +309,7 @@ export default function ViewAdmissionPage() {
               </div>
             ))}
           </div>
- 
+
           <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3 md:divide-x md:divide-y-0">
             <div className="flex items-center gap-4 px-4 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
@@ -323,7 +324,7 @@ export default function ViewAdmissionPage() {
                 </div>
               </div>
             </div>
- 
+
             <div className="flex items-center gap-4 px-4 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
                 <Bus className="h-5 w-5 text-slate-500 dark:text-slate-400" />
@@ -337,7 +338,7 @@ export default function ViewAdmissionPage() {
                 </div>
               </div>
             </div>
- 
+
             <div className="flex items-center gap-4 px-4 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
                 <Receipt className="h-5 w-5 text-slate-500 dark:text-slate-400" />
@@ -353,7 +354,7 @@ export default function ViewAdmissionPage() {
             </div>
           </div>
         </InfoSection>
- 
+
         {/* ── Student charges (simplified: Sl No, name, frequency, category, final amount) ── */}
         <InfoSection icon={Receipt} title="Student Fee">
           <Table className="table-fixed w-full">
@@ -376,7 +377,7 @@ export default function ViewAdmissionPage() {
                 </TableHead>
               </TableRow>
             </TableHeader>
- 
+
             <TableBody>
               {charges.map((charge, index) => (
                 <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
@@ -406,7 +407,7 @@ export default function ViewAdmissionPage() {
             </TableBody>
           </Table>
         </InfoSection>
- 
+
       </div>
     </section>
   );

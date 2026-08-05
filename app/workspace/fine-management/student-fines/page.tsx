@@ -629,14 +629,6 @@ export default function Page() {
                           <Pencil className="h-4 w-4" />
                         </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          title="Pay Fine"
-                        >
-                          <CreditCard className="h-4 w-4" />
-                        </Button>
 
                         {row.status !== "REVERSED" && (
                           <Button

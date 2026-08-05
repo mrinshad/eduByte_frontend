@@ -278,29 +278,29 @@ export default function Page() {
     ]
 
     return (
-        <section className="w-full px-6 py-4 space-y-6">
+        <section className="w-full px-3 sm:px-6 py-4 space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <Button
-                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
                         size="icon"
                         onClick={() => router.back()}
                     >
                         <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                             Accounts
                         </h1>
-                        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                        <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                             Manage Accounts details and records.
                         </p>
                     </div>
                 </div>
 
                 <Button
-                    className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                    className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                     onClick={openCreate}
                 >
                     <Plus className="h-4 w-4" />
@@ -310,14 +310,14 @@ export default function Page() {
 
             {/* Table */}
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table className="w-full">
+                <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+                    <Table className="w-full min-w-[760px]">
                         <TableHeader>
                             <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
                                 {tableHeaders.map((header) => (
                                     <TableHead
                                         key={header}
-                                        className={`px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap ${header === "Actions" ? "text-right" : ""}`}
+                                        className={`px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap ${header === "Actions" ? "text-right" : ""}`}
                                     >
                                         {header}
                                     </TableHead>
@@ -356,22 +356,22 @@ export default function Page() {
                                         key={account.id}
                                         className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                                     >
-                                        <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
+                                        <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-500">
                                             {index + 1}
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                        <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 max-w-[160px] truncate">
                                             {account.name}
                                         </TableCell>
-                                        <TableCell className="px-6 py-4">
+                                        <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                             {/* ✅ Same type = same color */}
                                             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getBadgeColorForType(account.type)}`}>
                                                 {account.type}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                        <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[220px] truncate">
                                             {account.description || "—"}
                                         </TableCell>
-                                        <TableCell className="px-6 py-4">
+                                        <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${account.isActive
                                                     ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
@@ -381,7 +381,7 @@ export default function Page() {
                                                 {account.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 text-right">
+                                        <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Button
                                                     variant="ghost"
@@ -440,7 +440,7 @@ export default function Page() {
                     if (!open) setAccountToDelete(null)
                 }}
             >
-                <AlertDialogContent>
+                <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete "{accountToDelete?.name}"?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -448,15 +448,15 @@ export default function Page() {
                             fail if there are transactions or ledger entries linked to it.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                        <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isDeleting}
                             onClick={(event) => {
                                 event.preventDefault()
                                 void handleDeleteAccount()
                             }}
-                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600"
                         >
                             {isDeleting ? (
                                 <>

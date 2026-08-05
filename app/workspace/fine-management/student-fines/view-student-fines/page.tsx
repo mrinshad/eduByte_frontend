@@ -48,8 +48,8 @@ function InfoSection({
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
       <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
-        <Icon className="h-4 w-4 text-foreground" />
-        <span className="text-sm font-semibold tracking-tight text-foreground">{title}</span>
+        <Icon className="h-4 w-4 shrink-0 text-foreground" />
+        <span className="truncate text-sm font-semibold tracking-tight text-foreground">{title}</span>
       </div>
       {children}
     </div>
@@ -66,11 +66,11 @@ function InfoGrid({ children }: { children: React.ReactNode }) {
 
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="px-4 py-3">
+    <div className="min-w-0 px-4 py-3">
       <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
         {label}
       </div>
-      <div className="text-sm font-medium text-slate-950 dark:text-slate-100">{value}</div>
+      <div className="break-words text-sm font-medium text-slate-950 dark:text-slate-100">{value}</div>
     </div>
   );
 }
@@ -164,7 +164,7 @@ export default function ViewStudentFinePage() {
 
   if (loading) {
     return (
-      <section className="w-full px-6 py-4">
+      <section className="w-full px-4 py-4 sm:px-6">
         <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
       </section>
     );
@@ -172,7 +172,7 @@ export default function ViewStudentFinePage() {
 
   if (!fine) {
     return (
-      <section className="w-full px-6 py-4">
+      <section className="w-full px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-red-500">
           <AlertCircle className="h-4 w-4" />
           Fine record not found.
@@ -187,31 +187,32 @@ export default function ViewStudentFinePage() {
   const safeBalanceAmount = Number.isFinite(balanceAmount) ? balanceAmount : amount - paidAmount;
 
   return (
-    <section className="w-full px-6 py-4">
+    <section className="w-full px-4 py-4 sm:px-6">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
           <Button
-            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+            className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
             size="icon"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
               {fine.student}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">
               {fine.admissionNumber}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none text-white"
             onClick={() => setEditOpen(true)}
           >
             <Pencil className="mr-2 h-4 w-4" />
@@ -221,6 +222,7 @@ export default function ViewStudentFinePage() {
           <Button
             variant="destructive"
             size="sm"
+            className="flex-1 sm:flex-none"
             onClick={() => setReverseOpen(true)}
           >
             <Undo2 className="mr-2 h-4 w-4" />
@@ -269,11 +271,11 @@ export default function ViewStudentFinePage() {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
                 <Undo2 className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-400">
                   Fine reversed
                 </div>
-                <div className="mt-0.5 text-sm text-violet-900 dark:text-violet-200">
+                <div className="mt-0.5 break-words text-sm text-violet-900 dark:text-violet-200">
                   {fine.reversalReason || "No reversal reason provided."}
                 </div>
               </div>
@@ -327,7 +329,7 @@ export default function ViewStudentFinePage() {
       />
 
       <Dialog open={reverseOpen} onOpenChange={setReverseOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reverse Fine</DialogTitle>
             <DialogDescription>
@@ -353,7 +355,7 @@ export default function ViewStudentFinePage() {
               type="checkbox"
               checked={confirmReverse}
               onChange={(e) => setConfirmReverse(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4 w-4 shrink-0"
             />
 
             <label
@@ -364,7 +366,7 @@ export default function ViewStudentFinePage() {
             </label>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
             <Button
               variant="outline"
               onClick={() => {

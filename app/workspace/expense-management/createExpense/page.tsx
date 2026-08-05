@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { parseApiError } from "@/lib/api-error";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -50,6 +50,11 @@ import {
     type StaffName,
 } from "@/lib/services/expense";
 import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
+import {
+    getExpenseSummaryById,
+    updateExpenseSummary,
+    type ExpenseDetail,
+} from "@/lib/services/reports";
 
 // ---------------------------------------------------------------------
 // Shared bits — same sage accent (#6D755F) as the rest of the app.
@@ -75,6 +80,23 @@ const FieldError = ({ children }: { children?: string }) => {
 };
 
 // ---------------------------------------------------------------------
+// ID normalization helper
+// ---------------------------------------------------------------------
+// The expense detail API and the various dropdown-list APIs are not
+// guaranteed to serialize IDs the same way (e.g. one side may return a
+// number, the other a string). Because all the `.find(x => x.id === val)`
+// lookups below use strict equality, a type mismatch causes the lookup to
+// silently fail — the ID state gets set correctly, but the "selected"
+// memo resolves to null and the UI falls back to placeholder text
+// ("Choose category", "Not linked", etc.) even though the value is really
+// there. Routing every ID through `toId()` before comparing/storing
+// eliminates that class of bug.
+const toId = (value: unknown): string => {
+    if (value === null || value === undefined) return "";
+    return String(value);
+};
+
+// ---------------------------------------------------------------------
 // Payment split types
 // ---------------------------------------------------------------------
 
@@ -95,6 +117,9 @@ const createPaymentRow = (): PaymentRow => ({
 
 export default function Page() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get("id");
+    const isEditMode = !!editId;
 
     // ── Lookup data ─────────────────────────────────────────────────────────
     const [categoriesDropdown, setCategoriesDropdown] = useState<ExpenseCategory[]>([]);
@@ -119,6 +144,10 @@ export default function Page() {
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
     const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
 
+    // ── Edit mode loading ─────────────────────────────────────────────────
+    const [loadingExpense, setLoadingExpense] = useState(false);
+    const [expenseDetail, setExpenseDetail] = useState<ExpenseDetail | null>(null);
+
     // ── Field-level validation errors ──────────────────────────────────────
     const [fieldErrors, setFieldErrors] = useState<{
         category?: string;
@@ -141,32 +170,146 @@ export default function Page() {
     const [loadingStaffList, setLoadingStaffList] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    // NOTE: every lookup below is normalized through toId() on both sides
+    // so that string/number ID mismatches between the expense-detail API
+    // and the dropdown-list APIs can never cause a silent match failure.
     const selectedCategory = useMemo(
-        () => categoriesDropdown.find((c) => c.id === selectedCategoryId) ?? null,
+        () => categoriesDropdown.find((c) => toId(c.id) === toId(selectedCategoryId)) ?? null,
         [categoriesDropdown, selectedCategoryId]
     );
 
     const selectedSubCategory = useMemo(
-        () => subCategoriesDropdown.find((sc) => sc.id === selectedSubCategoryId) ?? null,
+        () => subCategoriesDropdown.find((sc) => toId(sc.id) === toId(selectedSubCategoryId)) ?? null,
         [subCategoriesDropdown, selectedSubCategoryId]
     );
 
     const selectedVehicle = useMemo(
-        () => vehiclesDropdown.find((v) => v.id === selectedVehicleId) ?? null,
+        () => vehiclesDropdown.find((v) => toId(v.id) === toId(selectedVehicleId)) ?? null,
         [vehiclesDropdown, selectedVehicleId]
     );
 
     const selectedStaff = useMemo(
-        () => staffDropdown.find((s) => s.id === selectedStaffId) ?? null,
+        () => staffDropdown.find((s) => toId(s.id) === toId(selectedStaffId)) ?? null,
         [staffDropdown, selectedStaffId]
     );
 
     const filteredSubCategories = useMemo(() => {
         if (!selectedCategoryId) return [];
-        return subCategoriesDropdown.filter((sc) => sc.categoryId === selectedCategoryId);
+        return subCategoriesDropdown.filter((sc) => toId(sc.categoryId) === toId(selectedCategoryId));
     }, [subCategoriesDropdown, selectedCategoryId]);
 
+    // ── Preload categories + sub categories + vehicles + staff eagerly ─────
+    // NOTE: vehicles & staff used to be lazy-loaded only when their popover
+    // was opened. That's fine for "create" mode, but in "edit" mode it meant
+    // selectedVehicle / selectedStaff below would resolve to null (because
+    // vehiclesDropdown / staffDropdown were still empty arrays), so the
+    // saved vehicle/staff never appeared even though selectedVehicleId /
+    // selectedStaffId were set correctly from the loaded expense. Preloading
+    // all four lookups together fixes that without changing UX for create mode.
+    useEffect(() => {
+        void (async () => {
+            try {
+                const [cats, subs, vehicles, staff, accounts] = await Promise.all([
+                    getExpenseCategories(),
+                    getExpenseSubCategories(),
+                    getVehicles(),
+                    getStaffNamesAndIds(),
+                    getPaymentMethodAccounts(),          // ← ADD
+                ]);
+                setCategoriesDropdown(cats);
+                setSubCategoriesDropdown(subs);
+                setVehiclesDropdown(vehicles);
+                setStaffDropdown(staff);
+                setAccountsDropdown(accounts);           // ← ADD
+            } catch (error) {
+                console.error("Failed to preload dropdown data:", error);
+            }
+        })();
+    }, []);
+    useEffect(() => {
+        if (accountsDropdown.length > 0 && !isEditMode) {
+            setPayments((prev) => {
+                // Only auto-fill on a fresh, untouched single row
+                if (prev.length === 1 && prev[0].accountId === "") {
+                    const cashAccount = accountsDropdown.find((a) =>
+                        a.name.toLowerCase().includes("cash")
+                    );
+                    if (cashAccount) {
+                        return [{ ...prev[0], accountId: toId(cashAccount.id) }];
+                    }
+                }
+                return prev;
+            });
+        }
+    }, [accountsDropdown, isEditMode]);
+
+    // ── Load expense data in edit mode ────────────────────────────────────
+    useEffect(() => {
+        if (!editId) return;
+
+        let cancelled = false;
+
+        async function loadExpense(id: string) {
+            try {
+                setLoadingExpense(true);
+                const detail = await getExpenseSummaryById(id);
+
+                // Debug aid: if category/sub-category/vehicle/staff still
+                // don't populate after this fix, uncomment the line below
+                // and compare the shape/types against categoriesDropdown[0].
+                // console.log("expense detail from API:", detail);
+
+                if (!cancelled && detail) {
+                    setExpenseDetail(detail);
+                    setAmount(detail.amount);
+                    setNotes(detail.notes ?? "");
+                    setExpenseDate(parseISO(detail.expenseDate));
+
+                    // IMPORTANT: the API's expense-detail response keys these
+                    // as `category` / `subCategory` / `vehicle` / `staff`
+                    // (holding the *IDs* despite the plain names — there is
+                    // no separate `categoryId` field on the payload). Reading
+                    // `detail.categoryId` etc. here would always be
+                    // undefined and silently blank out the selects. Normalize
+                    // every value to a string via toId() so it matches the
+                    // dropdown lists regardless of how the API serialized it.
+                    setSelectedCategoryId(toId(detail.category));
+                    setSelectedSubCategoryId(toId(detail.subCategory));
+                    setSelectedVehicleId(toId(detail.vehicle));
+                    setSelectedStaffId(toId(detail.staff));
+
+                    if (detail.payments && detail.payments.length > 0) {
+                        setPayments(
+                            detail.payments.map((p) => ({
+                                id:
+                                    typeof crypto !== "undefined" && "randomUUID" in crypto
+                                        ? crypto.randomUUID()
+                                        : `row-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                                accountId: toId(p.accountId),
+                                amount: p.amount,
+                            }))
+                        );
+                    }
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    toast.error("Failed to load expense details.");
+                }
+            } finally {
+                if (!cancelled) setLoadingExpense(false);
+            }
+        }
+
+        loadExpense(editId);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [editId]);
+
     // ── Lazy loaders ──────────────────────────────────────────────────────
+    // These are kept as safety nets / refresh triggers if the popover is
+    // opened before the eager preload above finishes, or if it ever fails.
     const handleCategoryPopoverChange = async (open: boolean) => {
         setCategoryPopoverOpen(open);
         if (open && categoriesDropdown.length === 0) {
@@ -212,6 +355,18 @@ export default function Page() {
         }
     };
 
+    // In edit mode, payment accounts weren't eagerly preloaded, so the
+    // "Choose account" trigger button can't resolve rowAccount until the
+    // popover has been opened once. Preload accounts alongside the other
+    // lookups whenever we're in edit mode so the saved account name shows
+    // immediately instead of only after the user opens the dropdown.
+    useEffect(() => {
+        if (isEditMode) {
+            void ensureAccountsLoaded();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEditMode]);
+
     const handlePaymentPopoverChange = (rowId: string, open: boolean) => {
         setOpenPaymentRowId(open ? rowId : null);
         if (open) void ensureAccountsLoaded();
@@ -248,7 +403,7 @@ export default function Page() {
     };
 
     const handleCategorySelect = (categoryId: string) => {
-        setSelectedCategoryId(categoryId);
+        setSelectedCategoryId(toId(categoryId));
         setSelectedSubCategoryId("");
         setFieldErrors((prev) => ({ ...prev, category: undefined }));
     };
@@ -267,7 +422,7 @@ export default function Page() {
     };
 
     const updatePaymentAccount = (rowId: string, accountId: string) => {
-        setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, accountId } : p)));
+        setPayments((prev) => prev.map((p) => (p.id === rowId ? { ...p, accountId: toId(accountId) } : p)));
         setPaymentErrors((prev) => {
             if (!(rowId in prev)) return prev;
             const next = { ...prev };
@@ -285,22 +440,6 @@ export default function Page() {
             return next;
         });
     };
-
-    // Preload categories + sub categories eagerly.
-    useEffect(() => {
-        void (async () => {
-            try {
-                const [cats, subs] = await Promise.all([
-                    getExpenseCategories(),
-                    getExpenseSubCategories(),
-                ]);
-                setCategoriesDropdown(cats);
-                setSubCategoriesDropdown(subs);
-            } catch (error) {
-                console.error("Failed to preload category data:", error);
-            }
-        })();
-    }, []);
 
     const totalAllocated = useMemo(
         () => payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
@@ -369,37 +508,52 @@ export default function Page() {
             return;
         }
 
+        const payload = {
+            categoryId: selectedCategoryId,
+            vehicleId: selectedVehicleId || null,
+            subCategoryId: selectedSubCategoryId,
+            staffId: selectedStaffId || null,
+            notes: notes.trim(),
+            amount: Number(amount),
+            accountId: selectedSubCategory?.expenseAccountId ?? "",  // ← ADD THIS
+            expenseDate: expenseDate.toISOString(),
+            payments: payments.map((p) => ({
+                accountId: p.accountId,
+                amount: Number(p.amount),
+            })),
+        };
+
         try {
             setSubmitting(true);
 
-            const result = await createExpense({
-                categoryId: selectedCategoryId,
-                vehicleId: selectedVehicleId || null,
-                subCategoryId: selectedSubCategoryId,
-                staffId: selectedStaffId || null,
-                notes: notes.trim(),
-                amount: Number(amount),
-                expenseDate: expenseDate.toISOString(),
-                payments: payments.map((p) => ({
-                    accountId: p.accountId,
-                    amount: Number(p.amount),
-                })),
-            });
-
-            if (result.success) {
-                toast.success(result.message || "Expense created successfully");
-
-                if (printAfterCreate) {
-                    router.push(`/print/expenses/${result.data.id}`);
+            if (isEditMode && editId) {
+                const result = await updateExpenseSummary(editId, payload);
+                if (result.success) {
+                    toast.success(result.message || "Expense updated successfully");
+                    if (printAfterCreate) {
+                        router.push(`/print/expenses/${editId}`);
+                    } else {
+                        router.push("/workspace/reports/expense-summary");
+                    }
                 } else {
-                    router.push("/workspace/reports/expense-summary");
+                    toast.error(result.message || "An error occurred during update.");
                 }
             } else {
-                toast.error(result.message || "An error occurred during submission.");
+                const result = await createExpense(payload);
+                if (result.success) {
+                    toast.success(result.message || "Expense created successfully");
+                    if (printAfterCreate) {
+                        router.push(`/print/expenses/${result.data.id}`);
+                    } else {
+                        router.push("/workspace/reports/expense-summary");
+                    }
+                } else {
+                    toast.error(result.message || "An error occurred during submission.");
+                }
             }
         } catch (error) {
             console.error("Submit error:", error);
-            const parsed = parseApiError(error, "Failed to create expense");
+            const parsed = parseApiError(error, isEditMode ? "Failed to update expense" : "Failed to create expense");
             toast.error(parsed.message);
 
             if (parsed.isAuthError) {
@@ -409,6 +563,18 @@ export default function Page() {
             setSubmitting(false);
         }
     };
+
+    // Show loading overlay while fetching expense in edit mode
+    if (isEditMode && loadingExpense) {
+        return (
+            <div className="flex w-full items-center justify-center rounded-2xl bg-white dark:bg-slate-950" style={{ minHeight: "80vh" }}>
+                <div className="flex flex-col items-center gap-2 text-slate-500">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#6D755F]" />
+                    <p className="text-sm">Loading expense details…</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex w-full rounded-2xl flex-col bg-white dark:bg-slate-950 lg:h-[80vh] lg:flex-row lg:overflow-hidden">
@@ -424,8 +590,14 @@ export default function Page() {
                         <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Create Expense</h1>
-                        <p className="text-xs text-slate-400">Log a new expense and how it was paid</p>
+                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            {isEditMode ? "Edit Expense" : "Create Expense"}
+                        </h1>
+                        <p className="text-xs text-slate-400">
+                            {isEditMode
+                                ? `Editing ${expenseDetail?.expenseNumber ?? ""}`
+                                : "Log a new expense and how it was paid"}
+                        </p>
                     </div>
                 </div>
 
@@ -476,12 +648,12 @@ export default function Page() {
                                                             key={staff.id}
                                                             value={`${staff.name} ${staff.employeeCode}`}
                                                             onSelect={() => {
-                                                                setSelectedStaffId(staff.id);
+                                                                setSelectedStaffId(toId(staff.id));
                                                                 setStaffPopoverOpen(false);
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStaffId === staff.id ? "opacity-100" : "opacity-0")} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", toId(staff.id) === selectedStaffId ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-slate-200 dark:text-slate-100">{staff.name}</span>
                                                                 <span className="text-xs text-slate-400">Code: {staff.employeeCode}</span>
@@ -504,11 +676,11 @@ export default function Page() {
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal shadow-sm hover:bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
+                                        "h-11 w-full justify-start rounded-lg border-slate-200 bg-white px-3 text-left text-sm font-normal  shadow-sm hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50",
                                         "focus:ring-2 focus:ring-[#6D755F] focus:border-transparent"
                                     )}
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400 hover:text-slate-100" />
                                     <span>{format(expenseDate, "PPP")}</span>
                                 </Button>
                             </PopoverTrigger>
@@ -577,7 +749,7 @@ export default function Page() {
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", toId(category.id) === selectedCategoryId ? "opacity-100" : "opacity-0")} />
                                                             <span>{category.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -632,13 +804,13 @@ export default function Page() {
                                                             key={subCategory.id}
                                                             value={subCategory.name}
                                                             onSelect={() => {
-                                                                setSelectedSubCategoryId(subCategory.id);
+                                                                setSelectedSubCategoryId(toId(subCategory.id));
                                                                 setSubCategoryPopoverOpen(false);
                                                                 setFieldErrors((prev) => ({ ...prev, subCategory: undefined }));
                                                             }}
                                                             className="cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedSubCategoryId === subCategory.id ? "opacity-100" : "opacity-0")} />
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", toId(subCategory.id) === selectedSubCategoryId ? "opacity-100" : "opacity-0")} />
                                                             <span>{subCategory.name}</span>
                                                         </CommandItem>
                                                     ))}
@@ -717,12 +889,12 @@ export default function Page() {
                                                             key={vehicle.id}
                                                             value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
                                                             onSelect={() => {
-                                                                setSelectedVehicleId(vehicle.id);
+                                                                setSelectedVehicleId(toId(vehicle.id));
                                                                 setVehiclePopoverOpen(false);
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
-                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicleId === vehicle.id ? "opacity-100" : "opacity-0")} />
+                                                            <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", toId(vehicle.id) === selectedVehicleId ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                                 <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
@@ -791,7 +963,7 @@ export default function Page() {
 
                         <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
                             {payments.map((row, index) => {
-                                const rowAccount = accountsDropdown.find((a) => a.id === row.accountId);
+                                const rowAccount = accountsDropdown.find((a) => toId(a.id) === row.accountId);
                                 const rowError = paymentErrors[row.id];
                                 return (
                                     <div key={row.id} className="flex flex-col gap-1">
@@ -837,7 +1009,7 @@ export default function Page() {
                                                                                 }}
                                                                                 className="cursor-pointer"
                                                                             >
-                                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", row.accountId === account.id ? "opacity-100" : "opacity-0")} />
+                                                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", toId(account.id) === row.accountId ? "opacity-100" : "opacity-0")} />
                                                                                 <span>{account.name}</span>
                                                                             </CommandItem>
                                                                         ))}
@@ -956,7 +1128,7 @@ export default function Page() {
                             onCheckedChange={(checked) => setPrintAfterCreate(checked === true)}
                             className="border-white/40 data-[state=checked]:bg-white data-[state=checked]:text-[#6D755F]"
                         />
-                        Print voucher after creating
+                        {isEditMode ? "Print voucher after updating" : "Print voucher after creating"}
                     </label>
 
                     <Button
@@ -968,6 +1140,8 @@ export default function Page() {
                             <span className="flex items-center gap-1.5">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing
                             </span>
+                        ) : isEditMode ? (
+                            "Update Expense"
                         ) : (
                             "Confirm Expense"
                         )}

@@ -268,6 +268,7 @@ export interface ExpenseItem {
   account: string | null;
   vehicle: string | null;
   staff: string | null;
+  payments: { accountId: string; amount: string | number }[];
 }
 
 export interface ExpenseSummaryPagination {
@@ -337,6 +338,64 @@ export async function getExpenseSummaryByCategoryReport(
       categorySummary: [],
     }
   );
+}
+
+//
+// Expense Summary — single item operations (edit / delete)
+//
+
+// NOTE: the `GET /api/reports/expense-summary/:id` endpoint keys these
+// fields as `category` / `subCategory` / `vehicle` / `staff` — and despite
+// the plain names, the values it sends are the corresponding *IDs* (UUIDs),
+// not display names. There is no separate `categoryId` / `subCategoryId` /
+// `vehicleId` / `staffId` field on this response. Consumers of this type
+// (see the edit-expense page) must read `detail.category`, not
+// `detail.categoryId`, or the value will always be undefined.
+export interface ExpenseDetail {
+  id: string;
+  expenseNumber: string;
+  amount: number;
+  expenseDate: string;
+  notes: string | null;
+  category: string | null; // this is the category ID, not a display name
+  subCategory: string | null; // this is the sub-category ID, not a display name
+  vehicle: string | null; // this is the vehicle ID, not a display name
+  staff: string | null; // this is the staff ID, not a display name
+  payments: { accountId: string; amount: number }[];
+}
+
+export async function getExpenseSummaryById(id: string): Promise<ExpenseDetail | null> {
+  const payload = (await apiFetch(
+    `/api/reports/expense-summary/${id}`
+  )) as ApiSuccess<ExpenseDetail>;
+  return payload.data ?? null;
+}
+
+export async function updateExpenseSummary(
+  id: string,
+  data: {
+    categoryId: string;
+    subCategoryId: string;
+    vehicleId?: string | null;
+    staffId?: string | null;
+    notes?: string;
+    amount: number;
+    expenseDate: string;
+    payments: { accountId: string; amount: number }[];
+  }
+): Promise<ApiSuccess<ExpenseDetail>> {
+  const payload = (await apiFetch(`/api/reports/expense-summary/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })) as ApiSuccess<ExpenseDetail>;
+  return payload;
+}
+
+export async function deleteExpenseSummary(id: string): Promise<ApiSuccess<null>> {
+  const payload = (await apiFetch(`/api/reports/expense-summary/${id}`, {
+    method: "DELETE",
+  })) as ApiSuccess<null>;
+  return payload;
 }
 
 //
