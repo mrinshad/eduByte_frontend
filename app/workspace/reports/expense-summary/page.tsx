@@ -9,12 +9,16 @@ import {
     ChevronLeft,
     ChevronRight,
     Loader2,
+    Pencil,
     Receipt,
     RefreshCcw,
+    Trash2,
     TrendingUp,
+    Wallet
 } from "lucide-react";
 import { format } from "date-fns";
-
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -22,10 +26,23 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
     getExpenseSummaryReport,
+    deleteExpenseSummary,
     type ExpenseSummaryData,
+    type ExpenseItem,
 } from "@/lib/services/reports";
 
 const BRAND = "#556043";
@@ -38,7 +55,12 @@ function formatCurrency(amount: number) {
         maximumFractionDigits: 0,
     }).format(amount);
 }
-
+function formatPayments(payments: { accountId: string; amount: string | number }[] | undefined) {
+    if (!payments || payments.length === 0) return "—";
+    return payments
+        .map((p) => `${p.accountId}: ${formatCurrency(Number(p.amount))}`)
+        .join(", ");
+}
 function todayISO() {
     return new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Kolkata",
@@ -96,6 +118,11 @@ export default function ExpenseSummaryPage() {
     const [report, setReport] = useState<ExpenseSummaryData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Delete dialog state
+    const [deleteTarget, setDeleteTarget] = useState<ExpenseItem | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const isRangeInvalid = fromDate > toDate;
 
@@ -163,6 +190,36 @@ export default function ExpenseSummaryPage() {
             .finally(() => setIsLoading(false));
     }
 
+    function handleEdit(expense: ExpenseItem) {
+        router.push(`/workspace/expense-management/createExpense?id=${expense.id}`);
+    }
+
+    function openDeleteDialog(expense: ExpenseItem) {
+        setDeleteTarget(expense);
+        setDeleteDialogOpen(true);
+    }
+
+    async function handleConfirmDelete() {
+        if (!deleteTarget) return;
+        try {
+            setDeletingId(deleteTarget.id);
+            const result = await deleteExpenseSummary(deleteTarget.id);
+            if (result.success) {
+                toast.success(result.message || "Expense deleted successfully");
+                // Refresh current page
+                handleRefresh();
+            } else {
+                toast.error(result.message || "Failed to delete expense");
+            }
+        } catch (err) {
+            toast.error("Something went wrong while deleting.");
+        } finally {
+            setDeletingId(null);
+            setDeleteDialogOpen(false);
+            setDeleteTarget(null);
+        }
+    }
+
     return (
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
             {/* Header */}
@@ -170,12 +227,12 @@ export default function ExpenseSummaryPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
-                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
-                        size="icon"
-                        onClick={() => router.back()}
-                    >
-                        <ArrowLeft className="h-4 w-4 text-foreground" />
-                    </Button>
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                            size="icon"
+                            onClick={() => router.back()}
+                        >
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
+                        </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Expense Summary
@@ -263,6 +320,48 @@ export default function ExpenseSummaryPage() {
                 </div>
             </div>
 
+            {/* Delete Alert Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent className="rounded-2xl border-slate-200 dark:border-slate-800">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-slate-200 dark:text-white">
+                            Delete Expense?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-200 dark:text-slate-400">
+                            This will permanently remove{" "}
+                            <span className="font-medium text-slate-400 dark:text-slate-300">
+                                {deleteTarget?.expenseNumber}
+                            </span>{" "}
+                            ({deleteTarget ? formatCurrency(deleteTarget.amount) : ""}). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel
+                            disabled={!!deletingId}
+                            className="h-10 rounded-lg border-slate-200 text-slate-700  dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmDelete();
+                            }}
+                            disabled={!!deletingId}
+                            className="h-10 rounded-lg bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                        >
+                            {deletingId ? (
+                                <span className="flex items-center gap-1.5">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Deleting…
+                                </span>
+                            ) : (
+                                "Delete"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             {isRangeInvalid ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
                     The "from" date must be before the "to" date.
@@ -274,7 +373,7 @@ export default function ExpenseSummaryPage() {
             ) : isLoading ? (
                 <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-24 text-slate-500 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
-                    <p className="text-sm">Loading expense summary...</p>
+                    <p className="text-sm">Loading expense summary…</p>
                 </div>
             ) : (
                 <div className="space-y-4 sm:space-y-6">
@@ -315,7 +414,7 @@ export default function ExpenseSummaryPage() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[880px] text-sm">
+                                <table className="w-full min-w-[1100px] text-sm">
                                     <thead className="bg-slate-50 dark:bg-slate-900/60">
                                         <tr className="text-left text-slate-500 dark:text-slate-400">
                                             <th className="px-4 py-2.5 font-medium sm:px-5">Expense #</th>
@@ -327,6 +426,8 @@ export default function ExpenseSummaryPage() {
                                             <th className="px-4 py-2.5 font-medium sm:px-5">Staff</th>
                                             <th className="px-4 py-2.5 font-medium sm:px-5">Notes</th>
                                             <th className="px-4 py-2.5 text-right font-medium sm:px-5">Amount</th>
+                                            <th className="px-4 py-2.5 font-medium sm:px-5">Payments</th>
+                                            <th className="px-4 py-2.5 text-center font-medium sm:px-5">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -358,6 +459,48 @@ export default function ExpenseSummaryPage() {
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right font-medium text-slate-950 dark:text-slate-100 sm:px-5">
                                                     {formatCurrency(expense.amount)}
+                                                </td>
+                                                <td className="px-4 py-2.5 sm:px-5">
+    <div className="flex flex-col items-start gap-1">
+        {expense.payments?.map((pm) => (
+            <Badge
+                key={pm.accountId}
+                variant="secondary"
+                className="inline-flex bg-slate-100 text-[10px] text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            >
+                <Wallet className="mr-1 h-3 w-3" />
+                <span className="capitalize text-[10px]">{pm.accountId}</span>
+                <span className="ml-1 font-semibold text-[10px]">
+                    {formatCurrency(Number(pm.amount))}
+                </span>
+            </Badge>
+        ))}
+        {(!expense.payments || expense.payments.length === 0) && (
+            <span className="text-[10px] text-slate-400">—</span>
+        )}
+    </div>
+</td>
+                                                <td className="px-4 py-2.5 sm:px-5">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-slate-400 hover:text-[#556043] hover:bg-[#556043]/10"
+                                                            onClick={() => handleEdit(expense)}
+                                                            title="Edit expense"
+                                                        >
+                                                            <Pencil className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                            onClick={() => openDeleteDialog(expense)}
+                                                            title="Delete expense"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

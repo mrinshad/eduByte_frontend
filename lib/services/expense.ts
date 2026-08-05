@@ -78,6 +78,7 @@ export interface ExpenseInput {
   staffId?: string | null;
   notes?: string;
   amount: number;
+  accountId: string;
   expenseDate: string; // ISO date string
   payments: ExpensePaymentInput[];
 }
