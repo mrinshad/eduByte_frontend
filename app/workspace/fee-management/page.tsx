@@ -34,10 +34,10 @@ function FilterChip({
 }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-      {label}
+      <span className="max-w-[10rem] truncate sm:max-w-none">{label}</span>
       <button
         onClick={onRemove}
-        className="rounded-full hover:text-red-600"
+        className="shrink-0 rounded-full hover:text-red-600"
       >
         <X className="h-3 w-3" />
       </button>
@@ -197,16 +197,16 @@ export default function FeeCollectionPage() {
       {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {/* Left: Title */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Button
-                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                        className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
                         size="icon"
                         onClick={() => router.back()}
                     >
                         <ArrowLeft className="h-4 w-4 text-foreground" />
                     </Button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               Fee Collection
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
@@ -238,7 +238,7 @@ export default function FeeCollectionPage() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
+              <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[130px] rounded-lg border-slate-300 sm:w-[140px]">
                 <SelectValue placeholder="All Vehicles" />
               </SelectTrigger>
               <SelectContent>
@@ -257,7 +257,7 @@ export default function FeeCollectionPage() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-10 w-[130px] rounded-lg border-slate-300">
+              <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[110px] rounded-lg border-slate-300 sm:w-[130px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>

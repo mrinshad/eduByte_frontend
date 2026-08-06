@@ -46,8 +46,8 @@ import { getFeeStructures, type FeeStructureSummary, deleteFeeStructure } from "
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-      {label}
-      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+      <span className="max-w-[10rem] truncate sm:max-w-none">{label}</span>
+      <button onClick={onRemove} className="shrink-0 rounded-full hover:text-red-600">
         <X className="h-3 w-3" />
       </button>
     </span>
@@ -178,19 +178,19 @@ export default function Page() {
   };
 
   return (
-    <section className="w-full px-6 py-4 space-y-6">
+    <section className="w-full px-4 py-4 sm:px-6 space-y-6">
 
       {/* Header */}
       
         <div className="flex flex-col gap-4">
           {/* Title row */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Fee Structures</h1>
+              <div className="min-w-0">
+                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Fee Structures</h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Manage fee structure templates for each class and academic year.
                 </p>
@@ -198,7 +198,7 @@ export default function Page() {
             </div>
 
             <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="w-full bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto"
               onClick={() => router.push("/admin/fee-structures/createFee")}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -232,85 +232,83 @@ export default function Page() {
           )}
         </div>
       
-      <div className="flex flex-row gap-3 justify-end">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1 lg:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                placeholder="Search by name, class, or year..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
-              />
-            </div>
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="relative w-full sm:max-w-xs sm:flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search by name, class, or year..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-10 w-full rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+          />
+        </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={classFilter}
-                onValueChange={(value) => {
-                  setClassFilter(value);
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
-                  <SelectValue placeholder="All Classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Classes</SelectItem>
-                  {classOptions.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[120px] rounded-lg border-slate-300 sm:w-[140px]">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <Select
-                value={academicYearFilter}
-                onValueChange={(value) => {
-                  setAcademicYearFilter(value);
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300">
-                  <SelectValue placeholder="All Years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {academicYearOptions.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Select
+            value={academicYearFilter}
+            onValueChange={(value) => {
+              setAcademicYearFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[120px] rounded-lg border-slate-300 sm:w-[140px]">
+              <SelectValue placeholder="All Years" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {academicYearOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <Select
-                value={statusFilter}
-                onValueChange={(value) => {
-                  setStatusFilter(value);
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 w-[130px] rounded-lg border-slate-300">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[110px] rounded-lg border-slate-300 sm:w-[130px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
 
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
-                  onClick={clearAllFilters}
-                >
-                  <X className="mr-1 h-3.5 w-3.5" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -319,13 +317,13 @@ export default function Page() {
           <Table>
             <TableHeader>
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">ID</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Academic Year</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Class</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Name</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Description</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Status</TableHead>
-                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">Actions</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">ID</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Academic Year</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Class</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Name</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Description</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">Status</TableHead>
+                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -356,19 +354,19 @@ export default function Page() {
               ) : (
                 feeStructures.map((item, index) => (
                   <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                    <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">{(currentPage - 1) * rowsPerPage + index + 1}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYearName || "-"}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.className}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{item.name}</TableCell>
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.description ?? "—"}</TableCell>
-                    <TableCell className="px-6 py-4">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-500">{(currentPage - 1) * rowsPerPage + index + 1}</TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.academicYearName || "-"}</TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{item.className}</TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">{item.name}</TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[220px] truncate">{item.description ?? "—"}</TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4">
                       <Badge variant="outline" className={item.isActive
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium"
                         : "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 font-medium"}>
                         {item.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-right">
+                    <TableCell className="px-4 sm:px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {/* View */}
                         <Button
@@ -415,13 +413,13 @@ export default function Page() {
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200 bg-slate-50/70 px-4 py-4 sm:flex-row sm:px-6 dark:border-slate-800 dark:bg-slate-900/40">
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 sm:text-left">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{start}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{end}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Rows per page:</span>
               <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
@@ -449,13 +447,13 @@ export default function Page() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Delete Fee Structure?
             </AlertDialogTitle>
 
-            <AlertDialogDescription>
+            <AlertDialogDescription className="break-words">
               Are you sure you want to delete{" "}
               <strong>{selectedFeeStructure?.name}</strong>?
               <br />
@@ -464,7 +462,7 @@ export default function Page() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
             <AlertDialogCancel disabled={deleting}>
               Cancel
             </AlertDialogCancel>

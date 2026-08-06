@@ -47,16 +47,16 @@ function InfoSection({
 }) {
   return (
     <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-      <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
+      <CardHeader className="border-b border-slate-100 bg-white px-4 py-3 sm:px-5 dark:border-slate-800/60 dark:bg-slate-900/50">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#556043]/10 text-[#556043]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#556043]/10 text-[#556043]">
             <Icon className="h-4 w-4" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               Profile section
             </div>
-            <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">{title}</div>
+            <div className="truncate text-sm font-semibold text-slate-950 dark:text-slate-100">{title}</div>
           </div>
         </div>
       </CardHeader>
@@ -71,11 +71,11 @@ function InfoGrid({ children }: { children: React.ReactNode }) {
 
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+    <div className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
         {label}
       </div>
-      <div className="mt-2 text-sm font-medium text-slate-950 dark:text-slate-100">{value || "—"}</div>
+      <div className="mt-2 break-words text-sm font-medium text-slate-950 dark:text-slate-100">{value || "—"}</div>
     </div>
   )
 }
@@ -101,8 +101,8 @@ function ContactCard({
           </p>
           <p className="mt-1 truncate text-sm font-semibold text-slate-950 dark:text-slate-100">{name || "—"}</p>
           <div className="mt-2 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <Phone className="h-3.5 w-3.5" />
-            <span>{mobile || "—"}</span>
+            <Phone className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{mobile || "—"}</span>
           </div>
         </div>
       </div>
@@ -127,13 +127,13 @@ function statusTone(status: Student["status"]) {
 
 function ViewStudentSkeleton() {
   return (
-    <section className="w-full px-6 py-4 space-y-6">
+    <section className="w-full px-4 py-4 sm:px-6 space-y-6">
       {/* Header skeleton */}
-      <div className="mb-2 flex items-start justify-between gap-4">
+      <div className="mb-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
-          <Skeleton className="h-9 w-9 rounded-md" />
+          <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
           <div>
-            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-7 w-40 sm:w-48" />
             <Skeleton className="mt-2 h-4 w-28" />
           </div>
         </div>
@@ -170,9 +170,9 @@ function ViewStudentSkeleton() {
         {/* Info section skeleton */}
         <div className="space-y-6">
           <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-            <CardHeader className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-800/60 dark:bg-slate-900/50">
+            <CardHeader className="border-b border-slate-100 bg-white px-4 py-3 sm:px-5 dark:border-slate-800/60 dark:bg-slate-900/50">
               <div className="flex items-center gap-3">
-                <Skeleton className="h-9 w-9 rounded-2xl" />
+                <Skeleton className="h-9 w-9 shrink-0 rounded-2xl" />
                 <div>
                   <Skeleton className="h-3 w-28" />
                   <Skeleton className="mt-2 h-4 w-36" />
@@ -180,7 +180,7 @@ function ViewStudentSkeleton() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-5">
+            <CardContent className="p-4 sm:p-5">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 9 }).map((_, i) => (
                   <div
@@ -278,7 +278,7 @@ export default function Page() {
 
   if (!student) {
     return (
-      <section className="w-full px-6 py-4">
+      <section className="w-full px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-red-500">
           <ArrowLeft className="h-4 w-4" />
           Student record not found.
@@ -288,43 +288,47 @@ export default function Page() {
   }
 
   const handleDeleteStudent = async () => {
-  if (!student) return
+    if (!student) return
 
-  setIsDeleting(true)
+    setIsDeleting(true)
 
-  try {
-    await deleteStudent(student.id)
+    try {
+      await deleteStudent(student.id)
 
-    toast.success("Student deleted successfully")
+      toast.success("Student deleted successfully")
 
-    router.push("/admin/students")
-  } catch (error) {
-    console.error(error)
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Failed to delete student"
-    )
-  } finally {
-    setIsDeleting(false)
-    setShowDeleteDialog(false)
+      router.push("/admin/students")
+    } catch (error) {
+      console.error(error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete student"
+      )
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
   }
-}
 
   const admissionStatus = student.admissionStatus ?? "NOT_ADMITTED"
 
   return (
-    <section className="w-full px-6 py-4 space-y-6">
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button className="bg-background text-foreground hover:opacity-90 shadow-sm" size="icon" onClick={() => router.back()}>
+    <section className="w-full px-4 py-4 sm:px-6 space-y-6">
+      <div className="mb-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <Button
+            className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
+            size="icon"
+            onClick={() => router.back()}
+          >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl dark:text-white">
               {student.studentName}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{student.admissionNumber}</p>
+            <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">{student.admissionNumber}</p>
           </div>
         </div>
 
@@ -346,7 +350,7 @@ export default function Page() {
 
           <Button
             variant="outline"
-            className="gap-2"
+            className="shrink-0 flex items-center gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
             onClick={() =>
               router.push(`/admin/students/createStudent?id=${student.id}`)
             }
@@ -357,7 +361,7 @@ export default function Page() {
 
           <Button
             variant="destructive"
-            className="gap-2"
+            className="flex-1 gap-2 sm:flex-none"
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4" />
@@ -374,7 +378,7 @@ export default function Page() {
                 {student.studentName.charAt(0)}
               </div>
 
-              <h2 className="mt-4 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+              <h2 className="mt-4 truncate text-xl font-bold tracking-tight text-slate-950 dark:text-white">
                 {student.studentName}
               </h2>
 
@@ -383,35 +387,35 @@ export default function Page() {
               </p>
 
               <div className="mt-6 divide-y border-t pt-2 text-left">
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between gap-3 py-3">
+                  <div className="flex shrink-0 items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <User className="h-4 w-4" />
                     <span>Gender</span>
                   </div>
-                  <span className="text-sm font-medium text-slate-950 dark:text-slate-100">{student.gender || "—"}</span>
+                  <span className="truncate text-sm font-medium text-slate-950 dark:text-slate-100">{student.gender || "—"}</span>
                 </div>
                 {student.dob ? (
-                  <div className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center justify-between gap-3 py-3">
+                    <div className="flex shrink-0 items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                       <Calendar className="h-4 w-4" />
                       <span>Date of birth</span>
                     </div>
-                    <span className="text-sm font-medium text-slate-950 dark:text-slate-100">{formatDateOnly(student.dob)}</span>
+                    <span className="truncate text-sm font-medium text-slate-950 dark:text-slate-100">{formatDateOnly(student.dob)}</span>
                   </div>
                 ) : null}
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between gap-3 py-3">
+                  <div className="flex shrink-0 items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <MessageCircle className="h-4 w-4" />
                     <span>WhatsApp</span>
                   </div>
-                  <span className="text-sm font-medium text-slate-950 dark:text-slate-100">{student.whatsappNumber || "—"}</span>
+                  <span className="truncate text-sm font-medium text-slate-950 dark:text-slate-100">{student.whatsappNumber || "—"}</span>
                 </div>
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between gap-3 py-3">
+                  <div className="flex shrink-0 items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <Phone className="h-4 w-4" />
                     <span>Father mobile</span>
                   </div>
-                  <span className="text-sm font-medium text-slate-950 dark:text-slate-100">{student.fatherMobile || "—"}</span>
+                  <span className="truncate text-sm font-medium text-slate-950 dark:text-slate-100">{student.fatherMobile || "—"}</span>
                 </div>
               </div>
             </CardContent>
@@ -420,7 +424,7 @@ export default function Page() {
 
         <div className="space-y-6">
           <InfoSection icon={User} title="Student Information">
-            <CardContent className="p-5">
+            <CardContent className="p-4 sm:p-5">
               <InfoGrid>
                 <InfoItem label="Full name" value={student.studentName} />
                 <InfoItem label="Admission no." value={student.admissionNumber} />
@@ -434,11 +438,11 @@ export default function Page() {
                 <div className="sm:col-span-2 xl:col-span-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
                   <div className="flex items-start gap-3">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                         Address
                       </div>
-                      <p className="mt-1 text-sm leading-6 text-slate-950 dark:text-slate-100">{student.address || "—"}</p>
+                      <p className="mt-1 break-words text-sm leading-6 text-slate-950 dark:text-slate-100">{student.address || "—"}</p>
                     </div>
                   </div>
                 </div>
@@ -462,9 +466,9 @@ export default function Page() {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="break-words">
               Delete "{student.studentName}"?
             </AlertDialogTitle>
 
@@ -475,7 +479,7 @@ export default function Page() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
             <AlertDialogCancel disabled={isDeleting}>
               Cancel
             </AlertDialogCancel>

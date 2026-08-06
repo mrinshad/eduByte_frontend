@@ -169,7 +169,7 @@ export default function FeeCollectionReportPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Button
-              className="bg-background text-foreground hover:opacity-90 shadow-sm"
+              className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
               size="icon"
               onClick={() => router.back()}
             >
@@ -195,7 +195,7 @@ export default function FeeCollectionReportPage() {
             placeholder="Search student, class, txn..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+            className="h-10 w-full rounded-lg pl-9 border-slate-300 dark:border-slate-700"
           />
         </div>
 
@@ -207,7 +207,7 @@ export default function FeeCollectionReportPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
+            <SelectTrigger className="h-10 w-full min-w-[150px] rounded-lg border-slate-300 sm:w-[150px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
@@ -224,7 +224,7 @@ export default function FeeCollectionReportPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+              className="h-10 shrink-0 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
               onClick={clearAllFilters}
             >
               <X className="mr-1 h-3.5 w-3.5" />

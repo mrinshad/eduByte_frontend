@@ -196,15 +196,15 @@ export default function Page() {
     }
   };
   return (
-    <section className="px-6 py-4">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" className="text-white" onClick={() => router.back()}>
+    <section className="px-3 sm:px-6 py-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <Button variant="outline" size="icon" className="text-white shrink-0" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Vehicles</h1>
-            <p className="text-sm leading-6 text-slate-600 dark:text-slate-600">Manage vehicle records, assignments, routes, and transport-related information.</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-semibold text-slate-950 dark:text-white">Vehicles</h1>
+            <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage vehicle records, assignments, routes, and transport-related information.</p>
           </div>
         </div>
         <Button
@@ -217,6 +217,7 @@ export default function Page() {
             console.log("Create Vehicle clicked");
           }}
           className="
+                          w-full sm:w-auto shrink-0
                           bg-[#556043]
                           text-white
                           hover:bg-[#4a533b]
@@ -262,13 +263,13 @@ export default function Page() {
       </div>
 
       {loadingVehicles ? (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
+        <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <VehicleCardSkeleton key={i} />
           ))}
         </div>
       ) : vehicles.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-16 text-center dark:border-slate-800">
+        <div className="mt-10 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-16 px-4 text-center dark:border-slate-800">
           <Bus className="h-6 w-6 text-slate-300 dark:text-slate-600" />
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             No vehicles yet
@@ -278,7 +279,7 @@ export default function Page() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
+        <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
           {vehicles.map((vehicle) => (
             <div
               key={vehicle.id}
@@ -323,7 +324,7 @@ export default function Page() {
                   </div>
 
                   {/* Sleek Action Button */}
-                  <div>
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -371,9 +372,9 @@ export default function Page() {
 
                 {/* Compact Driver Info */}
                 <div className="flex items-center gap-2 rounded-lg bg-slate-50/50 p-2 dark:bg-slate-800/40">
-                  <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                  <User className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                   <div className="min-w-0 flex items-center gap-1.5">
-                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
                       Driver:
                     </span>
                     <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -392,7 +393,7 @@ export default function Page() {
           if (!open) setVehicleToDelete(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{vehicleToDelete?.vehicleName}"?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -400,15 +401,15 @@ export default function Page() {
               if students are currently assigned to it.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
               onClick={(event) => {
                 event.preventDefault();
                 void handleDeleteVehicle();
               }}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
               {isDeleting ? (
                 <>

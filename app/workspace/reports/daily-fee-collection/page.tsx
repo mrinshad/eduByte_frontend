@@ -186,7 +186,7 @@ export default function DailyCollectionReportPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Button
-              className="bg-background text-foreground hover:opacity-90 shadow-sm"
+              className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
               size="icon"
               onClick={() => router.back()}
             >
@@ -209,7 +209,7 @@ export default function DailyCollectionReportPage() {
           <Button
             size="icon"
             variant="outline"
-            className="h-10 w-10 shrink-0 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white"
+            className="h-10 w-10 shrink-0 self-start text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white lg:self-auto"
             onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
             disabled={loading || isRangeInvalid}
           >
@@ -225,17 +225,17 @@ export default function DailyCollectionReportPage() {
       </div>
 
       {/* ── Search, justified to the end ── */}
-      <div className="flex justify-end gap-2 sm:gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search student..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="h-10 rounded-lg pl-9 border-slate-300 dark:border-slate-700"
+            className="h-10 w-full rounded-lg pl-9 border-slate-300 dark:border-slate-700"
           />
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Select
             value={classFilter}
             onValueChange={(v) => {
@@ -243,7 +243,7 @@ export default function DailyCollectionReportPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[150px] rounded-lg border-slate-300">
+            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[130px] rounded-lg border-slate-300 sm:w-[150px]">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -263,7 +263,7 @@ export default function DailyCollectionReportPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[160px] rounded-lg border-slate-300">
+            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[140px] rounded-lg border-slate-300 sm:w-[180px]">
               <SelectValue placeholder="All Payment Methods" />
             </SelectTrigger>
             <SelectContent>
@@ -366,7 +366,7 @@ export default function DailyCollectionReportPage() {
                       {tx.class}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
                         {tx.collections.map((c, i) => (
                           <span
                             key={i}
@@ -380,7 +380,7 @@ export default function DailyCollectionReportPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 hidden md:table-cell">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 hidden md:table-cell max-w-[240px] truncate">
                       {tx.paymentMethods.length === 0
                         ? "-"
                         : tx.paymentMethods
