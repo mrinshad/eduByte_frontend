@@ -26,10 +26,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Small helper so every sortable header renders the same way: an always-visible
-// icon (dim double-chevron when inactive, solid single chevron when this is the
-// active sort field/direction) plus a hover highlight on the whole header cell.
-// This makes "this column is sortable" obvious without needing to hover first.
 function SortableHeader({
   label,
   field,
@@ -70,8 +66,6 @@ function SortableHeader({
   );
 }
 
-// Same chip used on the Students page, so removing a filter here looks
-// and behaves identically across both list pages.
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -110,7 +104,6 @@ export default function Page() {
   const [staffToDelete, setStaffToDelete] = useState<StaffListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Debounce search input -> committed search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -119,8 +112,6 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Refetch whenever any query param changes. Guards against
-  // out-of-order responses if requests overlap (e.g. rapid clicks).
   useEffect(() => {
     let cancelled = false;
 
@@ -179,7 +170,6 @@ export default function Page() {
       toast.success("Staff deleted successfully");
       setStaffToDelete(null);
 
-      // Refetch current page. If this was the last row on the page, step back a page.
       const response = await getStaff({
         page: currentPage,
         limit: rowsPerPage,
@@ -230,7 +220,7 @@ export default function Page() {
     <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             size="icon"
@@ -249,8 +239,9 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+        {/* Action bar: stacks on mobile, wraps on tablet, single row on desktop */}
+        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search staff..."
@@ -260,7 +251,6 @@ export default function Page() {
             />
           </div>
 
-          {/* 👇 Status filter dropdown, same component/style as Students' class filter */}
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -268,7 +258,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-full md:w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -291,7 +281,7 @@ export default function Page() {
           )}
 
           <Button
-            className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            className="w-full md:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
           >
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
@@ -486,6 +476,7 @@ export default function Page() {
           </div>
         </div>
       </div>
+
       <AlertDialog
         open={!!staffToDelete}
         onOpenChange={(open) => {
