@@ -2,8 +2,6 @@
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  ArrowRight,
-  Calendar,
   RefreshCcw,
   Search,
   Loader2,
@@ -96,8 +94,6 @@ export default function DailyCollectionReportPage() {
     totalPages: 1,
   });
 
-  // Accumulated across pages so options don't shrink as results are filtered/paged —
-  // same convention as the Fee Collection page's classOptions/vehicleOptions.
   const [classOptions, setClassOptions] = useState<string[]>([]);
   const [paymentMethodOptions, setPaymentMethodOptions] = useState<string[]>([]);
 
@@ -180,10 +176,10 @@ export default function DailyCollectionReportPage() {
   };
 
   return (
-    <section className="w-full px-4 sm:px-6 py-4 space-y-6">
-      {/* ── Header: title + filters + refresh, all together ── */}
+    <section className="w-full px-3 sm:px-6 py-4 space-y-6">
+      {/* ── Header Card ── */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Button
               className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
@@ -205,12 +201,11 @@ export default function DailyCollectionReportPage() {
             </div>
           </div>
 
-          {/* ── Filters live here, right next to the refresh button ── */}
           <Button
             size="icon"
             variant="outline"
-            className="h-10 w-10 shrink-0 self-start text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-white lg:self-auto"
-            onClick={() => setCurrentPage((p) => p)} // triggers effect re-run via state identity below
+            className="ml-auto h-10 w-10 shrink-0 text-slate-100 dark:text-slate-400 dark:hover:text-slate-200 md:ml-0"
+            onClick={() => setCurrentPage((p) => p)}
             disabled={loading || isRangeInvalid}
           >
             <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -224,9 +219,9 @@ export default function DailyCollectionReportPage() {
         )}
       </div>
 
-      {/* ── Search, justified to the end ── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
-        <div className="relative w-full sm:max-w-xs">
+      {/* ── Search & Filters ── */}
+      <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3">
+        <div className="relative w-full md:w-72 lg:w-80">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search student..."
@@ -235,7 +230,8 @@ export default function DailyCollectionReportPage() {
             className="h-10 w-full rounded-lg pl-9 border-slate-300 dark:border-slate-700"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+
+        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
           <Select
             value={classFilter}
             onValueChange={(v) => {
@@ -243,7 +239,7 @@ export default function DailyCollectionReportPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[130px] rounded-lg border-slate-300 sm:w-[150px]">
+            <SelectTrigger className="h-10 w-full sm:w-[150px] rounded-lg border-slate-300">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -263,7 +259,7 @@ export default function DailyCollectionReportPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[140px] rounded-lg border-slate-300 sm:w-[180px]">
+            <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-lg border-slate-300">
               <SelectValue placeholder="All Payment Methods" />
             </SelectTrigger>
             <SelectContent>
@@ -287,14 +283,12 @@ export default function DailyCollectionReportPage() {
               Clear
             </Button>
           )}
-
-
         </div>
       </div>
 
       {/* ── Table ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
           <Table className="w-full min-w-[820px]">
             <TableHeader>
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
@@ -371,8 +365,8 @@ export default function DailyCollectionReportPage() {
                           <span
                             key={i}
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.type === "Fine"
-                              ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-                              : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+                                : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                               }`}
                           >
                             {c.type === "Fine" ? `Fine: ${c.fineType}` : c.chargeType}
@@ -399,13 +393,13 @@ export default function DailyCollectionReportPage() {
 
         {/* ── Pagination ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 sm:px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-sm text-slate-500 dark:text-slate-400 order-2 sm:order-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left order-2 sm:order-1">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{start}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{end}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 sm:justify-end order-1 sm:order-2">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 sm:justify-end order-1 sm:order-2 w-full sm:w-auto">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="text-xs font-medium">Rows per page:</span>
               <select
@@ -419,14 +413,14 @@ export default function DailyCollectionReportPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 justify-between w-full sm:w-auto">
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1 || totalPages === 0 || loading}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
                 Prev
               </Button>
 
@@ -435,13 +429,13 @@ export default function DailyCollectionReportPage() {
               </div>
 
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || totalPages === 0 || loading}
               >
                 Next
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
               </Button>
             </div>
           </div>

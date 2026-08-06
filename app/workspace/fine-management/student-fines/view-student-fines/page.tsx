@@ -25,16 +25,15 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import StudentFineFormDialog from "@/components/common/StudentFineFormDialog";
 
 import { getStudentFineById, reverseStudentFine, type StudentFineDetail } from "@/lib/services/fineTypes";
 import { refreshLateFines } from "@/lib/services/lateFine";
 
 // ---------------------------------------------------------------------------
-// Sub-components — matches the InfoSection / InfoGrid / InfoItem pattern
-// used on the admission detail page.
+// Sub-components
 // ---------------------------------------------------------------------------
-
 
 function InfoSection({
   icon: Icon,
@@ -58,7 +57,7 @@ function InfoSection({
 
 function InfoGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
+    <div className="grid grid-cols-1 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 sm:grid-cols-2 md:grid-cols-3">
       {children}
     </div>
   );
@@ -75,17 +74,77 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function statusBadgeClass(status: string) {
-  switch (status) {
-    case "PAID":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400";
-    case "PARTIAL":
-      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400";
-    case "REVERSED":
-      return "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-400";
-    default:
-      return "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400";
-  }
+// ---------------------------------------------------------------------------
+// Skeleton loaders
+// ---------------------------------------------------------------------------
+
+function HeaderSkeleton() {
+  return (
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
+        <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
+        <div className="min-w-0 space-y-2">
+          <Skeleton className="h-6 w-48 sm:h-7 sm:w-64" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Skeleton className="h-9 w-full sm:w-24" />
+        <Skeleton className="h-9 w-full sm:w-32" />
+      </div>
+    </div>
+  );
+}
+
+function InfoSectionSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+      <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="grid grid-cols-1 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 sm:grid-cols-2 md:grid-cols-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="min-w-0 px-4 py-3 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AmountSummarySkeleton() {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+      <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800/50 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="px-5 py-4 text-center space-y-2">
+            <Skeleton className="h-3 w-20 mx-auto" />
+            <Skeleton className="h-7 w-24 mx-auto" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PageSkeleton() {
+  return (
+    <section className="w-full px-3 sm:px-6 py-4 space-y-6">
+      <HeaderSkeleton />
+      <div className="space-y-6">
+        <InfoSectionSkeleton rows={5} />
+        <InfoSectionSkeleton rows={3} />
+        <AmountSummarySkeleton />
+      </div>
+    </section>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -93,13 +152,10 @@ function statusBadgeClass(status: string) {
 // ---------------------------------------------------------------------------
 
 export default function ViewStudentFinePage() {
-  // reverse
   const [reverseOpen, setReverseOpen] = useState(false);
   const [reverseReason, setReverseReason] = useState('');
   const [confirmReverse, setConfirmReverse] = useState(false)
 
-  // edit — opens the shared StudentFineFormDialog instead of navigating
-  // to a separate edit route.
   const [editOpen, setEditOpen] = useState(false)
 
   const handleReverseFine = async () => {
@@ -163,16 +219,12 @@ export default function ViewStudentFinePage() {
   }, [id])
 
   if (loading) {
-    return (
-      <section className="w-full px-4 py-4 sm:px-6">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-      </section>
-    );
+    return <PageSkeleton />;
   }
 
   if (!fine) {
     return (
-      <section className="w-full px-4 py-4 sm:px-6">
+      <section className="w-full px-3 py-4 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-red-500">
           <AlertCircle className="h-4 w-4" />
           Fine record not found.
@@ -187,10 +239,10 @@ export default function ViewStudentFinePage() {
   const safeBalanceAmount = Number.isFinite(balanceAmount) ? balanceAmount : amount - paidAmount;
 
   return (
-    <section className="w-full px-4 py-4 sm:px-6">
+    <section className="w-full px-3 py-4 sm:px-6">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Button
             className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
             size="icon"
@@ -212,7 +264,7 @@ export default function ViewStudentFinePage() {
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 sm:flex-none text-white"
+            className="flex-1 sm:flex-none"
             onClick={() => setEditOpen(true)}
           >
             <Pencil className="mr-2 h-4 w-4" />
@@ -265,7 +317,6 @@ export default function ViewStudentFinePage() {
             />
           </InfoGrid>
 
-          {/* Reversal banner — only shown when the fine has been reversed */}
           {fine.isReversed && (
             <div className="flex items-start gap-3 border-t border-violet-100 bg-violet-50 px-4 py-3 dark:border-violet-500/20 dark:bg-violet-500/10">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">

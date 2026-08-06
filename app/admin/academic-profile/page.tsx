@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import PageHeader from "@/components/common/pageHeader"
 import {
   Card,
   CardContent,
@@ -450,12 +451,7 @@ export default function Page() {
     <TooltipProvider>
       <section className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-950 dark:text-white">Academic Profile</h1>
-            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Manage academic years and related settings.
-            </p>
-          </div>
+          <PageHeader title="Academic Profile" description="Manage academic years and related settings." />
         </div>
 
         <div className="mt-6 space-y-6">

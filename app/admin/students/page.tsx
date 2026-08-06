@@ -57,8 +57,8 @@ export default function Page() {
   const [classFilter, setClassFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [sortByClass, setSortByClass] = useState(false); // ← off by default
-  const [order, setOrder] = useState<"asc" | "desc">("asc"); // ← used only when sortByClass is true
+  const [sortByClass, setSortByClass] = useState(false);
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -91,7 +91,7 @@ export default function Page() {
             ...prev,
             ...(response.data ?? [])
               .map((s) => s.className)
-              .filter((c): c is string => Boolean(c)),   // ← type predicate
+              .filter((c): c is string => Boolean(c)),
           ])
         )
       );
@@ -112,8 +112,6 @@ export default function Page() {
       toast.success("Student deleted successfully");
       setStudentToDelete(null);
 
-      // If this was the last row on the page, step back a page — otherwise
-      // just reload the current page.
       if (students.length === 1 && currentPage > 1) {
         setCurrentPage((prev) => prev - 1);
       } else {
@@ -126,6 +124,7 @@ export default function Page() {
       setIsDeleting(false);
     }
   };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -137,7 +136,7 @@ export default function Page() {
 
   useEffect(() => {
     loadStudents();
-  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]); // ← added classFilter
+  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]);
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -169,7 +168,7 @@ export default function Page() {
     <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             size="icon"
@@ -188,8 +187,9 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+        {/* Action bar: stacks on mobile, wraps on tablet, single row on desktop */}
+        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search students..."
@@ -199,7 +199,6 @@ export default function Page() {
             />
           </div>
 
-          {/* 👇 Class filter dropdown */}
           <Select
             value={classFilter}
             onValueChange={(value) => {
@@ -207,7 +206,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-full md:w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -217,8 +216,6 @@ export default function Page() {
               ))}
             </SelectContent>
           </Select>
-
-
 
           {hasActiveFilters && (
             <Button
@@ -233,7 +230,7 @@ export default function Page() {
           )}
 
           <Button
-            className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            className="w-full md:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/students/createStudent")}
           >
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
