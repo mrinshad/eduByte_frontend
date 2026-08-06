@@ -6,6 +6,7 @@ import { Tags, Layers3, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import PageHeader from "@/components/common/pageHeader"
 import { useRouter } from "next/navigation";
 import {
@@ -99,6 +100,30 @@ function DeleteAction({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Skeleton row — mimics the shape of a category / sub category row
+// (icon block + two text lines + trailing badge/action buttons) so the
+// loading state doesn't jump/reflow once real data arrives.
+// ---------------------------------------------------------------------------
+function RowSkeleton({ withBadge = false }: { withBadge?: boolean }) {
+  return (
+    <div className="flex w-full items-center justify-between rounded-2xl border border-black/5 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-3.5 w-1/3" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {withBadge && <Skeleton className="h-5 w-14 rounded-full" />}
+        <Skeleton className="h-7 w-7 rounded-xl" />
+        <Skeleton className="h-7 w-7 rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
 export default function Page() {
   // ---------------------------------------------------------------------
   // Shared lookup data
@@ -106,6 +131,11 @@ export default function Page() {
   const [categories, setCategories] = React.useState<ExpenseCategory[]>([])
   const [subCategories, setSubCategories] = React.useState<ExpenseSubCategory[]>([])
   const [accounts, setAccounts] = React.useState<AccountName[]>([])
+
+  // Loading flags — kept separate since categories / sub categories /
+  // accounts are fetched independently on mount.
+  const [categoriesLoading, setCategoriesLoading] = React.useState(true)
+  const [subCategoriesLoading, setSubCategoriesLoading] = React.useState(true)
 
   const router = useRouter();
 
@@ -124,6 +154,7 @@ export default function Page() {
   )
 
   async function loadCategories() {
+    setCategoriesLoading(true)
     try {
       const data = await getExpenseCategories()
       setCategories(data)
@@ -132,15 +163,20 @@ export default function Page() {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load expense categories")
+    } finally {
+      setCategoriesLoading(false)
     }
   }
 
   async function loadSubCategories() {
+    setSubCategoriesLoading(true)
     try {
       const data = await getExpenseSubCategories()
       setSubCategories(data)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load expense sub categories")
+    } finally {
+      setSubCategoriesLoading(false)
     }
   }
 
@@ -454,7 +490,14 @@ export default function Page() {
                 dark:hover:scrollbar-thumb-slate-600
               "
               >
-                {categories.length === 0 ? (
+                {categoriesLoading ? (
+                  <>
+                    <RowSkeleton withBadge />
+                    <RowSkeleton withBadge />
+                    <RowSkeleton withBadge />
+                    <RowSkeleton withBadge />
+                  </>
+                ) : categories.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-amber-500/30 bg-amber-50/80 px-5 py-6 text-center dark:border-amber-400/25 dark:bg-amber-400/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No categories yet</p>
                     <p className={`mt-1 text-sm ${supportingTextClass}`}>
@@ -553,11 +596,13 @@ export default function Page() {
                       Sub Category
                     </CardTitle>
                     <CardDescription className={`mt-1 ${supportingTextClass}`}>
-                      {!selectedCategory
-                        ? "Select a category to see its sub categories."
-                        : selectedCategorySubCategories.length === 0
-                          ? "No sub categories yet."
-                          : `${selectedCategory.name} sub categories are shown here.`}
+                      {categoriesLoading || subCategoriesLoading
+                        ? "Loading sub categories…"
+                        : !selectedCategory
+                          ? "Select a category to see its sub categories."
+                          : selectedCategorySubCategories.length === 0
+                            ? "No sub categories yet."
+                            : `${selectedCategory.name} sub categories are shown here.`}
                     </CardDescription>
                   </div>
                 </div>
@@ -576,7 +621,13 @@ export default function Page() {
                 dark:hover:scrollbar-thumb-slate-600
               "
               >
-                {!selectedCategory ? (
+                {categoriesLoading || subCategoriesLoading ? (
+                  <>
+                    <RowSkeleton />
+                    <RowSkeleton />
+                    <RowSkeleton />
+                  </>
+                ) : !selectedCategory ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No category selected</p>
                     <Button className="mt-4 rounded-xl" onClick={() => openCategoryDialog("add")}>
