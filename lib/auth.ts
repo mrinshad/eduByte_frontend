@@ -4,6 +4,8 @@ export type AuthUser = {
   username: string
   email?: string | null
   role?: string | null
+  roles?: string[]
+  permissions?: string[]
   isActive: boolean
 }
 

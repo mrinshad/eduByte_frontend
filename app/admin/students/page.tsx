@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -57,8 +58,8 @@ export default function Page() {
   const [classFilter, setClassFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [sortByClass, setSortByClass] = useState(false);
-  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [sortByClass, setSortByClass] = useState(false); // ← off by default
+  const [order, setOrder] = useState<"asc" | "desc">("asc"); // ← used only when sortByClass is true
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -91,7 +92,7 @@ export default function Page() {
             ...prev,
             ...(response.data ?? [])
               .map((s) => s.className)
-              .filter((c): c is string => Boolean(c)),
+              .filter((c): c is string => Boolean(c)),   // ← type predicate
           ])
         )
       );
@@ -112,6 +113,8 @@ export default function Page() {
       toast.success("Student deleted successfully");
       setStudentToDelete(null);
 
+      // If this was the last row on the page, step back a page — otherwise
+      // just reload the current page.
       if (students.length === 1 && currentPage > 1) {
         setCurrentPage((prev) => prev - 1);
       } else {
@@ -124,7 +127,6 @@ export default function Page() {
       setIsDeleting(false);
     }
   };
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -136,7 +138,7 @@ export default function Page() {
 
   useEffect(() => {
     loadStudents();
-  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]);
+  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]); // ← added classFilter
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -165,31 +167,30 @@ export default function Page() {
   };
 
   return (
-    <section className="w-full px-3 sm:px-6 py-4 space-y-6">
+    <section className="w-full px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
           <Button
             size="icon"
-            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               Students
             </h1>
-            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
               View and manage student records, enrollment details, and academic information.
             </p>
           </div>
         </div>
 
-        {/* Action bar: stacks on mobile, wraps on tablet, single row on desktop */}
-        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
-          <div className="relative w-full md:w-80 shadow-sm rounded-xl">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
             <Input
               placeholder="Search students..."
@@ -199,6 +200,7 @@ export default function Page() {
             />
           </div>
 
+          {/* 👇 Class filter dropdown */}
           <Select
             value={classFilter}
             onValueChange={(value) => {
@@ -206,7 +208,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-full md:w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -216,6 +218,8 @@ export default function Page() {
               ))}
             </SelectContent>
           </Select>
+
+
 
           {hasActiveFilters && (
             <Button
@@ -229,13 +233,15 @@ export default function Page() {
             </Button>
           )}
 
-          <Button
-            className="w-full md:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push("/admin/students/createStudent")}
-          >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Create Student
-          </Button>
+          <PermissionGate permission="student.create">
+            <Button
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={() => router.push("/admin/students/createStudent")}
+            >
+              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              Create Student
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -257,32 +263,32 @@ export default function Page() {
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
-          <Table className="w-full min-w-[980px]">
+        <div className="overflow-x-auto">
+          <Table>
             <TableHeader>
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Student Name
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   WhatsApp Number
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Address
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Class | Division
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Admission
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Status
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -313,27 +319,27 @@ export default function Page() {
                     key={student.id}
                     className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                   >
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-500">
+                    <TableCell className="px-6 py-4 text-sm font-medium text-slate-500">
                       {startEntry + index}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 max-w-[180px] truncate">
+                    <TableCell className="px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
                       {student.studentName}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       {student.whatsappNumber}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[220px] truncate">
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       {student.address}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       {(student.className || "-") + " | " + (student.divisionName || "-")}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <TableCell className="px-6 py-4">
                       <Badge
                         variant="outline"
                         className={
@@ -346,7 +352,7 @@ export default function Page() {
                       </Badge>
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <TableCell className="px-6 py-4">
                       <Badge
                         variant="outline"
                         className={
@@ -359,7 +365,7 @@ export default function Page() {
                       </Badge>
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
+                    <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -398,14 +404,14 @@ export default function Page() {
         </div>
 
         {/* ── Pagination ── */}
-        <div className="flex flex-col lg:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 sm:px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center lg:text-left order-2 lg:order-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{startEntry}</span> to{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{endEntry}</span> of{" "}
             <span className="font-semibold text-slate-900 dark:text-white">{pagination.total}</span> entries
           </p>
 
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 sm:justify-end order-1 lg:order-2 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-end">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="text-xs font-medium">Rows per page:</span>
               <select
@@ -420,9 +426,9 @@ export default function Page() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 justify-between w-full sm:w-auto">
+            <div className="flex items-center gap-4">
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1 || loading}
@@ -436,7 +442,7 @@ export default function Page() {
               </div>
 
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40 flex-1 sm:flex-none"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pr-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || loading}
@@ -454,7 +460,7 @@ export default function Page() {
           if (!open) setStudentToDelete(null);
         }}
       >
-        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{studentToDelete?.studentName}"?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -462,15 +468,15 @@ export default function Page() {
               fail if the student has associated fee, admission, or academic records.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
-            <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
               onClick={(event) => {
                 event.preventDefault();
                 void handleDeleteStudent();
               }}
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
               {isDeleting ? (
                 <>

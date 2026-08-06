@@ -31,7 +31,7 @@ export const portalSections: PortalSection[] = [
   { slug: "academic-profile", label: "Academics", area: "admin", purpose: "Manage academic years", roles: ["Admin"], group: "Academic" },
   { slug: "staff", label: "Staff", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Academic" },
 
-  { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin"], group: "Academic" },
+  { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", roles: ["Admin", "Tester"], group: "Academic" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", roles: ["Admin"], group: "Academic" },
 
   { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", roles: ["Admin"], group: "Fee Configuration" },
@@ -118,7 +118,7 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
 }
 
-const workspaceRoles = new Set(["ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER"])
+const workspaceRoles = new Set(["ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER", "TESTER"])
 
 export function normalizeRole(role?: string | null) {
   return (role || "").replace(/\s+/g, " ").trim().toUpperCase()
@@ -131,7 +131,7 @@ export function getPortalRoute(role?: string | null) {
     return "/student/dashboard"
   }
 
-  if (normalizedRole === "ADMIN") {
+  if (normalizedRole === "ADMIN" || normalizedRole === "TESTER") {
     return "/admin/dashboard"
   }
 
@@ -142,7 +142,7 @@ export function canAccessPortalArea(area: PortalArea, role?: string | null) {
   const normalizedRole = normalizeRole(role)
 
   if (area === "admin") {
-    return normalizedRole === "ADMIN"
+    return normalizedRole === "ADMIN" || normalizedRole === "TESTER"
   }
 
   if (area === "student") {
