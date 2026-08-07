@@ -4,6 +4,7 @@ export type AuthUser = {
   username: string
   email?: string | null
   role?: string | null
+  defaultPortal?: string
   roles?: string[]
   permissions?: string[]
   isActive: boolean

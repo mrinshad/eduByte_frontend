@@ -20,7 +20,7 @@ function SwitchPortalContent() {
         const session = await getCurrentSession()
         if (!active) return
 
-        if (!canSwitchPortals(session.user.role)) {
+        if (!canSwitchPortals(session.user.permissions, session.user.role)) {
           router.replace("/")
           return
         }
