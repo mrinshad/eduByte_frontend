@@ -118,7 +118,7 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
 }
 
-const workspaceRoles = new Set(["ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER", "TESTER"])
+const workspaceRoles = new Set(["ACCOUNTANT", "PRINCIPAL", "OFFICE STAFF", "TEACHER", "TESTER", "ADMIN"])
 
 export function normalizeRole(role?: string | null) {
   return (role || "").replace(/\s+/g, " ").trim().toUpperCase()
@@ -147,6 +147,10 @@ export function canAccessPortalArea(area: PortalArea, role?: string | null) {
 
   if (area === "student") {
     return normalizedRole === "STUDENT"
+  }
+
+  if (area === "workspace") {
+    return normalizedRole === "ADMIN" || workspaceRoles.has(normalizedRole)
   }
 
   return workspaceRoles.has(normalizedRole)
