@@ -35,9 +35,9 @@ export function AuthGate({ area, children }: AuthGateProps) {
       }
 
       try {
-        if (!canAccessPortalArea(area, session.user.role)) {
+        if (!canAccessPortalArea(area, session.user.permissions, session.user.role)) {
           if (active) {
-            router.replace(getPortalRoute(session.user.role))
+            router.replace(getPortalRoute(session.user.defaultPortal))
           }
           return
         }
@@ -47,7 +47,7 @@ export function AuthGate({ area, children }: AuthGateProps) {
         }
       } catch {
         if (active) {
-          router.replace(getPortalRoute(session.user.role))
+          router.replace(getPortalRoute(session.user.defaultPortal))
         }
       }
     }

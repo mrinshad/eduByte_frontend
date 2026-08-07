@@ -23,6 +23,7 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [userLabel, setUserLabel] = React.useState<string | undefined>()
   const [role, setRole] = React.useState<string | null>(null)
+  const [permissions, setPermissions] = React.useState<string[]>([])
 
   React.useEffect(() => {
     let active = true
@@ -40,10 +41,12 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
 
         setUserLabel(displayRole)
         setRole(session.user.role || null)
+        setPermissions(session.user.permissions || [])
       } catch {
         if (active) {
           setUserLabel(undefined)
           setRole(null)
+          setPermissions([])
         }
       }
     }
@@ -55,7 +58,7 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
     }
   }, [])
 
-  const links = React.useMemo(() => getPortalNavGroups(area, role), [area, role])
+  const links = React.useMemo(() => getPortalNavGroups(area), [area])
 
   async function handleLogout() {
     try {
@@ -81,13 +84,21 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
         academicYear={currentAcademicYear}
         userLabel={userLabel}
         userRole={role}
+        userPermissions={permissions}
         onOpenMobileMenu={() => setMobileOpen(true)}
         onLogout={handleLogout}
         onSwitchPortal={handleSwitchPortal}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar area={area} links={links} collapsed={collapsed} setCollapsed={setCollapsed} variant="desktop" />
+        <Sidebar
+          area={area}
+          links={links}
+          userPermissions={permissions}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          variant="desktop"
+        />
 
         <main className="min-w-0 flex-1 overflow-auto px-4 py-4 sm:px-6 lg:px-8 lg:py-6">{children}</main>
       </div>
@@ -95,6 +106,7 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
       <Sidebar
         area={area}
         links={links}
+        userPermissions={permissions}
         collapsed={false}
         setCollapsed={setCollapsed}
         variant="mobile"

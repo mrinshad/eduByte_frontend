@@ -25,6 +25,7 @@ interface NavbarProps {
   academicYear: string
   userLabel?: string
   userRole?: string | null
+  userPermissions?: string[]
   onOpenMobileMenu: () => void
   onLogout: () => void
   onSwitchPortal?: (targetArea: PortalArea) => void
@@ -42,6 +43,7 @@ export function Navbar({
   academicYear,
   userLabel,
   userRole,
+  userPermissions,
   onOpenMobileMenu,
   onLogout,
   onSwitchPortal,
@@ -85,7 +87,7 @@ export function Navbar({
 
           {/* Right Section: Badges & Interactions */}
           <div className="flex items-center gap-3">
-            {canSwitchPortals(userRole) && (
+            {canSwitchPortals(userPermissions, userRole) && (
               <Button
                 type="button"
                 variant="outline"

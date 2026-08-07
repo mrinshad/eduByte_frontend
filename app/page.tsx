@@ -18,7 +18,7 @@ export default function Page() {
   const [statusMessage, setStatusMessage] = React.useState("Sign in to continue")
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [session, setSession] = React.useState<{ user: { name: string; username: string; role?: string | null } } | null>(null)
+  const [session, setSession] = React.useState<{ user: { name: string; username: string; role?: string | null; defaultPortal?: string } } | null>(null)
 
   React.useEffect(() => {
     let active = true
@@ -33,7 +33,7 @@ export default function Page() {
 
         setSession({ user: currentSession.user })
         setStatusMessage(`Welcome back, ${currentSession.user.name}`)
-        router.replace(getPortalRoute(currentSession.user.role))
+        router.replace(getPortalRoute(currentSession.user.defaultPortal))
       } catch {
         clearAccessToken()
         if (active) {
@@ -66,7 +66,7 @@ export default function Page() {
       const currentSession = await loginUser(trimmedUsername, trimmedPassword)
       setSession({ user: currentSession.user })
       setStatusMessage(`Welcome, ${currentSession.user.name}`)
-      router.replace(getPortalRoute(currentSession.user.role))
+      router.replace(getPortalRoute(currentSession.user.defaultPortal))
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Unable to sign in")
     } finally {
@@ -159,7 +159,7 @@ export default function Page() {
 
             {isLoading ? (
               <div className="flex h-full min-h-0 items-center justify-center">
-                <div className="flex items-center gap-3 text-sm text-white/80 dark:text-slate-300">
+                <div className="flex items-center gap-3 text-white/80 dark:text-slate-300">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Opening the KidsCove portal
                 </div>
@@ -185,7 +185,7 @@ export default function Page() {
 
                 <div className="space-y-3">
                   <Button asChild className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 py-6 text-base font-medium rounded-2xl shadow-md">
-                    <Link href={getPortalRoute(session.user.role)}>
+                    <Link href={getPortalRoute(session.user.defaultPortal)}>
                       Continue to portal
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
