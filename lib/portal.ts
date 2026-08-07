@@ -44,9 +44,9 @@ export const portalSections: PortalSection[] = [
   // { slug: "departments", label: "Departments", area: "admin", purpose: "Manage departments", roles: ["Admin"], group: "Staff Management" },
   // { slug: "designations", label: "Designations", area: "admin", purpose: "Manage designations", roles: ["Admin"], group: "Staff Management" },
 
-  // { slug: "users", label: "Users", area: "admin", purpose: "User accounts", roles: ["Admin"], group: "User Management" },
-  // { slug: "roles", label: "Roles", area: "admin", purpose: "Role management", roles: ["Admin"], group: "User Management" },
-  // { slug: "permissions", label: "Permissions", area: "admin", purpose: "Permission sets", roles: ["Admin"], group: "User Management" },
+  { slug: "users", label: "Users", area: "admin", purpose: "User accounts", roles: ["Admin"], group: "User Management" },
+  { slug: "roles", label: "Roles & Permissions", area: "admin", purpose: "Role management", roles: ["Admin"], group: "User Management" },
+  
 
   // { slug: "admission-numbers", label: "Admission Nos.", area: "admin", purpose: "Admission numbering", roles: ["Admin"], group: "Numbering" },
   // { slug: "receipt-numbers", label: "Receipt Nos.", area: "admin", purpose: "Receipt numbering", roles: ["Admin"], group: "Numbering" },
@@ -80,7 +80,7 @@ export const portalSections: PortalSection[] = [
   // { slug: "students", label: "Students", area: "workspace", purpose: "Manage student records", roles: ["Office Staff", "Admin"], group: "Academic Setup" },
 
   { slug: "fee-management", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", roles: ["Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-  { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
+  { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant","Admin"], group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
 
