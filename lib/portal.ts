@@ -39,7 +39,7 @@ export const portalSections: PortalSection[] = [
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", roles: ["Admin"], group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", roles: ["Admin"], group: "Transport Management" },
-  
+
   // { slug: "staff", label: "Staff", area: "admin", purpose: "Manage staff", roles: ["Admin"], group: "Staff Management" },
   // { slug: "departments", label: "Departments", area: "admin", purpose: "Manage departments", roles: ["Admin"], group: "Staff Management" },
   // { slug: "designations", label: "Designations", area: "admin", purpose: "Manage designations", roles: ["Admin"], group: "Staff Management" },
@@ -69,36 +69,36 @@ export const portalSections: PortalSection[] = [
   { slug: "fees/payment-history", label: "Payment History", area: "student", purpose: "Payment history", roles: ["Student"], group: "Fees" },
   { slug: "fees/receipts", label: "Receipts", area: "student", purpose: "Receipts", roles: ["Student"], group: "Fees" },
   { slug: "fees/refund-history", label: "Refund History", area: "student", purpose: "Refunds", roles: ["Student"], group: "Fees" },
-  
+
   { slug: "transport/assigned-vehicle", label: "Assigned Vehicle", area: "student", purpose: "Transport assignment", roles: ["Student"], group: "Transport" },
   { slug: "transport/transport-fee-details", label: "Transport Fee Details", area: "student", purpose: "Transport fees", roles: ["Student"], group: "Transport" },
-  
+
   { slug: "notifications/fee-reminders", label: "Fee Reminders", area: "student", purpose: "Fee reminders", roles: ["Student"], group: "Notifications" },
-  
+
   // --- WORKSPACE AREA ---
   { slug: "dashboard", label: "Dashboard", area: "workspace", purpose: "Quick overview of collections, expenses, and pending fees", roles: ["Admin", "Accountant", "Principal"], group: "Overview" },
-  { slug: "students", label: "Students", area: "workspace", purpose: "Manage student records", roles: ["Office Staff", "Admin"], group: "Academic Setup" },
-  
+  // { slug: "students", label: "Students", area: "workspace", purpose: "Manage student records", roles: ["Office Staff", "Admin"], group: "Academic Setup" },
+
   { slug: "fee-management", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", roles: ["Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
   { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", roles: ["Admin", "Accountant", "Office Staff"], group: "Finance", subgroup: "Fee Management" },
-  
+
   { slug: "student-charges/student-charges", label: "Student Charge", area: "workspace", purpose: "Show fees owed by students", roles: ["Accountant"], group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", roles: ["Admin", "Accountant"], group: "Finance", subgroup: "Accounting" },
-  
+
   //reports
   { slug: "reports/vehicle-wise-report", label: "Vehicle Financial Report", area: "workspace", purpose: "expense and income report", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
   { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Vehicle" },
-  
-  
+
+
   { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   { slug: "reports/term-fee-collection-report", label: "Term Fee Collection Report", area: "workspace", purpose: "View term-wise fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
   { slug: "reports/daily-fee-collection", label: "Daily Fee Collection", area: "workspace", purpose: "View daily fee collection", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
-  
+
   { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Fee Collection" },
-  
-  
+
+
   { slug: "reports/categories-by-expense", label: "Category wise ", area: "workspace", purpose: "View expenses by category", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
   { slug: "reports/expense-summary", label: "Summary", area: "workspace", purpose: "View expenses by chargetype", roles: ["Accountant", "Admin"], group: "Report", subgroup: "Expense" },
 ]
@@ -154,6 +154,10 @@ export function canAccessPortalArea(area: PortalArea, role?: string | null) {
   }
 
   return workspaceRoles.has(normalizedRole)
+}
+
+export function canSwitchPortals(role?: string | null): boolean {
+  return canAccessPortalArea("admin", role) && canAccessPortalArea("workspace", role)
 }
 
 export function getPortalNavItems(area: PortalArea, role?: string | null) {

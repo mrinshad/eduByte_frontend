@@ -67,15 +67,23 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
     }
   }
 
+  function handleSwitchPortal(targetArea: PortalArea) {
+    router.push(`/switch-portal?target=${targetArea}`)
+  }
+
   return (
     <div className="flex h-svh flex-col bg-[linear-gradient(135deg,_#f7f1e7_0%,_#ffffff_48%,_#eef3f8_100%)] text-slate-950 dark:bg-[linear-gradient(135deg,_#0c1118_0%,_#111827_50%,_#1b2433_100%)] dark:text-slate-50">
+
       <Navbar
+        area={area}
         title={title}
         subtitle={subtitle}
         academicYear={currentAcademicYear}
         userLabel={userLabel}
+        userRole={role}
         onOpenMobileMenu={() => setMobileOpen(true)}
         onLogout={handleLogout}
+        onSwitchPortal={handleSwitchPortal}
       />
 
       <div className="flex flex-1 overflow-hidden">
