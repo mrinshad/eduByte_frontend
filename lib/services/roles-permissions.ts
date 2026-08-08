@@ -4,6 +4,8 @@ import { apiFetch } from "@/lib/api";
 // Types
 // ---------------------------------------------------------------------
 
+export type DefaultPortal = "admin" | "workspace" | "student";
+
 export interface Permission {
   id: string;
   name: string;
@@ -12,24 +14,18 @@ export interface Permission {
   updatedAt?: string;
 }
 
-export interface PermissionInput {
-  name: string;
-  description: string;
-}
-
 export interface Role {
   id: string;
   name: string;
-  description?: string;
+  defaultPortal: DefaultPortal;
   createdAt: string;
   updatedAt: string;
   userCount: number;
-  permissions: Permission[];
 }
 
 export interface RoleInput {
   name: string;
-  description?: string;
+  defaultPortal: DefaultPortal;
 }
 
 type ApiSuccess<T> = {
@@ -54,11 +50,6 @@ export async function getRoles(): Promise<Role[]> {
   return payload.data ?? [];
 }
 
-export async function getRoleById(id: string): Promise<Role | null> {
-  const payload = (await apiFetch(`/api/roles/${id}`)) as ApiSuccess<Role>;
-  return payload.data ?? null;
-}
-
 export async function updateRole(id: string, input: RoleInput) {
   return apiFetch(`/api/roles/${id}`, {
     method: "PUT",
@@ -73,7 +64,7 @@ export async function deleteRole(id: string) {
 }
 
 // ---------------------------------------------------------------------
-// Role Permissions
+// Role <-> Permissions
 // ---------------------------------------------------------------------
 
 export async function getRolePermissions(roleId: string): Promise<Permission[]> {
@@ -83,13 +74,11 @@ export async function getRolePermissions(roleId: string): Promise<Permission[]> 
   return payload.data ?? [];
 }
 
-export async function addPermissionsToRole(roleId: string, permissionIds: string[]) {
-  return apiFetch(`/api/roles/${roleId}/permissions`, {
-    method: "POST",
-    body: JSON.stringify({ permissionIds }),
-  });
-}
-
+/**
+ * Full-replacement sync. The backend deletes the role's existing
+ * permissions and inserts this exact list atomically, so callers must
+ * always pass the COMPLETE desired set of permission ids — not a delta.
+ */
 export async function updateRolePermissions(roleId: string, permissionIds: string[]) {
   return apiFetch(`/api/roles/${roleId}/permissions`, {
     method: "PUT",
@@ -97,43 +86,11 @@ export async function updateRolePermissions(roleId: string, permissionIds: strin
   });
 }
 
-export async function removePermissionsFromRole(roleId: string, permissionIds: string[]) {
-  return apiFetch(`/api/roles/${roleId}/permissions`, {
-    method: "DELETE",
-    body: JSON.stringify({ permissionIds }),
-  });
-}
-
 // ---------------------------------------------------------------------
-// Permissions
+// Permissions (global catalog, read-only from this UI)
 // ---------------------------------------------------------------------
-
-export async function createPermission(input: PermissionInput) {
-  return apiFetch("/api/permissions", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
 
 export async function getPermissions(): Promise<Permission[]> {
   const payload = (await apiFetch("/api/permissions")) as ApiSuccess<Permission[]>;
   return payload.data ?? [];
-}
-
-export async function getPermissionById(id: string): Promise<Permission | null> {
-  const payload = (await apiFetch(`/api/permissions/${id}`)) as ApiSuccess<Permission>;
-  return payload.data ?? null;
-}
-
-export async function updatePermission(id: string, input: PermissionInput) {
-  return apiFetch(`/api/permissions/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(input),
-  });
-}
-
-export async function deletePermission(id: string) {
-  return apiFetch(`/api/permissions/${id}`, {
-    method: "DELETE",
-  });
 }
