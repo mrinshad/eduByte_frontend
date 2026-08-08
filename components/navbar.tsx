@@ -92,7 +92,7 @@ export function Navbar({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="group relative flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="group relative flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
                 onClick={() => onSwitchPortal?.(area === "admin" ? "workspace" : "admin")}
                 title={`Switch to ${area === "admin" ? "Operations Workspace" : "Administration Portal"}`}
               >
