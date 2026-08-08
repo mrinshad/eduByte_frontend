@@ -14,6 +14,11 @@ export interface Permission {
   updatedAt?: string;
 }
 
+export interface PermissionInput {
+  name: string;
+  description: string;
+}
+
 export interface Role {
   id: string;
   name: string;
@@ -87,10 +92,37 @@ export async function updateRolePermissions(roleId: string, permissionIds: strin
 }
 
 // ---------------------------------------------------------------------
-// Permissions (global catalog, read-only from this UI)
+// Permissions (global catalog)
 // ---------------------------------------------------------------------
 
 export async function getPermissions(): Promise<Permission[]> {
   const payload = (await apiFetch("/api/permissions")) as ApiSuccess<Permission[]>;
   return payload.data ?? [];
+}
+
+export async function createPermission(input: PermissionInput) {
+  return apiFetch("/api/permissions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updatePermission(id: string, input: PermissionInput) {
+  return apiFetch(`/api/permissions/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deletePermission(id: string) {
+  return apiFetch(`/api/permissions/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function batchDeletePermissions(permissionIds: string[]) {
+  return apiFetch("/api/permissions/batch", {
+    method: "DELETE",
+    body: JSON.stringify({ permissionIds }),
+  });
 }

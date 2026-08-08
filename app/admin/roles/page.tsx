@@ -3,6 +3,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search } from "lucide-react"
+import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -174,6 +175,7 @@ export default function Page() {
   // ---------------------------------------------------------------------
   // Roles
   // ---------------------------------------------------------------------
+  const router = useRouter();
   const [roles, setRoles] = React.useState<Role[]>([])
   const [rolesLoading, setRolesLoading] = React.useState(true)
   const [selectedRoleId, setSelectedRoleId] = React.useState("")
@@ -512,7 +514,17 @@ export default function Page() {
   return (
     <TooltipProvider>
       <section className="px-4 sm:px-6 py-4">
-        <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" />
+        <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
+          <Button
+                      className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                        onClick={() => router.push("/admin/permissions")}
+                      
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Permission
+                    </Button>
+
+        } />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {/* --------------------------------------------------------- */}
