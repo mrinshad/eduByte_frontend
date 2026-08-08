@@ -8,7 +8,7 @@ import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import { clearAccessToken, getCurrentSession, loginUser } from "@/lib/auth"
-import { getPortalRoute } from "@/lib/portal"
+import { getUserAccessiblePortal } from "@/lib/portal"
 
 export default function Page() {
   const router = useRouter()
@@ -18,7 +18,7 @@ export default function Page() {
   const [statusMessage, setStatusMessage] = React.useState("Sign in to continue")
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [session, setSession] = React.useState<{ user: { name: string; username: string; role?: string | null; defaultPortal?: string } } | null>(null)
+  const [session, setSession] = React.useState<{ user: { name: string; username: string; role?: string | null; defaultPortal?: string; permissions?: string[] } } | null>(null)
 
   React.useEffect(() => {
     let active = true
@@ -33,7 +33,19 @@ export default function Page() {
 
         setSession({ user: currentSession.user })
         setStatusMessage(`Welcome back, ${currentSession.user.name}`)
-        router.replace(getPortalRoute(currentSession.user.defaultPortal))
+
+        const accessibleArea = getUserAccessiblePortal(
+          currentSession.user.permissions || [],
+          currentSession.user.role,
+          currentSession.user.defaultPortal
+        )
+
+        if (!accessibleArea) {
+          setStatusMessage(`Access Restricted: No role or permissions assigned to '${currentSession.user.username}'`)
+          return
+        }
+
+        router.replace(`/${accessibleArea}/dashboard`)
       } catch {
         clearAccessToken()
         if (active) {
@@ -65,8 +77,20 @@ export default function Page() {
     try {
       const currentSession = await loginUser(trimmedUsername, trimmedPassword)
       setSession({ user: currentSession.user })
+
+      const accessibleArea = getUserAccessiblePortal(
+        currentSession.user.permissions || [],
+        currentSession.user.role,
+        currentSession.user.defaultPortal
+      )
+
+      if (!accessibleArea) {
+        setStatusMessage(`Access Restricted: Account '${currentSession.user.username}' has no assigned role or permissions. Contact admin.`)
+        return
+      }
+
       setStatusMessage(`Welcome, ${currentSession.user.name}`)
-      router.replace(getPortalRoute(currentSession.user.defaultPortal))
+      router.replace(`/${accessibleArea}/dashboard`)
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Unable to sign in")
     } finally {
@@ -185,7 +209,7 @@ export default function Page() {
 
                 <div className="space-y-3">
                   <Button asChild className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 py-6 text-base font-medium rounded-2xl shadow-md">
-                    <Link href={getPortalRoute(session.user.defaultPortal)}>
+                    <Link href={`/${getUserAccessiblePortal(session.user.permissions || [], session.user.role, session.user.defaultPortal) || "workspace"}/dashboard`}>
                       Continue to portal
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>

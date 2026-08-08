@@ -167,6 +167,21 @@ export function canAccessPortalArea(area: PortalArea, permissions: string[] = []
   })
 }
 
+export function getUserAccessiblePortal(
+  permissions: string[] = [],
+  role?: string | null,
+  defaultPortal?: string | null
+): PortalArea | null {
+  const preferred = (defaultPortal || "").toLowerCase() as PortalArea
+  if (preferred && ["admin", "workspace", "student"].includes(preferred) && canAccessPortalArea(preferred, permissions, role)) {
+    return preferred
+  }
+  if (canAccessPortalArea("workspace", permissions, role)) return "workspace"
+  if (canAccessPortalArea("admin", permissions, role)) return "admin"
+  if (canAccessPortalArea("student", permissions, role)) return "student"
+  return null
+}
+
 export function canSwitchPortals(permissions: string[] = [], role?: string | null): boolean {
   return canAccessPortalArea("admin", permissions, role) && canAccessPortalArea("workspace", permissions, role)
 }
