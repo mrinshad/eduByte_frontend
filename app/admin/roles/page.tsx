@@ -793,14 +793,14 @@ export default function Page() {
             </CardHeader>
 
             {selectedRole && rolePermissions.length > 0 && hasOrphanedActionPermissions(selectedRole.defaultPortal, rolePermissions.map(p => p.name), selectedRole.name) && (
-              <div className="shrink-0 mx-4 mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-medium text-slate-900 dark:text-amber-200 flex items-center justify-between gap-3">
+              <div className="shrink-0 mx-4 mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-medium text-slate-300 dark:text-amber-200 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <AlertCircle className="h-4 w-4 shrink-0 text-white dark:text-amber-400" />
                   <span>
                     Missing navigation permission for <strong>{selectedRole.defaultPortal.toUpperCase()}</strong> portal (requires e.g. <code className="font-bold">{selectedRole.defaultPortal === "admin" ? "academics.listOnNavbar" : "feecollection.listOnNavbar"}</code> or <code className="font-bold">*</code>).
                   </span>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium rounded-lg border-amber-500/40 text-slate-900 dark:text-amber-200 hover:bg-amber-500/20 shrink-0" onClick={openAssignDialog}>
+                <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium rounded-lg border-amber-500/40 text-slate-300 dark:text-amber-200 hover:bg-amber-500/20 shrink-0" onClick={openAssignDialog}>
                   Assign
                 </Button>
               </div>
