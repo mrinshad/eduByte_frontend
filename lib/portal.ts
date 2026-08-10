@@ -186,6 +186,102 @@ export function canSwitchPortals(permissions: string[] = [], role?: string | nul
   return canAccessPortalArea("admin", permissions, role) && canAccessPortalArea("workspace", permissions, role)
 }
 
+export function getUserPortalAccessSummary(permissions: string[] = [], role?: string | null) {
+  const canAdmin = canAccessPortalArea("admin", permissions, role)
+  const canWorkspace = canAccessPortalArea("workspace", permissions, role)
+  const canStudent = canAccessPortalArea("student", permissions, role)
+  const canSwitch = canSwitchPortals(permissions, role)
+
+  let type: "BOTH" | "ADMIN_ONLY" | "WORKSPACE_ONLY" | "STUDENT_ONLY" | "NONE" = "NONE"
+  if (canAdmin && canWorkspace) type = "BOTH"
+  else if (canAdmin) type = "ADMIN_ONLY"
+  else if (canWorkspace) type = "WORKSPACE_ONLY"
+  else if (canStudent) type = "STUDENT_ONLY"
+
+  return {
+    type,
+    canAdmin,
+    canWorkspace,
+    canStudent,
+    canSwitch,
+    totalPermissions: permissions.length,
+  }
+}
+
+export function getRequiredPermissionsForArea(area: PortalArea): string[] {
+  if (area === "student") {
+    return ["STUDENT role", "*"]
+  }
+  const areaSections = portalSections.filter((s) => s.area === area && s.slug !== "dashboard")
+  const requiredKeys = areaSections.map((s) => permissionForSlug(s.slug))
+  return Array.from(new Set(requiredKeys))
+}
+
+export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "STUDENT" | "GLOBAL" {
+  if (!permName) return "ADMIN"
+  if (permName === "*") return "GLOBAL"
+
+  const lower = permName.toLowerCase()
+
+  const workspaceDomains = [
+    "feecollection",
+    "expense",
+    "fine",
+    "studentcharges",
+    "feegeneration",
+    "dailycollection",
+    "studentoutstanding",
+    "expensesummary",
+    "vehiclefinancialreport",
+    "vehicleallocationreport",
+    "dailyfeecollection",
+    "feecollectionreport",
+    "expensecategorywise",
+  ]
+
+  if (workspaceDomains.some((d) => lower.startsWith(d))) {
+    return "WORKSPACE"
+  }
+
+  if (lower.startsWith("student.")) {
+    return "STUDENT"
+  }
+
+  return "ADMIN"
+}
+
+export function hasOrphanedActionPermissions(
+  area: PortalArea,
+  permissions: string[] = [],
+  role?: string | null
+): boolean {
+  if (!Array.isArray(permissions) || permissions.length === 0) return false
+  if (canAccessPortalArea(area, permissions, role)) return false
+
+  return permissions.some((perm) => getPermissionPortal(perm) === area.toUpperCase())
+}
+
+export function isNavbarPermission(permName: string): boolean {
+  if (!permName) return false
+  return permName === "*" || permName.toLowerCase().endsWith(".listonnavbar")
+}
+
+export function getMissingNavbarPermissionFor(permName: string, rolePermissions: string[] = []): string | null {
+  if (!permName || isNavbarPermission(permName)) return null
+  if (rolePermissions.includes("*")) return null
+
+  const parts = permName.split(".")
+  if (parts.length < 2) return null
+  const section = parts[0]
+  const requiredNavbarPerm = `${section}.listOnNavbar`
+
+  if (!rolePermissions.some((p) => p.toLowerCase() === requiredNavbarPerm.toLowerCase())) {
+    return requiredNavbarPerm
+  }
+
+  return null
+}
+
 export function getPortalNavItems(area: PortalArea) {
   return portalSections
     .filter((section) => section.area === area)
