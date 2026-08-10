@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import PageHeader from "@/components/common/pageHeader"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Card,
   CardContent,
@@ -477,9 +478,11 @@ export default function Page() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="icon" className="rounded-xl">
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
+                      <PermissionGate permission="academics.switchAcademicYearButton">
+                        <Button variant="outline" size="icon" className="rounded-xl">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </PermissionGate>
                     </DialogTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -851,7 +854,9 @@ export default function Page() {
                   </CardDescription>
                 </div>
 
-                <AddAction onAdd={() => openClassDialog("add")} disabled={isInitialLoading} />
+                <PermissionGate permission="academics.addClassButton">
+                  <AddAction onAdd={() => openClassDialog("add")} disabled={isInitialLoading} />
+                </PermissionGate>
               </CardHeader>
 
               <CardContent
@@ -909,35 +914,38 @@ export default function Page() {
                           <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                             {schoolClass.divisionCount} divisions
                           </span>
-
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className={editIconClass}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setSelectedClassId(schoolClass.id)
-                              openClassDialog("edit", schoolClass)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <PermissionGate permission="academics.editClassButton">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={editIconClass}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedClassId(schoolClass.id)
+                                openClassDialog("edit", schoolClass)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
 
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="inline-flex">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className={deleteIconClass}
-                                  disabled={schoolClass.divisionCount > 0}
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    setClassToDelete(schoolClass)
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <PermissionGate permission="academics.deleteClassButton">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className={deleteIconClass}
+                                    disabled={schoolClass.divisionCount > 0}
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      setClassToDelete(schoolClass)
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </PermissionGate>
                               </span>
                             </TooltipTrigger>
                             {schoolClass.divisionCount > 0 && (
@@ -1002,9 +1010,11 @@ export default function Page() {
                 ) : selectedDivisions.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No divisions yet</p>
-                    <Button className="mt-4 rounded-xl" onClick={() => openDivisionDialog("add")}>
-                      Add division
-                    </Button>
+                    <PermissionGate permission="academics.addDivisionButton">
+                      <Button className="mt-4 rounded-xl" onClick={() => openDivisionDialog("add")}>
+                        Add division
+                      </Button>
+                    </PermissionGate>
                   </div>
                 ) : (
                   selectedDivisions.map((division) => {
@@ -1046,30 +1056,34 @@ export default function Page() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className={editIconClass}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setSelectedDivisionId(division.id)
-                              openDivisionDialog("edit", division)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <PermissionGate permission="academics.editDivisionButton">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={editIconClass}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedDivisionId(division.id)
+                                openDivisionDialog("edit", division)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
 
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className={deleteIconClass}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setDivisionToDelete(division)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <PermissionGate permission="academics.deleteDivisionButton">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={deleteIconClass}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setDivisionToDelete(division)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
                         </div>
                       </div>
                     )
@@ -1086,7 +1100,7 @@ export default function Page() {
           onOpenChange={(open) => {
             if (!open) closeClassDialog()
           }}
-        theme="vehicle"
+          theme="vehicle"
           title={classDialogMode === "add" ? "Add Class" : "Edit Class"}
           description={
             classDialogMode === "add"
