@@ -758,7 +758,7 @@ export default function Page() {
                             <td className="px-3 py-2">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-slate-950 dark:text-slate-100">
-                                  {fine.fineType}
+                                  {fine.fineFor || fine.fineType}
                                 </span>
                                 {isPaid && (
                                   <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">

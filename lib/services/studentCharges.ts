@@ -131,6 +131,8 @@ export type FeeGenerationPreviewData = {
   targetAcademicMonth: number;
   targetCalendarMonth: number;
   targetCalendarYear: number;
+  targetPeriod?: string;
+  instructions?: string;
   summary: FeeGenerationPreviewSummary;
   chargesBreakdown: Record<string, number>;
   frequencyBreakdown: Record<string, number>;
