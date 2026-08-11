@@ -146,6 +146,15 @@ export type FeeGenerationMonthStatus = {
   totalAcademicMonths: number;
 };
 
+export type TargetMonthStudentItem = {
+  enrollmentId: string;
+  studentName: string;
+  admissionNumber: string;
+  chargesCount: number;
+  totalAmount: number;
+  chargeTypes: string[];
+};
+
 export type FeeGenerationPreviewData = {
   academicYearId: string;
   academicYearName: string;
@@ -156,6 +165,7 @@ export type FeeGenerationPreviewData = {
   monthStatus?: FeeGenerationMonthStatus;
   instructions?: string;
   summary: FeeGenerationPreviewSummary;
+  targetMonthStudents?: TargetMonthStudentItem[];
   chargesBreakdown: Record<string, number>;
   frequencyBreakdown: Record<string, number>;
   financialSummary: {
