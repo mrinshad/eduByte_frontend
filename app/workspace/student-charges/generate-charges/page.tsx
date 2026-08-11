@@ -35,6 +35,7 @@ import {
   type FeeGenerationResult,
   previewFeeGeneration,
   generateFeeCharges,
+  generateCatchUpFeeCharges,
 } from "@/lib/services/studentCharges";
 
 function formatCurrency(value?: number | null) {
@@ -63,6 +64,7 @@ export default function FeeGenerationPage() {
   const [activeAcademicYearId, setActiveAcademicYearId] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingCatchUp, setIsGeneratingCatchUp] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -97,6 +99,44 @@ export default function FeeGenerationPage() {
 
     return Object.entries(preview.financialSummary.byChargeType).sort((a, b) => b[1] - a[1]);
   }, [preview]);
+
+  const groupedCatchUpStudents = useMemo(() => {
+    if (!preview?.catchUpCharges || !Array.isArray(preview.catchUpCharges)) return [];
+
+    const map = new Map<
+      string,
+      {
+        studentName: string;
+        admissionNumber: string;
+        periodName: string;
+        chargeTypes: string[];
+        chargesCount: number;
+        totalAmount: number;
+      }
+    >();
+
+    for (const item of preview.catchUpCharges) {
+      const key = `${item.admissionNumber || item.studentName}-${item.periodName}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          studentName: item.studentName,
+          admissionNumber: item.admissionNumber,
+          periodName: item.periodName,
+          chargeTypes: [],
+          chargesCount: 0,
+          totalAmount: 0,
+        });
+      }
+      const existing = map.get(key)!;
+      existing.chargesCount += 1;
+      existing.totalAmount += Number(item.amount) || 0;
+      if (!existing.chargeTypes.includes(item.chargeType)) {
+        existing.chargeTypes.push(item.chargeType);
+      }
+    }
+
+    return Array.from(map.values());
+  }, [preview?.catchUpCharges]);
 
   async function loadPreviewForAcademicYear(academicYearId: string) {
     const payload = await previewFeeGeneration(academicYearId);
@@ -545,82 +585,19 @@ export default function FeeGenerationPage() {
             </div>
           </div>
 
-          {/* Target Month Student List */}
-          {preview.targetMonthStudents && preview.targetMonthStudents.length > 0 && (
-            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 dark:border-sky-500/30 dark:bg-sky-950/10 space-y-3">
+          {/* Catch-Up List for Newly Enrolled Students (1 Row Per Student) */}
+          {groupedCatchUpStudents.length > 0 && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                  <h2 className="text-sm font-semibold text-slate-950 dark:text-sky-100">
-                    Students Scheduled for {monthLabel} Fee Generation ({preview.targetMonthStudents.length})
+                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <h2 className="text-sm font-semibold text-slate-950 dark:text-amber-100">
+                    Newly Enrolled Students Catch-Up Fees ({groupedCatchUpStudents.length} Student{groupedCatchUpStudents.length > 1 ? "s" : ""})
                   </h2>
                 </div>
-                <span className="text-xs text-sky-700 dark:text-sky-300 font-medium">
-                  Includes new & existing active enrollees
+                <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                  Missing charges for enrollment month
                 </span>
-              </div>
-
-              <div className="rounded-xl border border-sky-500/20 bg-white dark:bg-slate-900/80 overflow-hidden shadow-sm">
-                <table className="w-full text-xs">
-                  <thead className="bg-sky-500/10 border-b border-sky-500/20">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
-                        Student Name
-                      </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
-                        Admission No
-                      </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
-                        Scheduled Fee Types
-                      </th>
-                      <th className="px-4 py-2.5 text-center font-semibold text-slate-800 dark:text-sky-200">
-                        Charges Count
-                      </th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-sky-200">
-                        Total Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {preview.targetMonthStudents.map((item) => (
-                      <tr key={item.enrollmentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100">
-                          {item.studentName}
-                        </td>
-                        <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-mono">
-                          {item.admissionNumber || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
-                          <div className="flex flex-wrap gap-1">
-                            {item.chargeTypes.map((type) => (
-                              <span key={type} className="rounded bg-sky-100 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-1.5 py-0.5 text-[10px] font-medium text-sky-900 dark:text-sky-200">
-                                {type}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 text-center font-medium text-slate-700 dark:text-slate-300">
-                          {item.chargesCount}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-slate-950 dark:text-slate-100">
-                          {formatCurrency(item.totalAmount)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Catch-Up List for Newly Enrolled Students */}
-          {preview.catchUpCharges && preview.catchUpCharges.length > 0 && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-sm font-semibold text-slate-950 dark:text-amber-100">
-                  Newly Enrolled Student Catch-Up Charges ({preview.catchUpCharges.length})
-                </h2>
               </div>
               <p className="text-xs text-slate-600 dark:text-amber-200/80">
                 These students enrolled mid-year after batch fee generation ran. Missing charges for their enrollment month will be generated now.
@@ -637,19 +614,19 @@ export default function FeeGenerationPage() {
                         Admission No
                       </th>
                       <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
-                        Charge Type
+                        Pending Fee Types
                       </th>
                       <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
                         Target Period
                       </th>
                       <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-amber-200">
-                        Amount
+                        Total Amount
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {preview.catchUpCharges.map((item, idx) => (
-                      <tr key={`${item.admissionNumber}-${item.chargeType}-${idx}`}>
+                    {groupedCatchUpStudents.map((item) => (
+                      <tr key={`${item.admissionNumber}-${item.periodName}`}>
                         <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100">
                           {item.studentName}
                         </td>
@@ -657,13 +634,19 @@ export default function FeeGenerationPage() {
                           {item.admissionNumber || "—"}
                         </td>
                         <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
-                          {item.chargeType}
+                          <div className="flex flex-wrap gap-1">
+                            {item.chargeTypes.map((type) => (
+                              <span key={type} className="rounded bg-amber-100 dark:bg-amber-950/60 border border-amber-300/40 dark:border-amber-800 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:text-amber-200">
+                                {type}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">
                           {item.periodName}
                         </td>
                         <td className="px-4 py-2.5 text-right font-semibold text-slate-950 dark:text-slate-100">
-                          {formatCurrency(item.amount)}
+                          {formatCurrency(item.totalAmount)}
                         </td>
                       </tr>
                     ))}
