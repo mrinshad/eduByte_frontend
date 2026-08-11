@@ -233,7 +233,7 @@ export default function Page() {
             </Button>
           )}
 
-          <PermissionGate permission="student.create">
+          <PermissionGate permission="students.createStudentButton">
             <Button
               className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => router.push("/admin/students/createStudent")}
@@ -367,33 +367,39 @@ export default function Page() {
 
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          onClick={() => router.push(`/admin/students/createStudent?id=${student.id}`)}
-                          title="Edit Student"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          onClick={() => router.push(`/admin/students/viewStudent?id=${student.id}`)}
-                          title="View Student"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          title="Delete Student"
-                          onClick={() => setStudentToDelete(student)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <PermissionGate permission="students.editStudentButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                            onClick={() => router.push(`/admin/students/createStudent?id=${student.id}`)}
+                            title="Edit Student"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="students.viewStudentButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                            onClick={() => router.push(`/admin/students/viewStudent?id=${student.id}`)}
+                            title="View Student"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="students.deleteStudentButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            title="Delete Student"
+                            onClick={() => setStudentToDelete(student)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>
