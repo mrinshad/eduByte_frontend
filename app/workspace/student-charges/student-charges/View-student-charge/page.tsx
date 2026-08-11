@@ -82,6 +82,10 @@ const CHARGE_STATUS_STYLES: Record<string, string> = {
     "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400",
   PARTIAL:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",
+  PARTIALLY_PAID:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",
+  OVERDUE:
+    "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-300 font-semibold",
   PAID:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400",
 };
@@ -89,11 +93,13 @@ const CHARGE_STATUS_STYLES: Record<string, string> = {
 const CHARGE_ROW_ACCENT: Record<string, string> = {
   PENDING: "border-l-4 border-l-red-400",
   PARTIAL: "border-l-4 border-l-amber-400",
+  PARTIALLY_PAID: "border-l-4 border-l-amber-400",
+  OVERDUE: "border-l-4 border-l-rose-600",
   PAID: "border-l-4 border-l-emerald-400",
 };
 
 // Charges in these statuses still have money owed, so they get a Pay button.
-const PAYABLE_STATUSES = new Set(["PENDING", "PARTIAL"]);
+const PAYABLE_STATUSES = new Set(["PENDING", "PARTIAL", "PARTIALLY_PAID", "OVERDUE"]);
 
 function formatDateOnly(value: string) {
   if (!value) return "—";
@@ -516,7 +522,7 @@ export default function ViewAdmissionPage() {
                 const final = parseFloat(charge.finalAmount || "0");
                 const paid = parseFloat(charge.paidAmount || "0");
                 const balance = final - paid;
-                const canPay = PAYABLE_STATUSES.has(charge.status);
+                const canPay = PAYABLE_STATUSES.has(charge.status) && balance > 0;
 
                 return (
                   <TableRow
