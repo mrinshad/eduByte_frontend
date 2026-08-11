@@ -371,7 +371,7 @@ export default function Page() {
                     <TableCell className="px-4 sm:px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {/* View */}
-                        <PermissionGate permission="feestuctures.viewFeesturcturesButton">
+                        <PermissionGate permission="feestructures.viewFeesturcturesButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -395,7 +395,7 @@ export default function Page() {
                         </PermissionGate>
 
                         {/* Delete */}
-                        <PermissionGate permission="feestuctures.deleteFeesturcturesButton">
+                        <PermissionGate permission="feesturctures.deleteFeesturcturesButton">
                         <Button
                           variant="ghost"
                           size="icon"

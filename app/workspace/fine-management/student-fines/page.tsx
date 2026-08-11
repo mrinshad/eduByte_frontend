@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Tooltip,
   TooltipContent,
@@ -360,6 +361,7 @@ export default function Page() {
               </h1>
               <TooltipProvider>
                 <Tooltip>
+                  <PermissionGate permission="fine.createFineTypesButton">
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
@@ -370,6 +372,7 @@ export default function Page() {
                       <Settings2 className="size-6 sm:size-6 text-[#556043]" />
                     </Button>
                   </TooltipTrigger>
+                  </PermissionGate>
                   <TooltipContent side="top" sideOffset={8}>
                     Fine Types
                   </TooltipContent>
@@ -393,6 +396,7 @@ export default function Page() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
+          <PermissionGate permission="fine.createNewFineButton">
           <Button
             className="shrink-0 gap-1.5 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium tracking-tight h-10 sm:h-9 px-4 rounded-xl text-xs w-full sm:w-auto"
             onClick={openCreateFineDialog}
@@ -400,6 +404,7 @@ export default function Page() {
             <Plus className="h-4 w-4 text-white dark:text-slate-900" />
             New Fine
           </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -607,6 +612,7 @@ export default function Page() {
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-0.5">
+                        <PermissionGate permission="fine.viewFineButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -618,7 +624,8 @@ export default function Page() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-
+                        </PermissionGate>
+                          <PermissionGate permission="fine.editFineButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -628,9 +635,11 @@ export default function Page() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
 
 
                         {row.status !== "REVERSED" && (
+                          <PermissionGate permission="fine.reverseFineButton">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -640,6 +649,7 @@ export default function Page() {
                           >
                             <Undo2 className="h-4 w-4" />
                           </Button>
+                          </PermissionGate>
                         )}
                       </div>
                     </TableCell>

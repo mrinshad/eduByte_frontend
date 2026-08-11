@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Search,
   Eye,
@@ -250,6 +251,7 @@ export default function StudentChargesListPage() {
 
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <PermissionGate permission="studentcharges.viewStudentChargesButton">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -264,6 +266,7 @@ export default function StudentChargesListPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          </PermissionGate>
 
 
                         </div>

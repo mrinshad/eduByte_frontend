@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   ArrowLeft,
   Loader2,
@@ -289,24 +290,27 @@ export default function FeeGenerationPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleRefreshPreview}
-              disabled={isLoadingPreview || isGenerating}
-              className="text-slate-700 dark:text-slate-200"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingPreview ? "animate-spin" : ""}`} />
-              Refresh Preview
-            </Button>
-
-            <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
-              onClick={openGenerateDialog}
-              disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
-            >
-              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Generate Charges
-            </Button>
+            <PermissionGate permission="feegeneration.refreshFeeGenerationButton">
+              <Button
+                variant="outline"
+                onClick={handleRefreshPreview}
+                disabled={isLoadingPreview || isGenerating}
+                className="text-slate-700 dark:text-slate-200"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingPreview ? "animate-spin" : ""}`} />
+                Refresh Preview
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission="feegeneration.generateChargesButton">
+              <Button
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
+                onClick={openGenerateDialog}
+                disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
+              >
+                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Generate Charges
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>
@@ -475,13 +479,12 @@ export default function FeeGenerationPage() {
         <>
           {/* Status Alert Banner */}
           <div
-            className={`rounded-2xl p-4 border flex items-start gap-3 ${
-              hasPendingGeneration
+            className={`rounded-2xl p-4 border flex items-start gap-3 ${hasPendingGeneration
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200"
                 : generationLocked
                   ? "border-rose-500/30 bg-rose-500/10 text-rose-950 dark:text-rose-200"
                   : "border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-200"
-            }`}
+              }`}
           >
             {hasPendingGeneration ? (
               <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -506,7 +509,7 @@ export default function FeeGenerationPage() {
               <p className="mt-1 text-xs leading-normal opacity-90">
                 {hasPendingGeneration
                   ? preview.instructions ||
-                    `Ready to generate ${preview.summary.chargesToGenerate} charge(s) for ${monthLabel}. Total estimated amount: ${formatCurrency(preview.financialSummary.total)}.`
+                  `Ready to generate ${preview.summary.chargesToGenerate} charge(s) for ${monthLabel}. Total estimated amount: ${formatCurrency(preview.financialSummary.total)}.`
                   : generationLocked
                     ? "This month is outside the allowed generation window."
                     : "All active student charges for this target month have already been generated."}
