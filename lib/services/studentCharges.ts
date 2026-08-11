@@ -117,12 +117,33 @@ export async function getStudentChargesByEnrollmentId(
   return payload.data ?? null;
 }
 
+export type CatchUpChargeItem = {
+  studentName: string;
+  admissionNumber: string;
+  chargeType: string;
+  amount: number;
+  periodMonth: number;
+  periodYear: number;
+  periodName: string;
+};
+
 export type FeeGenerationPreviewSummary = {
   activeStudents: number;
   enrollmentChargesEvaluated: number;
   chargesToGenerate: number;
   alreadyGenerated: number;
   studentsWithNoCharges: number;
+  catchUpChargesCount?: number;
+};
+
+export type FeeGenerationMonthStatus = {
+  lastGeneratedMonthNumber: number;
+  lastGeneratedPeriod: string;
+  currentTargetMonthNumber: number;
+  currentTargetPeriod: string;
+  upcomingMonthNumber: number | null;
+  upcomingPeriod: string;
+  totalAcademicMonths: number;
 };
 
 export type FeeGenerationPreviewData = {
@@ -132,6 +153,7 @@ export type FeeGenerationPreviewData = {
   targetCalendarMonth: number;
   targetCalendarYear: number;
   targetPeriod?: string;
+  monthStatus?: FeeGenerationMonthStatus;
   instructions?: string;
   summary: FeeGenerationPreviewSummary;
   chargesBreakdown: Record<string, number>;
@@ -140,6 +162,7 @@ export type FeeGenerationPreviewData = {
     byChargeType: Record<string, number>;
     total: number;
   };
+  catchUpCharges?: CatchUpChargeItem[];
   skipped?: {
     alreadyGenerated: number;
   };
