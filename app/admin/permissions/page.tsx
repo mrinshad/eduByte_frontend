@@ -25,6 +25,24 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import { getPermissionPortal } from "@/lib/portal"
+
+function PortalTag({ permName }: { permName: string }) {
+  const portal = getPermissionPortal(permName)
+  const styles = {
+    ADMIN: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
+    WORKSPACE: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+    STUDENT: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
+    GLOBAL: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20",
+  }
+
+  return (
+    <Badge variant="outline" className={cn("rounded-md px-1.5 py-0 text-[9px] font-bold tracking-wider uppercase border shrink-0", styles[portal])}>
+      {portal}
+    </Badge>
+  )
+}
+
 import PageHeader from "@/components/common/pageHeader"
 import {
   AlertDialog,
@@ -631,19 +649,20 @@ export default function PermissionsPage() {
                     {getInitials(permission.name)}
                   </div>
 
-                  {/* Name + Category */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-medium text-slate-950 dark:text-slate-100">
-                        {permission.name}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className="hidden rounded-md px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide sm:inline-flex bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                      >
-                        {category}
-                      </Badge>
-                    </div>
+                    {/* Name + Portal + Category */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-medium text-slate-950 dark:text-slate-100">
+                          {permission.name}
+                        </span>
+                        <PortalTag permName={permission.name} />
+                        <Badge
+                          variant="secondary"
+                          className="hidden rounded-md px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide sm:inline-flex bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        >
+                          {category}
+                        </Badge>
+                      </div>
                     <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400 md:hidden">
                       {permission.description || "No description"}
                     </p>

@@ -154,10 +154,13 @@ export interface Fine {
   id: string;
   fineTypeId: string;
   fineType: string;
+  fineFor?: string;
   reason: string;
   amount: number;
   paidAmount: number;
   balance: number;
+  periodMonth?: number | null;
+  periodYear?: number | null;
   status: "PAID" | "PARTIALLY_PAID" | "PENDING" | string;
   canCollect: boolean;
   createdAt: string;

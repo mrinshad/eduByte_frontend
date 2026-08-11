@@ -29,6 +29,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import PageHeader from "@/components/common/pageHeader"
 import {
   AlertDialog,
@@ -454,9 +461,17 @@ export default function UsersPage() {
     }
   }
 
-  // ----------------------------------------------------------------------
-  // Stats
-  // ----------------------------------------------------------------------
+  const hasActiveFilters = React.useMemo(
+    () => roleFilter !== "all" || statusFilter !== "all" || searchQuery.trim().length > 0,
+    [roleFilter, statusFilter, searchQuery]
+  )
+
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setRoleFilter("all")
+    setStatusFilter("all")
+  }
+
   const totalCount = users.length
   const activeCount = users.filter((u) => u.isActive).length
   const roleCount = roles.length
@@ -465,11 +480,80 @@ export default function UsersPage() {
   // Render
   // ----------------------------------------------------------------------
   return (
-    <section className="px-4 sm:px-6 py-4">
-      <PageHeader title="Users" description="Manage system user accounts and role assignments" />
+    <section className="w-full px-6 py-4 space-y-6">
+      {/* ── Header & Actions ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+            Users
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Manage system user accounts and role assignments
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto flex-wrap">
+          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+            <Input
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+          </div>
+
+          {roles.length > 0 && (
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as StatusFilter)}>
+            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
+
+          <Button
+            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            onClick={() => openDialog("add")}
+          >
+            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+            Add User
+          </Button>
+        </div>
+      </div>
 
       {/* Stats Row */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           icon={Users}
           label="Total Users"
@@ -491,80 +575,7 @@ export default function UsersPage() {
       </div>
 
       {/* Main Card */}
-      <div className="mt-6 rounded-2xl border border-black/5 bg-white/80 shadow-sm dark:border-white/10 dark:bg-slate-900">
-        {/* Toolbar */}
-        <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 flex-1 flex-wrap">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users…"
-                className="rounded-xl pl-9 h-10"
-              />
-            </div>
-
-            {roles.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 text-white">
-                    <Filter className="h-3.5 w-3.5" />
-                    {roleFilter === "all" ? "All Roles" : roles.find((r) => r.id === roleFilter)?.name ?? "Role"}
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="rounded-xl">
-                  <DropdownMenuItem
-                    className="rounded-lg"
-                    onClick={() => setRoleFilter("all")}
-                  >
-                    <span className={cn(roleFilter === "all" && "font-medium")}>All Roles</span>
-                  </DropdownMenuItem>
-                  <Separator className="my-1" />
-                  {roles.map((role) => (
-                    <DropdownMenuItem
-                      key={role.id}
-                      className="rounded-lg"
-                      onClick={() => setRoleFilter(role.id)}
-                    >
-                      <span className={cn(roleFilter === role.id && "font-medium")}>{role.name}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 text-white">
-                  <Filter className="h-3.5 w-3.5" />
-                  {statusFilter === "all" ? "All Status" : statusFilter === "active" ? "Active" : "Inactive"}
-                  <ChevronDown className="h-3 w-3 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="rounded-xl">
-                <DropdownMenuItem className="rounded-lg" onClick={() => setStatusFilter("all")}>
-                  <span className={cn(statusFilter === "all" && "font-medium")}>All Status</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg" onClick={() => setStatusFilter("active")}>
-                  <span className={cn(statusFilter === "active" && "font-medium")}>Active</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg" onClick={() => setStatusFilter("inactive")}>
-                  <span className={cn(statusFilter === "inactive" && "font-medium")}>Inactive</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <Button
-            className="rounded-xl gap-2 h-10 bg-amber-600 hover:bg-amber-700 text-white"
-            onClick={() => openDialog("add")}
-          >
-            <Plus className="h-4 w-4" />
-            Add User
-          </Button>
-        </div>
+      <div className="rounded-2xl border border-black/5 bg-white/80 shadow-sm dark:border-white/10 dark:bg-slate-900">
 
         <Separator />
 

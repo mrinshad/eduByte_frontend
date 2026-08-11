@@ -67,7 +67,7 @@
 
     const monthLabel = useMemo(() => {
       if (!preview) return "";
-      return `${getMonthName(preview.targetCalendarMonth)} ${preview.targetCalendarYear}`;
+      return preview.targetPeriod || `${getMonthName(preview.targetCalendarMonth)} ${preview.targetCalendarYear}`;
     }, [preview]);
 
     const warningItems = useMemo(() => {
@@ -320,7 +320,7 @@
                   </p>
                   <p className="mt-1 text-sm">
                     {hasPendingGeneration
-                      ? `Estimated new charges across all active students: ${preview.summary.chargesToGenerate}. Estimated monthly total: ${formatCurrency(preview.financialSummary.total)}.`
+                      ? preview.instructions || `Estimated new charges across all active students: ${preview.summary.chargesToGenerate}. Estimated monthly total: ${formatCurrency(preview.financialSummary.total)}.`
                       : generationLocked
                         ? lockedWarning ?? "This month is outside the allowed generation window."
                         : "This month appears already generated or has no due charges from active enrollment charges."}

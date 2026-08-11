@@ -2,15 +2,33 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search } from "lucide-react"
+import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation";
+import { canAccessPortalArea, getPermissionPortal, getMissingNavbarPermissionFor, isNavbarPermission, hasOrphanedActionPermissions } from "@/lib/portal";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import PageHeader from "@/components/common/pageHeader"
+
+function PortalTag({ permName }: { permName: string }) {
+  const portal = getPermissionPortal(permName)
+  const styles = {
+    ADMIN: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
+    WORKSPACE: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+    STUDENT: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
+    GLOBAL: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20",
+  }
+
+  return (
+    <Badge variant="outline" className={cn("rounded-md px-1.5 py-0 text-[9px] font-bold tracking-wider uppercase border shrink-0", styles[portal])}>
+      {portal}
+    </Badge>
+  )
+}
 import {
   Card,
   CardContent,
@@ -185,6 +203,8 @@ export default function Page() {
     [roles, selectedRoleId]
   )
 
+  const [rolePermissionMap, setRolePermissionMap] = React.useState<Record<string, string[]>>({})
+
   async function loadRoles() {
     setRolesLoading(true)
     try {
@@ -193,6 +213,18 @@ export default function Page() {
       if (data.length > 0) {
         setSelectedRoleId((current) => current || data[0].id)
       }
+      const map: Record<string, string[]> = {}
+      await Promise.all(
+        data.map(async (r) => {
+          try {
+            const perms = await getRolePermissions(r.id)
+            map[r.id] = perms.map((p) => p.name)
+          } catch {
+            map[r.id] = []
+          }
+        })
+      )
+      setRolePermissionMap(map)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load roles")
     } finally {
@@ -215,12 +247,34 @@ export default function Page() {
     try {
       const data = await getRolePermissions(roleId)
       setRolePermissions(data)
+      setRolePermissionMap((prev) => ({
+        ...prev,
+        [roleId]: data.map((p) => p.name),
+      }))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load role permissions")
     } finally {
       setRolePermissionsLoading(false)
     }
   }
+
+  const missingNavbarPermissionsForRole = React.useMemo(() => {
+    if (!rolePermissions || rolePermissions.length === 0) return new Set<string>()
+
+    const rolePermNames = rolePermissions.map((p) => p.name)
+    if (rolePermNames.includes("*")) return new Set<string>()
+
+    const missingSet = new Set<string>()
+
+    for (const permName of rolePermNames) {
+      const missing = getMissingNavbarPermissionFor(permName, rolePermNames)
+      if (missing) {
+        missingSet.add(missing.toLowerCase())
+      }
+    }
+
+    return missingSet
+  }, [rolePermissions])
 
   // ---------------------------------------------------------------------
   // Full permission catalog, used to populate the "assign" dialog
@@ -354,6 +408,18 @@ export default function Page() {
         (p.description ? p.description.toLowerCase().includes(query) : false)
     )
   }, [availablePermissions, assignSearchQuery])
+
+  const recommendedAvailablePermissions = React.useMemo(() => {
+    return filteredAvailablePermissions.filter((p) =>
+      missingNavbarPermissionsForRole.has(p.name.toLowerCase())
+    )
+  }, [filteredAvailablePermissions, missingNavbarPermissionsForRole])
+
+  const otherAvailablePermissions = React.useMemo(() => {
+    return filteredAvailablePermissions.filter(
+      (p) => !missingNavbarPermissionsForRole.has(p.name.toLowerCase())
+    )
+  }, [filteredAvailablePermissions, missingNavbarPermissionsForRole])
 
   function openAssignDialog() {
     setAssignSelectedIds([])
@@ -513,26 +579,26 @@ export default function Page() {
   // ---------------------------------------------------------------------
   return (
     <TooltipProvider>
-      <section className="px-4 sm:px-6 py-4">
+      <section className="px-4 sm:px-6 py-2 flex flex-col h-[calc(100vh-8rem)] max-h-[78vh] overflow-hidden">
         <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
           <Button
-                      className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                        onClick={() => router.push("/admin/permissions")}
-                      
-                    >
-                      <Plus className="h-4 w-4" />
-                      Create Permission
-                    </Button>
+            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            onClick={() => router.push("/admin/permissions")}
+
+          >
+            <Plus className="h-4 w-4" />
+            Create Permission
+          </Button>
 
         } />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-3 grid gap-5 lg:grid-cols-2 flex-1 min-h-0 overflow-hidden">
           {/* --------------------------------------------------------- */}
           {/* Roles — click a row to scope the permission card on the   */}
           {/* right.                                                    */}
           {/* --------------------------------------------------------- */}
-          <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+          <Card className="flex flex-col h-full min-h-0 overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
+            <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
                   <Shield className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
@@ -550,7 +616,7 @@ export default function Page() {
 
             <CardContent
               className="
-              space-y-2 pt-4 max-h-[420px] overflow-y-auto
+              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto
               scrollbar-thin
               scrollbar-thumb-slate-300
               scrollbar-track-transparent
@@ -609,10 +675,21 @@ export default function Page() {
                           )}
                         />
 
-                        <div className="min-w-0">
-                          <span className="font-medium truncate block text-slate-950 dark:text-slate-100">
-                            {role.name}
-                          </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate block text-slate-950 dark:text-slate-100">
+                              {role.name}
+                            </span>
+                            {hasOrphanedActionPermissions(
+                              role.defaultPortal,
+                              rolePermissionMap[role.id] ?? (isActive ? rolePermissions.map((p) => p.name) : []),
+                              role.name
+                            ) && (
+                                <span title="Missing navbar permission for default portal" className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0">
+                                  ⚠️ Missing Entry
+                                </span>
+                              )}
+                          </div>
                           <span className="text-xs truncate block text-slate-500 dark:text-slate-400">
                             {portalLabel} portal
                           </span>
@@ -656,8 +733,8 @@ export default function Page() {
           {/* --------------------------------------------------------- */}
           {/* Permissions — scoped to the selected role.                */}
           {/* --------------------------------------------------------- */}
-          <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
+          <Card className="flex flex-col h-full min-h-0 overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
+            <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
                   <Key className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
@@ -715,8 +792,22 @@ export default function Page() {
               </div>
             </CardHeader>
 
+            {selectedRole && rolePermissions.length > 0 && hasOrphanedActionPermissions(selectedRole.defaultPortal, rolePermissions.map(p => p.name), selectedRole.name) && (
+              <div className="shrink-0 mx-4 mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-medium text-slate-300 dark:text-amber-200 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-white dark:text-amber-400" />
+                  <span>
+                    Missing navigation permission for <strong>{selectedRole.defaultPortal.toUpperCase()}</strong> portal (requires e.g. <code className="font-bold">{selectedRole.defaultPortal === "admin" ? "academics.listOnNavbar" : "feecollection.listOnNavbar"}</code> or <code className="font-bold">*</code>).
+                  </span>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium rounded-lg border-amber-500/40 text-slate-300 dark:text-amber-200 hover:bg-amber-500/20 shrink-0" onClick={openAssignDialog}>
+                  Assign
+                </Button>
+              </div>
+            )}
+
             {selectedRole && rolePermissions.length > 0 && (
-              <div className="border-b border-black/5 px-4 py-2.5 dark:border-white/10">
+              <div className="shrink-0 border-b border-black/5 px-4 py-2.5 dark:border-white/10">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
@@ -730,7 +821,7 @@ export default function Page() {
             )}
 
             {permissionSelectMode && rolePermissions.length > 0 && (
-              <div className="flex items-center justify-between gap-3 border-b border-black/5 px-4 py-2.5 dark:border-white/10">
+              <div className="shrink-0 flex items-center justify-between gap-3 border-b border-black/5 px-4 py-2.5 dark:border-white/10">
                 <label className="flex items-center gap-2 text-sm text-slate-100 dark:text-slate-300 cursor-pointer">
                   <Checkbox
                     className={whiteCheckboxClass}
@@ -757,7 +848,7 @@ export default function Page() {
 
             <CardContent
               className="
-              space-y-2 pt-4 max-h-[420px] overflow-y-auto
+              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto
               scrollbar-thin
               scrollbar-thumb-slate-300
               scrollbar-track-transparent
@@ -780,10 +871,12 @@ export default function Page() {
                   </Button>
                 </div>
               ) : rolePermissions.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
-                  <p className={`text-sm font-medium ${titleTextClass}`}>No permissions yet</p>
+                <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 p-6 text-center">
+                  <p className="text-sm font-semibold text-slate-950 dark:text-white">
+                    No permissions assigned to {selectedRole.name} yet.
+                  </p>
                   <Button
-                    className="mt-4 rounded-xl"
+                    className="mt-3 rounded-xl font-medium"
                     onClick={openAssignDialog}
                     disabled={availablePermissions.length === 0}
                   >
@@ -797,6 +890,10 @@ export default function Page() {
               ) : (
                 filteredRolePermissions.map((permission) => {
                   const isSelected = selectedPermissionIds.includes(permission.id)
+                  const missingNavbarPerm = getMissingNavbarPermissionFor(
+                    permission.name,
+                    rolePermissions.map((p) => p.name)
+                  )
 
                   return (
                     <div
@@ -826,10 +923,20 @@ export default function Page() {
                           {permission.name.slice(0, 2).toUpperCase()}
                         </span>
 
-                        <div className="min-w-0">
-                          <p className="font-medium text-slate-950 dark:text-slate-100 truncate">
-                            {permission.name}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-slate-950 dark:text-slate-100 truncate">
+                              {permission.name}
+                            </p>
+                            <PortalTag permName={permission.name} />
+                          </div>
+                          {missingNavbarPerm && (
+                            <div className="mt-1">
+                              <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0 inline-block">
+                                ⚠️ Needs {missingNavbarPerm}
+                              </span>
+                            </div>
+                          )}
                           <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 truncate">
                             {permission.description ? permission.description : ""}
                           </p>
@@ -956,7 +1063,7 @@ export default function Page() {
               </div>
             )}
 
-            <div className="max-h-[300px] overflow-y-auto space-y-2 py-2">
+            <div className="max-h-[340px] overflow-y-auto space-y-3 py-2">
               {allPermissionsLoading ? (
                 <>
                   <RowSkeleton />
@@ -971,28 +1078,91 @@ export default function Page() {
                   No permissions match your search.
                 </p>
               ) : (
-                filteredAvailablePermissions.map((permission) => (
-                  <label
-                    key={permission.id}
-                    className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 px-3 py-2.5 cursor-pointer hover:bg-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]"
-                  >
-                    <Checkbox
-                      className={assignCheckboxClass}
-                      checked={assignSelectedIds.includes(permission.id)}
-                      onCheckedChange={() => toggleAssignSelection(permission.id)}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-950 dark:text-slate-100 truncate">
-                        {permission.name}
+                <>
+                  {recommendedAvailablePermissions.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-white dark:text-amber-300 px-1">
+                        ⭐ Recommended Navigation Access
                       </p>
-                      {permission.description ? (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                          {permission.description}
-                        </p>
-                      ) : null}
+                      <div className="space-y-1.5">
+                        {recommendedAvailablePermissions.map((permission) => (
+                          <label
+                            key={permission.id}
+                            className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 px-3 py-2.5 cursor-pointer hover:bg-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]"
+                          >
+                            <Checkbox
+                              className={assignCheckboxClass}
+                              checked={assignSelectedIds.includes(permission.id)}
+                              onCheckedChange={() => toggleAssignSelection(permission.id)}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-slate-950 dark:text-slate-100 truncate">
+                                  {permission.name}
+                                </p>
+                                <PortalTag permName={permission.name} />
+                              </div>
+                              <div className="mt-1">
+                                <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md shrink-0 inline-block">
+                                  ⭐ Recommended for navbar entry
+                                </span>
+                              </div>
+                              {permission.description ? (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                  {permission.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </label>
-                ))
+                  )}
+
+                  {otherAvailablePermissions.length > 0 && (
+                    <div className="space-y-1.5">
+                      {recommendedAvailablePermissions.length > 0 && (
+                        <p className="text-xs font-semibold text-white dark:text-slate-400 px-1 pt-2">
+                          Other Available Permissions
+                        </p>
+                      )}
+                      <div className="space-y-1.5">
+                        {otherAvailablePermissions.map((permission) => (
+                          <label
+                            key={permission.id}
+                            className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 px-3 py-2.5 cursor-pointer hover:bg-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/[0.08]"
+                          >
+                            <Checkbox
+                              className={assignCheckboxClass}
+                              checked={assignSelectedIds.includes(permission.id)}
+                              onCheckedChange={() => toggleAssignSelection(permission.id)}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-slate-950 dark:text-slate-100 truncate">
+                                  {permission.name}
+                                </p>
+                                <PortalTag permName={permission.name} />
+                              </div>
+                              {isNavbarPermission(permission.name) && (
+                                <div className="mt-1">
+                                  <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md shrink-0 inline-block">
+                                    Required for navbar entry
+                                  </span>
+                                </div>
+                              )}
+                              {permission.description ? (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                  {permission.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -1056,7 +1226,7 @@ export default function Page() {
                 disabled={deleting}
                 className={
                   deleteTarget?.type === "permission-unassign" ||
-                  deleteTarget?.type === "permission-bulk-unassign"
+                    deleteTarget?.type === "permission-bulk-unassign"
                     ? "bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
                     : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
                 }
@@ -1064,7 +1234,7 @@ export default function Page() {
                 {deleting
                   ? "Processing…"
                   : deleteTarget?.type === "permission-unassign" ||
-                      deleteTarget?.type === "permission-bulk-unassign"
+                    deleteTarget?.type === "permission-bulk-unassign"
                     ? "Remove"
                     : "Delete"}
               </AlertDialogAction>

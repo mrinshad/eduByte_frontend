@@ -474,24 +474,20 @@ export default function Page() {
                 </CardDescription>
               </div>
 
-              <Dialog open={yearDialogOpen} onOpenChange={setYearDialogOpen}>
-                <Tooltip>
-                  <PermissionGate permission="academics.switchAcademicYearButton">
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      
+              <PermissionGate permission="academics.switchAcademicYearButton">
+                <Dialog open={yearDialogOpen} onOpenChange={setYearDialogOpen}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
                         <Button variant="outline" size="icon" className="rounded-xl">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                      
-                    </DialogTrigger>
-                    
-                  </TooltipTrigger>
-                  </PermissionGate>
-                  <TooltipContent>
-                    <p>Switch Academic Year</p>
-                  </TooltipContent>
-                </Tooltip>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Switch Academic Year</p>
+                    </TooltipContent>
+                  </Tooltip>
 
                 <DialogContent showCloseButton={false} className="sm:max-w-2xl text-slate-950 dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
                   <DialogHeader>
@@ -718,13 +714,14 @@ export default function Page() {
                     )}
                   </div>
 
-                  <DialogFooter>
-                    <Button variant="outline" className='text-white' onClick={() => setYearDialogOpen(false)}>
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button variant="outline" className='text-white' onClick={() => setYearDialogOpen(false)}>
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
 
               <Dialog open={createYearOpen} onOpenChange={setCreateYearOpen}>
                 <DialogContent className="sm:max-w-xl text-slate-950 dark:bg-slate-900 dark:text-slate-50 [&>button:last-child]:hidden">

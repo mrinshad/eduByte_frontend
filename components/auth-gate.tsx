@@ -66,8 +66,8 @@ export function AuthGate({ area, children }: AuthGateProps) {
             reason: !role
               ? "Your account does not have any system role assigned."
               : permissions.length === 0
-              ? "Your assigned role has no active permissions."
-              : `Your account role '${role}' does not have permissions to access the ${area} portal area.`,
+                ? "Your assigned role has no active permissions."
+                : `Your account role '${role}' does not have permissions to access the ${area} portal area.`,
           })
         }
         return
