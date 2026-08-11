@@ -245,3 +245,18 @@ export async function generateFeeCharges(academicYearId: string) {
 
   return payload.data ?? null;
 }
+
+export type CatchUpFeeGenerationResult = {
+  academicYearId: string;
+  academicYearName: string;
+  catchUpChargesGenerated: number;
+};
+
+export async function generateCatchUpFeeCharges(academicYearId: string) {
+  const payload = await postStudentChargeAction<CatchUpFeeGenerationResult>(
+    "/api/stdcharge/generate-catchup",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
