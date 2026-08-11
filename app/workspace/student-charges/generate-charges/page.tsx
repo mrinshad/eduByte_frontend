@@ -247,6 +247,36 @@ export default function FeeGenerationPage() {
     }
   }
 
+  async function handleGenerateCatchUpCharges() {
+    if (!activeAcademicYearId) return;
+
+    if (generateLockRef.current) {
+      toast.warning("Fee generation is already in progress. Please wait.");
+      return;
+    }
+
+    try {
+      generateLockRef.current = true;
+      setIsGeneratingCatchUp(true);
+
+      const result = await generateCatchUpFeeCharges(activeAcademicYearId);
+      if (!result) {
+        throw new Error("Catch-up generation response not found");
+      }
+
+      toast.success(
+        `Generated ${result.catchUpChargesGenerated} catch-up charge(s) for newly enrolled students.`
+      );
+
+      await loadPreviewForAcademicYear(activeAcademicYearId);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      generateLockRef.current = false;
+      setIsGeneratingCatchUp(false);
+    }
+  }
+
   function openGenerateDialog() {
     if (!preview) {
       toast.warning("Preview is not loaded yet.");
@@ -588,16 +618,26 @@ export default function FeeGenerationPage() {
           {/* Catch-Up List for Newly Enrolled Students (1 Row Per Student) */}
           {groupedCatchUpStudents.length > 0 && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <h2 className="text-sm font-semibold text-slate-950 dark:text-amber-100">
                     Newly Enrolled Students Catch-Up Fees ({groupedCatchUpStudents.length} Student{groupedCatchUpStudents.length > 1 ? "s" : ""})
                   </h2>
                 </div>
-                <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                  Missing charges for enrollment month
-                </span>
+                <Button
+                  size="sm"
+                  onClick={handleGenerateCatchUpCharges}
+                  disabled={isGeneratingCatchUp || isGenerating || isLoadingPreview}
+                  className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 text-xs font-semibold h-8"
+                >
+                  {isGeneratingCatchUp ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Generate Catch-Up Fees
+                </Button>
               </div>
               <p className="text-xs text-slate-600 dark:text-amber-200/80">
                 These students enrolled mid-year after batch fee generation ran. Missing charges for their enrollment month will be generated now.
