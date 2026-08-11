@@ -411,7 +411,7 @@ export default function Page() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                         </PermissionGate>
-                        <PermissionGate permission="satff.deleteStaffButton">
+                        <PermissionGate permission="staff.deleteStaffButton">
                         <Button
                           variant="ghost"
                           size="icon"

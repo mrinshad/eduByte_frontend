@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
     ArrowLeft,
     ArrowRight,
@@ -482,6 +483,7 @@ export default function ExpenseSummaryPage() {
 </td>
                                                 <td className="px-4 py-2.5 sm:px-5">
                                                     <div className="flex items-center justify-center gap-1">
+                                                        <PermissionGate permission="expensesummary.editExpenseButton">
                                                         <Button
                                                             size="icon"
                                                             variant="ghost"
@@ -491,6 +493,8 @@ export default function ExpenseSummaryPage() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        </PermissionGate>
+                                                        <PermissionGate permission="expensesummary.deleteExpenseButton">
                                                         <Button
                                                             size="icon"
                                                             variant="ghost"
@@ -500,6 +504,7 @@ export default function ExpenseSummaryPage() {
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        </PermissionGate>
                                                     </div>
                                                 </td>
                                             </tr>
