@@ -476,15 +476,18 @@ export default function Page() {
 
               <Dialog open={yearDialogOpen} onOpenChange={setYearDialogOpen}>
                 <Tooltip>
+                  <PermissionGate permission="academics.switchAcademicYearButton">
                   <TooltipTrigger asChild>
                     <DialogTrigger asChild>
-                      <PermissionGate permission="academics.switchAcademicYearButton">
+                      
                         <Button variant="outline" size="icon" className="rounded-xl">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                      </PermissionGate>
+                      
                     </DialogTrigger>
+                    
                   </TooltipTrigger>
+                  </PermissionGate>
                   <TooltipContent>
                     <p>Switch Academic Year</p>
                   </TooltipContent>
@@ -978,8 +981,9 @@ export default function Page() {
                           : `${selectedClass.name} divisions are shown here.`}
                   </CardDescription>
                 </div>
-
+                      <PermissionGate permission="academics.addDivisionButton">
                 <AddAction onAdd={() => openDivisionDialog("add")} disabled={isInitialLoading} />
+                  </PermissionGate>
               </CardHeader>
 
               <CardContent
@@ -1010,11 +1014,11 @@ export default function Page() {
                 ) : selectedDivisions.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
                     <p className={`text-sm font-medium ${titleTextClass}`}>No divisions yet</p>
-                    <PermissionGate permission="academics.addDivisionButton">
+                    
                       <Button className="mt-4 rounded-xl" onClick={() => openDivisionDialog("add")}>
                         Add division
                       </Button>
-                    </PermissionGate>
+                    
                   </div>
                 ) : (
                   selectedDivisions.map((division) => {
