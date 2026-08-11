@@ -40,11 +40,15 @@ function formatCurrency(value?: number) {
   return `₹${(value ?? 0).toLocaleString("en-IN")}`;
 }
 
-const statusStyles: Record<StudentCharge["status"], string> = {
+const statusStyles: Record<string, string> = {
   PAID:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium",
   PARTIAL:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium",
+  PARTIALLY_PAID:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium",
+  OVERDUE:
+    "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-300 font-semibold",
   PENDING:
     "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400 font-medium",
 };
