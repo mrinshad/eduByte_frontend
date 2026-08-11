@@ -22,8 +22,9 @@
     generateFeeCharges,
   } from "@/lib/services/studentCharges";
 
-  function formatCurrency(value: number) {
-    return `\u20b9${value.toLocaleString("en-IN")}`;
+  function formatCurrency(value?: number | null) {
+    const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
+    return `\u20b9${safeValue.toLocaleString("en-IN")}`;
   }
 
   function getMonthName(month: number) {
