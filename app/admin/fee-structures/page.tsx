@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Eye,
   Plus,
@@ -196,7 +197,7 @@ export default function Page() {
                 </p>
               </div>
             </div>
-
+            <PermissionGate permission="feestuctures.createFeeStuctures">
             <Button
               className="w-full bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto"
               onClick={() => router.push("/admin/fee-structures/createFee")}
@@ -204,6 +205,7 @@ export default function Page() {
               <Plus className="mr-2 h-4 w-4" />
               Create Fee Structure
             </Button>
+            </PermissionGate>
           </div>
 
           {/* Search + filters row */}
@@ -369,6 +371,7 @@ export default function Page() {
                     <TableCell className="px-4 sm:px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {/* View */}
+                        <PermissionGate permission="feestuctures.viewFeesturcturesButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -377,8 +380,10 @@ export default function Page() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
 
                         {/* Edit */}
+                        <PermissionGate permission="feestuctures.editFeesturcturesButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -387,8 +392,10 @@ export default function Page() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
 
                         {/* Delete */}
+                        <PermissionGate permission="feestuctures.deleteFeesturcturesButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -403,6 +410,7 @@ export default function Page() {
                             : <Trash2 className="h-4 w-4" />
                           }
                         </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>
