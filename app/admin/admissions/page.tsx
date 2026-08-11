@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Search,
   Eye,
@@ -129,6 +130,7 @@ export default function StudentAdmissionListPage() {
               className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
+          <PermissionGate permission="admissions.newAdmissionButton">
           <Button
             className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/admissions/createAdmission")}
@@ -136,6 +138,7 @@ export default function StudentAdmissionListPage() {
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
             New Admission
           </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -250,6 +253,7 @@ export default function StudentAdmissionListPage() {
 
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <PermissionGate permission="admissions.viewAdmissionButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -259,7 +263,8 @@ export default function StudentAdmissionListPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-
+                        </PermissionGate>
+                        <PermissionGate permission="admissions.editAdmissionButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -269,7 +274,8 @@ export default function StudentAdmissionListPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-
+                        </PermissionGate>
+                        <PermissionGate permission="admissions.deleteAdmissionButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -278,6 +284,7 @@ export default function StudentAdmissionListPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>
