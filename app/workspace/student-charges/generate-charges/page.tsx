@@ -545,6 +545,74 @@ export default function FeeGenerationPage() {
             </div>
           </div>
 
+          {/* Target Month Student List */}
+          {preview.targetMonthStudents && preview.targetMonthStudents.length > 0 && (
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 dark:border-sky-500/30 dark:bg-sky-950/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <h2 className="text-sm font-semibold text-slate-950 dark:text-sky-100">
+                    Students Scheduled for {monthLabel} Fee Generation ({preview.targetMonthStudents.length})
+                  </h2>
+                </div>
+                <span className="text-xs text-sky-700 dark:text-sky-300 font-medium">
+                  Includes new & existing active enrollees
+                </span>
+              </div>
+
+              <div className="rounded-xl border border-sky-500/20 bg-white dark:bg-slate-900/80 overflow-hidden shadow-sm">
+                <table className="w-full text-xs">
+                  <thead className="bg-sky-500/10 border-b border-sky-500/20">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
+                        Student Name
+                      </th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
+                        Admission No
+                      </th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-sky-200">
+                        Scheduled Fee Types
+                      </th>
+                      <th className="px-4 py-2.5 text-center font-semibold text-slate-800 dark:text-sky-200">
+                        Charges Count
+                      </th>
+                      <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-sky-200">
+                        Total Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {preview.targetMonthStudents.map((item) => (
+                      <tr key={item.enrollmentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="px-4 py-2.5 font-medium text-slate-950 dark:text-slate-100">
+                          {item.studentName}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-mono">
+                          {item.admissionNumber || "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
+                          <div className="flex flex-wrap gap-1">
+                            {item.chargeTypes.map((type) => (
+                              <span key={type} className="rounded bg-sky-100 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-1.5 py-0.5 text-[10px] font-medium text-sky-900 dark:text-sky-200">
+                                {type}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-center font-medium text-slate-700 dark:text-slate-300">
+                          {item.chargesCount}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-slate-950 dark:text-slate-100">
+                          {formatCurrency(item.totalAmount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Catch-Up List for Newly Enrolled Students */}
           {preview.catchUpCharges && preview.catchUpCharges.length > 0 && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
