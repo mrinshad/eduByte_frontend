@@ -452,7 +452,7 @@ export default function Page() {
     <TooltipProvider>
       <section className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <PageHeader title="Academic Profile" description="Manage academic years and related settings." />
+          <PageHeader title="Academic Setup" description="Manage academic years, classes, and section divisions." />
         </div>
 
         <div className="mt-6 space-y-6">

@@ -181,7 +181,7 @@ export default function Page() {
           </Button>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Students
+              Student Directory
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
               View and manage student records, enrollment details, and academic information.

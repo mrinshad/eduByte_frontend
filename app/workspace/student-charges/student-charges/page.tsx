@@ -129,11 +129,11 @@ export default function StudentChargesListPage() {
             </Button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-slate-950 dark:text-white break-words">
-                Student Charge
+                Fee Ledgers
               </h1>
 
               <p className="mt-1 text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">
-                Manage and view all student fee charges.
+                View individual fee billing statements and balance ledgers per student.
               </p>
             </div>
           </div>

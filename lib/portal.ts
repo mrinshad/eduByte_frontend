@@ -28,17 +28,17 @@ export type PortalNavGroup = {
 export const portalSections: PortalSection[] = [
   // --- ADMIN AREA ---
   { slug: "dashboard", label: "Dashboard", area: "admin", purpose: "Admin dashboard", group: "Admin" },
-  { slug: "academic-profile", label: "Academics", area: "admin", purpose: "Manage academic years", group: "Academic" },
-  { slug: "staff", label: "Staff", area: "admin", purpose: "Manage student master data", group: "Academic" },
+  { slug: "academic-profile", label: "Academic Setup", area: "admin", purpose: "Manage academic years, classes, and divisions", group: "Academic" },
+  { slug: "staff", label: "Staff Directory", area: "admin", purpose: "Manage staff master data", group: "Academic" },
 
-  { slug: "students", label: "Students", area: "admin", purpose: "Manage student master data", group: "Academic" },
+  { slug: "students", label: "Student Directory", area: "admin", purpose: "Manage student master data", group: "Academic" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", group: "Academic" },
 
-  { slug: "charge-types", label: "Charge Types", area: "admin", purpose: "Define charge types", group: "Fee Configuration" },
+  { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
 
-  { slug: "vehicles", label: "Vehicles", area: "admin", purpose: "Manage vehicles", group: "Transport Management" },
+  { slug: "vehicles", label: "Transport", area: "admin", purpose: "Manage transport vehicles", group: "Transport Management" },
 
   { slug: "users", label: "Users", area: "admin", purpose: "User accounts", group: "User Management" },
   { slug: "roles", label: "Roles & Permissions", area: "admin", purpose: "Role management", group: "User Management" },
@@ -71,23 +71,23 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-management", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", group: "Finance", subgroup: "Fee Management" },
   { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", group: "Finance", subgroup: "Accounting" },
 
-  { slug: "fine-management/student-fines", label: "Fines", area: "workspace", purpose: "Fine management", group: "Finance", subgroup: "Fee Management" },
+  { slug: "fine-management/student-fines", label: "Student Fines", area: "workspace", purpose: "Fine management", group: "Finance", subgroup: "Fee Management" },
 
-  { slug: "student-charges/student-charges", label: "Student Charge", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
-  { slug: "student-charges/generate-charges", label: "Fee Generation", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
+  { slug: "student-charges/student-charges", label: "Fee Ledgers", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
+  { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
   // Reports
-  { slug: "reports/vehicle-wise-report", label: "Vehicle Financial Report", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
-  { slug: "reports/vehicle-allocation", label: "Vehicle Allocation Report", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
+  { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
+  { slug: "reports/vehicle-allocation", label: "Bus Passenger Roster", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
 
   { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", group: "Report", subgroup: "Fee Collection" },
-  { slug: "reports/term-fee-collection-report", label: "Term Fee Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
-  { slug: "reports/daily-fee-collection", label: "Daily Fee Collection", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/term-fee-collection-report", label: "Term Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/daily-fee-collection", label: "Daily Receipts Register", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
 
-  { slug: "reports/student-outstanding", label: "Student Outstanding", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
+  { slug: "reports/student-outstanding", label: "Outstanding Fees", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
 
-  { slug: "reports/categories-by-expense", label: "Category wise ", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
-  { slug: "reports/expense-summary", label: "Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
+  { slug: "reports/categories-by-expense", label: "Expenses by Category", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
+  { slug: "reports/expense-summary", label: "Expense Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
