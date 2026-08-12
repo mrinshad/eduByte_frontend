@@ -97,6 +97,22 @@ export interface StudentPaymentTransaction {
   itemsCovered: string[];
 }
 
+export interface StudentFineItem {
+  id: string;
+  fineType: string;
+  amount: number;
+  paidAmount: number;
+  balance: number;
+  reason: string;
+  status: string;
+  isReversed: boolean;
+  studentChargeId?: string | null;
+  periodMonth?: number | null;
+  periodYear?: number | null;
+  chargeDescription?: string | null;
+  createdAt: string;
+}
+
 export interface StudentEnrollmentCharges {
   enrollmentId: string;
   academicYearId: string;
@@ -104,6 +120,7 @@ export interface StudentEnrollmentCharges {
   status: string;
   studentDetails: EnrollmentStudentDetails;
   charges: EnrollmentCharge[];
+  fines?: StudentFineItem[];
   transactions?: StudentPaymentTransaction[];
 }
 
