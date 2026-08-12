@@ -42,6 +42,8 @@ function formatCurrency(value?: number) {
 }
 
 const statusStyles: Record<string, string> = {
+  NOT_GENERATED:
+    "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 font-medium",
   PAID:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium",
   PARTIAL:
@@ -248,8 +250,8 @@ export default function StudentChargesListPage() {
                       </TableCell>
 
                       <TableCell className="px-6 py-4">
-                        <Badge variant="outline" className={statusStyles[charge.status]}>
-                          {charge.status}
+                        <Badge variant="outline" className={statusStyles[charge.status] ?? statusStyles.PENDING}>
+                          {charge.status ? charge.status.replace("_", " ") : "—"}
                         </Badge>
                       </TableCell>
 

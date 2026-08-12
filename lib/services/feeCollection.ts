@@ -22,7 +22,7 @@ export interface StudentFeeCollection {
   feeDue: number;
   fineDue: number;
   TotalDue: number;
-  status: "PAID" | "PENDING" | "PARTIAL";
+  status: "PAID" | "PENDING" | "PARTIAL" | "NOT_GENERATED" | "OVERDUE" | string;
 }
 
 export interface StudentDetailsResponse {
