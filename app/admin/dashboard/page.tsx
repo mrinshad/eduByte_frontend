@@ -31,6 +31,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { usePermission } from "@/hooks/usePermission"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   getAdminDashboardCards,
@@ -112,16 +114,16 @@ function StatCard({
 // (area: "admin") in lib/portal.ts.
 // ---------------------------------------------------------------------
 
-const quickActions: { href: string; label: string; Icon: LucideIcon }[] = [
-  { href: "/admin/admissions/createAdmission", label: "New Admission", Icon: UserPlus },
-  { href: "/admin/students/createStudent", label: "New Student", Icon: GraduationCap },
-  { href: "/admin/academic-profile", label: "Academic Profile", Icon: CalendarRange },
-  { href: "/admin/staff", label: "Staff", Icon: UserRound },
-  { href: "/admin/students", label: "Students", Icon: Users },
-  { href: "/admin/charge-types", label: "Charge Types", Icon: Tags },
-  { href: "/admin/fee-structures", label: "Fee Structures", Icon: Wallet },
-  { href: "/admin/accounts", label: "Accounts", Icon: Landmark },
-  { href: "/admin/vehicles", label: "Vehicles", Icon: Bus },
+const quickActions: { href: string; label: string; Icon: LucideIcon; permission: string }[] = [
+  { href: "/admin/admissions/createAdmission", label: "New Admission", Icon: UserPlus, permission: "admissions.newAdmissionButton" },
+  { href: "/admin/students/createStudent", label: "New Student", Icon: GraduationCap, permission: "students.createStudentButton" },
+  { href: "/admin/academic-profile", label: "Academic Profile", Icon: CalendarRange, permission: "academics.listOnNavbar" },
+  { href: "/admin/staff", label: "Staff", Icon: UserRound, permission: "staff.listOnNavbar" },
+  { href: "/admin/students", label: "Students", Icon: Users, permission: "students.listOnNavbar" },
+  { href: "/admin/charge-types", label: "Charge Types", Icon: Tags, permission: "chargetypes.listOnNavbar" },
+  { href: "/admin/fee-structures", label: "Fee Structures", Icon: Wallet, permission: "feestuctures.listOnNavbar" },
+  { href: "/admin/accounts", label: "Accounts", Icon: Landmark, permission: "accounts.listOnNavbar" },
+  { href: "/admin/vehicles", label: "Vehicles", Icon: Bus, permission: "vehicle.listOnNavbar" },
 ]
 
 // ---------------------------------------------------------------------
@@ -129,6 +131,7 @@ const quickActions: { href: string; label: string; Icon: LucideIcon }[] = [
 // ---------------------------------------------------------------------
 
 export default function Page() {
+  const { hasPermission } = usePermission()
   const [loadingCards, setLoadingCards] = useState(true)
   const [loadingDivisions, setLoadingDivisions] = useState(true)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -136,6 +139,11 @@ export default function Page() {
   const [cards, setCards] = useState<AdminDashboardCards>(EMPTY_CARDS)
   const [divisionCounts, setDivisionCounts] = useState<DivisionCountPoint[]>([])
   const [studentStatus, setStudentStatus] = useState<StudentStatusPoint[]>([])
+
+  const visibleQuickActions = useMemo(
+    () => quickActions.filter((act) => hasPermission(act.permission)),
+    [hasPermission]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -206,180 +214,184 @@ export default function Page() {
   )
 
   return (
-    <section className="space-y-6 px-1 py-1">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-          Admin Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Governance, structure, and system oversight.
-        </p>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard
-          label="Total Students"
-          value={(cards?.totalStudents ?? 0).toLocaleString()}
-          delta={cards?.totalStudentsDelta}
-          loading={loadingCards}
-          Icon={Users}
-        />
-        <StatCard
-          label="Total Staff"
-          value={(cards?.totalStaff ?? 0).toLocaleString()}
-          delta={cards?.totalStaffDelta}
-          loading={loadingCards}
-          Icon={UserRound}
-        />
-        <StatCard
-          label="Total Classes"
-          value={(cards?.totalClasses ?? 0).toLocaleString()}
-          loading={loadingCards}
-          Icon={Layers3}
-        />
-        <StatCard
-          label="Total Vehicles"
-          value={(cards?.totalVehicles ?? 0).toLocaleString()}
-          loading={loadingCards}
-          Icon={Bus}
-        />
-        <StatCard
-          label="Active Academic Year"
-          value={cards?.activeAcademicYear ?? "—"}
-          loading={loadingCards}
-          Icon={CalendarRange}
-        />
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Divisions per class */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Divisions per Class
-          </h2>
-
-          {loadingDivisions ? (
-            <div className="flex h-56 items-center justify-center text-slate-400">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : divisionCounts.length === 0 ? (
-            <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-              No classes set up yet.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={divisionCounts}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                  angle={divisionCounts.length > 6 ? -25 : 0}
-                  textAnchor={divisionCounts.length > 6 ? "end" : "middle"}
-                  height={divisionCounts.length > 6 ? 50 : 30}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => formatCompact(Number(v))}
-                  width={32}
-                />
-                <Tooltip
-                  formatter={(value) => {
-                    const n = Number(value)
-                    return [`${n} division${n === 1 ? "" : "s"}`, "Divisions"]
-                  }}
-                  contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
-                />
-                <Bar dataKey="divisions" fill={ACCENT} radius={[6, 6, 0, 0]} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+    <PermissionGate permission="admindashboard.listOnNavbar">
+      <section className="space-y-6 px-1 py-1">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+            Admin Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Governance, structure, and system oversight.
+          </p>
         </div>
 
-        {/* Student status */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Student Status
-          </h2>
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <StatCard
+            label="Total Students"
+            value={(cards?.totalStudents ?? 0).toLocaleString()}
+            delta={cards?.totalStudentsDelta}
+            loading={loadingCards}
+            Icon={Users}
+          />
+          <StatCard
+            label="Total Staff"
+            value={(cards?.totalStaff ?? 0).toLocaleString()}
+            delta={cards?.totalStaffDelta}
+            loading={loadingCards}
+            Icon={UserRound}
+          />
+          <StatCard
+            label="Total Classes"
+            value={(cards?.totalClasses ?? 0).toLocaleString()}
+            loading={loadingCards}
+            Icon={Layers3}
+          />
+          <StatCard
+            label="Total Vehicles"
+            value={(cards?.totalVehicles ?? 0).toLocaleString()}
+            loading={loadingCards}
+            Icon={Bus}
+          />
+          <StatCard
+            label="Active Academic Year"
+            value={cards?.activeAcademicYear ?? "—"}
+            loading={loadingCards}
+            Icon={CalendarRange}
+          />
+        </div>
 
-          {loadingStatus ? (
-            <div className="flex h-56 items-center justify-center text-slate-400">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : studentStatusTotal === 0 ? (
-            <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-              No student records yet.
-            </div>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie
-                    data={studentStatus}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={45}
-                    outerRadius={70}
-                    paddingAngle={2}
-                  >
-                    {studentStatus.map((entry, index) => (
-                      <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
+        {/* Charts */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Divisions per class */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 lg:col-span-2">
+            <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Divisions per Class
+            </h2>
+
+            {loadingDivisions ? (
+              <div className="flex h-56 items-center justify-center text-slate-400">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : divisionCounts.length === 0 ? (
+              <div className="flex h-56 items-center justify-center text-sm text-slate-400">
+                No classes set up yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={divisionCounts}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                    angle={divisionCounts.length > 6 ? -25 : 0}
+                    textAnchor={divisionCounts.length > 6 ? "end" : "middle"}
+                    height={divisionCounts.length > 6 ? 50 : 30}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => formatCompact(Number(v))}
+                    width={32}
+                  />
                   <Tooltip
-                    formatter={(value, name) => {
+                    formatter={(value) => {
                       const n = Number(value)
-                      return [`${n} student${n === 1 ? "" : "s"}`, String(name)]
+                      return [`${n} division${n === 1 ? "" : "s"}`, "Divisions"]
                     }}
                     contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
                   />
-                </PieChart>
+                  <Bar dataKey="divisions" fill={ACCENT} radius={[6, 6, 0, 0]} maxBarSize={28} />
+                </BarChart>
               </ResponsiveContainer>
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-                {studentStatus.map((entry, index) => (
-                  <span key={entry.name} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
-                    />
-                    {entry.name} ({entry.value})
-                  </span>
-                ))}
-              </div>
-              <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
-                {studentStatusTotal} students total
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
 
-      {/* Quick actions — compact chips */}
-      <div>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-          Quick Actions
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {quickActions.map(({ href, label, Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/50 dark:text-slate-300 dark:hover:bg-slate-800/60"
-            >
-              <Icon className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
-              {label}
-            </Link>
-          ))}
+          {/* Student status */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Student Status
+            </h2>
+
+            {loadingStatus ? (
+              <div className="flex h-56 items-center justify-center text-slate-400">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : studentStatusTotal === 0 ? (
+              <div className="flex h-56 items-center justify-center text-sm text-slate-400">
+                No student records yet.
+              </div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={studentStatus}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={2}
+                    >
+                      {studentStatus.map((entry, index) => (
+                        <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name) => {
+                        const n = Number(value)
+                        return [`${n} student${n === 1 ? "" : "s"}`, String(name)]
+                      }}
+                      contentStyle={{ borderRadius: 8, fontSize: 12, borderColor: "#e2e8f0" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+                  {studentStatus.map((entry, index) => (
+                    <span key={entry.name} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                      />
+                      {entry.name} ({entry.value})
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
+                  {studentStatusTotal} students total
+                </p>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </section>
+
+        {/* Quick actions — compact chips */}
+        {visibleQuickActions.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+              Quick Actions
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {visibleQuickActions.map(({ href, label, Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/50 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    </PermissionGate>
   )
 }

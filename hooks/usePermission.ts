@@ -94,6 +94,7 @@ export function usePermission(initialPermissions?: string[]) {
 
   return {
     can,
+    hasPermission: can,
     hasRole,
     user,
     permissions,

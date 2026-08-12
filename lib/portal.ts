@@ -109,7 +109,13 @@ export function normalizeRole(role?: string | null) {
   return (role || "").replace(/\s+/g, " ").trim().toUpperCase()
 }
 
-export function permissionForSlug(slug: string): string {
+export function permissionForSlug(slug: string, area?: PortalArea): string {
+  if (slug === "dashboard") {
+    if (area === "admin") return "admindashboard.listOnNavbar"
+    if (area === "workspace") return "workspacedashboard.listOnNavbar"
+    return "dashboard.listOnNavbar"
+  }
+
   const map: Record<string, string> = {
     "academic-profile": "academics.listOnNavbar",
     "staff": "staff.listOnNavbar",
@@ -119,6 +125,8 @@ export function permissionForSlug(slug: string): string {
     "fee-structures": "feestuctures.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
+    "users": "users.listOnNavbar",
+    "roles": "roles.listOnNavbar",
     "fee-management": "feecollection.listOnNavbar",
     "expense-management": "expense.listOnNavbar",
     "fine-management/student-fines": "fine.listOnNavbar",
@@ -160,9 +168,9 @@ export function canAccessPortalArea(area: PortalArea, permissions: string[] = []
     return normalizedRole === "STUDENT"
   }
 
-  const areaSections = portalSections.filter((s) => s.area === area && s.slug !== "dashboard")
+  const areaSections = portalSections.filter((s) => s.area === area)
   return areaSections.some((s) => {
-    const permKey = permissionForSlug(s.slug)
+    const permKey = permissionForSlug(s.slug, area)
     return checkPermission(permissions, permKey)
   })
 }
@@ -212,8 +220,8 @@ export function getRequiredPermissionsForArea(area: PortalArea): string[] {
   if (area === "student") {
     return ["STUDENT role", "*"]
   }
-  const areaSections = portalSections.filter((s) => s.area === area && s.slug !== "dashboard")
-  const requiredKeys = areaSections.map((s) => permissionForSlug(s.slug))
+  const areaSections = portalSections.filter((s) => s.area === area)
+  const requiredKeys = areaSections.map((s) => permissionForSlug(s.slug, area))
   return Array.from(new Set(requiredKeys))
 }
 

@@ -247,10 +247,10 @@ function SidebarBody({
 
   const isAllowed = React.useCallback(
     (item: PortalNavItem) => {
-      if (item.slug === "dashboard" || area === "student") {
+      if (area === "student") {
         return true
       }
-      const permKey = permissionForSlug(item.slug)
+      const permKey = permissionForSlug(item.slug, area)
       return checkPermission(permissions, permKey)
     },
     [area, permissions]
