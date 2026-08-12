@@ -8,16 +8,13 @@ import {
   Loader2,
   RefreshCw,
   AlertTriangle,
-  CheckCircle2,
   HelpCircle,
   ChevronDown,
   ChevronUp,
   Sparkles,
   Users,
   Calendar,
-  Receipt,
   IndianRupee,
-  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,7 +66,8 @@ export default function FeeGenerationPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showHowItWorks, setShowHowItWorks] = useState(true);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [activeTab, setActiveTab] = useState<"students" | "categories">("students");
 
   const generateLockRef = useRef(false);
 
@@ -98,8 +96,10 @@ export default function FeeGenerationPage() {
   const estimatedByType = useMemo(() => {
     if (!preview?.financialSummary?.byChargeType) return [];
 
-    return Object.entries(preview.financialSummary.byChargeType).sort((a, b) => b[1] - a[1]);
-  }, [preview]);
+    return Object.entries(preview.financialSummary.byChargeType).filter(
+      ([, amount]) => typeof amount === "number" && amount > 0
+    );
+  }, [preview?.financialSummary?.byChargeType]);
 
   const groupedCatchUpStudents = useMemo(() => {
     if (!preview?.catchUpCharges || !Array.isArray(preview.catchUpCharges)) return [];
@@ -111,7 +111,6 @@ export default function FeeGenerationPage() {
         admissionNumber: string;
         periodName: string;
         chargeTypes: string[];
-        chargesCount: number;
         totalAmount: number;
       }
     >();
@@ -120,24 +119,22 @@ export default function FeeGenerationPage() {
       const key = `${item.admissionNumber || item.studentName}-${item.periodName}`;
       if (!map.has(key)) {
         map.set(key, {
-          studentName: item.studentName,
-          admissionNumber: item.admissionNumber,
-          periodName: item.periodName,
+          studentName: item.studentName || "Student",
+          admissionNumber: item.admissionNumber || "—",
+          periodName: item.periodName || monthLabel,
           chargeTypes: [],
-          chargesCount: 0,
           totalAmount: 0,
         });
       }
-      const existing = map.get(key)!;
-      existing.chargesCount += 1;
-      existing.totalAmount += Number(item.amount) || 0;
-      if (!existing.chargeTypes.includes(item.chargeType)) {
-        existing.chargeTypes.push(item.chargeType);
+      const student = map.get(key)!;
+      if (item.chargeType && !student.chargeTypes.includes(item.chargeType)) {
+        student.chargeTypes.push(item.chargeType);
       }
+      student.totalAmount += item.amount || 0;
     }
 
     return Array.from(map.values());
-  }, [preview?.catchUpCharges]);
+  }, [preview?.catchUpCharges, monthLabel]);
 
   async function loadPreviewForAcademicYear(academicYearId: string) {
     const payload = await previewFeeGeneration(academicYearId);
@@ -198,82 +195,55 @@ export default function FeeGenerationPage() {
   }
 
   async function handleGenerateCharges() {
-    if (!activeAcademicYearId) return;
-
-    if (generateLockRef.current) {
-      toast.warning("Fee generation is already in progress. Please wait.");
+    if (!activeAcademicYearId) {
+      toast.error("Active Academic Year is missing.");
       return;
     }
 
+    if (!hasPendingGeneration) {
+      toast.warning("No pending charges available to generate for this target month.");
+      return;
+    }
+
+    if (generateLockRef.current || isGenerating) {
+      return;
+    }
+
+    generateLockRef.current = true;
+    setIsGenerating(true);
+
     try {
-      generateLockRef.current = true;
-      setIsGenerating(true);
-
-      const latestPreview = await previewFeeGeneration(activeAcademicYearId);
-      if (!latestPreview) {
-        throw new Error("Preview data not found");
-      }
-      setPreview(latestPreview);
-
-      const latestReadyToGenerate = Boolean(latestPreview.validation?.readyToGenerate);
-      const latestHasPendingGeneration =
-        latestReadyToGenerate && latestPreview.summary.chargesToGenerate > 0;
-
-      if (!latestHasPendingGeneration) {
-        const blockedByWindow = latestPreview.validation?.generationWindowAllowed === false;
-        toast.warning(
-          blockedByWindow
-            ? "Generation is currently locked to this month and next month only."
-            : "No new charges to generate for this month. Please refresh preview."
-        );
-        setConfirmOpen(false);
-        return;
-      }
-
       const result = await generateFeeCharges(activeAcademicYearId);
-      if (!result) {
-        throw new Error("Generation response not found");
+      if (result) {
+        setLastGenerationResult(result);
+        toast.success(
+          `Generated ${result.chargesGenerated} charge(s) for ${result.studentsProcessed} student(s)!`
+        );
       }
 
-      setLastGenerationResult(result);
-      toast.success("Student charges generated successfully");
-
-      await loadPreviewForAcademicYear(activeAcademicYearId);
       setConfirmOpen(false);
+      await loadPreviewForAcademicYear(activeAcademicYearId);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      const message = getErrorMessage(error);
+      toast.error(message);
     } finally {
-      generateLockRef.current = false;
       setIsGenerating(false);
+      generateLockRef.current = false;
     }
   }
 
   async function handleGenerateCatchUpCharges() {
     if (!activeAcademicYearId) return;
-
-    if (generateLockRef.current) {
-      toast.warning("Fee generation is already in progress. Please wait.");
-      return;
-    }
-
     try {
-      generateLockRef.current = true;
       setIsGeneratingCatchUp(true);
-
-      const result = await generateCatchUpFeeCharges(activeAcademicYearId);
-      if (!result) {
-        throw new Error("Catch-up generation response not found");
+      const res = await generateCatchUpFeeCharges(activeAcademicYearId);
+      if (res) {
+        toast.success(`Generated ${res.catchUpChargesGenerated} catch-up charge(s) for newly enrolled students!`);
       }
-
-      toast.success(
-        `Generated ${result.catchUpChargesGenerated} catch-up charge(s) for newly enrolled students.`
-      );
-
       await loadPreviewForAcademicYear(activeAcademicYearId);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
-      generateLockRef.current = false;
       setIsGeneratingCatchUp(false);
     }
   }
@@ -297,8 +267,8 @@ export default function FeeGenerationPage() {
   }
 
   return (
-    <section className="w-full px-6 py-4 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+    <section className="w-full px-6 py-4 space-y-5 max-w-7xl mx-auto">
+      {/* ── Header & Action Bar ── */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -310,11 +280,11 @@ export default function FeeGenerationPage() {
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 Generate Fees
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Monthly fee batch generation & mid-year student charge catch-up.
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Preview and run recurring batch fee generation for your school.
               </p>
             </div>
           </div>
@@ -325,89 +295,29 @@ export default function FeeGenerationPage() {
                 variant="outline"
                 onClick={handleRefreshPreview}
                 disabled={isLoadingPreview || isGenerating}
-                className="text-slate-700 dark:text-slate-200"
+                className="text-slate-700 dark:text-slate-200 text-xs font-medium h-9"
               >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingPreview ? "animate-spin" : ""}`} />
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isLoadingPreview ? "animate-spin" : ""}`} />
                 Refresh Preview
               </Button>
             </PermissionGate>
             <PermissionGate permission="feegeneration.generateChargesButton">
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium text-xs h-9"
                 onClick={openGenerateDialog}
                 disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
               >
-                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Generate Charges
+                {isGenerating ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Generate Charges for {monthLabel}
               </Button>
             </PermissionGate>
           </div>
         </div>
       </div>
 
-      {/* How Fee Generation Works Banner (Easy Instructions) */}
-      <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 dark:border-sky-500/30 dark:bg-sky-500/10">
-        <div
-          className="flex items-center justify-between cursor-pointer select-none"
-          onClick={() => setShowHowItWorks(!showHowItWorks)}
-        >
-          <div className="flex items-center gap-2.5">
-            <HelpCircle className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0" />
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-sky-200">
-              How Fee Generation Works (Simple Guide)
-            </h2>
-          </div>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-sky-700 dark:text-sky-300">
-            {showHowItWorks ? (
-              <>
-                Hide Instructions <ChevronUp className="ml-1 h-3.5 w-3.5" />
-              </>
-            ) : (
-              <>
-                Show Instructions <ChevronDown className="ml-1 h-3.5 w-3.5" />
-              </>
-            )}
-          </Button>
-        </div>
-
-        {showHowItWorks && (
-          <div className="mt-3 pt-3 border-t border-sky-500/15 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-sky-200/90 leading-relaxed">
-            <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-              <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
-                  1. Automatic Monthly Order
-                </strong>
-                Fees are created month-by-month in order (June → July → August...). You don't need to select months manually.
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-              <Users className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
-                  2. Fair Billing for New Students
-                </strong>
-                When a student joins mid-year (e.g. in September), fees start from their join month. They are never billed for months before they joined.
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-              <Sparkles className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
-                  3. Automatic Catch-Up Fees
-                </strong>
-                If a new student joins after a month was already generated, their missing fee for that month is automatically added to this preview to generate now.
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Loading Skeleton */}
       {isLoadingPreview && !preview ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50">
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50">
           <div className="flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
             <Loader2 className="h-8 w-8 animate-spin text-[#556043]" />
             <p className="text-sm font-medium">Calculating fee generation preview...</p>
@@ -417,7 +327,7 @@ export default function FeeGenerationPage() {
 
       {/* Error state */}
       {!isLoadingPreview && loadError && !preview ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700 dark:border-red-800/60 dark:bg-red-950/20 dark:text-red-300">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700 dark:border-red-800/60 dark:bg-red-950/20 dark:text-red-300">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4" />
@@ -433,199 +343,83 @@ export default function FeeGenerationPage() {
         </div>
       ) : null}
 
-      {/* Current & Upcoming Month Status Section */}
-      {preview && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300" />
-              <span>Academic Month Progress & Status</span>
-            </h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {preview.academicYearName}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* 1. Previous Generated Month */}
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/20 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Previous Generated Month
-                </span>
-                <span className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded">
-                  Completed
-                </span>
-              </div>
-              <p className="text-lg font-bold text-slate-950 dark:text-white pt-1">
-                {preview.monthStatus?.lastGeneratedPeriod ?? "None yet"}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {preview.monthStatus?.lastGeneratedMonthNumber ? `Academic Month ${preview.monthStatus.lastGeneratedMonthNumber} of ${preview.monthStatus.totalAcademicMonths}` : "No months generated so far"}
-              </p>
-            </div>
-
-            {/* 2. Current Target Month */}
-            <div className="rounded-xl border-2 border-[#556043]/50 bg-[#556043]/10 p-4 dark:border-slate-300/40 dark:bg-slate-800/60 space-y-1 relative shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#556043] dark:text-slate-200 flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5 text-[#556043] dark:text-slate-200" /> Current Target Month
-                </span>
-                <span className="text-[10px] font-bold text-slate-950 dark:text-slate-900 bg-[#556043]/20 dark:bg-slate-200 px-2 py-0.5 rounded">
-                  READY TO GENERATE
-                </span>
-              </div>
-              <p className="text-lg font-bold text-slate-950 dark:text-white pt-1">
-                {preview.monthStatus?.currentTargetPeriod ?? monthLabel}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                Academic Month {preview.targetAcademicMonth} of {preview.monthStatus?.totalAcademicMonths ?? 12}
-              </p>
-            </div>
-
-            {/* 3. Upcoming Month */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40 space-y-1 opacity-85">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <Lock className="h-3.5 w-3.5" /> Upcoming Month
-                </span>
-                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                  Locked
-                </span>
-              </div>
-              <p className="text-lg font-semibold text-slate-800 dark:text-slate-200 pt-1">
-                {preview.monthStatus?.upcomingPeriod ?? "Next Month"}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {preview.monthStatus?.upcomingMonthNumber ? `Academic Month ${preview.monthStatus.upcomingMonthNumber} of ${preview.monthStatus.totalAcademicMonths}` : "End of Academic Year"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Content */}
+      {/* Main Preview Content */}
       {preview ? (
         <>
-          {/* Status Alert Banner */}
-          <div
-            className={`rounded-2xl p-4 border flex items-start gap-3 ${hasPendingGeneration
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200"
-                : generationLocked
-                  ? "border-rose-500/30 bg-rose-500/10 text-rose-950 dark:text-rose-200"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-200"
-              }`}
-          >
-            {hasPendingGeneration ? (
-              <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            ) : (
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-semibold">
-                  {hasPendingGeneration
-                    ? `Ready to generate for ${monthLabel}`
-                    : generationLocked
-                      ? `Generation locked for ${monthLabel}`
-                      : `No pending generation for ${monthLabel}`}
-                </p>
-                {catchUpCount > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-500/30">
-                    <Sparkles className="h-3 w-3" /> Includes {catchUpCount} catch-up charge(s)
-                  </span>
-                )}
+          {/* ── Concise Executive Summary Bar (3 Cards) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Card 1: Target Month */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300" />
+                  Target Billing Month
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    hasPendingGeneration
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300"
+                      : generationLocked
+                      ? "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300"
+                      : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {hasPendingGeneration ? "READY TO GENERATE" : generationLocked ? "LOCKED" : "COMPLETED"}
+                </span>
               </div>
-              <p className="mt-1 text-xs leading-normal opacity-90">
-                {hasPendingGeneration
-                  ? preview.instructions ||
-                  `Ready to generate ${preview.summary.chargesToGenerate} charge(s) for ${monthLabel}. Total estimated amount: ${formatCurrency(preview.financialSummary.total)}.`
-                  : generationLocked
-                    ? "This month is outside the allowed generation window."
-                    : "All active student charges for this target month have already been generated."}
+              <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">{monthLabel}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Academic Month {preview.targetAcademicMonth} of {preview.monthStatus?.totalAcademicMonths ?? 12} ({preview.academicYearName})
+              </p>
+            </div>
+
+            {/* Card 2: Student & Charge Count */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  Students & Charges
+                </span>
+                <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                  {preview.summary.activeStudents} Active Students
+                </span>
+              </div>
+              <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">
+                {preview.summary.chargesToGenerate} Charge{preview.summary.chargesToGenerate !== 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {catchUpCount > 0 ? `Includes ${catchUpCount} mid-year catch-up charge(s)` : "Standard monthly billing run"}
+              </p>
+            </div>
+
+            {/* Card 3: Total Estimated Amount */}
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/20 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                  <IndianRupee className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                  Total Estimated Billing
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded">
+                  SUM
+                </span>
+              </div>
+              <p className="text-xl font-bold text-emerald-950 dark:text-emerald-100 pt-0.5 truncate">
+                {formatCurrency(preview.financialSummary.total)}
+              </p>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                Total estimated revenue to be billed
               </p>
             </div>
           </div>
 
-          {/* Key Metrics Cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 flex items-center gap-3">
-              <div className="rounded-lg bg-sky-500/10 p-2.5 text-sky-600 dark:text-sky-400 shrink-0">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Target Period
-                </p>
-                <p className="text-base font-semibold text-slate-950 dark:text-white truncate">
-                  {monthLabel}
-                </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  {preview.academicYearName}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-500/10 p-2.5 text-indigo-600 dark:text-indigo-400 shrink-0">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Active Students
-                </p>
-                <p className="text-base font-semibold text-slate-950 dark:text-white">
-                  {preview.summary.activeStudents}
-                </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  Total active enrollments
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 flex items-center gap-3">
-              <div className="rounded-lg bg-amber-500/10 p-2.5 text-amber-600 dark:text-amber-400 shrink-0">
-                <Receipt className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Charges To Generate
-                </p>
-                <p className="text-base font-semibold text-slate-950 dark:text-white">
-                  {preview.summary.chargesToGenerate}
-                </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  {catchUpCount > 0 ? `Includes ${catchUpCount} catch-up` : "Due this cycle"}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/20 flex items-center gap-3">
-              <div className="rounded-lg bg-emerald-500/20 p-2.5 text-emerald-700 dark:text-emerald-300 shrink-0">
-                <IndianRupee className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                  Total Estimated Amount
-                </p>
-                <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 truncate">
-                  {formatCurrency(preview.financialSummary.total)}
-                </p>
-                <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
-                  Estimated generation total
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Catch-Up List for Newly Enrolled Students (1 Row Per Student) */}
+          {/* ── Mid-Year Catch-Up Section (If Newly Enrolled Students Exist) ── */}
           {groupedCatchUpStudents.length > 0 && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 dark:border-amber-500/30 dark:bg-amber-950/10 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <h2 className="text-sm font-semibold text-slate-950 dark:text-amber-100">
-                    Newly Enrolled Students Catch-Up Fees ({groupedCatchUpStudents.length} Student{groupedCatchUpStudents.length > 1 ? "s" : ""})
+                    Mid-Year Enrolled Students Catch-Up Fees ({groupedCatchUpStudents.length} Student{groupedCatchUpStudents.length > 1 ? "s" : ""})
                   </h2>
                 </div>
                 <Button
@@ -642,27 +436,24 @@ export default function FeeGenerationPage() {
                   Generate Catch-Up Fees
                 </Button>
               </div>
-              <p className="text-xs text-slate-600 dark:text-amber-200/80">
-                These students enrolled mid-year after batch fee generation ran. Missing charges for their enrollment month will be generated now.
-              </p>
 
               <div className="rounded-xl border border-amber-500/20 bg-white dark:bg-slate-900/80 overflow-hidden shadow-sm">
                 <table className="w-full text-xs">
                   <thead className="bg-amber-500/10 border-b border-amber-500/20">
                     <tr>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                      <th className="px-4 py-2 text-left font-semibold text-slate-800 dark:text-amber-200">
                         Student Name
                       </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                      <th className="px-4 py-2 text-left font-semibold text-slate-800 dark:text-amber-200">
                         Admission No
                       </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                      <th className="px-4 py-2 text-left font-semibold text-slate-800 dark:text-amber-200">
                         Pending Fee Types
                       </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                      <th className="px-4 py-2 text-left font-semibold text-slate-800 dark:text-amber-200">
                         Target Period
                       </th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-amber-200">
+                      <th className="px-4 py-2 text-right font-semibold text-slate-800 dark:text-amber-200">
                         Total Amount
                       </th>
                     </tr>
@@ -699,65 +490,222 @@ export default function FeeGenerationPage() {
             </div>
           )}
 
-          {/* Breakdown Table */}
+          {/* ── Main Preview Data Section with View Tabs ── */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
-            <h2 className="text-sm font-semibold text-slate-950 dark:text-white">
-              Fee Breakdown by Charge Type
-            </h2>
-
-            {estimatedByType.length > 0 ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-200">
-                        Charge Type
-                      </th>
-                      <th className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-200">
-                        Frequency
-                      </th>
-                      <th className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-200">
-                        Total Charges
-                      </th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200">
-                        Estimated Total Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {estimatedByType.map(([name, amount]) => {
-                      const count = preview.chargesBreakdown[name] ?? 0;
-                      const freq = preview.frequencyBreakdown[name] || "MONTHLY";
-                      return (
-                        <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-                            {name}
-                          </td>
-                          <td className="px-4 py-3 text-center text-xs text-slate-500 dark:text-slate-400">
-                            <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-medium text-slate-700 dark:text-slate-300">
-                              {freq}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center text-slate-700 dark:text-slate-300">
-                            {count}
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-slate-100">
-                            {formatCurrency(amount)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="text-base font-semibold text-slate-950 dark:text-white">
+                  Preview Charges ({monthLabel})
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Review student-wise charges before generating batch fees.
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-slate-500 text-center py-4">
-                No charges due to be generated for this cycle.
-              </p>
+
+              {/* View Mode Toggle Tabs */}
+              <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("students")}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                    activeTab === "students"
+                      ? "bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
+                >
+                  By Student ({preview.targetMonthStudents?.length ?? 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("categories")}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                    activeTab === "categories"
+                      ? "bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
+                >
+                  By Fee Category ({estimatedByType.length})
+                </button>
+              </div>
+            </div>
+
+            {/* TAB 1: By Student (Clean 1 Row Per Student Table) */}
+            {activeTab === "students" && (
+              <>
+                {preview.targetMonthStudents && preview.targetMonthStudents.length > 0 ? (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-200">
+                            Student Name
+                          </th>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-200">
+                            Admission No
+                          </th>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-200">
+                            Fee Items
+                          </th>
+                          <th className="px-4 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200">
+                            Total Amount
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {preview.targetMonthStudents.map((s) => (
+                          <tr key={s.enrollmentId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                              {s.studentName}
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {s.admissionNumber || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                              <div className="flex flex-wrap gap-1">
+                                {s.chargeTypes.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-300"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-slate-100">
+                              {formatCurrency(s.totalAmount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 text-center py-6">
+                    No charges due to be generated for {monthLabel}.
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* TAB 2: By Fee Category */}
+            {activeTab === "categories" && (
+              <>
+                {estimatedByType.length > 0 ? (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-200">
+                            Fee Category
+                          </th>
+                          <th className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-200">
+                            Frequency
+                          </th>
+                          <th className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-200">
+                            Total Students
+                          </th>
+                          <th className="px-4 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200">
+                            Total Estimated Amount
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {estimatedByType.map(([name, amount]) => {
+                          const count = preview.chargesBreakdown[name] ?? 0;
+                          const freq = preview.frequencyBreakdown[name] || "MONTHLY";
+                          return (
+                            <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                              <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                                {name}
+                              </td>
+                              <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
+                                <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-300">
+                                  {freq}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center font-medium text-slate-700 dark:text-slate-300">
+                                {count}
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-slate-100">
+                                {formatCurrency(amount)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 text-center py-6">
+                    No fee category breakdown available.
+                  </p>
+                )}
+              </>
             )}
           </div>
 
-          {/* Warnings */}
+          {/* ── Collapsible How Fee Generation Works Instructions ── */}
+          <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 dark:border-sky-500/30 dark:bg-sky-500/10">
+            <div
+              className="flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setShowHowItWorks(!showHowItWorks)}
+            >
+              <div className="flex items-center gap-2.5">
+                <HelpCircle className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <h2 className="text-xs font-semibold text-slate-900 dark:text-sky-200">
+                  How Fee Generation Works (Click to View Guide)
+                </h2>
+              </div>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-sky-700 dark:text-sky-300">
+                {showHowItWorks ? (
+                  <>
+                    Hide <ChevronUp className="ml-1 h-3.5 w-3.5" />
+                  </>
+                ) : (
+                  <>
+                    Show Guide <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {showHowItWorks && (
+              <div className="mt-3 pt-3 border-t border-sky-500/15 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-sky-200/90 leading-relaxed">
+                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
+                  <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                      1. Automatic Monthly Order
+                    </strong>
+                    Fees are created month-by-month in order (June → July → August...). You don't need to select months manually.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
+                  <Users className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                      2. Fair Billing for New Students
+                    </strong>
+                    When a student joins mid-year (e.g. in September), fees start from their join month. They are never billed for months before they joined.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
+                  <Sparkles className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                      3. Automatic Catch-Up Fees
+                    </strong>
+                    If a new student joins after a month was already generated, their missing fee for that month is automatically added to this preview to generate now.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* System Alerts */}
           {warningItems.length > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/60 dark:bg-amber-950/20 space-y-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300">
@@ -777,8 +725,8 @@ export default function FeeGenerationPage() {
 
           {/* Last Generation Results */}
           {lastGenerationResult && (
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 dark:border-emerald-500/30 dark:bg-emerald-950/10 space-y-3">
-              <h2 className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/10 space-y-3">
+              <h2 className="text-xs font-semibold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
                 Latest Generation Result
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs">
