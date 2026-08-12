@@ -4,6 +4,7 @@ import * as React from "react"
 import { toast } from "sonner"
 import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { canAccessPortalArea, getPermissionPortal, getMissingNavbarPermissionFor, isNavbarPermission, hasOrphanedActionPermissions } from "@/lib/portal";
 
 import { cn } from "@/lib/utils"
@@ -147,19 +148,21 @@ function DeleteAction({
 function UnassignAction({ onUnassign }: { onUnassign: (e: React.MouseEvent) => void }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-500/10"
-          onClick={(e) => {
-            e.stopPropagation()
-            onUnassign(e)
-          }}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </TooltipTrigger>
+      <PermissionGate permission="roles.removePermission">
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-500/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              onUnassign(e)
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+      </PermissionGate>
       <TooltipContent>
         <p>Remove from role</p>
       </TooltipContent>
@@ -581,14 +584,16 @@ export default function Page() {
     <TooltipProvider>
       <section className="px-4 sm:px-6 py-2 flex flex-col h-[calc(100vh-8rem)] max-h-[78vh] overflow-hidden">
         <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
-          <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push("/admin/permissions")}
+          <PermissionGate permission="role.createPermissionButton">
+            <Button
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={() => router.push("/admin/permissions")}
 
-          >
-            <Plus className="h-4 w-4" />
-            Create Permission
-          </Button>
+            >
+              <Plus className="h-4 w-4" />
+              Create Permission
+            </Button>
+          </PermissionGate>
 
         } />
 
@@ -610,8 +615,10 @@ export default function Page() {
                   </CardDescription>
                 </div>
               </div>
+              <PermissionGate permission="role.addRoleButton">
 
-              <AddAction onAdd={() => openRoleDialog("add")} />
+                <AddAction onAdd={() => openRoleDialog("add")} />
+              </PermissionGate>
             </CardHeader>
 
             <CardContent
@@ -700,28 +707,30 @@ export default function Page() {
                         <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                           {role.userCount} user{role.userCount === 1 ? "" : "s"}
                         </span>
-
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            openRoleDialog("edit", role)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <DeleteAction
-                          onDelete={() => requestDeleteRole(role)}
-                          disabled={role.userCount > 0}
-                          disabledReason={
-                            role.userCount > 0
-                              ? `${role.userCount} user${role.userCount === 1 ? "" : "s"} assigned`
-                              : undefined
-                          }
-                        />
+                        <PermissionGate permission="role.editRoleButton">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openRoleDialog("edit", role)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="role.deleteRoleButton">
+                          <DeleteAction
+                            onDelete={() => requestDeleteRole(role)}
+                            disabled={role.userCount > 0}
+                            disabledReason={
+                              role.userCount > 0
+                                ? `${role.userCount} user${role.userCount === 1 ? "" : "s"} assigned`
+                                : undefined
+                            }
+                          />
+                        </PermissionGate>
                       </div>
                     </div>
                   )
@@ -757,34 +766,38 @@ export default function Page() {
 
               <div className="flex items-center gap-2">
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="rounded-xl"
-                      onClick={openAssignDialog}
-                      disabled={!selectedRoleId || availablePermissions.length === 0}
-                    >
-                      <Link2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
+                  <PermissionGate permission="role.assignPermissionButton">
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-xl"
+                        onClick={openAssignDialog}
+                        disabled={!selectedRoleId || availablePermissions.length === 0}
+                      >
+                        <Link2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                  </PermissionGate>
                   <TooltipContent>
                     <p>Assign existing</p>
                   </TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={permissionSelectMode ? "secondary" : "outline"}
-                      size="icon"
-                      className="rounded-xl"
-                      onClick={togglePermissionSelectMode}
-                      disabled={!selectedRoleId || rolePermissions.length === 0}
-                    >
-                      {permissionSelectMode ? <X className="h-4 w-4" /> : <ListChecks className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
+                  <PermissionGate permission="role.editPermissionButton">
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={permissionSelectMode ? "secondary" : "outline"}
+                        size="icon"
+                        className="rounded-xl"
+                        onClick={togglePermissionSelectMode}
+                        disabled={!selectedRoleId || rolePermissions.length === 0}
+                      >
+                        {permissionSelectMode ? <X className="h-4 w-4" /> : <ListChecks className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                  </PermissionGate>
                   <TooltipContent>
                     <p>{permissionSelectMode ? "Cancel selection" : "Select multiple"}</p>
                   </TooltipContent>

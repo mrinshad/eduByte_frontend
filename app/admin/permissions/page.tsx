@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Key,
   Plus,
@@ -490,14 +491,15 @@ export default function PermissionsPage() {
               </DropdownMenu>
             )}
           </div>
-
-          <Button
-            className="rounded-xl gap-2 h-10 bg-amber-600 hover:bg-amber-700 text-white"
-            onClick={() => openDialog("add")}
-          >
-            <Plus className="h-4 w-4" />
-            Add Permission
-          </Button>
+          <PermissionGate permission="permission.addNewPermission">
+            <Button
+              className="rounded-xl gap-2 h-10 bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => openDialog("add")}
+            >
+              <Plus className="h-4 w-4" />
+              Add Permission
+            </Button>
+          </PermissionGate>
         </div>
 
         <Separator />
@@ -527,15 +529,17 @@ export default function PermissionsPage() {
               <X className="mr-1 h-3.5 w-3.5" />
               Clear
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-              onClick={requestBatchDelete}
-            >
-              <Trash2 className="mr-1 h-3.5 w-3.5" />
-              Delete
-            </Button>
+            <PermissionGate permission="permission.deleteAllPermission">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                onClick={requestBatchDelete}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Delete
+              </Button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -649,20 +653,20 @@ export default function PermissionsPage() {
                     {getInitials(permission.name)}
                   </div>
 
-                    {/* Name + Portal + Category */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate font-medium text-slate-950 dark:text-slate-100">
-                          {permission.name}
-                        </span>
-                        <PortalTag permName={permission.name} />
-                        <Badge
-                          variant="secondary"
-                          className="hidden rounded-md px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide sm:inline-flex bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                        >
-                          {category}
-                        </Badge>
-                      </div>
+                  {/* Name + Portal + Category */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium text-slate-950 dark:text-slate-100">
+                        {permission.name}
+                      </span>
+                      <PortalTag permName={permission.name} />
+                      <Badge
+                        variant="secondary"
+                        className="hidden rounded-md px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide sm:inline-flex bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      >
+                        {category}
+                      </Badge>
+                    </div>
                     <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400 md:hidden">
                       {permission.description || "No description"}
                     </p>
@@ -681,23 +685,27 @@ export default function PermissionsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
-                      onClick={() => openDialog("edit", permission)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/10"
-                      onClick={() => requestDelete(permission)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center gap-1 o group-hover:opacity-100 transition-opacity">
+                    <PermissionGate permission="permission.editPermission">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
+                        onClick={() => openDialog("edit", permission)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="permission.deletePermission">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/10"
+                        onClick={() => requestDelete(permission)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               )

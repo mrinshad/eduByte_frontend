@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Users,
   Plus,
@@ -541,14 +542,15 @@ export default function UsersPage() {
               Clear
             </Button>
           )}
-
-          <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => openDialog("add")}
-          >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Add User
-          </Button>
+          <PermissionGate permission="user.createNewUserButton">
+            <Button
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={() => openDialog("add")}
+            >
+              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              Add User
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -793,31 +795,38 @@ export default function UsersPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1   transition-opacity w-24 justify-end">
-                    <Link href={`/admin/users/view?id=${user.id}`}>
+                    <PermissionGate permission="user.viewButton">
+                      <Link href={`/admin/users/view?id=${user.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-300 dark:hover:bg-sky-500/10"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                      </Link>
+                    </PermissionGate>
+                    <PermissionGate permission="user.editButton">
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-300 dark:hover:bg-sky-500/10"
+                        className="rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
+                        onClick={() => openDialog("edit", user)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
-                      onClick={() => openDialog("edit", user)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/10"
-                      onClick={() => requestDelete(user)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="user.deleteButton">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/10"
+                        onClick={() => requestDelete(user)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               )
