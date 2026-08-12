@@ -10,6 +10,7 @@ import {
   Pencil,
   AlertCircle,
   CreditCard,
+  History,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -337,7 +338,7 @@ export default function ViewAdmissionPage() {
     );
   }
 
-  const { studentDetails, charges } = enrollment;
+  const { studentDetails, charges, transactions } = enrollment;
 
   const sortedCharges = charges;
 
@@ -406,6 +407,95 @@ export default function ViewAdmissionPage() {
               }
             />
           </InfoGrid>
+        </InfoSection>
+
+        {/* ── Payment & Transaction History (1 Row Per Transaction) ── */}
+        <InfoSection icon={History} title="Payment & Transaction History">
+          {(!transactions || transactions.length === 0) ? (
+            <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+              No payment transactions recorded for this student yet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                  <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Receipt / Ref No
+                  </TableHead>
+                  <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Date
+                  </TableHead>
+                  <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Fee Items Covered
+                  </TableHead>
+                  <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Amount Paid
+                  </TableHead>
+                  <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Status
+                  </TableHead>
+                  <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Action
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
+                    <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
+                      {tx.receiptNumber || tx.transactionNumber}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                      {formatDateOnly(tx.transactionDate)}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                      <div className="flex flex-wrap gap-1">
+                        {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
+                          tx.itemsCovered.map((item, idx) => (
+                            <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                              {item}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">{tx.description || "Fee Payment"}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(tx.totalAmount)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant="outline"
+                        className={
+                          tx.isCancelled
+                            ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                        }
+                      >
+                        {tx.isCancelled ? "Cancelled" : "Completed"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {tx.receiptId ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5 px-3 bg-background text-foreground hover:opacity-90 shadow-sm"
+                          onClick={() => router.push(`/workspace/receipt?id=${tx.receiptId}`)}
+                        >
+                          <Receipt className="h-3.5 w-3.5" />
+                          View Receipt
+                        </Button>
+                      ) : (
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </InfoSection>
 
         {/* ── Student charges (table) ── */}

@@ -84,6 +84,19 @@ export interface EnrollmentStudentDetails {
   division: string;
 }
 
+export interface StudentPaymentTransaction {
+  id: string;
+  receiptId?: string | null;
+  transactionNumber: string;
+  receiptNumber: string;
+  transactionDate: string;
+  description: string;
+  totalAmount: number;
+  status: string;
+  isCancelled: boolean;
+  itemsCovered: string[];
+}
+
 export interface StudentEnrollmentCharges {
   enrollmentId: string;
   academicYearId: string;
@@ -91,6 +104,7 @@ export interface StudentEnrollmentCharges {
   status: string;
   studentDetails: EnrollmentStudentDetails;
   charges: EnrollmentCharge[];
+  transactions?: StudentPaymentTransaction[];
 }
 
 export interface StudentEnrollmentChargesResponse {
