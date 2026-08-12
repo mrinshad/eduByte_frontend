@@ -292,22 +292,21 @@ export default function FeeGenerationPage() {
           <div className="flex flex-wrap items-center gap-2">
             <PermissionGate permission="feegeneration.refreshFeeGenerationButton">
               <Button
-                variant="outline"
                 onClick={handleRefreshPreview}
                 disabled={isLoadingPreview || isGenerating}
-                className="text-slate-700 dark:text-slate-200 text-xs font-medium h-9"
+                className="bg-[#556043]/10 text-[#556043] hover:bg-[#556043]/20 border border-[#556043]/30 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 font-semibold text-xs h-9 shadow-sm"
               >
-                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isLoadingPreview ? "animate-spin" : ""}`} />
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 text-[#556043] dark:text-slate-200 ${isLoadingPreview ? "animate-spin" : ""}`} />
                 Refresh Preview
               </Button>
             </PermissionGate>
             <PermissionGate permission="feegeneration.generateChargesButton">
               <Button
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium text-xs h-9"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-semibold text-xs h-9 shadow-sm"
                 onClick={openGenerateDialog}
                 disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
               >
-                {isGenerating ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {isGenerating ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-white dark:text-slate-900" /> : null}
                 Generate Charges for {monthLabel}
               </Button>
             </PermissionGate>
@@ -377,10 +376,10 @@ export default function FeeGenerationPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <Users className="h-4 w-4 text-[#556043] dark:text-slate-300" />
                   Students & Charges
                 </span>
-                <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-semibold bg-[#556043]/10 text-[#556043] dark:bg-slate-800 dark:text-slate-300 border border-[#556043]/20 dark:border-slate-700 px-2 py-0.5 rounded">
                   {preview.summary.activeStudents} Active Students
                 </span>
               </div>
@@ -646,18 +645,18 @@ export default function FeeGenerationPage() {
           </div>
 
           {/* ── Collapsible How Fee Generation Works Instructions ── */}
-          <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 dark:border-sky-500/30 dark:bg-sky-500/10">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
             <div
               className="flex items-center justify-between cursor-pointer select-none"
               onClick={() => setShowHowItWorks(!showHowItWorks)}
             >
               <div className="flex items-center gap-2.5">
-                <HelpCircle className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
-                <h2 className="text-xs font-semibold text-slate-900 dark:text-sky-200">
+                <HelpCircle className="h-4 w-4 text-[#556043] dark:text-slate-300 shrink-0" />
+                <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-200">
                   How Fee Generation Works (Click to View Guide)
                 </h2>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-sky-700 dark:text-sky-300">
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-700 dark:text-slate-300">
                 {showHowItWorks ? (
                   <>
                     Hide <ChevronUp className="ml-1 h-3.5 w-3.5" />
@@ -671,31 +670,31 @@ export default function FeeGenerationPage() {
             </div>
 
             {showHowItWorks && (
-              <div className="mt-3 pt-3 border-t border-sky-500/15 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-sky-200/90 leading-relaxed">
-                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-                  <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <div className="flex items-start gap-2.5 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                    <strong className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">
                       1. Automatic Monthly Order
                     </strong>
                     Fees are created month-by-month in order (June → July → August...). You don't need to select months manually.
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-                  <Users className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <Users className="h-4 w-4 text-[#556043] dark:text-slate-300 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                    <strong className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">
                       2. Fair Billing for New Students
                     </strong>
                     When a student joins mid-year (e.g. in September), fees start from their join month. They are never billed for months before they joined.
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-500/10">
-                  <Sparkles className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <Sparkles className="h-4 w-4 text-[#556043] dark:text-slate-300 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="font-semibold text-slate-900 dark:text-sky-100 block mb-0.5">
+                    <strong className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">
                       3. Automatic Catch-Up Fees
                     </strong>
                     If a new student joins after a month was already generated, their missing fee for that month is automatically added to this preview to generate now.
