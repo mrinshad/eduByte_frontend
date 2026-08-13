@@ -2,7 +2,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Download } from "lucide-react";
+import * as htmlToImage from "html-to-image";
+import { jsPDF } from "jspdf";
 
 import { Button } from "@/components/ui/button";
 import type { FeeCollectionPrintResponse } from "@/lib/services/feeCollection";
@@ -31,6 +33,31 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
         return () => window.removeEventListener("beforeprint", dismissToasts);
     }, []);
 
+    const handleDownloadPdf = async () => {
+        try {
+            const element = document.getElementById("voucher-content");
+            if (!element) return;
+
+            const imgData = await htmlToImage.toPng(element, { pixelRatio: 3 });
+
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+
+            // Scaled height based on aspect ratio
+            const pdfHeight = (element.offsetHeight * pdfWidth) / element.offsetWidth;
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Fee_Receipt_${transaction.transactionNumber}.pdf`);
+        } catch (error: any) {
+            console.error("Error generating PDF:", error);
+            toast.error(`Failed to generate PDF: ${error?.message || "Unknown error"}`);
+        }
+    };
+
     const charges = transaction.items.filter((i) => i.type === "CHARGE");
     const fines = transaction.items.filter((i) => i.type === "FINE");
 
@@ -55,21 +82,31 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                     </div>
                 </div>
 
-                <Button
-                    onClick={() => {
-                        toast.dismiss();
-                        window.print();
-                    }}
-                    className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: SAGE }}
-                >
-                    <Printer className="mr-1.5 h-4 w-4" />
-                    Print
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={handleDownloadPdf}
+                        variant="outline"
+                        className="h-10 rounded-lg text-sm font-semibold shadow-sm"
+                    >
+                        <Download className="mr-1.5 h-4 w-4" />
+                        Save PDF
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            toast.dismiss();
+                            window.print();
+                        }}
+                        className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                        style={{ backgroundColor: SAGE }}
+                    >
+                        <Printer className="mr-1.5 h-4 w-4" />
+                        Print
+                    </Button>
+                </div>
             </div>
 
             {/* Half-A4 (A5) Sheet */}
-            <div className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
+            <div id="voucher-content" className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
                 <div
                     className="a5-container"
                     style={{
@@ -87,7 +124,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                 >
                     {/* Inner Border Box for traditional receipt look */}
                     <div className="border-2 border-black flex-1 flex flex-col p-4">
-                        
+
                         {/* Header Section */}
                         <div className="text-center mb-4 border-b-2 border-black pb-3.5">
                             <h1 className="text-lg font-bold uppercase tracking-wider">
@@ -166,7 +203,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                                             </td>
                                         </tr>
                                     ))}
-                                    
+
                                     {/* Map through Fines */}
                                     {fines.length > 0 && fines.map((item, idx) => (
                                         <tr key={`fine-${idx}`}>
@@ -184,22 +221,6 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                                             </td>
                                         </tr>
                                     ))}
-
-                                    {/* Minimum spacing rows if there are very few items */}
-                                    {(charges.length + fines.length) < 3 && (
-                                        <>
-                                            <tr>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                            </tr>
-                                            <tr>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                                <td className="border border-black p-1.5">&nbsp;</td>
-                                            </tr>
-                                        </>
-                                    )}
                                 </tbody>
                                 <tfoot>
                                     <tr>

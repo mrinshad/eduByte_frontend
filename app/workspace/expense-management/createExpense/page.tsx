@@ -133,7 +133,7 @@ export default function Page() {
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState<string>("");
-    const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(true);
+    const [printAfterCreate, setPrintAfterCreate] = useState<boolean>(false);
 
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");

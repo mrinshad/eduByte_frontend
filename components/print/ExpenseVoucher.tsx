@@ -2,7 +2,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Download } from "lucide-react";
+import * as htmlToImage from "html-to-image";
+import { jsPDF } from "jspdf";
 
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +22,31 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
         window.addEventListener("beforeprint", dismissToasts);
         return () => window.removeEventListener("beforeprint", dismissToasts);
     }, []);
+
+    const handleDownloadPdf = async () => {
+        try {
+            const element = document.getElementById("voucher-content");
+            if (!element) return;
+
+            const imgData = await htmlToImage.toPng(element, { pixelRatio: 3 });
+            
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            
+            // Scaled height based on aspect ratio
+            const pdfHeight = (element.offsetHeight * pdfWidth) / element.offsetWidth;
+            
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Expense_Voucher_${expense.expenseNumber}.pdf`);
+        } catch (error: any) {
+            console.error("Error generating PDF:", error);
+            toast.error(`Failed to generate PDF: ${error?.message || "Unknown error"}`);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4 print:py-0 print:px-0 print:bg-white dark:bg-slate-950">
@@ -42,21 +69,31 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                     </div>
                 </div>
 
-                <Button
-                    onClick={() => {
-                        toast.dismiss();
-                        window.print();
-                    }}
-                    className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: SAGE }}
-                >
-                    <Printer className="mr-1.5 h-4 w-4" />
-                    Print
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={handleDownloadPdf}
+                        variant="outline"
+                        className="h-10 rounded-lg text-sm font-semibold shadow-sm"
+                    >
+                        <Download className="mr-1.5 h-4 w-4" />
+                        Save PDF
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            toast.dismiss();
+                            window.print();
+                        }}
+                        className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                        style={{ backgroundColor: SAGE }}
+                    >
+                        <Printer className="mr-1.5 h-4 w-4" />
+                        Print
+                    </Button>
+                </div>
             </div>
 
             {/* Half-A4 (A5) Receipt */}
-            <div className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
+            <div id="voucher-content" className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
                 <div
                     className="a5-container"
                     style={{
