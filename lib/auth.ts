@@ -106,11 +106,15 @@ export async function refreshSession() {
 }
 
 export async function logoutUser() {
-  await apiFetch("/api/auth/logout", {
-    method: "POST",
-  })
-
-  clearAccessToken()
+  try {
+    await authFetch("/api/auth/logout", {
+      method: "POST",
+    })
+  } catch {
+    // Ignore network error on logout
+  } finally {
+    clearAccessToken()
+  }
 }
 
 export async function getCurrentSession() {
