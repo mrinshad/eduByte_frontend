@@ -22,11 +22,13 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { type PortalArea, type PortalNavGroup, type PortalNavItem } from "@/lib/portal"
+import { checkPermission } from "@/hooks/usePermission"
+import { permissionForSlug, type PortalArea, type PortalNavGroup, type PortalNavItem } from "@/lib/portal"
 
 type SidebarProps = {
   area: PortalArea
   links: PortalNavGroup[]
+  userPermissions?: string[]
   collapsed: boolean
   setCollapsed: (value: boolean) => void
   variant: "desktop" | "mobile"
@@ -234,13 +236,36 @@ function SidebarSubgroup({
 function SidebarBody({
   area,
   links,
+  userPermissions,
   collapsed,
   setCollapsed,
   onCloseMobile,
 }: Omit<SidebarProps, "mobileOpen">) {
   const pathname = usePathname()
 
-  const groupedLinks: SidebarGroupView[] = links.map((group) => {
+  const permissions = userPermissions || []
+
+  const isAllowed = React.useCallback(
+    (item: PortalNavItem) => {
+      if (area === "student") {
+        return true
+      }
+      const permKey = permissionForSlug(item.slug, area)
+      return checkPermission(permissions, permKey)
+    },
+    [area, permissions]
+  )
+
+  const filteredLinks = React.useMemo(() => {
+    return links
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(isAllowed),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [links, isAllowed])
+
+  const groupedLinks: SidebarGroupView[] = filteredLinks.map((group) => {
     const hasSubgroups = group.items.some((item) => item.subgroup)
     return {
       label: group.label,

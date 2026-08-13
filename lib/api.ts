@@ -1,39 +1,35 @@
+import { authFetch } from "@/lib/auth"
+
 function getApiUrl() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
   if (!apiUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured");
+    throw new Error("NEXT_PUBLIC_API_URL is not configured")
   }
 
-  return apiUrl;
+  return apiUrl
 }
 
 export async function apiFetch(
   endpoint: string,
   options?: RequestInit
 ) {
-  const response = await fetch(`${getApiUrl()}${endpoint}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-    ...options,
-  });
+  const response = await authFetch(endpoint, options)
 
   if (!response.ok) {
-    let message = `API Error: ${response.status}`;
+    let message = `API Error: ${response.status}`
 
     try {
-      const errorBody = await response.json();
+      const errorBody = await response.json()
       if (errorBody?.message) {
-        message = errorBody.message;
+        message = errorBody.message
       }
     } catch {
       // response body wasn't JSON (e.g. HTML error page, empty body) — keep the generic message
     }
 
-    throw new Error(message);
+    throw new Error(message)
   }
 
-  return response.json();
+  return response.json()
 }

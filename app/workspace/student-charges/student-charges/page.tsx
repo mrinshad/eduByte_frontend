@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Search,
   Eye,
@@ -40,11 +41,17 @@ function formatCurrency(value?: number) {
   return `₹${(value ?? 0).toLocaleString("en-IN")}`;
 }
 
-const statusStyles: Record<StudentCharge["status"], string> = {
+const statusStyles: Record<string, string> = {
+  NOT_GENERATED:
+    "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 font-medium",
   PAID:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium",
   PARTIAL:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium",
+  PARTIALLY_PAID:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium",
+  OVERDUE:
+    "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-300 font-semibold",
   PENDING:
     "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400 font-medium",
 };
@@ -122,11 +129,11 @@ export default function StudentChargesListPage() {
             </Button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-slate-950 dark:text-white break-words">
-                Student Charge
+                Fee Ledgers
               </h1>
 
               <p className="mt-1 text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">
-                Manage and view all student fee charges.
+                View individual fee billing statements and balance ledgers per student.
               </p>
             </div>
           </div>
@@ -243,13 +250,14 @@ export default function StudentChargesListPage() {
                       </TableCell>
 
                       <TableCell className="px-6 py-4">
-                        <Badge variant="outline" className={statusStyles[charge.status]}>
-                          {charge.status}
+                        <Badge variant="outline" className={statusStyles[charge.status] ?? statusStyles.PENDING}>
+                          {charge.status ? charge.status.replace("_", " ") : "—"}
                         </Badge>
                       </TableCell>
 
                       <TableCell className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <PermissionGate permission="studentcharges.viewStudentChargesButton">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -264,6 +272,7 @@ export default function StudentChargesListPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          </PermissionGate>
 
 
                         </div>

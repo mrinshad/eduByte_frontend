@@ -9,6 +9,7 @@ import {
   ChevronRight,
   X
 } from "lucide-react"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
@@ -103,7 +104,7 @@ export default function FeeCollectionPage() {
           page: currentPage,
           limit: rowsPerPage,
           search,
-          
+
           vehicle: vehicleFilter === "all" ? "" : vehicleFilter,
           status: statusFilter as "all" | "paid" | "pending",
         });
@@ -146,7 +147,7 @@ export default function FeeCollectionPage() {
     currentPage,
     rowsPerPage,
     search,
-   
+
     vehicleFilter,
     statusFilter,
   ]);
@@ -169,17 +170,17 @@ export default function FeeCollectionPage() {
 
   const hasActiveFilters = useMemo(
     () =>
-     
+
       vehicleFilter !== "all" ||
       statusFilter !== "all" ||
       search.trim().length > 0,
-    [ vehicleFilter, statusFilter, search]
+    [vehicleFilter, statusFilter, search]
   );
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearch("");
-    
+
     setVehicleFilter("all");
     setStatusFilter("all");
     setCurrentPage(1);
@@ -199,12 +200,12 @@ export default function FeeCollectionPage() {
         {/* Left: Title */}
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Button
-                        className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
-                        size="icon"
-                        onClick={() => router.back()}
-                    >
-                        <ArrowLeft className="h-4 w-4 text-foreground" />
-                    </Button>
+            className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
+            size="icon"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4 text-foreground" />
+          </Button>
           <div className="min-w-0">
             <h1 className="truncate text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
               Fee Collection
@@ -228,7 +229,7 @@ export default function FeeCollectionPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-           
+
 
             {/* Vehicle */}
             <Select
@@ -289,7 +290,7 @@ export default function FeeCollectionPage() {
             Filters:
           </span>
 
-         
+
 
           {vehicleFilter !== "all" && (
             <FilterChip
@@ -385,9 +386,17 @@ export default function FeeCollectionPage() {
                       {student.TotalDue}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
-                      {student.TotalDue === 0 ? (
+                      {student.status === "NOT_GENERATED" ? (
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          Not Generated
+                        </span>
+                      ) : student.status === "PAID" || (student.TotalDue === 0 && student.status !== "PENDING" && student.status !== "PARTIAL") ? (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
                           Paid
+                        </span>
+                      ) : student.status === "PARTIAL" ? (
+                        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                          Partial
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
@@ -396,13 +405,15 @@ export default function FeeCollectionPage() {
                       )}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-right">
-                      <Button
-                        size="sm"
-                        className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                        onClick={() => router.push(`/workspace/fee-management/viewCollection?id=${student.enrollmentId}`)}
-                      >
-                        Collect
-                      </Button>
+                      <PermissionGate permission="feecollection.collectButton">
+                        <Button
+                          size="sm"
+                          className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                          onClick={() => router.push(`/workspace/fee-management/viewCollection?id=${student.enrollmentId}`)}
+                        >
+                          Collect
+                        </Button>
+                      </PermissionGate>
                     </TableCell>
                   </TableRow>
                 ))

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { Tags, Layers3, Pencil, Plus, Trash2 } from "lucide-react"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -447,10 +448,11 @@ export default function Page() {
                     Manage expense categories and subcategories.
                   </CardDescription>
                 </div>
-
-                <AddAction onAdd={() =>
-                  router.push("/workspace/expense-management/createExpense")
-                } />
+                <PermissionGate permission="expense.createNewButton">
+                  <AddAction onAdd={() =>
+                    router.push("/workspace/expense-management/createExpense")
+                  } />
+                </PermissionGate>
               </div>
             </CardHeader>
           </Card>
@@ -475,8 +477,9 @@ export default function Page() {
                     </CardDescription>
                   </div>
                 </div>
-
-                <AddAction onAdd={() => openCategoryDialog("add")} />
+                <PermissionGate permission="expense.addCategoryButton">
+                  <AddAction onAdd={() => openCategoryDialog("add")} />
+                </PermissionGate>
               </CardHeader>
 
               <CardContent
@@ -551,29 +554,31 @@ export default function Page() {
                           <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                             {subCount} sub
                           </span>
-
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className={editIconClass}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setSelectedCategoryId(category.id)
-                              openCategoryDialog("edit")
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-
-                          <DeleteAction
-                            onDelete={() => requestDeleteCategory(category)}
-                            disabled={subCount > 0}
-                            disabledReason={
-                              subCount > 0
-                                ? `Delete ${subCount} sub ${subCount === 1 ? "category" : "categories"} first`
-                                : undefined
-                            }
-                          />
+                          <PermissionGate permission="expense.editCategoryButton">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={editIconClass}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedCategoryId(category.id)
+                                openCategoryDialog("edit")
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate permission="expense.deleteCategoryButton">
+                            <DeleteAction
+                              onDelete={() => requestDeleteCategory(category)}
+                              disabled={subCount > 0}
+                              disabledReason={
+                                subCount > 0
+                                  ? `Delete ${subCount} sub ${subCount === 1 ? "category" : "categories"} first`
+                                  : undefined
+                              }
+                            />
+                          </PermissionGate>
                         </div>
                       </div>
                     )
@@ -606,8 +611,9 @@ export default function Page() {
                     </CardDescription>
                   </div>
                 </div>
-
-                <AddAction onAdd={() => openSubCategoryDialog("add")} disabled={!selectedCategoryId} />
+                <PermissionGate permission="expense.addSubCategoryButton">
+                  <AddAction onAdd={() => openSubCategoryDialog("add")} disabled={!selectedCategoryId} />
+                </PermissionGate>
               </CardHeader>
 
               <CardContent
@@ -663,16 +669,19 @@ export default function Page() {
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className={editIconClass}
-                          onClick={() => openSubCategoryDialog("edit", subCategory)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <DeleteAction onDelete={() => requestDeleteSubCategory(subCategory)} />
+                        <PermissionGate permission="expense.editSubCategoryButton">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={editIconClass}
+                            onClick={() => openSubCategoryDialog("edit", subCategory)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="expense.deleteSubcategoryButton">
+                          <DeleteAction onDelete={() => requestDeleteSubCategory(subCategory)} />
+                        </PermissionGate>
                       </div>
                     </div>
                   ))

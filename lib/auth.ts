@@ -4,6 +4,9 @@ export type AuthUser = {
   username: string
   email?: string | null
   role?: string | null
+  defaultPortal?: string
+  roles?: string[]
+  permissions?: string[]
   isActive: boolean
 }
 
@@ -103,11 +106,15 @@ export async function refreshSession() {
 }
 
 export async function logoutUser() {
-  await apiFetch("/api/auth/logout", {
-    method: "POST",
-  })
-
-  clearAccessToken()
+  try {
+    await authFetch("/api/auth/logout", {
+      method: "POST",
+    })
+  } catch {
+    // Ignore network error on logout
+  } finally {
+    clearAccessToken()
+  }
 }
 
 export async function getCurrentSession() {

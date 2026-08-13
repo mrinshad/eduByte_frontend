@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
@@ -171,10 +172,10 @@ export default function Page() {
           </Button>
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Charge Types
+              Fee Types
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Manage charge types and account mappings.
+              Manage fee categories, billing frequencies, and account mappings.
             </p>
           </div>
         </div>
@@ -207,14 +208,15 @@ export default function Page() {
               ))}
             </SelectContent>
           </Select>
-
-          <Button
-            className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={async () => { resetForm(); await loadAccounts(); setOpen(true) }}
-          >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Create Fee Type
-          </Button>
+          <PermissionGate permission="chargetypes.createFeeType">
+            <Button
+              className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={async () => { resetForm(); await loadAccounts(); setOpen(true) }}
+            >
+              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              Create Fee Type
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -268,32 +270,36 @@ export default function Page() {
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                          onClick={async () => {
-                            await loadAccounts()
-                            setEditingId(data.id)
-                            setFormData({
-                              name: data.name,
-                              category: data.category ?? "",
-                              frequency: data.frequency,
-                              incomeAccountId: data.incomeAccount?.id ?? "",
-                            })
-                            setOpen(true)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          onClick={() => setChargeTypeToDelete(data)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <PermissionGate permission="chargetypes.editChargetypesButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                            onClick={async () => {
+                              await loadAccounts()
+                              setEditingId(data.id)
+                              setFormData({
+                                name: data.name,
+                                category: data.category ?? "",
+                                frequency: data.frequency,
+                                incomeAccountId: data.incomeAccount?.id ?? "",
+                              })
+                              setOpen(true)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="chargetypes.deleteChargetypesButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            onClick={() => setChargeTypeToDelete(data)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>

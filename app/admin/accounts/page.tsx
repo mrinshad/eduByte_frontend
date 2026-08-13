@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ACCOUNT_TYPES, type AccountType } from "@/lib/services/accounts"
 import { parseApiError } from "@/lib/api-error"
 import {
@@ -298,14 +299,15 @@ export default function Page() {
                         </p>
                     </div>
                 </div>
-
-                <Button
-                    className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                    onClick={openCreate}
-                >
-                    <Plus className="h-4 w-4" />
-                    Create Account
-                </Button>
+                <PermissionGate permission="accounts.createAccountButton">
+                    <Button
+                        className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                        onClick={openCreate}
+                    >
+                        <Plus className="h-4 w-4" />
+                        Create Account
+                    </Button>
+                </PermissionGate>
             </div>
 
             {/* Table */}
@@ -383,24 +385,28 @@ export default function Page() {
                                         </TableCell>
                                         <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
-                                                    title="Edit"
-                                                    onClick={() => openEdit(account)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                                    title="Delete"
-                                                    onClick={() => setAccountToDelete(account)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <PermissionGate permission="accounts.editAccountsButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                                                        title="Edit"
+                                                        onClick={() => openEdit(account)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </PermissionGate>
+                                                <PermissionGate permission="accounts.deleteAccountsButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                        title="Delete"
+                                                        onClick={() => setAccountToDelete(account)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </PermissionGate>
                                             </div>
                                         </TableCell>
                                     </TableRow>

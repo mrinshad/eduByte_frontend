@@ -13,6 +13,11 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  History,
+  Receipt,
+  CreditCard,
+  IndianRupee,
+  AlertCircle,
 } from "lucide-react"
 
 import {
@@ -28,13 +33,32 @@ import {
 
 import { toast } from "sonner"
 import { getStudentById, deleteStudent, type Student } from "@/lib/services/student"
+import {
+  getStudentChargesByEnrollmentId,
+  type StudentEnrollmentCharges,
+} from "@/lib/services/studentCharges"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { refreshLateFines } from "@/lib/services/lateFine"
-import { formatDateOnly } from "@/lib/utils"
+import { formatDateOnly, formatCurrency } from "@/lib/utils"
+
+const CHARGE_STATUS_STYLES: Record<string, string> = {
+  PAID: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400",
+  PARTIAL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",
+  PENDING: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  OVERDUE: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400",
+};
 
 function InfoSection({
   icon: Icon,
@@ -241,6 +265,7 @@ export default function Page() {
   const studentId = searchParams.get("id")
 
   const [student, setStudent] = useState<Student | null>(null)
+  const [feeData, setFeeData] = useState<StudentEnrollmentCharges | null>(null)
   const [loading, setLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -260,6 +285,8 @@ export default function Page() {
 
         if (response?.enrollmentId) {
           await refreshLateFines(response.enrollmentId);
+          const feeRes = await getStudentChargesByEnrollmentId(response.enrollmentId).catch(() => null);
+          setFeeData(feeRes);
         }
       } catch (error) {
         console.error("Failed to load student details:", error)
@@ -460,6 +487,393 @@ export default function Page() {
               </div>
             </CardContent>
           </InfoSection>
+
+          {/* ── Fee Details & Transaction History ── */}
+          {feeData ? (
+            <>
+              {/* 4 Financial Summary Cards */}
+              {(() => {
+                const totalFeesFinal = feeData.charges.reduce((sum, c) => sum + parseFloat(c.finalAmount || "0"), 0);
+                const totalFeesPaid = feeData.charges.reduce((sum, c) => sum + parseFloat(c.paidAmount || "0"), 0);
+
+                const totalFineAmount = (feeData.fines ?? []).reduce((sum, f) => sum + (f.amount || 0), 0);
+                const totalFinePaid = (feeData.fines ?? []).reduce((sum, f) => sum + (f.paidAmount || 0), 0);
+
+                const academicYearPayable = totalFeesFinal + totalFineAmount;
+                const academicYearPaid = totalFeesPaid + totalFinePaid;
+                const academicYearBalance = academicYearPayable - academicYearPaid;
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Base Fee Charges</span>
+                      <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
+                        {formatCurrency(totalFeesFinal)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Academic Payable</span>
+                        <span className="text-[10px] text-slate-400">Fees + Fines</span>
+                      </div>
+                      <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
+                        {formatCurrency(academicYearPayable)}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span>Fees: <strong className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(totalFeesFinal)}</strong></span>
+                        <span>•</span>
+                        <span>Fine: <strong className="font-semibold text-amber-700 dark:text-amber-400">{formatCurrency(totalFineAmount)}</strong></span>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/10 space-y-1">
+                      <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Total Paid</span>
+                      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 pt-0.5">
+                        {formatCurrency(academicYearPaid)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Outstanding Balance</span>
+                      <p className={`text-lg font-bold pt-0.5 ${academicYearBalance > 0 ? "text-amber-700 dark:text-amber-400" : "text-slate-950 dark:text-white"}`}>
+                        {formatCurrency(academicYearBalance)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Payment & Transaction History */}
+              <InfoSection icon={History} title="Payment & Transaction History">
+                {(!feeData.transactions || feeData.transactions.length === 0) ? (
+                  <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                    No payment transactions recorded for this student yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Receipt / Ref No
+                        </TableHead>
+                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Date
+                        </TableHead>
+                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Fee & Fine Items Covered
+                        </TableHead>
+                        <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Amount Paid
+                        </TableHead>
+                        <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Status
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {feeData.transactions.map((tx) => (
+                        <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
+                          <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
+                            {tx.receiptNumber || tx.transactionNumber}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                            {formatDateOnly(tx.transactionDate)}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                            <div className="flex flex-wrap gap-1">
+                              {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
+                                tx.itemsCovered.map((item, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                    {item}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-400">{tx.description || "Fee Payment"}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(tx.totalAmount)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              variant="outline"
+                              className={
+                                tx.isCancelled
+                                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                              }
+                            >
+                              {tx.isCancelled ? "Cancelled" : "Completed"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </InfoSection>
+
+              {/* Itemized Fee & Fine Charges (Grouped by Month) */}
+              {(() => {
+                const rawCharges = feeData.charges ?? [];
+                const rawFines = feeData.fines ?? [];
+
+                const map = new Map<
+                  string,
+                  {
+                    monthLabel: string;
+                    items: Array<{
+                      type: "FEE" | "FINE";
+                      id: string;
+                      description: string;
+                      amount: number;
+                      paid: number;
+                      balance: number;
+                      dueDate: string | null;
+                      status: string;
+                    }>;
+                    totalFee: number;
+                    totalFine: number;
+                    totalPayable: number;
+                    totalPaid: number;
+                    totalBalance: number;
+                  }
+                >();
+
+                const monthNames = [
+                  "January", "February", "March", "April", "May", "June",
+                  "July", "August", "September", "October", "November", "December"
+                ];
+
+                // Build map from studentCharge.id -> monthLabel
+                const chargeIdToMonthLabel = new Map<string, string>();
+
+                for (const c of rawCharges) {
+                  let monthLabel = "General Charges";
+                  const match = c.description?.match(/([A-Za-z]+ \d{4})/);
+                  if (match) {
+                    monthLabel = match[1];
+                  } else if (c.periodYear && c.periodMonth !== undefined && c.periodMonth !== null) {
+                    monthLabel = `${monthNames[c.periodMonth] ?? "Month"} ${c.periodYear}`;
+                  }
+
+                  if (c.id) {
+                    chargeIdToMonthLabel.set(c.id, monthLabel);
+                  }
+
+                  if (!map.has(monthLabel)) {
+                    map.set(monthLabel, {
+                      monthLabel,
+                      items: [],
+                      totalFee: 0,
+                      totalFine: 0,
+                      totalPayable: 0,
+                      totalPaid: 0,
+                      totalBalance: 0,
+                    });
+                  }
+
+                  const group = map.get(monthLabel)!;
+                  const final = parseFloat(c.finalAmount || "0");
+                  const paid = parseFloat(c.paidAmount || "0");
+                  group.items.push({
+                    type: "FEE",
+                    id: c.id,
+                    description: c.description,
+                    amount: final,
+                    paid,
+                    balance: final - paid,
+                    dueDate: c.dueDate,
+                    status: c.status,
+                  });
+                  group.totalFee += final;
+                  group.totalPaid += paid;
+                }
+
+                for (const f of rawFines) {
+                  let monthLabel = "";
+
+                  if (f.studentChargeId && chargeIdToMonthLabel.has(f.studentChargeId)) {
+                    monthLabel = chargeIdToMonthLabel.get(f.studentChargeId)!;
+                  } else if (f.periodYear && f.periodMonth !== undefined && f.periodMonth !== null) {
+                    monthLabel = `${monthNames[f.periodMonth] ?? "Month"} ${f.periodYear}`;
+                  } else {
+                    const textToSearch = `${f.chargeDescription || ""} ${f.reason || ""}`;
+                    const match = textToSearch.match(/([A-Za-z]+ \d{4})/);
+                    if (match) {
+                      monthLabel = match[1];
+                    } else if (f.createdAt) {
+                      const d = new Date(f.createdAt);
+                      if (!isNaN(d.getTime())) {
+                        monthLabel = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+                      }
+                    }
+                  }
+
+                  if (!monthLabel || !map.has(monthLabel)) {
+                    const firstGroupKey = map.keys().next().value;
+                    monthLabel = firstGroupKey || monthLabel || "General Charges";
+                  }
+
+                  if (!map.has(monthLabel)) {
+                    map.set(monthLabel, {
+                      monthLabel,
+                      items: [],
+                      totalFee: 0,
+                      totalFine: 0,
+                      totalPayable: 0,
+                      totalPaid: 0,
+                      totalBalance: 0,
+                    });
+                  }
+
+                  const group = map.get(monthLabel)!;
+                  const amount = f.amount || 0;
+                  const paid = f.paidAmount || 0;
+                  group.items.push({
+                    type: "FINE",
+                    id: f.id,
+                    description: `Fine: ${f.fineType} (${f.chargeDescription || f.reason || "Late Fee"})`,
+                    amount,
+                    paid,
+                    balance: amount - paid,
+                    dueDate: f.createdAt,
+                    status: f.isReversed ? "REVERSED" : f.status,
+                  });
+                  group.totalFine += amount;
+                  group.totalPaid += paid;
+                }
+
+                for (const group of map.values()) {
+                  group.totalPayable = group.totalFee + group.totalFine;
+                  group.totalBalance = group.totalPayable - group.totalPaid;
+                }
+
+                const groups = Array.from(map.values());
+
+                return (
+                  <InfoSection icon={Receipt} title="Itemized Monthly Charges & Fines">
+                    <div className="p-4 space-y-4">
+                      {groups.map((group) => (
+                        <div
+                          key={group.monthLabel}
+                          className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-slate-800 dark:bg-slate-950/60"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 gap-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300" />
+                              <h3 className="text-sm font-bold text-slate-950 dark:text-white">
+                                {group.monthLabel}
+                              </h3>
+                              <Badge variant="outline" className="text-[10px] bg-white dark:bg-slate-800">
+                                {group.items.length} Item{group.items.length !== 1 ? "s" : ""}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                              <span className="text-slate-600 dark:text-slate-400">
+                                Fees: <strong className="text-slate-900 dark:text-slate-200">{formatCurrency(group.totalFee)}</strong>
+                              </span>
+                              {group.totalFine > 0 && (
+                                <>
+                                  <span>+</span>
+                                  <span className="text-amber-700 dark:text-amber-400">
+                                    Fine: <strong className="font-semibold">{formatCurrency(group.totalFine)}</strong>
+                                  </span>
+                                </>
+                              )}
+                              <span>=</span>
+                              <span className="text-slate-900 dark:text-white font-bold">
+                                Payable: {formatCurrency(group.totalPayable)}
+                              </span>
+                              <span>•</span>
+                              <span className="text-emerald-700 dark:text-emerald-400">
+                                Paid: <strong className="font-semibold">{formatCurrency(group.totalPaid)}</strong>
+                              </span>
+                              <span>•</span>
+                              <span className={group.totalBalance > 0 ? "text-amber-700 dark:text-amber-400 font-bold" : "text-slate-600 dark:text-slate-400"}>
+                                Balance: {formatCurrency(group.totalBalance)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="border-slate-100 bg-white hover:bg-white dark:border-slate-800/50 dark:bg-slate-950">
+                                <TableHead className="h-9 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Item Description
+                                </TableHead>
+                                <TableHead className="h-9 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Type
+                                </TableHead>
+                                <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Amount
+                                </TableHead>
+                                <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Paid
+                                </TableHead>
+                                <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Balance
+                                </TableHead>
+                                <TableHead className="h-9 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Due Date
+                                </TableHead>
+                                <TableHead className="h-9 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Status
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {group.items.map((item) => (
+                                <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50">
+                                  <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                                    {item.description}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        item.type === "FINE"
+                                          ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 text-[10px]"
+                                          : "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 text-[10px]"
+                                      }
+                                    >
+                                      {item.type}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm text-slate-950 dark:text-slate-100">
+                                    {formatCurrency(item.amount)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                    {formatCurrency(item.paid)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                    {formatCurrency(item.balance)}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                                    {formatDateOnly(item.dueDate ?? undefined)}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        CHARGE_STATUS_STYLES[item.status] ??
+                                        "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                      }
+                                    >
+                                      {item.status}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ))}
+                    </div>
+                  </InfoSection>
+                );
+              })()}
+            </>
+          ) : null}
         </div>
       </div>
       <AlertDialog

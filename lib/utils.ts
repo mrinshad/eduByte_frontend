@@ -35,3 +35,10 @@ export function formatDateTime(value?: string | Date | null) {
     timeZone: SCHOOL_TIMEZONE,
   }).format(date)
 }
+
+export function formatCurrency(value?: number | string | null) {
+  if (value === null || value === undefined) return "₹0";
+  const numeric = typeof value === "number" ? value : parseFloat(value);
+  if (Number.isNaN(numeric)) return "₹0";
+  return `₹${numeric.toLocaleString("en-IN")}`;
+}

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   createVehicle,
   getVehicles,
@@ -203,10 +204,11 @@ export default function Page() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-semibold text-slate-950 dark:text-white">Vehicles</h1>
-            <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage vehicle records, assignments, routes, and transport-related information.</p>
+            <h1 className="text-lg sm:text-xl font-semibold text-slate-950 dark:text-white">Transport</h1>
+            <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage transport vehicles, registration numbers, seating capacities, and drivers.</p>
           </div>
         </div>
+        <PermissionGate permission="vehicle.createVehicleButton">
         <Button
           onClick={() => {
             setEditingId(null);
@@ -230,6 +232,7 @@ export default function Page() {
           <Plus className="mr-2 h-4 w-4" />
           Create Vehicle
         </Button>
+        </PermissionGate>
       </div>
 
       <div className="flex justify-end">
@@ -325,6 +328,7 @@ export default function Page() {
 
                   {/* Sleek Action Button */}
                   <div className="flex items-center gap-1 shrink-0">
+                    <PermissionGate permission="vehicle.editVehicleButton">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -344,6 +348,8 @@ export default function Page() {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="vehicle.deleteVehicleButton">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -363,6 +369,7 @@ export default function Page() {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
+                    </PermissionGate>
                   </div>
                 </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
@@ -231,7 +232,7 @@ export default function Page() {
           </Button>
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Staff
+              Staff Directory
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               View and manage staff records, contact details, and employment status.
@@ -279,7 +280,7 @@ export default function Page() {
               Clear
             </Button>
           )}
-
+          <PermissionGate permission="staff.creaStaffButton">
           <Button
             className="w-full md:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             onClick={() => router.push("/admin/staff/createStaff")}
@@ -287,6 +288,7 @@ export default function Page() {
             <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
             Create Staff
           </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -398,6 +400,7 @@ export default function Page() {
 
                     <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
+                        <PermissionGate permission="staff.editStaffButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -407,6 +410,8 @@ export default function Page() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="staff.deleteStaffButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -416,6 +421,7 @@ export default function Page() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>

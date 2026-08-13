@@ -84,6 +84,35 @@ export interface EnrollmentStudentDetails {
   division: string;
 }
 
+export interface StudentPaymentTransaction {
+  id: string;
+  receiptId?: string | null;
+  transactionNumber: string;
+  receiptNumber: string;
+  transactionDate: string;
+  description: string;
+  totalAmount: number;
+  status: string;
+  isCancelled: boolean;
+  itemsCovered: string[];
+}
+
+export interface StudentFineItem {
+  id: string;
+  fineType: string;
+  amount: number;
+  paidAmount: number;
+  balance: number;
+  reason: string;
+  status: string;
+  isReversed: boolean;
+  studentChargeId?: string | null;
+  periodMonth?: number | null;
+  periodYear?: number | null;
+  chargeDescription?: string | null;
+  createdAt: string;
+}
+
 export interface StudentEnrollmentCharges {
   enrollmentId: string;
   academicYearId: string;
@@ -91,6 +120,8 @@ export interface StudentEnrollmentCharges {
   status: string;
   studentDetails: EnrollmentStudentDetails;
   charges: EnrollmentCharge[];
+  fines?: StudentFineItem[];
+  transactions?: StudentPaymentTransaction[];
 }
 
 export interface StudentEnrollmentChargesResponse {
@@ -117,12 +148,42 @@ export async function getStudentChargesByEnrollmentId(
   return payload.data ?? null;
 }
 
+export type CatchUpChargeItem = {
+  studentName: string;
+  admissionNumber: string;
+  chargeType: string;
+  amount: number;
+  periodMonth: number;
+  periodYear: number;
+  periodName: string;
+};
+
 export type FeeGenerationPreviewSummary = {
   activeStudents: number;
   enrollmentChargesEvaluated: number;
   chargesToGenerate: number;
   alreadyGenerated: number;
   studentsWithNoCharges: number;
+  catchUpChargesCount?: number;
+};
+
+export type FeeGenerationMonthStatus = {
+  lastGeneratedMonthNumber: number;
+  lastGeneratedPeriod: string;
+  currentTargetMonthNumber: number;
+  currentTargetPeriod: string;
+  upcomingMonthNumber: number | null;
+  upcomingPeriod: string;
+  totalAcademicMonths: number;
+};
+
+export type TargetMonthStudentItem = {
+  enrollmentId: string;
+  studentName: string;
+  admissionNumber: string;
+  chargesCount: number;
+  totalAmount: number;
+  chargeTypes: string[];
 };
 
 export type FeeGenerationPreviewData = {
@@ -131,13 +192,18 @@ export type FeeGenerationPreviewData = {
   targetAcademicMonth: number;
   targetCalendarMonth: number;
   targetCalendarYear: number;
+  targetPeriod?: string;
+  monthStatus?: FeeGenerationMonthStatus;
+  instructions?: string;
   summary: FeeGenerationPreviewSummary;
+  targetMonthStudents?: TargetMonthStudentItem[];
   chargesBreakdown: Record<string, number>;
   frequencyBreakdown: Record<string, number>;
   financialSummary: {
     byChargeType: Record<string, number>;
     total: number;
   };
+  catchUpCharges?: CatchUpChargeItem[];
   skipped?: {
     alreadyGenerated: number;
   };
@@ -205,6 +271,21 @@ export async function previewFeeGeneration(academicYearId: string) {
 export async function generateFeeCharges(academicYearId: string) {
   const payload = await postStudentChargeAction<FeeGenerationResult>(
     "/api/stdcharge/generate",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
+
+export type CatchUpFeeGenerationResult = {
+  academicYearId: string;
+  academicYearName: string;
+  catchUpChargesGenerated: number;
+};
+
+export async function generateCatchUpFeeCharges(academicYearId: string) {
+  const payload = await postStudentChargeAction<CatchUpFeeGenerationResult>(
+    "/api/stdcharge/generate-catchup",
     { academicYearId }
   );
 

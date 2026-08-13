@@ -22,7 +22,7 @@ export interface StudentFeeCollection {
   feeDue: number;
   fineDue: number;
   TotalDue: number;
-  status: "PAID" | "PENDING" | "PARTIAL";
+  status: "PAID" | "PENDING" | "PARTIAL" | "NOT_GENERATED" | "OVERDUE" | string;
 }
 
 export interface StudentDetailsResponse {
@@ -154,10 +154,13 @@ export interface Fine {
   id: string;
   fineTypeId: string;
   fineType: string;
+  fineFor?: string;
   reason: string;
   amount: number;
   paidAmount: number;
   balance: number;
+  periodMonth?: number | null;
+  periodYear?: number | null;
   status: "PAID" | "PARTIALLY_PAID" | "PENDING" | string;
   canCollect: boolean;
   createdAt: string;

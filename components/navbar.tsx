@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { Menu, MoonStar, LogOut, SunMedium, ChevronDown, Sparkles } from "lucide-react"
+import { Menu, MoonStar, LogOut, SunMedium, ChevronDown, Sparkles, Repeat } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -16,14 +16,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getCurrentSession } from "@/lib/auth"
+import { canSwitchPortals, type PortalArea } from "@/lib/portal"
 
 interface NavbarProps {
+  area: PortalArea
   title: string
   subtitle: string
   academicYear: string
   userLabel?: string
+  userRole?: string | null
+  userPermissions?: string[]
   onOpenMobileMenu: () => void
   onLogout: () => void
+  onSwitchPortal?: (targetArea: PortalArea) => void
 }
 
 interface UserSession {
@@ -33,11 +38,15 @@ interface UserSession {
 }
 
 export function Navbar({
+  area,
   subtitle,
   academicYear,
   userLabel,
+  userRole,
+  userPermissions,
   onOpenMobileMenu,
   onLogout,
+  onSwitchPortal,
 }: NavbarProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const isDarkMode = resolvedTheme === "dark"
@@ -78,6 +87,22 @@ export function Navbar({
 
           {/* Right Section: Badges & Interactions */}
           <div className="flex items-center gap-3">
+            {canSwitchPortals(userPermissions, userRole) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="group relative flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
+                onClick={() => onSwitchPortal?.(area === "admin" ? "workspace" : "admin")}
+                title={`Switch to ${area === "admin" ? "Operations Workspace" : "Administration Portal"}`}
+              >
+                <Repeat className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="hidden sm:inline font-bold">
+                  {area === "admin" ? "Workspace" : "Admin Portal"}
+                </span>
+              </Button>
+            )}
+
             <div className="hidden items-center gap-1.5 rounded-xl border border-amber-500/10 bg-amber-500/[0.06] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-amber-600 dark:border-amber-400/20 dark:bg-amber-400/[0.05] dark:text-amber-400 md:inline-flex">
               <Sparkles className="h-3 w-3 animate-pulse text-amber-500" />
               {academicYear}
