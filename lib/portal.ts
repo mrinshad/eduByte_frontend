@@ -192,6 +192,27 @@ export function getUserAccessiblePortal(
   return null
 }
 
+export function getAlternateAccessiblePortal(
+  currentArea: PortalArea,
+  permissions: string[] = [],
+  role?: string | null
+): PortalArea | null {
+  const checkOrder: PortalArea[] =
+    currentArea === "workspace"
+      ? ["admin", "student"]
+      : currentArea === "admin"
+      ? ["workspace", "student"]
+      : ["workspace", "admin"]
+
+  for (const altArea of checkOrder) {
+    if (canAccessPortalArea(altArea, permissions, role)) {
+      return altArea
+    }
+  }
+
+  return null
+}
+
 export function canSwitchPortals(permissions: string[] = [], role?: string | null): boolean {
   return canAccessPortalArea("admin", permissions, role) && canAccessPortalArea("workspace", permissions, role)
 }
@@ -293,6 +314,50 @@ export function getMissingNavbarPermissionFor(permName: string, rolePermissions:
   }
 
   return null
+}
+
+export function getRequiredPermissionForPath(
+  pathname: string,
+  area: PortalArea
+): { permKey: string; sectionLabel: string } | null {
+  if (!pathname || area === "student") return null
+
+  const prefix = `/${area}/`
+  if (!pathname.startsWith(prefix)) return null
+
+  const relativePath = pathname.slice(prefix.length).split("?")[0].replace(/\/+$/, "")
+  if (!relativePath || relativePath === "dashboard") {
+    const permKey = permissionForSlug("dashboard", area)
+    return {
+      permKey,
+      sectionLabel: "Dashboard",
+    }
+  }
+
+  const areaSections = portalSections.filter((s) => s.area === area)
+
+  let matchedSection = areaSections.find((s) => s.slug === relativePath)
+
+  if (!matchedSection) {
+    matchedSection = areaSections.find(
+      (s) => s.slug !== "dashboard" && (relativePath.startsWith(`${s.slug}/`) || relativePath === s.slug)
+    )
+  }
+
+  if (!matchedSection) {
+    const firstSegment = relativePath.split("/")[0]
+    matchedSection = areaSections.find(
+      (s) => s.slug !== "dashboard" && s.slug.split("/")[0] === firstSegment
+    )
+  }
+
+  if (!matchedSection) return null
+
+  const permKey = permissionForSlug(matchedSection.slug, area)
+  return {
+    permKey,
+    sectionLabel: matchedSection.label,
+  }
 }
 
 export function getPortalNavItems(area: PortalArea) {

@@ -1,12 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
-import { AlertCircle, Loader2, LogOut, ShieldAlert } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { AlertCircle, LayoutDashboard, Loader2, LogOut, ShieldAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { clearAccessToken, getCurrentSession, logoutUser } from "@/lib/auth"
-import { canAccessPortalArea, getUserAccessiblePortal, type PortalArea } from "@/lib/portal"
+import {
+  canAccessPortalArea,
+  getAlternateAccessiblePortal,
+  getRequiredPermissionForPath,
+  type PortalArea,
+} from "@/lib/portal"
+import { checkPermission } from "@/hooks/usePermission"
+import { PortalShell } from "@/components/portal-shell"
 
 type AuthGateProps = {
   area: PortalArea
@@ -17,11 +24,15 @@ type AccessErrorState = {
   username: string
   role: string
   area: PortalArea
+  isSectionRestriction?: boolean
+  sectionLabel?: string
+  requiredPermission?: string
   reason: string
 }
 
 export function AuthGate({ area, children }: AuthGateProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isChecking, setIsChecking] = React.useState(true)
   const [accessError, setAccessError] = React.useState<AccessErrorState | null>(null)
 
@@ -45,12 +56,11 @@ export function AuthGate({ area, children }: AuthGateProps) {
 
       const permissions = session.user.permissions || []
       const role = session.user.role || null
-      const defaultPortal = session.user.defaultPortal || null
 
       if (!canAccessPortalArea(area, permissions, role)) {
-        const altPortal = getUserAccessiblePortal(permissions, role, defaultPortal)
+        const altPortal = getAlternateAccessiblePortal(area, permissions, role)
 
-        if (altPortal && altPortal !== area) {
+        if (altPortal) {
           if (active) {
             router.replace(`/${altPortal}/dashboard`)
           }
@@ -73,6 +83,27 @@ export function AuthGate({ area, children }: AuthGateProps) {
         return
       }
 
+      // Check section-level navigation permission requirement
+      const sectionReq = getRequiredPermissionForPath(pathname, area)
+      if (sectionReq) {
+        const { permKey, sectionLabel } = sectionReq
+        if (!checkPermission(permissions, permKey)) {
+          if (active) {
+            setIsChecking(false)
+            setAccessError({
+              username: session.user.username || session.user.name || "User",
+              role: role || "No role assigned",
+              area,
+              isSectionRestriction: true,
+              sectionLabel,
+              requiredPermission: permKey,
+              reason: `Your account role '${role || "User"}' does not have the '${permKey}' permission required to access the '${sectionLabel}' section.`,
+            })
+          }
+          return
+        }
+      }
+
       if (active) {
         setIsChecking(false)
         setAccessError(null)
@@ -84,7 +115,7 @@ export function AuthGate({ area, children }: AuthGateProps) {
     return () => {
       active = false
     }
-  }, [area, router])
+  }, [area, router, pathname])
 
   async function handleSignOut() {
     try {
@@ -108,6 +139,42 @@ export function AuthGate({ area, children }: AuthGateProps) {
   }
 
   if (accessError) {
+    // In-layout section access restricted view (preserves Sidebar, Navbar, and Header)
+    if (accessError.isSectionRestriction) {
+      return (
+        <PortalShell area={area}>
+          <div className="flex min-h-[60vh] items-center justify-center p-4 sm:p-6">
+            <div className="w-full max-w-sm space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <ShieldAlert className="h-6 w-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-bold text-slate-950 dark:text-white">Access Restricted</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  You do not have permission to access this section. Please contact your administrator if you need access.
+                </p>
+              </div>
+              {!pathname.replace(/\/+$/, "").endsWith("/dashboard") ? (
+                <Button
+                  type="button"
+                  onClick={() => router.replace(`/${area}/dashboard`)}
+                  className="w-full h-10 rounded-xl bg-[#556043] text-xs font-semibold text-white hover:bg-[#475138] dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 shadow-sm font-medium"
+                >
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 pt-1">
+                  Select an accessible section from the sidebar to continue.
+                </p>
+              )}
+            </div>
+          </div>
+        </PortalShell>
+      )
+    }
+
+    // Full-screen signout error card (for accounts with no roles/no portal access)
     return (
       <div className="flex min-h-svh items-center justify-center bg-[linear-gradient(135deg,_#f7f1e7_0%,_#ffffff_48%,_#eef3f8_100%)] px-4 py-8 text-slate-950 dark:bg-[linear-gradient(135deg,_#0c1118_0%,_#111827_50%,_#1b2433_100%)] dark:text-slate-50">
         <div className="w-full max-w-md space-y-6 rounded-3xl border border-red-500/20 bg-white/80 p-6 sm:p-8 shadow-xl backdrop-blur-xl dark:border-red-500/30 dark:bg-slate-900/90">
@@ -141,14 +208,25 @@ export function AuthGate({ area, children }: AuthGateProps) {
             <span>{accessError.reason}</span>
           </div>
 
-          <Button
-            type="button"
-            onClick={handleSignOut}
-            className="w-full h-11 rounded-2xl bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 shadow-md"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out & return to login
-          </Button>
+          <div className="space-y-2">
+            <Button
+              type="button"
+              onClick={() => router.replace(`/${area}/dashboard`)}
+              className="w-full h-11 rounded-2xl bg-[#556043] text-xs font-semibold text-white hover:bg-[#475138] dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 shadow-md"
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Go to Dashboard
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSignOut}
+              className="w-full h-10 rounded-2xl text-xs font-medium text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out & return to login
+            </Button>
+          </div>
         </div>
       </div>
     )
