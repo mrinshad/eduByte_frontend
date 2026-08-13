@@ -37,7 +37,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4 print:py-0 print:px-0 print:bg-white dark:bg-slate-950">
             {/* Header - Hidden on Print */}
-            <div className="max-w-3xl mx-auto mb-6 flex items-center justify-between print:hidden">
+            <div className="max-w-md mx-auto mb-6 flex items-center justify-between print:hidden">
                 <div className="flex items-center gap-3">
                     <Button
                         variant="outline"
@@ -60,7 +60,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                         toast.dismiss();
                         window.print();
                     }}
-                    className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                    className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
                     style={{ backgroundColor: SAGE }}
                 >
                     <Printer className="mr-1.5 h-4 w-4" />
@@ -68,190 +68,176 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                 </Button>
             </div>
 
-            {/* A4 Sheet */}
-            <div className="mx-auto bg-white shadow-xl print:shadow-none a4-sheet rounded-xl overflow-hidden print:rounded-none">
+            {/* Half-A4 (A5) Sheet */}
+            <div className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
                 <div
-                    className="a4-container"
+                    className="a5-container"
                     style={{
-                        width: "210mm",
-                        minHeight: "297mm",
-                        padding: "16mm 18mm",
+                        width: "148mm",
+                        minHeight: "210mm",
+                        padding: "10mm",
                         margin: "0 auto",
                         boxSizing: "border-box",
                         fontFamily: "Arial, Helvetica, sans-serif",
-                        color: "#1f2937",
+                        color: "#000",
                         display: "flex",
                         flexDirection: "column",
+                        backgroundColor: "#fff",
                     }}
                 >
-                    {/* Header */}
-                    <div className="text-center mb-6">
-                        <h1 className="text-2xl font-bold tracking-wide uppercase">
-                            Your School Name
-                        </h1>
-                        <p className="text-xs text-slate-500 mt-1">
-                            123 School Road, City, State — 000000
-                        </p>
-                        <div className="mt-4 pt-3 border-t border-dashed border-slate-400">
-                            <p className="text-sm font-semibold tracking-widest uppercase">
-                                Fee Collection Receipt
+                    {/* Inner Border Box for traditional receipt look */}
+                    <div className="border-2 border-black flex-1 flex flex-col p-4">
+                        
+                        {/* Header Section */}
+                        <div className="text-center mb-4 border-b-2 border-black pb-3.5">
+                            <h1 className="text-lg font-bold uppercase tracking-wider">
+                                Kids covE School of Excellence
+                            </h1>
+                            <p className="text-[11px] font-bold mt-1">
+                                Run by: KC Ibrahim Haji Memorial Education Board
                             </p>
+                            <p className="text-[11px] mt-1 font-medium">
+                                Ph: 8113000247 | Email: ozhukurkids@gmail.com
+                            </p>
+                            <h2 className="text-base font-bold uppercase mt-3 underline underline-offset-4 decoration-2">
+                                Fee Collection Receipt
+                            </h2>
                         </div>
-                    </div>
 
-                    {/* Receipt No / Date */}
-                    <div className="flex justify-between text-[12.5px] mb-4">
-                        <span className="text-slate-600">
-                            Receipt No:{" "}
-                            <span className="font-semibold text-slate-900">
-                                {transaction.transactionNumber}
-                            </span>
-                        </span>
-                        <span className="text-slate-600">
-                            Date:{" "}
-                            <span className="font-semibold text-slate-900">
-                                {new Date(transaction.transactionDate).toLocaleDateString("en-IN", {
+                        {/* Receipt No / Date */}
+                        <div className="flex justify-between text-[12px] mb-4 font-bold">
+                            <div>
+                                Receipt No: {transaction.transactionNumber}
+                            </div>
+                            <div>
+                                Date: {new Date(transaction.transactionDate).toLocaleDateString("en-IN", {
                                     day: "2-digit",
-                                    month: "short",
+                                    month: "2-digit",
                                     year: "numeric",
                                 })}
-                            </span>
-                        </span>
-                    </div>
-
-                    <div className="border-t border-dashed border-slate-400 mb-4" />
-
-                    {/* Student info */}
-                    <div className="grid grid-cols-2 gap-y-2 text-[12.5px] mb-4">
-                        <div className="flex justify-between pr-4">
-                            <span className="text-slate-500">Student</span>
-                            <span className="font-medium text-right">{transaction.student.studentName}</span>
+                            </div>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Admission No</span>
-                            <span className="font-medium text-right">{transaction.student.admissionNumber}</span>
-                        </div>
-                        <div className="flex justify-between pr-4">
-                            <span className="text-slate-500">Class & Div</span>
-                            <span className="font-medium text-right">
-                                {transaction.student.class} - {transaction.student.division}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Roll No</span>
-                            <span className="font-medium text-right">{transaction.student.rollNumber}</span>
-                        </div>
-                    </div>
 
-                    <div className="border-t border-dashed border-slate-400 mb-4" />
+                        {/* Student Info */}
+                        <div className="mb-4 text-[12px] grid grid-cols-2 gap-y-2">
+                            <div className="grid grid-cols-[90px_1fr]">
+                                <span className="font-bold">Student</span>
+                                <span>: {transaction.student.studentName}</span>
+                            </div>
+                            <div className="grid grid-cols-[90px_1fr]">
+                                <span className="font-bold">Adm No</span>
+                                <span>: {transaction.student.admissionNumber}</span>
+                            </div>
+                            <div className="grid grid-cols-[90px_1fr]">
+                                <span className="font-bold">Class</span>
+                                <span>: {transaction.student.class} - {transaction.student.division}</span>
+                            </div>
+                            <div className="grid grid-cols-[90px_1fr]">
+                                <span className="font-bold">Roll No</span>
+                                <span>: {transaction.student.rollNumber}</span>
+                            </div>
+                        </div>
 
-                    {/* Charges table */}
-                    {charges.length > 0 && (
-                        <div className="mb-5">
-                            <p className="text-[10.5px] text-slate-500 uppercase tracking-wide mb-2">
-                                Fee Charges
-                            </p>
-                            <table className="w-full text-[12.5px]">
+                        {/* Charges & Fines Unified Table */}
+                        <div className="mb-4">
+                            <table className="w-full text-left text-[12px] border-collapse border border-black">
                                 <thead>
-                                    <tr className="border-b border-slate-300 text-left text-slate-500">
-                                        <th className="py-1.5 font-medium">Charge</th>
-                                        <th className="py-1.5 font-medium">Period</th>
-                                        <th className="py-1.5 font-medium text-right">Amount</th>
+                                    <tr>
+                                        <th className="border border-black p-1.5 font-bold">Particulars</th>
+                                        <th className="border border-black p-1.5 w-24 font-bold">Period</th>
+                                        <th className="border border-black p-1.5 w-24 text-right font-bold">Amount (₹)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {charges.map((item, idx) => (
-                                        <tr key={idx} className="border-b border-slate-100">
-                                            <td className="py-1.5">
+                                    {/* Map through Regular Fee Charges */}
+                                    {charges.length > 0 && charges.map((item, idx) => (
+                                        <tr key={`charge-${idx}`}>
+                                            <td className="border border-black p-1.5">
                                                 {item.name}
                                                 {item.description && (
-                                                    <span className="block text-[10.5px] text-slate-400">
+                                                    <span className="block text-[10px] text-slate-600 mt-0.5 font-medium">
                                                         {item.description}
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="py-1.5 text-slate-600">{formatPeriod(item.period)}</td>
-                                            <td className="py-1.5 text-right font-medium">
+                                            <td className="border border-black p-1.5">{formatPeriod(item.period)}</td>
+                                            <td className="border border-black p-1.5 text-right font-medium">
                                                 {formatCurrency(item.amount)}
                                             </td>
                                         </tr>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    
+                                    {/* Map through Fines */}
+                                    {fines.length > 0 && fines.map((item, idx) => (
+                                        <tr key={`fine-${idx}`}>
+                                            <td className="border border-black p-1.5">
+                                                {item.name} (Fine)
+                                                {item.description && (
+                                                    <span className="block text-[10px] text-slate-600 mt-0.5 font-medium">
+                                                        {item.description}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="border border-black p-1.5">—</td>
+                                            <td className="border border-black p-1.5 text-right font-medium">
+                                                {formatCurrency(item.amount)}
+                                            </td>
+                                        </tr>
+                                    ))}
 
-                    {/* Fines table */}
-                    {fines.length > 0 && (
-                        <div className="mb-5">
-                            <p className="text-[10.5px] text-slate-500 uppercase tracking-wide mb-2">
-                                Fines
-                            </p>
-                            <table className="w-full text-[12.5px]">
-                                <thead>
-                                    <tr className="border-b border-slate-300 text-left text-slate-500">
-                                        <th className="py-1.5 font-medium">Fine</th>
-                                        <th className="py-1.5 font-medium">Reason</th>
-                                        <th className="py-1.5 font-medium text-right">Amount</th>
+                                    {/* Minimum spacing rows if there are very few items */}
+                                    {(charges.length + fines.length) < 3 && (
+                                        <>
+                                            <tr>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                                <td className="border border-black p-1.5">&nbsp;</td>
+                                            </tr>
+                                        </>
+                                    )}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colSpan={2} className="border border-black p-1.5 text-right font-bold uppercase">Total Paid</th>
+                                        <th className="border border-black p-1.5 text-right font-bold text-sm">
+                                            {formatCurrency(transaction.totalAmount)}
+                                        </th>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {fines.map((item, idx) => (
-                                        <tr key={idx} className="border-b border-slate-100">
-                                            <td className="py-1.5">{item.name}</td>
-                                            <td className="py-1.5 text-slate-600">{item.description || "—"}</td>
-                                            <td className="py-1.5 text-right font-medium">
-                                                {formatCurrency(item.amount)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
+                                </tfoot>
                             </table>
                         </div>
-                    )}
 
-                    <div className="border-t border-dashed border-slate-400 mb-4" />
-
-                    {/* Payment method split */}
-                    <div className="mb-4">
-                        <p className="text-[10.5px] text-slate-500 uppercase tracking-wide mb-2">
-                            Paid Via
-                        </p>
-                        <div className="space-y-1.5 text-[12.5px]">
-                            {transaction.payments.map((p, idx) => (
-                                <div key={idx} className="flex justify-between">
-                                    <span>{p.account}</span>
-                                    <span className="font-medium">{formatCurrency(p.amount)}</span>
-                                </div>
-                            ))}
+                        {/* Payment method split */}
+                        <div className="mb-4">
+                            <span className="font-bold text-[12px] uppercase underline underline-offset-2">Payment Details</span>
+                            <div className="mt-1.5 space-y-1 text-[12px] font-medium">
+                                {transaction.payments.map((p, idx) => (
+                                    <div key={idx} className="flex gap-3">
+                                        <span className="w-20">Paid via {p.account}</span>
+                                        <span>: {formatCurrency(p.amount)}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="border-t border-dashed border-slate-400 my-4" />
+                        {/* Spacer pushes signature lines to the bottom */}
+                        <div className="flex-1" />
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-sm font-semibold uppercase tracking-wide">
-                            Total Paid
-                        </span>
-                        <span className="text-2xl font-bold">
-                            {formatCurrency(transaction.totalAmount)}
-                        </span>
-                    </div>
-
-                    <div className="border-t border-dashed border-slate-400 mb-4" />
-
-                    {/* Spacer pushes signature to bottom */}
-                    <div className="flex-1" />
-
-                    {/* Signatures */}
-                    <div className="grid grid-cols-2 gap-10 pt-4 text-[12px]">
-                        <div className="border-t border-slate-400 pt-1.5 text-center">
-                            <p className="font-medium">Received By</p>
+                        {/* Signatures */}
+                        <div className="grid grid-cols-2 gap-6 pt-12 text-[12px] font-bold text-center mt-auto">
+                            <div>
+                                <div className="border-t border-black w-3/4 mx-auto pt-1.5">Parent / Guardian</div>
+                            </div>
+                            <div>
+                                <div className="border-t border-black w-3/4 mx-auto pt-1.5">Received By</div>
+                            </div>
                         </div>
-                        <div className="border-t border-slate-400 pt-1.5 text-center">
-                            <p className="font-medium">Parent / Guardian</p>
-                        </div>
+
                     </div>
                 </div>
             </div>
@@ -260,18 +246,22 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
             <style jsx global>{`
                 @media print {
                     @page {
-                        size: A4;
+                        size: 148mm 210mm;
                         margin: 0;
                     }
                     html,
                     body {
-                        width: 210mm;
+                        width: 148mm;
+                        height: 210mm;
+                        background: white !important;
                     }
-                    .a4-sheet {
+                    .a5-sheet {
                         box-shadow: none !important;
                     }
-                    .a4-container {
+                    .a5-container {
                         page-break-inside: avoid;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                 }
             `}</style>
