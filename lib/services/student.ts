@@ -37,7 +37,7 @@ export interface Student {
 }
 
 export interface StudentListItem {
-  id:string,  
+  id: string;
   admissionNumber: string;
   studentName: string;
   gender: "Male" | "Female";
@@ -75,6 +75,8 @@ export interface GetStudentsParams {
   limit?: number;
   search?: string;
   className?: string;
+  admissionStatus?: string; // ADMITTED | NOT_ADMITTED
+  status?: string; // ACTIVE | WITHDRAWN | ALUMNI
   sortBy?: string;
   order?: "asc" | "desc";
 }
@@ -86,9 +88,7 @@ export interface StudentAdmissionAndName {
 }
 
 // Create Student
-export async function createStudent(
-  input: StudentInput
-) {
+export async function createStudent(input: StudentInput) {
   return apiFetch("/api/students", {
     method: "POST",
     body: JSON.stringify(input),
@@ -100,7 +100,9 @@ export async function getStudents({
   page = 1,
   limit = 10,
   search = "",
-  className = "", 
+  className = "",
+  admissionStatus = "",
+  status = "",
   sortBy = "admissionNumber",
   order = "desc",
 }: GetStudentsParams = {}) {
@@ -111,9 +113,17 @@ export async function getStudents({
     sortBy,
     order,
   });
-   if (className) {
-    params.set("className", className);   // ← add this
+
+  if (className) {
+    params.set("className", className);
   }
+  if (admissionStatus) {
+    params.set("admissionStatus", admissionStatus);
+  }
+  if (status) {
+    params.set("status", status);
+  }
+
   const payload = (await apiFetch(
     `/api/students?${params.toString()}`
   )) as {
@@ -142,21 +152,14 @@ export async function getStudents({
 }
 
 // Get Student By Id
-export async function getStudentById(
-  id: string
-) {
-  const payload = (await apiFetch(
-    `/api/students/${id}`
-  )) as ApiSuccess<Student>;
+export async function getStudentById(id: string) {
+  const payload = (await apiFetch(`/api/students/${id}`)) as ApiSuccess<Student>;
 
   return payload.data ?? null;
 }
 
 // Update Student
-export async function updateStudent(
-  id: string,
-  input: StudentInput
-) {
+export async function updateStudent(id: string, input: StudentInput) {
   return apiFetch(`/api/students/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
@@ -164,7 +167,10 @@ export async function updateStudent(
 }
 
 // Get Student Admission Number and Name By Id
-export async function getStudentAdmissionAndName(params?: { page?: number; limit?: number }) {
+export async function getStudentAdmissionAndName(params?: {
+  page?: number;
+  limit?: number;
+}) {
   const query = new URLSearchParams({
     page: String(params?.page ?? 1),
     limit: String(params?.limit ?? 200),
