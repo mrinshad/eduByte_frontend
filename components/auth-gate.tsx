@@ -9,6 +9,7 @@ import { clearAccessToken, getCurrentSession, logoutUser } from "@/lib/auth"
 import {
   canAccessPortalArea,
   getAlternateAccessiblePortal,
+  getInitialUserRoute,
   getRequiredPermissionForPath,
   type PortalArea,
 } from "@/lib/portal"
@@ -62,7 +63,8 @@ export function AuthGate({ area, children }: AuthGateProps) {
 
         if (altPortal) {
           if (active) {
-            router.replace(`/${altPortal}/dashboard`)
+            const targetRoute = getInitialUserRoute(permissions, role, session.user.defaultPortal, altPortal)
+            router.replace(targetRoute || `/${altPortal}/dashboard`)
           }
           return
         }

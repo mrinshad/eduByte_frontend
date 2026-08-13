@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2, ShieldCheck, LayoutGrid } from "lucide-react"
 
 import { getCurrentSession } from "@/lib/auth"
-import { canSwitchPortals, type PortalArea } from "@/lib/portal"
+import { canSwitchPortals, getInitialUserRoute, type PortalArea } from "@/lib/portal"
 
 function SwitchPortalContent() {
   const router = useRouter()
@@ -27,7 +27,13 @@ function SwitchPortalContent() {
 
         const timer = setTimeout(() => {
           if (active) {
-            router.replace(`/${target === "admin" ? "admin" : "workspace"}/dashboard`)
+            const targetRoute = getInitialUserRoute(
+              session.user.permissions || [],
+              session.user.role,
+              session.user.defaultPortal,
+              target
+            )
+            router.replace(targetRoute || `/${target === "admin" ? "admin" : "workspace"}/dashboard`)
           }
         }, 1200)
 

@@ -192,6 +192,41 @@ export function getUserAccessiblePortal(
   return null
 }
 
+export function getInitialUserRoute(
+  permissions: string[] = [],
+  role?: string | null,
+  defaultPortal?: string | null,
+  targetArea?: PortalArea
+): string | null {
+  const area = targetArea || getUserAccessiblePortal(permissions, role, defaultPortal)
+  if (!area) return null
+
+  if (area === "student") {
+    return "/student/dashboard"
+  }
+
+  if (Array.isArray(permissions) && permissions.includes("*")) {
+    return `/${area}/dashboard`
+  }
+
+  // Check if user has access to the dashboard section of this area
+  const dashboardPerm = permissionForSlug("dashboard", area)
+  if (checkPermission(permissions, dashboardPerm)) {
+    return `/${area}/dashboard`
+  }
+
+  // Find the first section in this area that the user HAS permission to access
+  const areaSections = portalSections.filter((s) => s.area === area && s.slug !== "dashboard")
+  for (const section of areaSections) {
+    const permKey = permissionForSlug(section.slug, area)
+    if (checkPermission(permissions, permKey)) {
+      return `/${area}/${section.slug}`
+    }
+  }
+
+  return `/${area}/dashboard`
+}
+
 export function getAlternateAccessiblePortal(
   currentArea: PortalArea,
   permissions: string[] = [],
