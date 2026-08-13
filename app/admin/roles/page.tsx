@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search, AlertCircle } from "lucide-react"
+import { Shield, Key, Pencil, Plus, Trash2, Link2, X, ListChecks, Search, AlertCircle, SquareDashedKanban } from "lucide-react"
 import { useRouter } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { canAccessPortalArea, getPermissionPortal, getMissingNavbarPermissionFor, isNavbarPermission, hasOrphanedActionPermissions } from "@/lib/portal";
@@ -590,8 +590,8 @@ export default function Page() {
               onClick={() => router.push("/admin/permissions")}
 
             >
-              <Plus className="h-4 w-4" />
-              Create Permission
+              <SquareDashedKanban className="h-4 w-4"/>
+              Manage Permission
             </Button>
           </PermissionGate>
 
