@@ -127,6 +127,8 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
+    "permissions": "roles.listOnNavbar",
+    "permission": "roles.listOnNavbar",
     "fee-management": "feecollection.listOnNavbar",
     "expense-management": "expense.listOnNavbar",
     "fine-management/student-fines": "fine.listOnNavbar",
@@ -280,8 +282,11 @@ export function getMissingNavbarPermissionFor(permName: string, rolePermissions:
 
   const parts = permName.split(".")
   if (parts.length < 2) return null
-  const section = parts[0]
-  const requiredNavbarPerm = `${section}.listOnNavbar`
+  const section = parts[0].toLowerCase()
+
+  const requiredNavbarPerm = (section === "permission" || section === "permissions")
+    ? "roles.listOnNavbar"
+    : `${parts[0]}.listOnNavbar`
 
   if (!rolePermissions.some((p) => p.toLowerCase() === requiredNavbarPerm.toLowerCase())) {
     return requiredNavbarPerm

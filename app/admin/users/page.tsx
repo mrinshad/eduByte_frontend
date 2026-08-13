@@ -542,7 +542,7 @@ export default function UsersPage() {
               Clear
             </Button>
           )}
-          <PermissionGate permission="user.createNewUserButton">
+          <PermissionGate permission="users.createNewUserButton">
             <Button
               className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => openDialog("add")}
@@ -795,7 +795,7 @@ export default function UsersPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1   transition-opacity w-24 justify-end">
-                    <PermissionGate permission="user.viewButton">
+                    <PermissionGate permission="users.viewButton">
                       <Link href={`/admin/users/view?id=${user.id}`}>
                         <Button
                           variant="ghost"
@@ -807,7 +807,7 @@ export default function UsersPage() {
 
                       </Link>
                     </PermissionGate>
-                    <PermissionGate permission="user.editButton">
+                    <PermissionGate permission="users.editButton">
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -817,7 +817,7 @@ export default function UsersPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </PermissionGate>
-                    <PermissionGate permission="user.deleteButton">
+                    <PermissionGate permission="users.deleteButton">
                       <Button
                         variant="ghost"
                         size="icon-sm"

@@ -584,7 +584,7 @@ export default function Page() {
     <TooltipProvider>
       <section className="px-4 sm:px-6 py-2 flex flex-col h-[calc(100vh-8rem)] max-h-[78vh] overflow-hidden">
         <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
-          <PermissionGate permission="role.createPermissionButton">
+          <PermissionGate permission="roles.createPermissionButton">
             <Button
               className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => router.push("/admin/permissions")}
@@ -615,7 +615,7 @@ export default function Page() {
                   </CardDescription>
                 </div>
               </div>
-              <PermissionGate permission="role.addRoleButton">
+              <PermissionGate permission="roles.addRoleButton">
 
                 <AddAction onAdd={() => openRoleDialog("add")} />
               </PermissionGate>
@@ -707,7 +707,7 @@ export default function Page() {
                         <span className="rounded-full border border-black/5 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                           {role.userCount} user{role.userCount === 1 ? "" : "s"}
                         </span>
-                        <PermissionGate permission="role.editRoleButton">
+                        <PermissionGate permission="roles.editRoleButton">
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -720,7 +720,7 @@ export default function Page() {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </PermissionGate>
-                        <PermissionGate permission="role.deleteRoleButton">
+                        <PermissionGate permission="roles.deleteRoleButton">
                           <DeleteAction
                             onDelete={() => requestDeleteRole(role)}
                             disabled={role.userCount > 0}
@@ -763,10 +763,9 @@ export default function Page() {
                   </CardDescription>
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
-                <Tooltip>
-                  <PermissionGate permission="role.assignPermissionButton">
+                <PermissionGate permission="roles.assignPermissionButton">
+                  <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
@@ -778,14 +777,14 @@ export default function Page() {
                         <Link2 className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                  </PermissionGate>
-                  <TooltipContent>
-                    <p>Assign existing</p>
-                  </TooltipContent>
-                </Tooltip>
+                    <TooltipContent>
+                      <p>Assign existing</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </PermissionGate>
 
                 <Tooltip>
-                  <PermissionGate permission="role.editPermissionButton">
+                  <PermissionGate permission="roles.editPermissionButton">
                     <TooltipTrigger asChild>
                       <Button
                         variant={permissionSelectMode ? "secondary" : "outline"}
@@ -813,9 +812,11 @@ export default function Page() {
                     Missing navigation permission for <strong>{selectedRole.defaultPortal.toUpperCase()}</strong> portal (requires e.g. <code className="font-bold">{selectedRole.defaultPortal === "admin" ? "academics.listOnNavbar" : "feecollection.listOnNavbar"}</code> or <code className="font-bold">*</code>).
                   </span>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium rounded-lg border-amber-500/40 text-slate-300 dark:text-amber-200 hover:bg-amber-500/20 shrink-0" onClick={openAssignDialog}>
-                  Assign
-                </Button>
+                <PermissionGate permission="roles.assignPermissionButton">
+                  <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium rounded-lg border-amber-500/40 text-slate-300 dark:text-amber-200 hover:bg-amber-500/20 shrink-0" onClick={openAssignDialog}>
+                    Assign
+                  </Button>
+                </PermissionGate>
               </div>
             )}
 
@@ -888,13 +889,15 @@ export default function Page() {
                   <p className="text-sm font-semibold text-slate-950 dark:text-white">
                     No permissions assigned to {selectedRole.name} yet.
                   </p>
-                  <Button
-                    className="mt-3 rounded-xl font-medium"
-                    onClick={openAssignDialog}
-                    disabled={availablePermissions.length === 0}
-                  >
-                    Assign permissions
-                  </Button>
+                  <PermissionGate permission="roles.assignPermissionButton">
+                    <Button
+                      className="mt-3 rounded-xl font-medium"
+                      onClick={openAssignDialog}
+                      disabled={availablePermissions.length === 0}
+                    >
+                      Assign permissions
+                    </Button>
+                  </PermissionGate>
                 </div>
               ) : filteredRolePermissions.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-6 text-center dark:border-white/10">
