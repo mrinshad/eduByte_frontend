@@ -441,11 +441,11 @@ export default function Page() {
               <div className="flex w-full items-start justify-between gap-4">
                 <div className="space-y-1">
                   <CardTitle className="text-xl font-semibold tracking-tight">
-                    Expense Management
+                    Expenses
                   </CardTitle>
 
                   <CardDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Manage expense categories and subcategories.
+                    Record school expenses, manage expense categories, and configure subcategories.
                   </CardDescription>
                 </div>
                 <PermissionGate permission="expense.createNewButton">

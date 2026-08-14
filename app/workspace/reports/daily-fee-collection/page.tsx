@@ -190,10 +190,10 @@ export default function DailyCollectionReportPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                Daily Collection Report
+                Daily Receipts Register
               </h1>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Total collected:{" "}
+                Track daily receipt transactions and payment methods • Total:{" "}
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {formatCurrency(totalCollection)}
                 </span>

@@ -295,7 +295,7 @@ export default function Page() {
                             Accounts
                         </h1>
                         <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                            Manage Accounts details and records.
+                            Manage financial accounts, payment methods, and ledger categories.
                         </p>
                     </div>
                 </div>

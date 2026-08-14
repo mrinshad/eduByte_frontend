@@ -112,10 +112,10 @@ export default function StudentAdmissionListPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Student Admissions
+              Admissions
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Manage and view all enrolled students.
+              Process new student admissions, manage enrollments, and assign fee structures.
             </p>
           </div>
         </div>

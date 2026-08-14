@@ -489,7 +489,7 @@ export default function UsersPage() {
             Users
           </h1>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Manage system user accounts and role assignments
+            Manage system user accounts, access credentials, and role assignments.
           </p>
         </div>
 

@@ -211,7 +211,7 @@ export default function FeeCollectionPage() {
               Fee Collection
             </h1>
             <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              View and manage student fee collection.
+              Collect student payments, record fee receipts, and view payment history.
             </p>
           </div>
         </div>

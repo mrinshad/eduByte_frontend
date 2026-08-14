@@ -240,8 +240,8 @@ export default function ExpenseSummaryPage() {
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {fromDate === toDate
-                                    ? formatDisplayDate(fromDate)
-                                    : `${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
+                                    ? `Expense transactions for ${formatDisplayDate(fromDate)}`
+                                    : `Expense transactions for ${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
                             </p>
                         </div>
                     </div>

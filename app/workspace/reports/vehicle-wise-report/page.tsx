@@ -360,10 +360,10 @@ export default function VehicleFinancialReportPage() {
                     </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Vehicle Financial Report
+                                Transport Financials
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Income, expense &amp; profit per vehicle
+                                Track vehicle-wise income, operational expenses, and net profit.
                             </p>
                         </div>
                     </div>

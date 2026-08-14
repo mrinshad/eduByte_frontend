@@ -105,12 +105,12 @@ export default function StudentOutstandingPage() {
             </Button>
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-                Student Outstanding
+                Outstanding Fees
               </h1>
               <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                 {academicYear
-                  ? `Outstanding fee and fine for ${academicYear}.`
-                  : "Outstanding fee and fine for the active academic year."}
+                  ? `View student outstanding fee balances and overdue fines for ${academicYear}.`
+                  : "View student outstanding fee balances and overdue fines for the active academic year."}
               </p>
             </div>
           </div>

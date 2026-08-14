@@ -380,7 +380,7 @@ export default function Page() {
               </TooltipProvider>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Manage and view all student fines.
+              Issue, configure, and manage student fines and penalties.
             </p>
           </div>
         </div>

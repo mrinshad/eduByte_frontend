@@ -237,12 +237,12 @@ export default function DailyCollectionReportPage() {
                     </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Daily Collection Report
+                                Daily Collection
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {fromDate === toDate
-                                    ? formatDisplayDate(fromDate)
-                                    : `${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
+                                    ? `Daily fee collection breakdown for ${formatDisplayDate(fromDate)}`
+                                    : `Daily fee collection breakdown for ${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
                             </p>
                         </div>
                     </div>
