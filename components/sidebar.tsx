@@ -45,6 +45,7 @@ type SidebarGroupView = {
 
 function getSubgroupIcon(subgroup: string): LucideIcon {
   const s = subgroup.toLowerCase()
+  if (s.includes("overview")) return GraduationCap
   if (s.includes("receipt") || s.includes("income")) return Banknote
   if (s.includes("payment") || s.includes("expense")) return Receipt
   if (s.includes("setup")) return Settings

@@ -77,11 +77,14 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
   // --- WORKSPACE REPORTS (REBUILT) ---
-  // A. Receipts (Income)
+  // A. Executive Overview
+  { slug: "reports/academic-year-summary", label: "Academic Year Summary", area: "workspace", purpose: "Executive operational and financial performance overview for academic years", group: "Report", subgroup: "Overview" },
+
+  // B. Receipts (Income)
   { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
 
-  // B. Payments (Expenses)
+  // C. Payments (Expenses)
   { slug: "reports/salary", label: "Salary", area: "workspace", purpose: "Staff payroll, advances, and compensation", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
@@ -142,6 +145,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fine-management/student-fines": "fine.listOnNavbar",
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
+    "reports/academic-year-summary": "academicyearsummary.listOnNavbar",
     "reports/admissions-master": "admissionsreport.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
     "reports/fee-type": "feecollection.listOnNavbar",
@@ -305,6 +309,7 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
   const lower = permName.toLowerCase()
 
   const workspaceDomains = [
+    "academicyearsummary",
     "feecollection",
     "expense",
     "fine",

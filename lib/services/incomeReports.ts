@@ -277,3 +277,107 @@ export async function getDailyReceiptsRegisterReport(params: {
         }
     );
 }
+
+//
+// 4. Academic Year Summary Report Types
+//
+
+export interface AcademicYearInfo {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+}
+
+export interface StudentStrengthSummary {
+    totalEnrollments: number;
+    activeEnrollments: number;
+    promotedCount: number;
+    completedCount: number;
+    withdrawnCount: number;
+    genderStats: {
+        male: number;
+        female: number;
+    };
+    transportOptedCount: number;
+}
+
+export interface AcademicYearFinancialSummary {
+    totalBilled: number;
+    totalCollected: number;
+    cashCollected: number;
+    bankCollected: number;
+    totalOutstanding: number;
+    collectionRate: number;
+    totalExpenses: number;
+    cashExpenses: number;
+    bankExpenses: number;
+    netSurplus: number;
+    netCashSurplus: number;
+    netBankSurplus: number;
+}
+
+export interface AcademicYearFeeTypeItem {
+    chargeTypeId: string;
+    name: string;
+    frequency: string;
+    billedAmount: number;
+    collectedAmount: number;
+    cashAmount: number;
+    bankAmount: number;
+    balanceAmount: number;
+    collectionRate: number;
+}
+
+export interface AcademicYearExpenseCategoryItem {
+    categoryId: string;
+    categoryName: string;
+    totalAmount: number;
+    cashAmount: number;
+    bankAmount: number;
+    percentage: number;
+}
+
+export interface AcademicYearClassItem {
+    classId: string;
+    className: string;
+    studentCount: number;
+    billedAmount: number;
+    collectedAmount: number;
+    balanceAmount: number;
+    collectionRate: number;
+}
+
+export interface AcademicYearMonthlyTrendItem {
+    monthKey: string;
+    monthName: string;
+    year: number;
+    month: number;
+    income: number;
+    expense: number;
+    net: number;
+}
+
+export interface AcademicYearSummaryResponse {
+    academicYear: AcademicYearInfo;
+    studentSummary: StudentStrengthSummary;
+    financialSummary: AcademicYearFinancialSummary;
+    feeTypeBreakdown: AcademicYearFeeTypeItem[];
+    expenseCategoryBreakdown: AcademicYearExpenseCategoryItem[];
+    classBreakdown: AcademicYearClassItem[];
+    monthlyTrend: AcademicYearMonthlyTrendItem[];
+}
+
+export async function getAcademicYearSummaryReport(
+    academicYearId?: string
+): Promise<AcademicYearSummaryResponse | null> {
+    const query = new URLSearchParams();
+    if (academicYearId) query.set("academicYearId", academicYearId);
+
+    const payload = (await apiFetch(
+        `/api/reports/income/academic-year-summary?${query.toString()}`
+    )) as ApiSuccess<AcademicYearSummaryResponse>;
+
+    return payload.data ?? null;
+}
