@@ -137,14 +137,14 @@ export default function AcademicYearSummaryPage() {
                         <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                     </Button>
 
-                    <Button
+                    {/* <Button
                         onClick={() => window.print()}
                         className="h-9 text-white font-medium shadow-xs"
                         style={{ backgroundColor: SAGE }}
                     >
                         <Printer className="mr-2 h-4 w-4" />
                         Print Summary
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
@@ -277,11 +277,10 @@ export default function AcademicYearSummaryPage() {
                             <Skeleton className="h-7 w-28 mb-2" />
                         ) : (
                             <div
-                                className={`text-2xl font-bold flex items-center gap-1 ${
-                                    (data?.financialSummary.netSurplus ?? 0) >= 0
+                                className={`text-2xl font-bold flex items-center gap-1 ${(data?.financialSummary.netSurplus ?? 0) >= 0
                                         ? "text-emerald-600 dark:text-emerald-400"
                                         : "text-rose-600 dark:text-rose-400"
-                                }`}
+                                    }`}
                             >
                                 {(data?.financialSummary.netSurplus ?? 0) >= 0 ? (
                                     <ArrowUpRight className="h-5 w-5" />
@@ -372,13 +371,12 @@ export default function AcademicYearSummaryPage() {
                                                 {formatCurrency(item.balanceAmount)}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-                                                    item.collectionRate >= 90
+                                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${item.collectionRate >= 90
                                                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                                                         : item.collectionRate >= 70
-                                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-                                                        : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                                                }`}>
+                                                            ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                                                            : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                                    }`}>
                                                     {item.collectionRate}%
                                                 </span>
                                             </td>
@@ -526,20 +524,27 @@ export default function AcademicYearSummaryPage() {
                                                 <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
                                                     {cls.className}
                                                 </td>
-                                                <td className="px-4 py-3 text-center font-medium">
-                                                    {cls.studentCount}
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className="inline-flex items-center justify-center min-w-[28px] px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-900 border border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
+                                                        {cls.studentCount}
+                                                    </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">
+                                                <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300 font-medium">
                                                     {formatCurrency(cls.billedAmount)}
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-bold text-emerald-700 dark:text-emerald-400">
                                                     {formatCurrency(cls.collectedAmount)}
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-medium text-amber-600 dark:text-amber-400">
+                                                <td className="px-4 py-3 text-right font-medium text-amber-700 dark:text-amber-400">
                                                     {formatCurrency(cls.balanceAmount)}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${cls.collectionRate >= 90
+                                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                                            : cls.collectionRate >= 70
+                                                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                                                                : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                                        }`}>
                                                         {cls.collectionRate}%
                                                     </span>
                                                 </td>
@@ -547,6 +552,24 @@ export default function AcademicYearSummaryPage() {
                                         ))
                                     )}
                                 </tbody>
+                                {data?.classBreakdown && data.classBreakdown.length > 0 && (
+                                    <tfoot className="bg-slate-50 dark:bg-slate-800/80 font-bold text-slate-900 dark:text-slate-100 border-t-2 border-slate-300 dark:border-slate-700">
+                                        <tr>
+                                            <td className="px-4 py-3 uppercase text-xs">Total</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex items-center justify-center min-w-[28px] px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-200 text-slate-900 border border-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600">
+                                                    {data.classBreakdown.reduce((acc, c) => acc + c.studentCount, 0)}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">{formatCurrency(data.classBreakdown.reduce((acc, c) => acc + c.billedAmount, 0))}</td>
+                                            <td className="px-4 py-3 text-right text-emerald-700 dark:text-emerald-400">{formatCurrency(data.classBreakdown.reduce((acc, c) => acc + c.collectedAmount, 0))}</td>
+                                            <td className="px-4 py-3 text-right text-amber-700 dark:text-amber-400">{formatCurrency(data.classBreakdown.reduce((acc, c) => acc + c.balanceAmount, 0))}</td>
+                                            <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-400 font-bold">
+                                                {data.financialSummary.collectionRate}%
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                )}
                             </table>
                         </div>
                     </CardContent>
@@ -603,11 +626,10 @@ export default function AcademicYearSummaryPage() {
                                                 {formatCurrency(m.expense)}
                                             </td>
                                             <td
-                                                className={`px-4 py-3 text-right font-bold ${
-                                                    m.net >= 0
+                                                className={`px-4 py-3 text-right font-bold ${m.net >= 0
                                                         ? "text-emerald-700 dark:text-emerald-400"
                                                         : "text-rose-600 dark:text-rose-400"
-                                                }`}
+                                                    }`}
                                             >
                                                 {formatCurrency(m.net)}
                                             </td>
