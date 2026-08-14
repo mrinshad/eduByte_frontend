@@ -50,6 +50,7 @@ import {
     type SalaryExpenseReportResponse,
 } from "@/lib/services/expenseReports";
 import { getStaff, type StaffListItem } from "@/lib/services/staff";
+import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -123,6 +124,7 @@ export default function SalaryExpenseReportPage() {
     const [staffFilter, setStaffFilter] = useState("all");
     const [paymentMethodFilter, setPaymentMethodFilter] = useState("ALL");
     const [staffList, setStaffList] = useState<StaffListItem[]>([]);
+    const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
 
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
@@ -141,10 +143,13 @@ export default function SalaryExpenseReportPage() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Load staff for dropdown
+    // Load staff and payment accounts for dropdown
     useEffect(() => {
         getStaff({ limit: 100 })
             .then((res) => setStaffList(res.data.items))
+            .catch(() => {});
+        getPaymentMethodAccounts()
+            .then(setPaymentAccounts)
             .catch(() => {});
     }, []);
 
@@ -242,7 +247,7 @@ export default function SalaryExpenseReportPage() {
                                 Salary & Staff Payouts
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Staff salary vouchers, payroll disbursements, and payment modes for {formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)}
+                                Track all staff salary payouts and payment accounts for the selected period.
                             </p>
                         </div>
                     </div>
@@ -330,32 +335,6 @@ export default function SalaryExpenseReportPage() {
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                        <Wallet className="h-4 w-4 text-emerald-600" />
-                        Cash Payouts
-                    </div>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-100">
-                        {formatCurrency(summary.cashPaid)}
-                    </p>
-                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">
-                        Cash disbursements
-                    </p>
-                </div>
-
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm dark:border-blue-500/30 dark:bg-blue-500/10">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-                        <Landmark className="h-4 w-4 text-blue-600" />
-                        Bank / Online
-                    </div>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-blue-950 dark:text-blue-100">
-                        {formatCurrency(summary.bankPaid)}
-                    </p>
-                    <p className="mt-1 text-xs text-blue-700/80 dark:text-blue-300/80">
-                        Direct Bank Transfers
-                    </p>
-                </div>
-
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                         <Users className="h-4 w-4 text-[#556043]" />
@@ -368,7 +347,51 @@ export default function SalaryExpenseReportPage() {
                         Total payouts issued
                     </p>
                 </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <Wallet className="h-4 w-4 text-[#556043]" />
+                        Average Payout
+                    </div>
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                        {formatCurrency(summary.count > 0 ? summary.totalSalaryPaid / summary.count : 0)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Average voucher amount
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <Landmark className="h-4 w-4 text-[#556043]" />
+                        Payment Accounts
+                    </div>
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                        {summary.paymentMethodBreakdown && summary.paymentMethodBreakdown.length > 0 ? summary.paymentMethodBreakdown.length : (paymentAccounts.length || 1)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Active payment methods
+                    </p>
+                </div>
             </div>
+
+            {/* Dynamic Payment Method Breakdown Chips */}
+            {summary.paymentMethodBreakdown && summary.paymentMethodBreakdown.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Payouts by Account:
+                    </span>
+                    {summary.paymentMethodBreakdown.map((pm) => (
+                        <Badge
+                            key={pm.name}
+                            variant="outline"
+                            className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                        >
+                            {pm.name}: {formatCurrency(pm.amount)}
+                        </Badge>
+                    ))}
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -410,13 +433,16 @@ export default function SalaryExpenseReportPage() {
                             setPage(1);
                         }}
                     >
-                        <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                            <SelectValue placeholder="Payment Mode" />
+                        <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <SelectValue placeholder="Payment Account" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Modes</SelectItem>
-                            <SelectItem value="CASH">Cash Only</SelectItem>
-                            <SelectItem value="BANK">Bank / UPI</SelectItem>
+                            <SelectItem value="ALL">All Payment Accounts</SelectItem>
+                            {paymentAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={acc.name}>
+                                    {acc.name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
@@ -444,8 +470,7 @@ export default function SalaryExpenseReportPage() {
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Date</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Staff Name & Code</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Category / Type</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Cash</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Bank / Transfer</TableHead>
+                                <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Payment Method</TableHead>
                                 <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Amount</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap text-right">Action</TableHead>
                             </TableRow>
@@ -492,11 +517,10 @@ export default function SalaryExpenseReportPage() {
                                         <TableCell className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                             {item.subCategoryName !== "-" ? item.subCategoryName : item.categoryName}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                                            {item.cashAmount > 0 ? formatCurrency(item.cashAmount) : "-"}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                                            {item.bankAmount > 0 ? formatCurrency(item.bankAmount) : "-"}
+                                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                {item.paymentMethod || (item.cashAmount > 0 ? "Cash" : "Bank")}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-right font-bold text-slate-950 dark:text-white whitespace-nowrap">
                                             {formatCurrency(item.amount)}

@@ -267,9 +267,8 @@ export default function AcademicYearSummaryPage() {
                             {formatCurrency(data?.financialSummary.totalExpenses)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Cash: {formatCurrency(data?.financialSummary.cashExpenses)}</span>
-                        <span>Bank: {formatCurrency(data?.financialSummary.bankExpenses)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Operational & payroll expenses
                     </div>
                 </div>
 
@@ -307,9 +306,8 @@ export default function AcademicYearSummaryPage() {
                             {formatCurrency(netSurplus)}
                         </div>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Net Cash: {formatCurrency(data?.financialSummary.netCashSurplus)}</span>
-                        <span>Net Bank: {formatCurrency(data?.financialSummary.netBankSurplus)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Total net operating balance
                     </div>
                 </div>
             </div>

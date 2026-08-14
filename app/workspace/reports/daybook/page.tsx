@@ -8,6 +8,7 @@ import {
     type DaybookReportResponse,
     type DaybookEntry
 } from "@/lib/services/advancedReports";
+import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,6 +79,11 @@ export default function DaybookReportPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<DaybookReportResponse | null>(null);
+    const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
+
+    useEffect(() => {
+        getPaymentMethodAccounts().then(setPaymentAccounts).catch(() => {});
+    }, []);
 
     // Debounced search
     useEffect(() => {
@@ -217,9 +223,8 @@ export default function DaybookReportPage() {
                             {formatCurrency(data?.summary.openingBalance.total)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Cash: {formatCurrency(data?.summary.openingBalance.cash)}</span>
-                        <span>Bank: {formatCurrency(data?.summary.openingBalance.bank)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Balance brought forward
                     </div>
                 </div>
 
@@ -238,9 +243,8 @@ export default function DaybookReportPage() {
                             {formatCurrency(data?.summary.todayInflow.total)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Cash: {formatCurrency(data?.summary.todayInflow.cash)}</span>
-                        <span>Bank: {formatCurrency(data?.summary.todayInflow.bank)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {data?.summary.todayInflow.receiptCount ?? 0} receipt(s) collected
                     </div>
                 </div>
 
@@ -259,9 +263,8 @@ export default function DaybookReportPage() {
                             {formatCurrency(data?.summary.todayOutflow.total)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Cash: {formatCurrency(data?.summary.todayOutflow.cash)}</span>
-                        <span>Bank: {formatCurrency(data?.summary.todayOutflow.bank)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {data?.summary.todayOutflow.voucherCount ?? 0} expense voucher(s)
                     </div>
                 </div>
 
@@ -280,9 +283,8 @@ export default function DaybookReportPage() {
                             {formatCurrency(data?.summary.closingBalance.total)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Cash: {formatCurrency(data?.summary.closingBalance.cash)}</span>
-                        <span>Bank: {formatCurrency(data?.summary.closingBalance.bank)}</span>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Net flow: {formatCurrency(data?.summary.netFlow.total ?? 0)}
                     </div>
                 </div>
             </div>
@@ -306,13 +308,16 @@ export default function DaybookReportPage() {
                             setPaymentMethod(val);
                         }}
                     >
-                        <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
-                            <SelectValue placeholder="All Payment Modes" />
+                        <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+                            <SelectValue placeholder="All Payment Accounts" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Payment Modes</SelectItem>
-                            <SelectItem value="CASH">Cash Drawer Only</SelectItem>
-                            <SelectItem value="BANK">Bank / UPI Only</SelectItem>
+                            <SelectItem value="ALL">All Payment Accounts</SelectItem>
+                            {paymentAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={acc.name}>
+                                    {acc.name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
@@ -421,11 +426,13 @@ export default function DaybookReportPage() {
                                                 {entry.entryType}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="inline-flex items-center gap-1 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                                                {entry.paymentMethod === "CASH" ? <Coins className="h-3 w-3 text-amber-500" /> : <Banknote className="h-3 w-3 text-blue-500" />}
+                                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                                            >
                                                 {entry.paymentMethod}
-                                            </span>
+                                            </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 text-sm">
                                             {entry.inflowAmount > 0 ? `+${formatCurrency(entry.inflowAmount)}` : "-"}

@@ -116,6 +116,7 @@ export interface FeeTypeCollectionItem {
     allocatedAmount: number;
     cashAmount: number;
     bankAmount: number;
+    paymentMethod?: string;
     totalTransactionAmount: number;
     paymentMethods: FeeTypePaymentMethodItem[];
 }
@@ -133,6 +134,7 @@ export interface FeeTypeCollectionReportResponse {
         cashCollected: number;
         bankCollected: number;
         transactionCount: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;
@@ -215,6 +217,7 @@ export interface DailyReceiptRecord {
     admissionNumber: string;
     className: string;
     totalAmount: number;
+    paymentMethod?: string;
     paymentMethods: DailyReceiptPaymentMethod[];
     collections: DailyReceiptItemCollection[];
 }
@@ -225,6 +228,7 @@ export interface DailyReceiptsRegisterResponse {
         cashCollected: number;
         bankCollected: number;
         receiptCount: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;

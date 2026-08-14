@@ -49,6 +49,7 @@ import {
     type FeeTypeCollectionReportResponse,
 } from "@/lib/services/incomeReports";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
+import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -124,6 +125,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
     const [classNameFilter, setClassNameFilter] = useState("all");
     const [paymentMethodFilter, setPaymentMethodFilter] = useState("ALL");
     const [classes, setClasses] = useState<SchoolClass[]>([]);
+    const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
 
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
@@ -142,10 +144,13 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Load classes
+    // Load classes and payment accounts
     useEffect(() => {
         getClasses()
             .then(setClasses)
+            .catch(() => {});
+        getPaymentMethodAccounts()
+            .then(setPaymentAccounts)
             .catch(() => {});
     }, []);
 
@@ -251,7 +256,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                                 )}
                             </div>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Receipts breakdown for {formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)}
+                                View receipt breakdown across all payment accounts for {formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)}
                             </p>
                         </div>
                     </div>
@@ -324,7 +329,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
-            {/* Summary Cards with Dynamic Cash vs Bank Split */}
+            {/* Summary Cards with Dynamic Breakdown */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-2xl border border-slate-200 bg-[#556043] p-4 text-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
@@ -336,32 +341,6 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                     </p>
                     <p className="mt-1 text-xs text-slate-200">
                         {summary.transactionCount} transaction(s)
-                    </p>
-                </div>
-
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                        <Wallet className="h-4 w-4 text-emerald-600" />
-                        Cash Collected
-                    </div>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-100">
-                        {formatCurrency(summary.cashCollected)}
-                    </p>
-                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">
-                        Direct Cash Receipts
-                    </p>
-                </div>
-
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm dark:border-blue-500/30 dark:bg-blue-500/10">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-                        <Landmark className="h-4 w-4 text-blue-600" />
-                        Bank / Online
-                    </div>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-blue-950 dark:text-blue-100">
-                        {formatCurrency(summary.bankCollected)}
-                    </p>
-                    <p className="mt-1 text-xs text-blue-700/80 dark:text-blue-300/80">
-                        Bank Transfer & UPI
                     </p>
                 </div>
 
@@ -377,7 +356,51 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                         Total payment records
                     </p>
                 </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <Wallet className="h-4 w-4 text-[#556043]" />
+                        Average Collection
+                    </div>
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                        {formatCurrency(summary.transactionCount > 0 ? summary.totalCollected / summary.transactionCount : 0)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Average transaction value
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <Landmark className="h-4 w-4 text-[#556043]" />
+                        Payment Accounts
+                    </div>
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                        {summary.paymentMethodBreakdown && summary.paymentMethodBreakdown.length > 0 ? summary.paymentMethodBreakdown.length : (paymentAccounts.length || 1)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Active payment methods
+                    </p>
+                </div>
             </div>
+
+            {/* Dynamic Payment Method Breakdown Chips */}
+            {summary.paymentMethodBreakdown && summary.paymentMethodBreakdown.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Collections by Account:
+                    </span>
+                    {summary.paymentMethodBreakdown.map((pm) => (
+                        <Badge
+                            key={pm.name}
+                            variant="outline"
+                            className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                        >
+                            {pm.name}: {formatCurrency(pm.amount)}
+                        </Badge>
+                    ))}
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -419,13 +442,16 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                             setPage(1);
                         }}
                     >
-                        <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                            <SelectValue placeholder="Payment Mode" />
+                        <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <SelectValue placeholder="Payment Account" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Modes</SelectItem>
-                            <SelectItem value="CASH">Cash Only</SelectItem>
-                            <SelectItem value="BANK">Bank / UPI</SelectItem>
+                            <SelectItem value="ALL">All Payment Accounts</SelectItem>
+                            {paymentAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={acc.name}>
+                                    {acc.name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
@@ -453,8 +479,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Date</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Student Name</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Class</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Cash</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Bank / UPI</TableHead>
+                                <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Payment Method</TableHead>
                                 <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Total Paid</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap text-right">Receipt</TableHead>
                             </TableRow>
@@ -472,13 +497,13 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-44 text-center text-red-500">
+                                    <TableCell colSpan={7} className="h-44 text-center text-red-500">
                                         <p className="text-sm font-medium">{error}</p>
                                     </TableCell>
                                 </TableRow>
                             ) : items.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-44 text-center text-slate-500">
+                                    <TableCell colSpan={7} className="h-44 text-center text-slate-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <Receipt className="h-8 w-8 text-slate-300" />
                                             <p className="text-sm">No fee collections recorded for this range.</p>
@@ -501,11 +526,10 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                                         <TableCell className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                             {item.className}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                                            {item.cashAmount > 0 ? formatCurrency(item.cashAmount) : "-"}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                                            {item.bankAmount > 0 ? formatCurrency(item.bankAmount) : "-"}
+                                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                {item.paymentMethod || (item.cashAmount > 0 ? "Cash" : "Bank")}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-right font-bold text-slate-950 dark:text-white whitespace-nowrap">
                                             {formatCurrency(item.allocatedAmount)}

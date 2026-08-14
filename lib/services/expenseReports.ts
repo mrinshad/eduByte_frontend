@@ -27,6 +27,7 @@ export interface SalaryExpenseItem {
     amount: number;
     cashAmount: number;
     bankAmount: number;
+    paymentMethod?: string;
     notes: string;
     paymentMethods: ExpensePaymentMethodItem[];
 }
@@ -37,6 +38,7 @@ export interface SalaryExpenseReportResponse {
         cashPaid: number;
         bankPaid: number;
         count: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;
@@ -106,6 +108,7 @@ export interface TransportationExpenseItem {
     amount: number;
     cashAmount: number;
     bankAmount: number;
+    paymentMethod?: string;
     notes: string;
     paymentMethods: ExpensePaymentMethodItem[];
 }
@@ -119,6 +122,7 @@ export interface TransportationExpenseReportResponse {
         cashPaid: number;
         bankPaid: number;
         count: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;
@@ -197,6 +201,7 @@ export interface CategoryExpenseItem {
     amount: number;
     cashAmount: number;
     bankAmount: number;
+    paymentMethod?: string;
     notes: string;
     paymentMethods: ExpensePaymentMethodItem[];
 }
@@ -207,6 +212,7 @@ export interface CategoryExpenseReportResponse {
         cashPaid: number;
         bankPaid: number;
         expenseCount: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;
@@ -275,6 +281,7 @@ export interface DailyExpenseVoucher {
     subCategoryName: string;
     linkedEntity: string;
     totalAmount: number;
+    paymentMethod?: string;
     notes: string;
     paymentMethods: ExpensePaymentMethodItem[];
 }
@@ -285,6 +292,7 @@ export interface DailyExpensesRegisterResponse {
         cashPaid: number;
         bankPaid: number;
         voucherCount: number;
+        paymentMethodBreakdown?: { name: string; amount: number }[];
     };
     pagination: {
         page: number;

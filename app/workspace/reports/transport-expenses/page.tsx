@@ -49,7 +49,12 @@ import {
     type TransportationExpenseReportResponse,
 } from "@/lib/services/expenseReports";
 import { getVehicles, type Vehicle } from "@/lib/services/vehicle";
-import { getExpenseCategories, getExpenseSubCategories, type ExpenseCategory, type ExpenseSubCategory } from "@/lib/services/expense";
+import {
+    getExpenseSubCategories,
+    getPaymentMethodAccounts,
+    type ExpenseSubCategory,
+    type PaymentMethodAccount,
+} from "@/lib/services/expense";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -126,6 +131,7 @@ export default function TransportationExpensesReportPage() {
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [subCategories, setSubCategories] = useState<ExpenseSubCategory[]>([]);
+    const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
 
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
@@ -144,19 +150,11 @@ export default function TransportationExpensesReportPage() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Load vehicles & transport subcategories
+    // Load vehicles, subcategories, and payment accounts
     useEffect(() => {
         getVehicles().then(setVehicles).catch(() => {});
-
-        getExpenseCategories().then(async (cats) => {
-            const transportCat = cats.find((c) =>
-                c.name.toLowerCase().includes("transport") || c.name.toLowerCase().includes("vehicle")
-            );
-            if (transportCat) {
-                const subs = await getExpenseSubCategories(transportCat.id);
-                setSubCategories(subs);
-            }
-        }).catch(() => {});
+        getExpenseSubCategories().then(setSubCategories).catch(() => {});
+        getPaymentMethodAccounts().then(setPaymentAccounts).catch(() => {});
     }, []);
 
     // Load report
@@ -200,9 +198,8 @@ export default function TransportationExpensesReportPage() {
         fuelTotal: 0,
         serviceTotal: 0,
         partsTotal: 0,
-        cashPaid: 0,
-        bankPaid: 0,
         count: 0,
+        paymentMethodBreakdown: [],
     };
     const items = report?.items ?? [];
     const pagination = report?.pagination ?? { page: 1, limit: 10, total: 0, totalPages: 1 };
@@ -258,7 +255,7 @@ export default function TransportationExpensesReportPage() {
                                 Transportation Expenses
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Vehicle operational costs, fuel, maintenance, parts, and servicing for {formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)}
+                                View detailed fuel, repairs, maintenance, and vehicle operating expenses.
                             </p>
                         </div>
                     </div>
@@ -386,6 +383,24 @@ export default function TransportationExpensesReportPage() {
                 </div>
             </div>
 
+            {/* Dynamic Payment Method Breakdown Chips */}
+            {summary.paymentMethodBreakdown && summary.paymentMethodBreakdown.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Expenses by Account:
+                    </span>
+                    {summary.paymentMethodBreakdown.map((pm) => (
+                        <Badge
+                            key={pm.name}
+                            variant="outline"
+                            className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                        >
+                            {pm.name}: {formatCurrency(pm.amount)}
+                        </Badge>
+                    ))}
+                </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="relative w-full md:w-80">
@@ -446,13 +461,16 @@ export default function TransportationExpensesReportPage() {
                             setPage(1);
                         }}
                     >
-                        <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                            <SelectValue placeholder="Payment Mode" />
+                        <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <SelectValue placeholder="Payment Account" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Modes</SelectItem>
-                            <SelectItem value="CASH">Cash Only</SelectItem>
-                            <SelectItem value="BANK">Bank / UPI</SelectItem>
+                            <SelectItem value="ALL">All Payment Accounts</SelectItem>
+                            {paymentAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={acc.name}>
+                                    {acc.name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
@@ -481,8 +499,7 @@ export default function TransportationExpensesReportPage() {
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Vehicle Details</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Driver</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Subcategory</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Cash</TableHead>
-                                <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Bank / Transfer</TableHead>
+                                <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap">Payment Method</TableHead>
                                 <TableHead className="px-4 py-3 text-right text-white font-semibold whitespace-nowrap">Amount</TableHead>
                                 <TableHead className="px-4 py-3 text-white font-semibold whitespace-nowrap text-right">Action</TableHead>
                             </TableRow>
@@ -491,7 +508,7 @@ export default function TransportationExpensesReportPage() {
                         <TableBody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="h-44 text-center">
+                                    <TableCell colSpan={8} className="h-44 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                                             <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
                                             <p className="text-sm">Loading transportation expenses report...</p>
@@ -500,13 +517,13 @@ export default function TransportationExpensesReportPage() {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="h-44 text-center text-red-500">
+                                    <TableCell colSpan={8} className="h-44 text-center text-red-500">
                                         <p className="text-sm font-medium">{error}</p>
                                     </TableCell>
                                 </TableRow>
                             ) : items.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="h-44 text-center text-slate-500">
+                                    <TableCell colSpan={8} className="h-44 text-center text-slate-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <Bus className="h-8 w-8 text-slate-300" />
                                             <p className="text-sm">No transportation expenses recorded for this range.</p>
@@ -532,11 +549,10 @@ export default function TransportationExpensesReportPage() {
                                         <TableCell className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                             <Badge variant="outline">{item.subCategoryName !== "-" ? item.subCategoryName : item.categoryName}</Badge>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                                            {item.cashAmount > 0 ? formatCurrency(item.cashAmount) : "-"}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-right font-medium text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                                            {item.bankAmount > 0 ? formatCurrency(item.bankAmount) : "-"}
+                                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                {item.paymentMethod || (item.cashAmount > 0 ? "Cash" : "Bank")}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-right font-bold text-slate-950 dark:text-white whitespace-nowrap">
                                             {formatCurrency(item.amount)}
