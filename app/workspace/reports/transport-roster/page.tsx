@@ -12,21 +12,17 @@ import { getAcademicYears } from "@/lib/services/academicYear";
 import { getVehicles } from "@/lib/services/vehicle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Bus,
-    ChevronLeft,
-    RotateCw,
+    ArrowLeft,
+    RefreshCcw,
     Search,
     Users,
     UserCheck,
     Gauge,
-    Phone,
-    MapPin,
-    ShieldAlert,
-    CheckCircle
+    Phone
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -98,226 +94,210 @@ export default function TransportRosterReportPage() {
 
     if (!canView) {
         return (
-            <div className="flex h-96 items-center justify-center p-8 text-center">
+            <div className="flex h-96 items-center justify-center p-8 text-center font-sans">
                 <div className="max-w-md">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Access Restricted</h2>
-                    <p className="mt-2 text-sm text-slate-500">You do not have permission to view Transportation Reports.</p>
+                    <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Access Restricted</h2>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">You do not have permission to view Transportation Reports.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-screen">
+        <div className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 max-w-7xl mx-auto font-sans min-h-screen">
             {/* Header Section */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-5">
-                <div>
-                    <div className="flex items-center gap-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
                         <Link
                             href="/workspace/dashboard"
-                            className="inline-flex items-center text-xs text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 font-medium"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
                         >
-                            <ChevronLeft className="h-3 w-3 mr-0.5" /> Back to Dashboard
+                            <ArrowLeft className="h-4 w-4" />
                         </Link>
+                        <div className="min-w-0">
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
+                                <Bus className="h-6 w-6 text-[#556043]" />
+                                Vehicle Route & Passenger Roster
+                            </h1>
+                            <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+                                School fleet seating capacity, driver details, and student passenger manifests.
+                            </p>
+                        </div>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mt-1 flex items-center gap-2.5">
-                        <Bus className="h-7 w-7 text-indigo-600" />
-                        Vehicle Route & Passenger Roster
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-0.5">
-                        School fleet seating capacity, driver details, and student passenger manifests.
-                    </p>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Academic Year Selector */}
-                    <select
-                        value={selectedYearId}
-                        onChange={(e) => {
-                            setSelectedYearId(e.target.value);
-                            setPage(1);
-                        }}
-                        className="h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-slate-100 shadow-xs focus:ring-1 focus:ring-slate-400"
-                    >
-                        {academicYears.map((y) => (
-                            <option key={y.id} value={y.id}>
-                                {y.name} {y.isActive ? "(Active)" : ""}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Academic Year Selector */}
+                        <select
+                            value={selectedYearId}
+                            onChange={(e) => {
+                                setSelectedYearId(e.target.value);
+                                setPage(1);
+                            }}
+                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
+                        >
+                            {academicYears.map((y) => (
+                                <option key={y.id} value={y.id}>
+                                    {y.name} {y.isActive ? "(Active)" : ""}
+                                </option>
+                            ))}
+                        </select>
 
-                    {/* Vehicle Filter */}
-                    <select
-                        value={selectedVehicleId}
-                        onChange={(e) => {
-                            setSelectedVehicleId(e.target.value);
-                            setPage(1);
-                        }}
-                        className="h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-slate-100 shadow-xs focus:ring-1 focus:ring-slate-400"
-                    >
-                        <option value="ALL">All Fleet Vehicles</option>
-                        {vehicles.map((v) => (
-                            <option key={v.id} value={v.id}>
-                                {v.vehicleName} ({v.vehicleNumber})
-                            </option>
-                        ))}
-                    </select>
+                        {/* Vehicle Filter */}
+                        <select
+                            value={selectedVehicleId}
+                            onChange={(e) => {
+                                setSelectedVehicleId(e.target.value);
+                                setPage(1);
+                            }}
+                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
+                        >
+                            <option value="ALL">All Fleet Vehicles</option>
+                            {vehicles.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                    {v.vehicleName} ({v.vehicleNumber})
+                                </option>
+                            ))}
+                        </select>
 
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={loadRoster}
-                        disabled={loading}
-                        className="h-9 w-9 shrink-0 bg-white text-slate-800 border-slate-300 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-100"
-                        title="Refresh Roster"
-                    >
-                        <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                    </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={loadRoster}
+                            disabled={loading}
+                            className="h-9 w-9 shrink-0 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                            title="Refresh Roster"
+                        >
+                            <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             {/* ERROR ALERT */}
             {error && (
-                <div className="p-4 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium">
                     {error}
                 </div>
             )}
 
-            {/* 4 FLEET KPI CARDS */}
+            {/* 4 SUMMARY STAT CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1. Fleet Vehicles */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Active Fleet Vehicles
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Fleet Vehicles</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             <Bus className="h-4 w-4" />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {data?.summary.totalVehicles ?? 0}
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Buses & transport vans</p>
-                    </CardContent>
-                </Card>
+                    </div>
+                    {loading ? (
+                        <Skeleton className="mt-2 h-7 w-28" />
+                    ) : (
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                            {data?.summary.totalVehicles ?? 0}
+                        </p>
+                    )}
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Buses & transport vans</p>
+                </div>
 
                 {/* 2. Total Seating Capacity */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Total Seating Capacity
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Seating Capacity</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
                             <Gauge className="h-4 w-4" />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                                {data?.summary.totalCapacity ?? 0} Seats
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Total seats across vehicles</p>
-                    </CardContent>
-                </Card>
+                    </div>
+                    {loading ? (
+                        <Skeleton className="mt-2 h-7 w-28" />
+                    ) : (
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                            {data?.summary.totalCapacity ?? 0} Seats
+                        </p>
+                    )}
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Total seats across fleet</p>
+                </div>
 
                 {/* 3. Total Assigned Passengers */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Assigned Students
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Assigned Students</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
                             <Users className="h-4 w-4" />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                                {data?.summary.totalPassengers ?? 0} Students
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Active transport users</p>
-                    </CardContent>
-                </Card>
+                    </div>
+                    {loading ? (
+                        <Skeleton className="mt-2 h-7 w-28" />
+                    ) : (
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                            {data?.summary.totalPassengers ?? 0} Students
+                        </p>
+                    )}
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Active transport passengers</p>
+                </div>
 
                 {/* 4. Available Seats */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Available Seats
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Available Seats</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#556043]/10 text-[#556043] dark:bg-[#556043]/20">
                             <UserCheck className="h-4 w-4" />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                                {data?.summary.availableSeats ?? 0} Seats
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Remaining seating capacity</p>
-                    </CardContent>
-                </Card>
+                    </div>
+                    {loading ? (
+                        <Skeleton className="mt-2 h-7 w-28" />
+                    ) : (
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                            {data?.summary.availableSeats ?? 0} Seats
+                        </p>
+                    )}
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Remaining open capacity</p>
+                </div>
             </div>
 
             {/* FLEET SUMMARY MATRIX */}
             {data?.vehiclesSummary && data.vehiclesSummary.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {data.vehiclesSummary.map((v) => (
-                        <Card key={v.vehicleId} className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                                            <Bus className="h-4 w-4 text-indigo-600" />
-                                            {v.vehicleName}
-                                        </CardTitle>
-                                        <p className="text-xs font-mono text-slate-500 mt-0.5">{v.vehicleNumber}</p>
-                                    </div>
-                                    <Badge variant="outline" className="text-xs">
-                                        {v.status}
-                                    </Badge>
+                        <div key={v.vehicleId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                        <Bus className="h-4 w-4 text-[#556043]" />
+                                        {v.vehicleName}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{v.vehicleNumber}</p>
                                 </div>
-                            </CardHeader>
-                            <CardContent className="pt-3 space-y-2 text-xs">
+                                <Badge variant="outline" className="text-xs">
+                                    {v.status}
+                                </Badge>
+                            </div>
+                            <div className="pt-3 space-y-1.5 text-xs">
                                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span>Driver:</span>
                                     <span className="font-semibold text-slate-900 dark:text-slate-100">{v.driverName}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span>Seating Capacity:</span>
-                                    <span className="font-bold text-slate-900 dark:text-slate-100">{v.capacity} Seats</span>
+                                    <span className="font-semibold text-slate-900 dark:text-slate-100">{v.capacity} Seats</span>
                                 </div>
                                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span>Assigned Students:</span>
-                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{v.assignedCount} Students</span>
+                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{v.assignedCount} Students</span>
                                 </div>
                                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span>Available Seats:</span>
-                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{v.availableSeats} Seats</span>
+                                    <span className="font-semibold text-[#556043] dark:text-[#8a9678]">{v.availableSeats} Seats</span>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
 
             {/* SEARCH TOOLBAR */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                 <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-80">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -329,96 +309,94 @@ export default function TransportRosterReportPage() {
                             className="pl-8 h-9 text-xs"
                         />
                     </div>
-                    <Button type="submit" size="sm" className="h-9 px-3 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Button type="submit" size="sm" className="h-9 px-3 text-xs bg-[#556043] hover:bg-[#626e4e] text-white">
                         Search
                     </Button>
                 </form>
 
-                <div className="text-xs font-semibold text-slate-500">
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                     Showing {data?.passengers.length ?? 0} of {data?.pagination.total ?? 0} passenger records
                 </div>
             </div>
 
             {/* PASSENGER ROSTER TABLE */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm font-sans">
+                        <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                            <tr>
+                                <th className="px-4 py-3">Vehicle Details</th>
+                                <th className="px-4 py-3">Student Name</th>
+                                <th className="px-4 py-3">Admission No</th>
+                                <th className="px-4 py-3">Class & Section</th>
+                                <th className="px-4 py-3">Parent Name & Phone</th>
+                                <th className="px-4 py-3">Stop / Address</th>
+                                <th className="px-4 py-3 text-right">Assigned Date</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-28" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-36" /></td>
+                                        <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-20 ml-auto" /></td>
+                                    </tr>
+                                ))
+                            ) : !data?.passengers || data.passengers.length === 0 ? (
                                 <tr>
-                                    <th className="px-4 py-3">Vehicle Details</th>
-                                    <th className="px-4 py-3">Student Name</th>
-                                    <th className="px-4 py-3">Admission No</th>
-                                    <th className="px-4 py-3">Class & Section</th>
-                                    <th className="px-4 py-3">Parent Name & Phone</th>
-                                    <th className="px-4 py-3">Stop / Address</th>
-                                    <th className="px-4 py-3 text-right">Assigned Date</th>
+                                    <td colSpan={7} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
+                                        No passenger records found for this vehicle.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                                {loading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <tr key={i}>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-28" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-5 w-36" /></td>
-                                            <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-20 ml-auto" /></td>
-                                        </tr>
-                                    ))
-                                ) : !data?.passengers || data.passengers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                                            No passenger records found for this vehicle.
+                            ) : (
+                                data.passengers.map((p) => (
+                                    <tr key={p.assignmentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                                        <td className="px-4 py-3">
+                                            <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                                                {p.vehicleName}
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">{p.vehicleNumber}</div>
+                                        </td>
+                                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
+                                            {p.studentName}
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300">
+                                            {p.admissionNumber}
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                            <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
+                                                {p.className}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">{p.parentName}</div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                <Phone className="h-3 w-3" /> {p.parentPhone}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">
+                                            {p.address}
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-xs text-slate-500 dark:text-slate-400">
+                                            {p.assignedDate ? new Date(p.assignedDate).toLocaleDateString("en-IN") : "-"}
                                         </td>
                                     </tr>
-                                ) : (
-                                    data.passengers.map((p) => (
-                                        <tr key={p.assignmentId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                                            <td className="px-4 py-3">
-                                                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
-                                                    {p.vehicleName}
-                                                </div>
-                                                <div className="text-[11px] font-mono text-slate-500">{p.vehicleNumber}</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
-                                                {p.studentName}
-                                            </td>
-                                            <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
-                                                {p.admissionNumber}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                                <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
-                                                    {p.className}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">{p.parentName}</div>
-                                                <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                                                    <Phone className="h-3 w-3" /> {p.parentPhone}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">
-                                                {p.address}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-xs text-slate-500 font-mono">
-                                                {p.assignedDate ? new Date(p.assignedDate).toLocaleDateString("en-IN") : "-"}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            {/* PAGINATION CONTROLS */}
+            {/* PAGINATION */}
             {data?.pagination && data.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t pt-4">
-                    <div className="text-xs text-slate-500">
+                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                         Page {data.pagination.page} of {data.pagination.totalPages}
                     </div>
                     <div className="flex gap-2">
