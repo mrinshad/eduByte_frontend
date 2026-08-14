@@ -21,7 +21,8 @@ import {
     Wrench,
     Coins,
     DollarSign,
-    Scale
+    Scale,
+    Users
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -108,11 +109,11 @@ export default function TransportProfitabilityReportPage() {
                         </Link>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mt-1 flex items-center gap-2.5">
-                        <Scale className="h-7 w-7 text-indigo-600" />
+                        <Bus className="h-7 w-7 text-indigo-600" />
                         Vehicle Profitability & Cost Analysis (P&L)
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-0.5">
-                        Compare transport fee revenue against operational costs (Fuel, Maintenance, Driver Payroll) per vehicle.
+                        Transport fee collections vs. operational costs (fuel, repairs, and driver salaries) per vehicle.
                     </p>
                 </div>
 
@@ -178,7 +179,7 @@ export default function TransportProfitabilityReportPage() {
                 <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Total Operating Cost
+                            Total Operating Costs
                         </CardTitle>
                         <div className="h-8 w-8 rounded-full bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600">
                             <TrendingDown className="h-4 w-4" />
@@ -194,16 +195,38 @@ export default function TransportProfitabilityReportPage() {
                         )}
                         <div className="flex justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                             <span>Fuel: {formatCurrency(data?.summary.fuelExpenses)}</span>
-                            <span>Service: {formatCurrency(data?.summary.maintenanceExpenses)}</span>
+                            <span>Repairs: {formatCurrency(data?.summary.maintenanceExpenses)}</span>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* 3. Net Fleet Margin */}
+                {/* 3. Driver Salaries */}
                 <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Net Operational Margin
+                            Driver Salaries Paid
+                        </CardTitle>
+                        <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600">
+                            <Users className="h-4 w-4" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <Skeleton className="h-7 w-28 mb-2" />
+                        ) : (
+                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                {formatCurrency(data?.summary.driverSalaries)}
+                            </div>
+                        )}
+                        <p className="text-xs text-slate-500 mt-1">Driver payroll compensation</p>
+                    </CardContent>
+                </Card>
+
+                {/* 4. Net Balance */}
+                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Net Balance
                         </CardTitle>
                         <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600">
                             <Scale className="h-4 w-4" />
@@ -224,30 +247,8 @@ export default function TransportProfitabilityReportPage() {
                             </div>
                         )}
                         <p className="text-xs text-slate-500 mt-1">
-                            {(data?.summary.netFleetMargin ?? 0) >= 0 ? "Surplus / Net Profit" : "Fleet Operating Deficit"}
+                            {(data?.summary.netFleetMargin ?? 0) >= 0 ? "Surplus Balance" : "Operating Deficit"}
                         </p>
-                    </CardContent>
-                </Card>
-
-                {/* 4. Profit Margin % */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Fleet Margin Rate
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600">
-                            <Coins className="h-4 w-4" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                                {data?.summary.fleetProfitMargin ?? 0}%
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Return on transport operations</p>
                     </CardContent>
                 </Card>
             </div>
@@ -257,7 +258,7 @@ export default function TransportProfitabilityReportPage() {
                 <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
                     <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         <Bus className="h-4 w-4 text-indigo-600" />
-                        Vehicle-by-Vehicle Profit & Loss Matrix
+                        Vehicle-by-Vehicle Cost & Collection Breakdown
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -267,12 +268,12 @@ export default function TransportProfitabilityReportPage() {
                                 <tr>
                                     <th className="px-4 py-3">Vehicle</th>
                                     <th className="px-4 py-3 text-center">Passengers</th>
-                                    <th className="px-4 py-3 text-right">Fee Revenue (₹)</th>
+                                    <th className="px-4 py-3 text-right">Fee Collected (₹)</th>
                                     <th className="px-4 py-3 text-right">Fuel (₹)</th>
                                     <th className="px-4 py-3 text-right">Repairs (₹)</th>
                                     <th className="px-4 py-3 text-right">Driver Salary (₹)</th>
                                     <th className="px-4 py-3 text-right">Total Cost (₹)</th>
-                                    <th className="px-4 py-3 text-right">Net Margin (₹)</th>
+                                    <th className="px-4 py-3 text-right">Net Balance (₹)</th>
                                     <th className="px-4 py-3 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -325,24 +326,25 @@ export default function TransportProfitabilityReportPage() {
                                             <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">
                                                 {formatCurrency(v.driverSalary)}
                                             </td>
-                                            <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">
+                                            <td className="px-4 py-3 text-right font-semibold text-rose-700 dark:text-rose-400">
                                                 {formatCurrency(v.totalExpenses)}
                                             </td>
                                             <td
-                                                className={`px-4 py-3 text-right font-bold ${
+                                                className={`px-4 py-3 text-right font-bold text-sm ${
                                                     v.netMargin >= 0
                                                         ? "text-emerald-700 dark:text-emerald-400"
-                                                        : "text-rose-600 dark:text-rose-400"
+                                                        : "text-rose-700 dark:text-rose-400"
                                                 }`}
                                             >
                                                 {formatCurrency(v.netMargin)}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <Badge
-                                                    className={`text-[10px] font-bold border-none ${
-                                                        v.status === "PROFITABLE"
-                                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                                            : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                                                    variant="outline"
+                                                    className={`text-xs font-bold ${
+                                                        v.status === "SURPLUS"
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                            : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
                                                     }`}
                                                 >
                                                     {v.status}
@@ -353,29 +355,47 @@ export default function TransportProfitabilityReportPage() {
                                 )}
                             </tbody>
                             {data?.vehicles && data.vehicles.length > 0 && (
-                                <tfoot className="bg-slate-50 dark:bg-slate-800/80 font-bold text-slate-900 dark:text-slate-100 border-t-2 border-slate-300 dark:border-slate-700">
+                                <tfoot className="bg-slate-100 dark:bg-slate-800/80 font-bold border-t-2 border-slate-300 dark:border-slate-700">
                                     <tr>
-                                        <td colSpan={2} className="px-4 py-3 uppercase text-xs">Fleet Total</td>
+                                        <td className="px-4 py-3 text-slate-900 dark:text-slate-100">Total Fleet Cost</td>
+                                        <td className="px-4 py-3 text-center text-slate-700 dark:text-slate-300">
+                                            {data.vehicles.reduce((sum, v) => sum + v.passengerCount, 0)}
+                                        </td>
                                         <td className="px-4 py-3 text-right text-emerald-700 dark:text-emerald-400">
                                             {formatCurrency(data.summary.totalRevenue)}
                                         </td>
-                                        <td className="px-4 py-3 text-right">{formatCurrency(data.summary.fuelExpenses)}</td>
-                                        <td className="px-4 py-3 text-right">{formatCurrency(data.summary.maintenanceExpenses)}</td>
-                                        <td className="px-4 py-3 text-right">{formatCurrency(data.summary.driverSalaries)}</td>
-                                        <td className="px-4 py-3 text-right text-rose-600 dark:text-rose-400">
+                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                                            {formatCurrency(data.summary.fuelExpenses)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                                            {formatCurrency(data.summary.maintenanceExpenses)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                                            {formatCurrency(data.summary.driverSalaries)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-rose-700 dark:text-rose-400">
                                             {formatCurrency(data.summary.totalExpenses)}
                                         </td>
                                         <td
-                                            className={`px-4 py-3 text-right ${
+                                            className={`px-4 py-3 text-right text-base ${
                                                 data.summary.netFleetMargin >= 0
                                                     ? "text-emerald-700 dark:text-emerald-400"
-                                                    : "text-rose-600 dark:text-rose-400"
+                                                    : "text-rose-700 dark:text-rose-400"
                                             }`}
                                         >
                                             {formatCurrency(data.summary.netFleetMargin)}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {data.summary.fleetProfitMargin}%
+                                            <Badge
+                                                variant="outline"
+                                                className={`text-xs font-bold ${
+                                                    data.summary.netFleetMargin >= 0
+                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                        : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
+                                                }`}
+                                            >
+                                                {data.summary.netFleetMargin >= 0 ? "SURPLUS" : "DEFICIT"}
+                                            </Badge>
                                         </td>
                                     </tr>
                                 </tfoot>
