@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     getFinesRegisterReport,
     type FinesRegisterReportResponse,
@@ -12,6 +13,13 @@ import { getAcademicYears } from "@/lib/services/academicYear";
 import { getFineTypes } from "@/lib/services/fineTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,7 +31,10 @@ import {
     Clock,
     XCircle,
     Receipt,
-    FolderKanban
+    FolderKanban,
+    ChevronLeft,
+    ChevronRight,
+    X
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -35,17 +46,39 @@ function formatCurrency(amount?: number) {
     }).format(amount ?? 0);
 }
 
+function FilterChip({
+    label,
+    onRemove,
+}: {
+    label: string;
+    onRemove: () => void;
+}) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <span className="max-w-[10rem] truncate sm:max-w-none">{label}</span>
+            <button
+                onClick={onRemove}
+                className="shrink-0 rounded-full hover:text-red-600"
+            >
+                <X className="h-3 w-3" />
+            </button>
+        </span>
+    );
+}
+
 export default function FinesRegisterReportPage() {
+    const router = useRouter();
     const { can } = usePermission();
     const canView = can("report.read");
 
     const [academicYears, setAcademicYears] = useState<any[]>([]);
     const [fineTypes, setFineTypes] = useState<any[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<string>("");
+    const [selectedYearId, setSelectedYearId] = useState<string>("ALL");
     const [selectedFineTypeId, setSelectedFineTypeId] = useState<string>("ALL");
     const [status, setStatus] = useState<string>("ALL");
     const [fromDate, setFromDate] = useState<string>("");
     const [toDate, setToDate] = useState<string>("");
+    const [searchInput, setSearchInput] = useState<string>("");
     const [search, setSearch] = useState<string>("");
     const [page, setPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
@@ -74,18 +107,27 @@ export default function FinesRegisterReportPage() {
         fetchMetadata();
     }, []);
 
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchInput.trim());
+            setPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
     const loadFines = useCallback(async () => {
-        if (!selectedYearId) return;
+        if (!selectedYearId || selectedYearId === "ALL") return;
         try {
             setLoading(true);
             setError(null);
             const res = await getFinesRegisterReport({
                 academicYearId: selectedYearId,
-                fineTypeId: selectedFineTypeId,
-                status,
+                fineTypeId: selectedFineTypeId === "ALL" ? undefined : selectedFineTypeId,
+                status: status === "ALL" ? undefined : status,
                 fromDate: fromDate || undefined,
                 toDate: toDate || undefined,
-                search,
+                search: search.trim() || undefined,
                 page,
                 limit: 20
             });
@@ -101,10 +143,25 @@ export default function FinesRegisterReportPage() {
         loadFines();
     }, [loadFines]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+    const selectedFineTypeName = useMemo(() => {
+        if (selectedFineTypeId === "ALL") return "";
+        return fineTypes.find((ft) => ft.id === selectedFineTypeId)?.name || selectedFineTypeId;
+    }, [selectedFineTypeId, fineTypes]);
+
+    const hasActiveFilters = useMemo(
+        () =>
+            selectedFineTypeId !== "ALL" ||
+            status !== "ALL" ||
+            search.trim().length > 0,
+        [selectedFineTypeId, status, search]
+    );
+
+    const clearAllFilters = () => {
+        setSearchInput("");
+        setSearch("");
+        setSelectedFineTypeId("ALL");
+        setStatus("ALL");
         setPage(1);
-        loadFines();
     };
 
     if (!canView) {
@@ -120,16 +177,17 @@ export default function FinesRegisterReportPage() {
 
     return (
         <div className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 max-w-7xl mx-auto font-sans min-h-screen">
-            {/* Header Section */}
+            {/* Header Card */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                        <Link
-                            href="/workspace/dashboard"
-                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                        <Button
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                            size="icon"
+                            onClick={() => router.back()}
                         >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
+                        </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
                                 <AlertOctagon className="h-6 w-6 text-indigo-600" />
@@ -142,37 +200,24 @@ export default function FinesRegisterReportPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
-                        {/* Academic Year Selector */}
-                        <select
+                        <Select
                             value={selectedYearId}
-                            onChange={(e) => {
-                                setSelectedYearId(e.target.value);
+                            onValueChange={(val) => {
+                                setSelectedYearId(val);
                                 setPage(1);
                             }}
-                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
                         >
-                            {academicYears.map((y) => (
-                                <option key={y.id} value={y.id}>
-                                    {y.name} {y.isActive ? "(Active)" : ""}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Status Selector */}
-                        <select
-                            value={status}
-                            onChange={(e) => {
-                                setStatus(e.target.value);
-                                setPage(1);
-                            }}
-                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="PENDING">Pending / Unpaid</option>
-                            <option value="PARTIALLY_PAID">Partially Paid</option>
-                            <option value="PAID">Fully Paid</option>
-                            <option value="WAIVED">Waived / Forgiven</option>
-                        </select>
+                            <SelectTrigger className="h-9 w-full sm:w-[150px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectValue placeholder="Academic Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map((y) => (
+                                    <SelectItem key={y.id} value={y.id}>
+                                        {y.name} {y.isActive ? "(Active)" : ""}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
                         <Button
                             variant="outline"
@@ -198,7 +243,7 @@ export default function FinesRegisterReportPage() {
             {/* 4 SUMMARY STAT CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1. Total Fines Levied */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Fines Levied</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -208,7 +253,7 @@ export default function FinesRegisterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                             {formatCurrency(data?.summary.totalLevied)}
                         </p>
                     )}
@@ -216,7 +261,7 @@ export default function FinesRegisterReportPage() {
                 </div>
 
                 {/* 2. Total Collected */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fines Collected</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -226,7 +271,7 @@ export default function FinesRegisterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                             {formatCurrency(data?.summary.totalCollected)}
                         </p>
                     )}
@@ -234,7 +279,7 @@ export default function FinesRegisterReportPage() {
                 </div>
 
                 {/* 3. Total Waived */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Waived / Written Off</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -244,7 +289,7 @@ export default function FinesRegisterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-700 dark:text-slate-300">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-700 dark:text-slate-300">
                             {formatCurrency(data?.summary.totalWaived)}
                         </p>
                     )}
@@ -252,7 +297,7 @@ export default function FinesRegisterReportPage() {
                 </div>
 
                 {/* 4. Total Outstanding */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Outstanding Balance Due</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
@@ -262,7 +307,7 @@ export default function FinesRegisterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-amber-600 dark:text-amber-400">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
                             {formatCurrency(data?.summary.totalOutstanding)}
                         </p>
                     )}
@@ -272,7 +317,7 @@ export default function FinesRegisterReportPage() {
 
             {/* CATEGORY BREAKDOWN */}
             {data?.fineTypeBreakdown && data.fineTypeBreakdown.length > 0 && (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                     <div className="border-b border-slate-100 dark:border-slate-800 p-4">
                         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <FolderKanban className="h-4 w-4 text-[#556043]" />
@@ -320,34 +365,119 @@ export default function FinesRegisterReportPage() {
                 </div>
             )}
 
-            {/* SEARCH TOOLBAR */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search by student, admission no..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 h-9 text-xs"
-                        />
-                    </div>
-                    <Button type="submit" size="sm" className="h-9 px-3 text-xs bg-[#556043] hover:bg-[#626e4e] text-white">
-                        Search
-                    </Button>
-                </form>
+            {/* Search & Filters */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                        placeholder="Search student, admission no..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="h-10 w-full rounded-lg pl-9 border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 text-xs sm:text-sm"
+                    />
+                </div>
 
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    Showing {data?.fines.length ?? 0} of {data?.pagination.total ?? 0} fine records
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Fine Type Filter */}
+                    <Select
+                        value={selectedFineTypeId}
+                        onValueChange={(val) => {
+                            setSelectedFineTypeId(val);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-10 w-full sm:w-[150px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+                            <SelectValue placeholder="All Fine Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Fine Types</SelectItem>
+                            {fineTypes.map((ft) => (
+                                <SelectItem key={ft.id} value={ft.id}>
+                                    {ft.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {/* Status Filter */}
+                    <Select
+                        value={status}
+                        onValueChange={(val) => {
+                            setStatus(val);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Status</SelectItem>
+                            <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="PARTIALLY_PAID">Partially Paid</SelectItem>
+                            <SelectItem value="PAID">Fully Paid</SelectItem>
+                            <SelectItem value="WAIVED">Waived</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {hasActiveFilters && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+                            onClick={clearAllFilters}
+                        >
+                            <X className="mr-1 h-3.5 w-3.5" />
+                            Clear
+                        </Button>
+                    )}
                 </div>
             </div>
 
+            {/* Active filter chips */}
+            {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <span className="text-xs font-medium text-slate-400">
+                        Filters:
+                    </span>
+
+                    {selectedFineTypeId !== "ALL" && (
+                        <FilterChip
+                            label={`Fine Type: ${selectedFineTypeName}`}
+                            onRemove={() => {
+                                setSelectedFineTypeId("ALL");
+                                setPage(1);
+                            }}
+                        />
+                    )}
+
+                    {status !== "ALL" && (
+                        <FilterChip
+                            label={`Status: ${status}`}
+                            onRemove={() => {
+                                setStatus("ALL");
+                                setPage(1);
+                            }}
+                        />
+                    )}
+
+                    {search.trim() && (
+                        <FilterChip
+                            label={`Search: ${search}`}
+                            onRemove={() => {
+                                setSearch("");
+                                setSearchInput("");
+                                setPage(1);
+                            }}
+                        />
+                    )}
+                </div>
+            )}
+
             {/* FINES TABLE */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm font-sans">
-                        <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                             <tr>
                                 <th className="px-4 py-3">Date</th>
                                 <th className="px-4 py-3">Student Name</th>
@@ -368,9 +498,9 @@ export default function FinesRegisterReportPage() {
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-36" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                                        <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                                        <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                                        <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-16 ml-auto" /></td>
                                         <td className="px-4 py-3 text-center"><Skeleton className="h-5 w-16 mx-auto" /></td>
                                         <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-20 ml-auto" /></td>
                                     </tr>
@@ -436,36 +566,36 @@ export default function FinesRegisterReportPage() {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            {/* PAGINATION */}
-            {data?.pagination && data.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Page {data.pagination.page} of {data.pagination.totalPages}
+                {/* PAGINATION */}
+                {data?.pagination && data.pagination.totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 sm:px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                            Page {data.pagination.page} of {data.pagination.totalPages}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page <= 1 || loading}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="h-8 text-xs"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page >= data.pagination.totalPages || loading}
+                                onClick={() => setPage((p) => p + 1)}
+                                className="h-8 text-xs"
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={page <= 1 || loading}
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            className="h-8 text-xs"
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={page >= data.pagination.totalPages || loading}
-                            onClick={() => setPage((p) => p + 1)}
-                            className="h-8 text-xs"
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

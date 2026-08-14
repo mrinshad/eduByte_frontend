@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     getVehicleRouteRosterReport,
     type VehicleRouteRosterResponse,
@@ -12,6 +13,13 @@ import { getAcademicYears } from "@/lib/services/academicYear";
 import { getVehicles } from "@/lib/services/vehicle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -22,11 +30,35 @@ import {
     Users,
     UserCheck,
     Gauge,
-    Phone
+    Phone,
+    ChevronLeft,
+    ChevronRight,
+    X
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
 
+function FilterChip({
+    label,
+    onRemove,
+}: {
+    label: string;
+    onRemove: () => void;
+}) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <span className="max-w-[10rem] truncate sm:max-w-none">{label}</span>
+            <button
+                onClick={onRemove}
+                className="shrink-0 rounded-full hover:text-red-600"
+            >
+                <X className="h-3 w-3" />
+            </button>
+        </span>
+    );
+}
+
 export default function TransportRosterReportPage() {
+    const router = useRouter();
     const { can } = usePermission();
     const canView = can("report.read");
 
@@ -34,6 +66,7 @@ export default function TransportRosterReportPage() {
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [selectedYearId, setSelectedYearId] = useState<string>("");
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("ALL");
+    const [searchInput, setSearchInput] = useState<string>("");
     const [search, setSearch] = useState<string>("");
     const [page, setPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
@@ -62,6 +95,15 @@ export default function TransportRosterReportPage() {
         fetchMetadata();
     }, []);
 
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchInput.trim());
+            setPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
     const loadRoster = useCallback(async () => {
         if (!selectedYearId) return;
         try {
@@ -69,8 +111,8 @@ export default function TransportRosterReportPage() {
             setError(null);
             const res = await getVehicleRouteRosterReport({
                 academicYearId: selectedYearId,
-                vehicleId: selectedVehicleId,
-                search,
+                vehicleId: selectedVehicleId === "ALL" ? undefined : selectedVehicleId,
+                search: search.trim() || undefined,
                 page,
                 limit: 25
             });
@@ -86,10 +128,24 @@ export default function TransportRosterReportPage() {
         loadRoster();
     }, [loadRoster]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+    const selectedVehicleName = useMemo(() => {
+        if (selectedVehicleId === "ALL") return "";
+        const veh = vehicles.find((v) => v.id === selectedVehicleId);
+        return veh ? `${veh.vehicleName} (${veh.vehicleNumber})` : selectedVehicleId;
+    }, [selectedVehicleId, vehicles]);
+
+    const hasActiveFilters = useMemo(
+        () =>
+            selectedVehicleId !== "ALL" ||
+            search.trim().length > 0,
+        [selectedVehicleId, search]
+    );
+
+    const clearAllFilters = () => {
+        setSearchInput("");
+        setSearch("");
+        setSelectedVehicleId("ALL");
         setPage(1);
-        loadRoster();
     };
 
     if (!canView) {
@@ -105,16 +161,17 @@ export default function TransportRosterReportPage() {
 
     return (
         <div className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 max-w-7xl mx-auto font-sans min-h-screen">
-            {/* Header Section */}
+            {/* Header Card */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                        <Link
-                            href="/workspace/dashboard"
-                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                        <Button
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                            size="icon"
+                            onClick={() => router.back()}
                         >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
+                        </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
                                 <Bus className="h-6 w-6 text-[#556043]" />
@@ -127,38 +184,24 @@ export default function TransportRosterReportPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
-                        {/* Academic Year Selector */}
-                        <select
+                        <Select
                             value={selectedYearId}
-                            onChange={(e) => {
-                                setSelectedYearId(e.target.value);
+                            onValueChange={(val) => {
+                                setSelectedYearId(val);
                                 setPage(1);
                             }}
-                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
                         >
-                            {academicYears.map((y) => (
-                                <option key={y.id} value={y.id}>
-                                    {y.name} {y.isActive ? "(Active)" : ""}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Vehicle Filter */}
-                        <select
-                            value={selectedVehicleId}
-                            onChange={(e) => {
-                                setSelectedVehicleId(e.target.value);
-                                setPage(1);
-                            }}
-                            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:ring-1 focus:ring-[#556043]"
-                        >
-                            <option value="ALL">All Fleet Vehicles</option>
-                            {vehicles.map((v) => (
-                                <option key={v.id} value={v.id}>
-                                    {v.vehicleName} ({v.vehicleNumber})
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="h-9 w-full sm:w-[150px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectValue placeholder="Academic Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map((y) => (
+                                    <SelectItem key={y.id} value={y.id}>
+                                        {y.name} {y.isActive ? "(Active)" : ""}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
                         <Button
                             variant="outline"
@@ -184,7 +227,7 @@ export default function TransportRosterReportPage() {
             {/* 4 SUMMARY STAT CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1. Fleet Vehicles */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Fleet Vehicles</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -194,7 +237,7 @@ export default function TransportRosterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                             {data?.summary.totalVehicles ?? 0}
                         </p>
                     )}
@@ -202,7 +245,7 @@ export default function TransportRosterReportPage() {
                 </div>
 
                 {/* 2. Total Seating Capacity */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Seating Capacity</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
@@ -212,7 +255,7 @@ export default function TransportRosterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                             {data?.summary.totalCapacity ?? 0} Seats
                         </p>
                     )}
@@ -220,7 +263,7 @@ export default function TransportRosterReportPage() {
                 </div>
 
                 {/* 3. Total Assigned Passengers */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Assigned Students</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -230,7 +273,7 @@ export default function TransportRosterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                             {data?.summary.totalPassengers ?? 0} Students
                         </p>
                     )}
@@ -238,7 +281,7 @@ export default function TransportRosterReportPage() {
                 </div>
 
                 {/* 4. Available Seats */}
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Available Seats</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#556043]/10 text-[#556043] dark:bg-[#556043]/20">
@@ -248,7 +291,7 @@ export default function TransportRosterReportPage() {
                     {loading ? (
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
-                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                             {data?.summary.availableSeats ?? 0} Seats
                         </p>
                     )}
@@ -260,7 +303,7 @@ export default function TransportRosterReportPage() {
             {data?.vehiclesSummary && data.vehiclesSummary.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {data.vehiclesSummary.map((v) => (
-                        <div key={v.vehicleId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+                        <div key={v.vehicleId} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                                 <div>
                                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -296,34 +339,88 @@ export default function TransportRosterReportPage() {
                 </div>
             )}
 
-            {/* SEARCH TOOLBAR */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search by student, admission no, vehicle, phone..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 h-9 text-xs"
-                        />
-                    </div>
-                    <Button type="submit" size="sm" className="h-9 px-3 text-xs bg-[#556043] hover:bg-[#626e4e] text-white">
-                        Search
-                    </Button>
-                </form>
+            {/* Search & Filters */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                        placeholder="Search student, adm no, vehicle, phone..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="h-10 w-full rounded-lg pl-9 border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 text-xs sm:text-sm"
+                    />
+                </div>
 
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    Showing {data?.passengers.length ?? 0} of {data?.pagination.total ?? 0} passenger records
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        value={selectedVehicleId}
+                        onValueChange={(val) => {
+                            setSelectedVehicleId(val);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+                            <SelectValue placeholder="All Fleet Vehicles" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Fleet Vehicles</SelectItem>
+                            {vehicles.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>
+                                    {v.vehicleName} ({v.vehicleNumber})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {hasActiveFilters && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+                            onClick={clearAllFilters}
+                        >
+                            <X className="mr-1 h-3.5 w-3.5" />
+                            Clear
+                        </Button>
+                    )}
                 </div>
             </div>
 
+            {/* Active filter chips */}
+            {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <span className="text-xs font-medium text-slate-400">
+                        Filters:
+                    </span>
+
+                    {selectedVehicleId !== "ALL" && (
+                        <FilterChip
+                            label={`Vehicle: ${selectedVehicleName}`}
+                            onRemove={() => {
+                                setSelectedVehicleId("ALL");
+                                setPage(1);
+                            }}
+                        />
+                    )}
+
+                    {search.trim() && (
+                        <FilterChip
+                            label={`Search: ${search}`}
+                            onRemove={() => {
+                                setSearch("");
+                                setSearchInput("");
+                                setPage(1);
+                            }}
+                        />
+                    )}
+                </div>
+            )}
+
             {/* PASSENGER ROSTER TABLE */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm font-sans">
-                        <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                             <tr>
                                 <th className="px-4 py-3">Vehicle Details</th>
                                 <th className="px-4 py-3">Student Name</th>
@@ -391,36 +488,36 @@ export default function TransportRosterReportPage() {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            {/* PAGINATION */}
-            {data?.pagination && data.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Page {data.pagination.page} of {data.pagination.totalPages}
+                {/* PAGINATION */}
+                {data?.pagination && data.pagination.totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 sm:px-6 py-4 gap-4 dark:border-slate-800 dark:bg-slate-900/40">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                            Page {data.pagination.page} of {data.pagination.totalPages}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page <= 1 || loading}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="h-8 text-xs"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page >= data.pagination.totalPages || loading}
+                                onClick={() => setPage((p) => p + 1)}
+                                className="h-8 text-xs"
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={page <= 1 || loading}
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            className="h-8 text-xs"
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={page >= data.pagination.totalPages || loading}
-                            onClick={() => setPage((p) => p + 1)}
-                            className="h-8 text-xs"
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

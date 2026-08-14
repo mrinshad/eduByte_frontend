@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -236,142 +237,144 @@ export default function FeeCollectionPage() {
   };
 
   return (
-    <section className="w-full px-4 sm:px-6 py-4 space-y-6 font-sans">
-      {/* ── Header & Actions ── */}
-      <div className="flex flex-col gap-4">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <Button
-            className="shrink-0 bg-background text-foreground hover:opacity-90 shadow-sm"
-            size="icon"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Fee Collection
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Collect student payments, record fee receipts, and view payment history.
-            </p>
+    <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 max-w-7xl mx-auto font-sans min-h-screen">
+      {/* Header Card */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              className="bg-background text-foreground hover:opacity-90 shadow-sm"
+              size="icon"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                Fee Collection
+              </h1>
+              <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+                Collect student payments, record fee receipts, and view payment history.
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Search + Filters Toolbar */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              placeholder="Search student name, admission no..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="h-9 rounded-lg pl-9 text-xs border-slate-300 dark:border-slate-700 w-full"
-            />
-          </div>
+      {/* Search & Filters */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search student, admission no..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-10 w-full rounded-lg pl-9 border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 text-xs sm:text-sm"
+          />
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Class Filter */}
-            <Select
-              value={classFilter}
-              onValueChange={(value) => {
-                setClassFilter(value);
-                setDivisionFilter("all");
-                setCurrentPage(1);
-              }}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Class Filter */}
+          <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value);
+              setDivisionFilter("all");
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classes.map((cls) => (
+                <SelectItem key={cls.id} value={cls.id}>
+                  {cls.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Division Filter */}
+          <Select
+            value={divisionFilter}
+            onValueChange={(value) => {
+              setDivisionFilter(value);
+              setCurrentPage(1);
+            }}
+            disabled={classFilter === "all" || divisions.length === 0}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[130px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium disabled:opacity-50">
+              <SelectValue placeholder={classFilter === "all" ? "Divisions" : "All Divisions"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Divisions</SelectItem>
+              {divisions.map((div) => (
+                <SelectItem key={div.id} value={div.id}>
+                  {div.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Vehicle */}
+          <Select
+            value={vehicleFilter}
+            onValueChange={(value) => {
+              setVehicleFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[130px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+              <SelectValue placeholder="All Vehicles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
+              {vehicleOptions.map((item) => (
+                <SelectItem key={item} value={item}>{item}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Status */}
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[130px] rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="PARTIAL">Partial</SelectItem>
+              <SelectItem value="OVERDUE">Overdue</SelectItem>
+              <SelectItem value="PAID">Paid</SelectItem>
+              <SelectItem value="NOT_GENERATED">Not Generated</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+              onClick={clearAllFilters}
             >
-              <SelectTrigger className="h-9 min-w-[130px] text-xs font-medium rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 sm:w-[140px]">
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Division Filter */}
-            <Select
-              value={divisionFilter}
-              onValueChange={(value) => {
-                setDivisionFilter(value);
-                setCurrentPage(1);
-              }}
-              disabled={classFilter === "all" || divisions.length === 0}
-            >
-              <SelectTrigger className="h-9 min-w-[120px] text-xs font-medium rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 sm:w-[130px] disabled:opacity-50">
-                <SelectValue placeholder={classFilter === "all" ? "Divisions" : "All Divisions"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Divisions</SelectItem>
-                {divisions.map((div) => (
-                  <SelectItem key={div.id} value={div.id}>
-                    {div.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Vehicle */}
-            <Select
-              value={vehicleFilter}
-              onValueChange={(value) => {
-                setVehicleFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-9 min-w-[120px] text-xs font-medium rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 sm:w-[130px]">
-                <SelectValue placeholder="All Vehicles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Vehicles</SelectItem>
-                {vehicleOptions.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status */}
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-9 min-w-[110px] text-xs font-medium rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 sm:w-[120px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="PARTIAL">Partial</SelectItem>
-                <SelectItem value="OVERDUE">Overdue</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="NOT_GENERATED">Not Generated</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
-                onClick={clearAllFilters}
-              >
-                <X className="mr-1 h-3.5 w-3.5" />
-                Clear
-              </Button>
-            )}
-          </div>
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Active filter chips */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <span className="text-xs font-medium text-slate-400">
             Filters:
           </span>

@@ -177,6 +177,18 @@ export type FeeGenerationMonthStatus = {
   totalAcademicMonths: number;
 };
 
+export type AcademicYearTimelineItem = {
+  academicMonthNumber: number;
+  periodName: string;
+  monthShort: string;
+  status: "COMPLETED" | "CURRENT_TARGET" | "LOCKED" | "UPCOMING";
+  isCurrentTarget: boolean;
+  isCompleted: boolean;
+  isLocked: boolean;
+  calendarMonth: number;
+  calendarYear: number;
+};
+
 export type TargetMonthStudentItem = {
   enrollmentId: string;
   studentName: string;
@@ -194,6 +206,7 @@ export type FeeGenerationPreviewData = {
   targetCalendarYear: number;
   targetPeriod?: string;
   monthStatus?: FeeGenerationMonthStatus;
+  academicYearTimeline?: AcademicYearTimelineItem[];
   instructions?: string;
   summary: FeeGenerationPreviewSummary;
   targetMonthStudents?: TargetMonthStudentItem[];
