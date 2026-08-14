@@ -4,36 +4,28 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
     getStudentProgressionReport,
-    type StudentProgressionResponse
+    type StudentProgressionResponse,
+    type StudentProgressionItem
 } from "@/lib/services/advancedReports";
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     GraduationCap,
     ChevronLeft,
-    ChevronRight,
     RotateCw,
     Search,
-    UserCheck,
-    ArrowRightCircle,
     UserMinus,
+    ArrowRightCircle,
+    Users,
+    UserCheck,
     CheckCircle2,
-    Users
+    Calendar
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
-
-function formatDateDisplay(dateStr?: string | null) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    });
-}
 
 export default function StudentProgressionReportPage() {
     const { can } = usePermission();
@@ -72,7 +64,7 @@ export default function StudentProgressionReportPage() {
             const res = await getStudentProgressionReport({
                 academicYearId: selectedYearId,
                 status,
-                search: search.trim() || undefined,
+                search,
                 page,
                 limit: 25
             });
@@ -88,12 +80,18 @@ export default function StudentProgressionReportPage() {
         loadProgression();
     }, [loadProgression]);
 
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        loadProgression();
+    };
+
     if (!canView) {
         return (
             <div className="flex h-96 items-center justify-center p-8 text-center">
                 <div className="max-w-md">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Access Restricted</h2>
-                    <p className="mt-2 text-sm text-slate-500">You do not have permission to view Admissions Reports.</p>
+                    <p className="mt-2 text-sm text-slate-500">You do not have permission to view Student Progression Reports.</p>
                 </div>
             </div>
         );
@@ -117,7 +115,7 @@ export default function StudentProgressionReportPage() {
                         Student Progression & Exit Register
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-0.5">
-                        Track annual student promotion flows, retainees, Transfer Certificates (TC) issued, and year-over-year retention rates.
+                        Student promotions, active enrolled students, and Transfer Certificate (TC) withdrawals.
                     </p>
                 </div>
 
@@ -180,7 +178,7 @@ export default function StudentProgressionReportPage() {
                 <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Total Students in Academic Year
+                            Total Registered Students
                         </CardTitle>
                         <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600">
                             <Users className="h-4 w-4" />
@@ -194,15 +192,37 @@ export default function StudentProgressionReportPage() {
                                 {data?.summary.totalEnrollments ?? 0} Students
                             </div>
                         )}
-                        <p className="text-xs text-slate-500 mt-1">Total registered enrollments</p>
+                        <p className="text-xs text-slate-500 mt-1">Total registered in academic year</p>
                     </CardContent>
                 </Card>
 
-                {/* 2. Promoted Count */}
+                {/* 2. Currently Active */}
                 <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Promoted to Next Standard
+                            Currently Enrolled
+                        </CardTitle>
+                        <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600">
+                            <UserCheck className="h-4 w-4" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <Skeleton className="h-7 w-28 mb-2" />
+                        ) : (
+                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                {data?.summary.activeCount ?? 0} Students
+                            </div>
+                        )}
+                        <p className="text-xs text-slate-500 mt-1">Active studying students</p>
+                    </CardContent>
+                </Card>
+
+                {/* 3. Promoted Count */}
+                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Promoted Students
                         </CardTitle>
                         <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600">
                             <ArrowRightCircle className="h-4 w-4" />
@@ -216,11 +236,11 @@ export default function StudentProgressionReportPage() {
                                 {data?.summary.promotedCount ?? 0} Students
                             </div>
                         )}
-                        <p className="text-xs text-slate-500 mt-1">Academic progression flow</p>
+                        <p className="text-xs text-slate-500 mt-1">Advanced to higher class</p>
                     </CardContent>
                 </Card>
 
-                {/* 3. Withdrawn / TC Count */}
+                {/* 4. Withdrawn / TC Count */}
                 <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -238,129 +258,105 @@ export default function StudentProgressionReportPage() {
                                 {data?.summary.withdrawnCount ?? 0} Students
                             </div>
                         )}
-                        <p className="text-xs text-slate-500 mt-1">School withdrawals & TC records</p>
-                    </CardContent>
-                </Card>
-
-                {/* 4. Retention Rate */}
-                <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Student Retention Rate
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600">
-                            <CheckCircle2 className="h-4 w-4" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <Skeleton className="h-7 w-28 mb-2" />
-                        ) : (
-                            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                                {data?.summary.retentionRate ?? 0}%
-                            </div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Year-over-year student retention</p>
+                        <p className="text-xs text-slate-500 mt-1">Transferred or withdrawn</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* SEARCH BAR */}
-            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Search student, admission no, parent phone..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                        className="w-full h-9 pl-9 pr-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 shadow-xs focus:ring-1 focus:ring-slate-400"
-                    />
+            {/* SEARCH TOOLBAR */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs">
+                <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-80">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            type="text"
+                            placeholder="Search by student, admission no, mobile..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-8 h-9 text-xs"
+                        />
+                    </div>
+                    <Button type="submit" size="sm" className="h-9 px-3 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+                        Search
+                    </Button>
+                </form>
+
+                <div className="text-xs font-semibold text-slate-500">
+                    Showing {data?.students.length ?? 0} of {data?.pagination.total ?? 0} student records
                 </div>
             </div>
 
-            {/* PROGRESSION LOG TABLE */}
+            {/* PROGRESSION ROSTER TABLE */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
-                <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4 text-indigo-600" />
-                        Student Progression & Movement Register
-                    </CardTitle>
-                    <span className="text-xs font-semibold text-slate-500">
-                        {data?.pagination.total ?? 0} Students
-                    </span>
-                </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
                                 <tr>
-                                    <th className="px-4 py-3">Student & Admission</th>
+                                    <th className="px-4 py-3">Admission No</th>
+                                    <th className="px-4 py-3">Student Name</th>
                                     <th className="px-4 py-3">Class & Section</th>
                                     <th className="px-4 py-3">Parent Contact</th>
-                                    <th className="px-4 py-3 text-center">Current Status</th>
-                                    <th className="px-4 py-3">Progression Stage</th>
-                                    <th className="px-4 py-3 text-right">Admission Date</th>
+                                    <th className="px-4 py-3 text-center">Enrollment Status</th>
+                                    <th className="px-4 py-3">Progression / Next Stage</th>
+                                    <th className="px-4 py-3 text-right">Enrolled Date</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                                 {loading ? (
-                                    Array.from({ length: 5 }).map((_, idx) => (
-                                        <tr key={idx}>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-16 mx-auto" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
-                                            <td className="px-4 py-3"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <tr key={i}>
+                                            <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
+                                            <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
+                                            <td className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
+                                            <td className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
+                                            <td className="px-4 py-3 text-center"><Skeleton className="h-5 w-20 mx-auto" /></td>
+                                            <td className="px-4 py-3"><Skeleton className="h-5 w-36" /></td>
+                                            <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-20 ml-auto" /></td>
                                         </tr>
                                     ))
-                                ) : !data?.students?.length ? (
+                                ) : !data?.students || data.students.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-12 text-slate-400">
-                                            No student records found matching the selected criteria.
+                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                                            No student progression records match your search criteria.
                                         </td>
                                     </tr>
                                 ) : (
-                                    data.students.map((s) => (
-                                        <tr key={s.enrollmentId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                                            <td className="px-4 py-3">
-                                                <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                                    {s.studentName}
-                                                </div>
-                                                <div className="text-xs text-slate-500 font-mono">
-                                                    Adm: {s.admissionNumber} | Roll: {s.rollNumber}
-                                                </div>
+                                    data.students.map((st) => (
+                                        <tr key={st.enrollmentId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                            <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                                                {st.admissionNumber}
                                             </td>
-                                            <td className="px-4 py-3 text-xs font-medium text-slate-800 dark:text-slate-200">
-                                                {s.className}
+                                            <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-semibold">
+                                                {st.studentName}
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
-                                                {s.parentContact}
+                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                                <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
+                                                    {st.className} {st.rollNumber !== "-" ? `(#${st.rollNumber})` : ""}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-mono text-xs">
+                                                {st.parentContact}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <Badge
-                                                    className={`text-[10px] font-bold border-none ${
-                                                        s.enrollmentStatus === "PROMOTED"
-                                                            ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-                                                            : s.enrollmentStatus === "ACTIVE"
-                                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                                            : s.enrollmentStatus === "WITHDRAWN"
-                                                            ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
-                                                            : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                                    variant="outline"
+                                                    className={`text-[11px] font-bold ${
+                                                        st.enrollmentStatus === "PROMOTED"
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                            : st.enrollmentStatus === "WITHDRAWN"
+                                                            ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
+                                                            : "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-400"
                                                     }`}
                                                 >
-                                                    {s.enrollmentStatus}
+                                                    {st.enrollmentStatus}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-100">
-                                                {s.nextStage}
+                                            <td className="px-4 py-3 text-slate-800 dark:text-slate-200 text-xs font-semibold">
+                                                {st.nextStage}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-xs text-slate-600 dark:text-slate-400">
-                                                {formatDateDisplay(s.admissionDate)}
+                                            <td className="px-4 py-3 text-right text-xs text-slate-500 font-mono">
+                                                {st.admissionDate ? new Date(st.admissionDate).toLocaleDateString("en-IN") : "-"}
                                             </td>
                                         </tr>
                                     ))
@@ -368,37 +364,37 @@ export default function StudentProgressionReportPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Pagination */}
-                    {data && data.pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-800">
-                            <span className="text-xs text-slate-500">
-                                Page {data.pagination.page} of {data.pagination.totalPages}
-                            </span>
-                            <div className="flex gap-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={data.pagination.page <= 1}
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    className="h-8 px-2 text-xs"
-                                >
-                                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={data.pagination.page >= data.pagination.totalPages}
-                                    onClick={() => setPage((p) => p + 1)}
-                                    className="h-8 px-2 text-xs"
-                                >
-                                    Next <ChevronRight className="h-4 w-4 ml-1" />
-                                </Button>
-                            </div>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
+
+            {/* PAGINATION CONTROLS */}
+            {data?.pagination && data.pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t pt-4">
+                    <div className="text-xs text-slate-500">
+                        Page {data.pagination.page} of {data.pagination.totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page <= 1 || loading}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            className="h-8 text-xs"
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page >= data.pagination.totalPages || loading}
+                            onClick={() => setPage((p) => p + 1)}
+                            className="h-8 text-xs"
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

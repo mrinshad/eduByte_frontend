@@ -145,7 +145,6 @@ export interface FineTypeSummaryItem {
     collectedAmount: number;
     waivedAmount: number;
     balanceAmount: number;
-    collectionRate: number;
     count: number;
 }
 
@@ -174,7 +173,6 @@ export interface FinesRegisterReportResponse {
         totalCollected: number;
         totalWaived: number;
         totalOutstanding: number;
-        collectionRate: number;
         count: number;
     };
     fineTypeBreakdown: FineTypeSummaryItem[];
@@ -226,7 +224,6 @@ export interface VehicleSummaryItem {
     capacity: number;
     assignedCount: number;
     availableSeats: number;
-    occupancyRate: number;
     status: string;
 }
 
@@ -255,7 +252,7 @@ export interface VehicleRouteRosterResponse {
         totalVehicles: number;
         totalCapacity: number;
         totalPassengers: number;
-        fleetOccupancyRate: number;
+        availableSeats: number;
     };
     vehiclesSummary: VehicleSummaryItem[];
     pagination: {
@@ -293,15 +290,13 @@ export interface VehicleProfitabilityItem {
     vehicleNumber: string;
     capacity: number;
     passengerCount: number;
-    revenueBilled: number;
     revenueCollected: number;
     fuelCost: number;
     maintenanceCost: number;
     driverSalary: number;
     totalExpenses: number;
     netMargin: number;
-    profitMargin: number;
-    status: "PROFITABLE" | "DEFICIT";
+    status: "SURPLUS" | "DEFICIT";
 }
 
 export interface VehicleProfitabilityResponse {
@@ -312,7 +307,6 @@ export interface VehicleProfitabilityResponse {
         maintenanceExpenses: number;
         driverSalaries: number;
         netFleetMargin: number;
-        fleetProfitMargin: number;
     };
     vehicles: VehicleProfitabilityItem[];
 }
@@ -343,7 +337,6 @@ export interface DivisionDemographicItem {
     totalStudents: number;
     boysCount: number;
     girlsCount: number;
-    genderRatio: string;
     activeCount: number;
     withdrawnCount: number;
 }
@@ -354,7 +347,6 @@ export interface ClassDemographicItem {
     totalStudents: number;
     boysCount: number;
     girlsCount: number;
-    genderRatio: string;
     activeCount: number;
     withdrawnCount: number;
     divisions: DivisionDemographicItem[];
@@ -363,7 +355,6 @@ export interface ClassDemographicItem {
 export interface BloodGroupItem {
     bloodGroup: string;
     studentCount: number;
-    percentage: number;
 }
 
 export interface ClassDemographicsResponse {
@@ -372,9 +363,6 @@ export interface ClassDemographicsResponse {
         totalBoys: number;
         totalGirls: number;
         totalOther: number;
-        genderRatio: string;
-        boysPercentage: number;
-        girlsPercentage: number;
         totalClasses: number;
     };
     classMatrix: ClassDemographicItem[];
@@ -412,11 +400,10 @@ export interface StudentProgressionItem {
 export interface StudentProgressionResponse {
     summary: {
         totalEnrollments: number;
-        promotedCount: number;
         activeCount: number;
+        promotedCount: number;
         withdrawnCount: number;
         completedCount: number;
-        retentionRate: number;
     };
     pagination: {
         page: number;
