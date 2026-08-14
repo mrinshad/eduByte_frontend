@@ -263,8 +263,11 @@ export default function FeeCollectionPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="PARTIAL">Partial</SelectItem>
+                <SelectItem value="OVERDUE">Overdue</SelectItem>
+                <SelectItem value="PAID">Paid</SelectItem>
+                <SelectItem value="NOT_GENERATED">Not Generated</SelectItem>
               </SelectContent>
             </Select>
 

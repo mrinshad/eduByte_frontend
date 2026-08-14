@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -28,19 +29,27 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
             const element = document.getElementById("voucher-content");
             if (!element) return;
 
-            const imgData = await htmlToImage.toPng(element, { pixelRatio: 3 });
-            
+            const imgData = await htmlToImage.toPng(element, {
+                pixelRatio: 3,
+                backgroundColor: "#ffffff",
+                style: {
+                    boxShadow: "none",
+                    margin: "0",
+                },
+            });
+
+            const elementWidth = element.offsetWidth || 794;
+            const elementHeight = element.offsetHeight || 600;
+            const pdfWidth = 210;
+            const pdfHeight = (elementHeight * pdfWidth) / elementWidth;
+
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "mm",
-                format: "a4"
+                format: [pdfWidth, pdfHeight],
             });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            
-            // Scaled height based on aspect ratio
-            const pdfHeight = (element.offsetHeight * pdfWidth) / element.offsetWidth;
-            
-            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
             pdf.save(`Expense_Voucher_${expense.expenseNumber}.pdf`);
         } catch (error: any) {
             console.error("Error generating PDF:", error);
@@ -49,199 +58,212 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 px-4 print:py-0 print:px-0 print:bg-white dark:bg-slate-950">
-            {/* Header - Hidden on Print */}
-            <div className="max-w-md mx-auto mb-6 flex items-center justify-between print:hidden">
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => router.back()}
-                        className="h-9 w-9 shrink-0 rounded-lg border-slate-200 dark:border-slate-700"
-                    >
-                        <ArrowLeft className="h-4 w-4 text-slate-700 dark:text-slate-300" />
-                    </Button>
-                    <div>
-                        <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                            Expense Voucher
-                        </h1>
-                        <p className="text-xs text-slate-400">{expense.expenseNumber}</p>
+        <div className="min-h-screen bg-slate-100/60 pb-12 print:pb-0 print:bg-white dark:bg-slate-950">
+            {/* Top Navigation Bar - Spanning full width with elements on both far ends */}
+            <header className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur shadow-xs dark:border-slate-800 dark:bg-slate-900/95 print:hidden mb-8">
+                <div className="w-full px-4 sm:px-8 py-3.5 flex items-center justify-between">
+                    {/* Left End */}
+                    <div className="flex items-center gap-3.5">
+                        <Button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-950 active:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+                        >
+                            <ArrowLeft className="h-4 w-4 text-slate-800 dark:text-slate-100" />
+                        </Button>
+                        <div>
+                            <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+                                Expense Voucher
+                            </h1>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                Voucher #{expense.expenseNumber}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Right End */}
+                    <div className="flex items-center gap-3">
+                        <Button
+                            type="button"
+                            onClick={handleDownloadPdf}
+                            className="h-10 rounded-xl border border-slate-300 bg-white px-4 text-xs sm:text-sm font-semibold text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-950 active:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+                        >
+                            <Download className="mr-2 h-4 w-4 text-slate-700 dark:text-slate-300" />
+                            Save PDF
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                toast.dismiss();
+                                window.print();
+                            }}
+                            className="h-10 rounded-xl px-4 text-xs sm:text-sm font-semibold text-white shadow-xs hover:opacity-95 transition-opacity"
+                            style={{ backgroundColor: SAGE }}
+                        >
+                            <Printer className="mr-2 h-4 w-4" />
+                            Print Voucher
+                        </Button>
                     </div>
                 </div>
+            </header>
 
-                <div className="flex items-center gap-2">
-                    <Button
-                        onClick={handleDownloadPdf}
-                        variant="outline"
-                        className="h-10 rounded-lg text-sm font-semibold shadow-sm"
-                    >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        Save PDF
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            toast.dismiss();
-                            window.print();
-                        }}
-                        className="h-10 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: SAGE }}
-                    >
-                        <Printer className="mr-1.5 h-4 w-4" />
-                        Print
-                    </Button>
-                </div>
-            </div>
-
-            {/* Half-A4 (A5) Receipt */}
-            <div id="voucher-content" className="mx-auto bg-white shadow-xl print:shadow-none a5-sheet overflow-hidden print:rounded-none">
+            {/* Compact Natural-Height Expense Voucher Sheet */}
+            <div className="px-4">
                 <div
-                    className="a5-container"
-                    style={{
-                        width: "148mm",
-                        height: "210mm",
-                        padding: "10mm",
-                        margin: "0 auto",
-                        boxSizing: "border-box",
-                        fontFamily: "Arial, Helvetica, sans-serif",
-                        color: "#000",
-                        display: "flex",
-                        flexDirection: "column",
-                        backgroundColor: "#fff",
-                    }}
+                    id="voucher-content"
+                    className="mx-auto bg-white shadow-xl print:shadow-none bill-sheet overflow-hidden print:rounded-none"
+                    style={{ width: "210mm", maxWidth: "100%" }}
                 >
-                    {/* Inner Border Box for traditional voucher look */}
-                    <div className="border-2 border-black flex-1 flex flex-col p-4">
-                        
-                        {/* Header */}
-                        <div className="text-center mb-4 border-b-2 border-black pb-4">
-                            <h1 className="text-2xl font-bold uppercase leading-tight tracking-wide">
-                                Kids covE 
-                            </h1>
-                            <h2 className="text-lg font-bold uppercase tracking-widest text-slate-900">
-                                School of Excellence
-                            </h2>
-                            <p className="text-[11px] mt-1.5 font-bold uppercase">
-                                Run by: KC Ibrahim Haji Memorial Education Board
-                            </p>
-                            <p className="text-[11px] mt-1 font-medium">
-                                Ph: 8113000247 | Email: ozhukurkids@gmail.com
-                            </p>
-                            <h3 className="text-lg font-bold uppercase mt-3 underline underline-offset-4 decoration-2">
-                                Expense Voucher
-                            </h3>
-                        </div>
+                    <div
+                        className="bill-container"
+                        style={{
+                            width: "100%",
+                            padding: "10mm 12mm",
+                            margin: "0 auto",
+                            boxSizing: "border-box",
+                            fontFamily: "Arial, Helvetica, sans-serif",
+                            color: "#000",
+                            display: "flex",
+                            flexDirection: "column",
+                            backgroundColor: "#fff",
+                        }}
+                    >
+                        {/* Inner Border Box */}
+                        <div className="border-2 border-black flex-1 flex flex-col p-5">
+                            {/* Header */}
+                            <div className="text-center mb-4 border-b-2 border-black pb-3.5">
+                                <h1 className="text-xl font-bold uppercase leading-tight tracking-wide">
+                                    Kids covE 
+                                </h1>
+                                <h2 className="text-base font-bold uppercase tracking-widest text-slate-900">
+                                    School of Excellence
+                                </h2>
+                                <p className="text-[12px] mt-1 font-bold uppercase">
+                                    Run by: KC Ibrahim Haji Memorial Education Board
+                                </p>
+                                <p className="text-[12px] mt-0.5 font-medium text-slate-700">
+                                    Ph: 8113000247 &nbsp;|&nbsp; Email: ozhukurkids@gmail.com
+                                </p>
+                                <h3 className="text-lg font-bold uppercase mt-3 underline underline-offset-4 decoration-2">
+                                    Expense Voucher
+                                </h3>
+                            </div>
 
-                        {/* Voucher Info */}
-                        <div className="flex justify-between text-[13px] mb-5 font-bold">
-                            <div>
-                                Voucher No: {expense.expenseNumber}
+                            {/* Voucher Info */}
+                            <div className="flex justify-between text-[13px] mb-4 font-bold border-b border-black/20 pb-2">
+                                <div>
+                                    Voucher No: {expense.expenseNumber}
+                                </div>
+                                <div>
+                                    Date: {new Date(expense.expenseDate).toLocaleDateString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                    })}
+                                </div>
                             </div>
-                            <div>
-                                Date: {new Date(expense.expenseDate).toLocaleDateString("en-IN", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                })}
-                            </div>
-                        </div>
 
-                        {/* Basic Details */}
-                        <div className="mb-5 text-[13px]">
-                            <div className="grid grid-cols-[110px_1fr] mb-1.5">
-                                <span className="font-bold">Category</span>
-                                <span>: {expense.category}</span>
+                            {/* Basic Details */}
+                            <div className="mb-4 text-[13px] grid grid-cols-2 gap-x-8 gap-y-2">
+                                <div className="grid grid-cols-[110px_1fr]">
+                                    <span className="font-bold">Category</span>
+                                    <span>: {expense.category?.name || expense.category}</span>
+                                </div>
+                                <div className="grid grid-cols-[110px_1fr]">
+                                    <span className="font-bold">Sub Category</span>
+                                    <span>: {expense.subCategory?.name || expense.subCategory}</span>
+                                </div>
+                                {expense.staff && (
+                                    <div className="grid grid-cols-[110px_1fr]">
+                                        <span className="font-bold">Staff / Payee</span>
+                                        <span>
+                                            : {expense.staff.name} ({expense.staff.employeeCode})
+                                        </span>
+                                    </div>
+                                )}
+                                {expense.vehicle && (
+                                    <div className="grid grid-cols-[110px_1fr]">
+                                        <span className="font-bold">Vehicle</span>
+                                        <span>
+                                            : {expense.vehicle.vehicleName} ({expense.vehicle.vehicleNumber})
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                            <div className="grid grid-cols-[110px_1fr] mb-1.5">
-                                <span className="font-bold">Sub Category</span>
-                                <span>: {expense.subCategory}</span>
+
+                            {/* Accounts Table */}
+                            <div className="mb-4">
+                                <table className="w-full text-left text-[13px] border-collapse border border-black">
+                                    <thead>
+                                        <tr className="bg-slate-50">
+                                            <th className="border border-black p-2 w-12 text-center font-bold uppercase text-xs">Sl</th>
+                                            <th className="border border-black p-2 font-bold uppercase text-xs">Particulars / Account</th>
+                                            <th className="border border-black p-2 w-36 text-right font-bold uppercase text-xs">Amount (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {expense.payments?.map((payment: any, idx: number) => (
+                                            <tr key={idx}>
+                                                <td className="border border-black p-2 text-center text-xs">{idx + 1}</td>
+                                                <td className="border border-black p-2 font-semibold">{payment.account}</td>
+                                                <td className="border border-black p-2 text-right font-medium">
+                                                    {Number(payment.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-slate-50">
+                                            <th colSpan={2} className="border border-black p-2 text-right font-bold uppercase">Total Amount</th>
+                                            <th className="border border-black p-2 text-right font-bold text-sm">
+                                                ₹ {Number(expense.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
-                            {expense.vehicle && (
-                                <div className="grid grid-cols-[110px_1fr] mb-1.5">
-                                    <span className="font-bold">Vehicle</span>
-                                    <span>
-                                        : {expense.vehicle.vehicleName} ({expense.vehicle.vehicleNumber})
-                                    </span>
+
+                            {/* Notes */}
+                            {expense.notes && (
+                                <div className="text-[13px] mb-4">
+                                    <span className="font-bold">Remarks: </span>
+                                    <span>{expense.notes}</span>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Accounts Table - REMOVED EMPTY ROWS */}
-                        <div className="mb-5">
-                            <table className="w-full text-left text-[13px] border-collapse border border-black">
-                                <thead>
-                                    <tr>
-                                        <th className="border border-black p-2 w-10 text-center font-bold">Sl</th>
-                                        <th className="border border-black p-2 font-bold">Particulars / Account</th>
-                                        <th className="border border-black p-2 w-32 text-right font-bold">Amount (₹)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {expense.payments?.map((payment: any, idx: number) => (
-                                        <tr key={idx}>
-                                            <td className="border border-black p-2 text-center">{idx + 1}</td>
-                                            <td className="border border-black p-2">{payment.account}</td>
-                                            <td className="border border-black p-2 text-right font-medium">
-                                                {Number(payment.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colSpan={2} className="border border-black p-2 text-right font-bold uppercase">Total Amount</th>
-                                        <th className="border border-black p-2 text-right font-bold text-sm">
-                                            ₹ {Number(expense.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                        </th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-
-                        {/* Notes */}
-                        {expense.notes && (
-                            <div className="text-[13px] mb-4">
-                                <span className="font-bold">Remarks: </span>
-                                <span>{expense.notes}</span>
-                            </div>
-                        )}
-
-                        {/* Spacer to push signatures to bottom */}
-                        <div className="flex-1" />
-
-                        {/* Signatures */}
-                        <div className="grid grid-cols-3 gap-4 pt-16 text-[13px] font-bold text-center mt-auto">
-                            <div>
-                                <div className="border-t border-black w-3/4 mx-auto pt-2">Prepared By</div>
-                            </div>
-                            <div>
-                                <div className="border-t border-black w-3/4 mx-auto pt-2">Approved By</div>
-                            </div>
-                            <div>
-                                <div className="border-t border-black w-3/4 mx-auto pt-2">Receiver's Sign</div>
+                            {/* Signatures */}
+                            <div className="grid grid-cols-3 gap-6 pt-10 text-[13px] font-bold text-center">
+                                <div>
+                                    <div className="border-t border-black w-3/4 mx-auto pt-2">Prepared By</div>
+                                </div>
+                                <div>
+                                    <div className="border-t border-black w-3/4 mx-auto pt-2">Approved By</div>
+                                </div>
+                                <div>
+                                    <div className="border-t border-black w-3/4 mx-auto pt-2">Receiver's Sign</div>
+                                </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            {/* Print-specific sizing so the sheet prints as a single half-A4 page */}
+            {/* Print-specific sizing */}
             <style jsx global>{`
                 @media print {
                     @page {
-                        size: 148mm 210mm;
+                        size: A4 portrait;
                         margin: 0;
                     }
                     html,
                     body {
-                        width: 148mm;
-                        height: 210mm;
+                        width: 210mm;
                         background: white !important;
                     }
-                    .a5-sheet {
+                    .bill-sheet {
                         box-shadow: none !important;
                     }
-                    .a5-container {
+                    .bill-container {
+                        width: 210mm !important;
                         page-break-after: avoid;
                         page-break-inside: avoid;
                         -webkit-print-color-adjust: exact !important;

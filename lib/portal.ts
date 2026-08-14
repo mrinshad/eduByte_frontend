@@ -76,18 +76,26 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/student-charges", label: "Fee Ledgers", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
-  // Reports
-  { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
-  { slug: "reports/vehicle-allocation", label: "Bus Passenger Roster", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
+  // --- WORKSPACE REPORTS (REBUILT) ---
+  // A. Receipts (Income)
+  { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
+  { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
 
-  { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", group: "Report", subgroup: "Fee Collection" },
-  { slug: "reports/term-fee-collection-report", label: "Term Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
-  { slug: "reports/daily-fee-collection", label: "Daily Receipts Register", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
+  // B. Payments (Expenses)
+  { slug: "reports/salary", label: "Salary", area: "workspace", purpose: "Staff payroll, advances, and compensation", group: "Report", subgroup: "Payments (Expenses)" },
+  { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
+  { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
+  { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Consolidated daily outgoing expenses register", group: "Report", subgroup: "Payments (Expenses)" },
 
-  { slug: "reports/student-outstanding", label: "Outstanding Fees", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
-
-  { slug: "reports/categories-by-expense", label: "Expenses by Category", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
-  { slug: "reports/expense-summary", label: "Expense Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
+  // --- PREVIOUS REPORTS (COMMENTED OUT DURING STEP-BY-STEP REBUILD) ---
+  // { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
+  // { slug: "reports/vehicle-allocation", label: "Bus Passenger Roster", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
+  // { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", group: "Report", subgroup: "Fee Collection" },
+  // { slug: "reports/term-fee-collection-report", label: "Term Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
+  // { slug: "reports/daily-fee-collection", label: "Daily Receipts Register", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
+  // { slug: "reports/student-outstanding", label: "Outstanding Fees", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
+  // { slug: "reports/categories-by-expense", label: "Expenses by Category", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
+  // { slug: "reports/expense-summary", label: "Expense Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
@@ -134,6 +142,13 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fine-management/student-fines": "fine.listOnNavbar",
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
+    "reports/admissions-master": "admissionsreport.listOnNavbar",
+    "reports/daily-receipts": "dailyreceipts.listOnNavbar",
+    "reports/fee-type": "feecollection.listOnNavbar",
+    "reports/salary": "salaryreport.listOnNavbar",
+    "reports/transport-expenses": "transportexpensereport.listOnNavbar",
+    "reports/category-expenses": "expensecategorywise.listOnNavbar",
+    "reports/daily-expenses": "dailyexpenses.listOnNavbar",
     "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
     "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
     "reports/daily-collection": "dailycollection.listOnNavbar",
@@ -295,6 +310,12 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
     "fine",
     "studentcharges",
     "feegeneration",
+    "admissionsreport",
+    "dailyreceipts",
+    "feetype",
+    "salaryreport",
+    "transportexpensereport",
+    "dailyexpenses",
     "dailycollection",
     "studentoutstanding",
     "expensesummary",
