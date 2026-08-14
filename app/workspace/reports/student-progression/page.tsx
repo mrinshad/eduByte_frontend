@@ -404,7 +404,7 @@ export default function StudentProgressionReportPage() {
                                             {st.studentName}
                                         </td>
                                         <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                            <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                                 {st.className} {st.rollNumber !== "-" ? `(#${st.rollNumber})` : ""}
                                             </Badge>
                                         </td>

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import {
     getVehicleProfitabilityReport,
     type VehicleProfitabilityResponse,
-    type VehicleProfitabilityItem
+    type VehicleProfitabilityItem,
+    type ExpenseBreakdownItem
 } from "@/lib/services/advancedReports";
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { Button } from "@/components/ui/button";
@@ -252,9 +253,10 @@ export default function TransportProfitabilityReportPage() {
                             {formatCurrency(data?.summary.totalExpenses)}
                         </p>
                     )}
-                    <div className="mt-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Fuel: {formatCurrency(data?.summary.fuelExpenses)}</span>
-                        <span>Repairs: {formatCurrency(data?.summary.maintenanceExpenses)}</span>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        {(data?.summary.categoryBreakdown || []).slice(0, 3).map((cat) => (
+                            <span key={cat.category}>{cat.category}: {formatCurrency(cat.amount)}</span>
+                        ))}
                     </div>
                 </div>
 
@@ -362,9 +364,7 @@ export default function TransportProfitabilityReportPage() {
                                 <th className="px-4 py-3">Vehicle Details</th>
                                 <th className="px-4 py-3 text-center">Passengers</th>
                                 <th className="px-4 py-3 text-right">Fee Collected (₹)</th>
-                                <th className="px-4 py-3 text-right">Fuel (₹)</th>
-                                <th className="px-4 py-3 text-right">Repairs (₹)</th>
-                                <th className="px-4 py-3 text-right">Driver Salary (₹)</th>
+                                <th className="px-4 py-3">Expense Breakdown</th>
                                 <th className="px-4 py-3 text-right">Total Cost (₹)</th>
                                 <th className="px-4 py-3 text-right">Net Balance (₹)</th>
                                 <th className="px-4 py-3 text-center">Status</th>
@@ -377,9 +377,7 @@ export default function TransportProfitabilityReportPage() {
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-28" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-12 mx-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-20 ml-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16 mx-auto" /></td>
@@ -387,7 +385,7 @@ export default function TransportProfitabilityReportPage() {
                                 ))
                             ) : filteredVehicles.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="text-center py-12 text-slate-500 dark:text-slate-400">
+                                    <td colSpan={7} className="text-center py-12 text-slate-500 dark:text-slate-400">
                                         No vehicle records found for this academic year.
                                     </td>
                                 </tr>
@@ -399,7 +397,7 @@ export default function TransportProfitabilityReportPage() {
                                                 {v.vehicleName}
                                             </div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                {v.vehicleNumber} ({v.capacity} Seats)
+                                                {v.vehicleNumber}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-center">
@@ -410,14 +408,18 @@ export default function TransportProfitabilityReportPage() {
                                         <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">
                                             {formatCurrency(v.revenueCollected)}
                                         </td>
-                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(v.fuelCost)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(v.maintenanceCost)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(v.driverSalary)}
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-wrap gap-1">
+                                                {v.expenseBreakdown && v.expenseBreakdown.length > 0 ? (
+                                                    v.expenseBreakdown.map((cat) => (
+                                                        <span key={cat.category} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md border font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                            {cat.category}: {formatCurrency(cat.amount)}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">—</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-right font-semibold text-rose-600 dark:text-rose-400">
                                             {formatCurrency(v.totalExpenses)}

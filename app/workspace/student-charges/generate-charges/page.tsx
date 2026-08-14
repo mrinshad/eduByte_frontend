@@ -578,8 +578,8 @@ export default function FeeGenerationPage() {
                             <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
                               {name}
                             </td>
-                            <td className="px-4 py-2.5 text-center text-slate-500 dark:text-slate-400">
-                              <Badge variant="outline" className="text-[10px] font-medium bg-slate-50 dark:bg-slate-800">
+                            <td className="px-4 py-2.5 text-center">
+                              <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                 {freq}
                               </Badge>
                             </td>

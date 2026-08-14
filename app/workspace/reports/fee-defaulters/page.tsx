@@ -479,7 +479,7 @@ export default function FeeDefaultersReportPage() {
                                             <div className="text-xs text-slate-500 dark:text-slate-400">Father: {st.fatherName}</div>
                                         </td>
                                         <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                            <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                                 {st.className}
                                             </Badge>
                                         </td>

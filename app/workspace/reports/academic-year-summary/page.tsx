@@ -424,7 +424,7 @@ export default function AcademicYearSummaryPage() {
                                                 </span>
                                                 <Badge
                                                     variant="outline"
-                                                    className="text-[10px] px-1.5 py-0 font-bold bg-slate-50 dark:bg-slate-800"
+                                                    className="text-[10px] px-1.5 py-0 font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                                                 >
                                                     {rate}%
                                                 </Badge>
@@ -479,7 +479,7 @@ export default function AcademicYearSummaryPage() {
                                             </span>
                                             <Badge
                                                 variant="outline"
-                                                className="text-[10px] px-1.5 py-0 font-bold bg-slate-50 dark:bg-slate-800"
+                                                className="text-[10px] px-1.5 py-0 font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                                             >
                                                 {cat.percentage}%
                                             </Badge>

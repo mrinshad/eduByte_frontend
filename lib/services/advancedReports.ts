@@ -220,10 +220,7 @@ export interface VehicleSummaryItem {
     vehicleName: string;
     vehicleNumber: string;
     driverName: string;
-    driverPhone: string;
-    capacity: number;
     assignedCount: number;
-    availableSeats: number;
     status: string;
 }
 
@@ -233,12 +230,12 @@ export interface PassengerRosterItem {
     vehicleName: string;
     vehicleNumber: string;
     driverName: string;
-    driverPhone: string;
     studentId: string;
     studentName: string;
     admissionNumber: string;
     gender: string;
     className: string;
+    divisionName: string;
     rollNumber: string;
     parentName: string;
     parentPhone: string;
@@ -250,9 +247,7 @@ export interface PassengerRosterItem {
 export interface VehicleRouteRosterResponse {
     summary: {
         totalVehicles: number;
-        totalCapacity: number;
         totalPassengers: number;
-        availableSeats: number;
     };
     vehiclesSummary: VehicleSummaryItem[];
     pagination: {
@@ -284,17 +279,19 @@ export async function getVehicleRouteRosterReport(params: {
     return res.data;
 }
 
+export interface ExpenseBreakdownItem {
+    category: string;
+    amount: number;
+}
+
 export interface VehicleProfitabilityItem {
     vehicleId: string;
     vehicleName: string;
     vehicleNumber: string;
-    capacity: number;
     passengerCount: number;
     revenueCollected: number;
-    fuelCost: number;
-    maintenanceCost: number;
-    driverSalary: number;
     totalExpenses: number;
+    expenseBreakdown: ExpenseBreakdownItem[];
     netMargin: number;
     status: "SURPLUS" | "DEFICIT";
 }
@@ -303,10 +300,8 @@ export interface VehicleProfitabilityResponse {
     summary: {
         totalRevenue: number;
         totalExpenses: number;
-        fuelExpenses: number;
-        maintenanceExpenses: number;
-        driverSalaries: number;
         netFleetMargin: number;
+        categoryBreakdown: ExpenseBreakdownItem[];
     };
     vehicles: VehicleProfitabilityItem[];
 }

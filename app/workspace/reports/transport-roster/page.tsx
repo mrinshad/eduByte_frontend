@@ -28,8 +28,6 @@ import {
     RefreshCcw,
     Search,
     Users,
-    UserCheck,
-    Gauge,
     Phone,
     ChevronLeft,
     ChevronRight,
@@ -224,8 +222,8 @@ export default function TransportRosterReportPage() {
                 </div>
             )}
 
-            {/* 4 SUMMARY STAT CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 2 SUMMARY STAT CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 1. Fleet Vehicles */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
@@ -244,25 +242,7 @@ export default function TransportRosterReportPage() {
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Buses & transport vans</p>
                 </div>
 
-                {/* 2. Total Seating Capacity */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Seating Capacity</span>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
-                            <Gauge className="h-4 w-4" />
-                        </div>
-                    </div>
-                    {loading ? (
-                        <Skeleton className="mt-2 h-7 w-28" />
-                    ) : (
-                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {data?.summary.totalCapacity ?? 0} Seats
-                        </p>
-                    )}
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Total seats across fleet</p>
-                </div>
-
-                {/* 3. Total Assigned Passengers */}
+                {/* 2. Assigned Students */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Assigned Students</span>
@@ -279,26 +259,7 @@ export default function TransportRosterReportPage() {
                     )}
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Active transport passengers</p>
                 </div>
-
-                {/* 4. Available Seats */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Available Seats</span>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#556043]/10 text-[#556043] dark:bg-[#556043]/20">
-                            <UserCheck className="h-4 w-4" />
-                        </div>
-                    </div>
-                    {loading ? (
-                        <Skeleton className="mt-2 h-7 w-28" />
-                    ) : (
-                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {data?.summary.availableSeats ?? 0} Seats
-                        </p>
-                    )}
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Remaining open capacity</p>
-                </div>
             </div>
-
             {/* FLEET SUMMARY MATRIX */}
             {data?.vehiclesSummary && data.vehiclesSummary.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -322,16 +283,8 @@ export default function TransportRosterReportPage() {
                                     <span className="font-semibold text-slate-900 dark:text-slate-100">{v.driverName}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                                    <span>Seating Capacity:</span>
-                                    <span className="font-semibold text-slate-900 dark:text-slate-100">{v.capacity} Seats</span>
-                                </div>
-                                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span>Assigned Students:</span>
                                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">{v.assignedCount} Students</span>
-                                </div>
-                                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                                    <span>Available Seats:</span>
-                                    <span className="font-semibold text-[#556043] dark:text-[#8a9678]">{v.availableSeats} Seats</span>
                                 </div>
                             </div>
                         </div>
@@ -466,8 +419,8 @@ export default function TransportRosterReportPage() {
                                             {p.admissionNumber}
                                         </td>
                                         <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                            <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800">
-                                                {p.className}
+                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                {p.className} - {p.divisionName}
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3">
