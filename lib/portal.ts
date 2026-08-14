@@ -156,29 +156,42 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fine-management/student-fines": "fine.listOnNavbar",
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
+
+    // --- ACTIVE REPORT PERMISSIONS ---
+    // A. Executive Overview
     "reports/academic-year-summary": "academicyearsummary.listOnNavbar",
-    "reports/daybook": "reports.listOnNavbar",
-    "reports/fee-defaulters": "reports.listOnNavbar",
-    "reports/fines-register": "reports.listOnNavbar",
+    "reports/daybook": "daybook.listOnNavbar",
+
+    // B. Receipts (Income)
     "reports/admissions-master": "admissionsreport.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
-    "reports/fee-type": "feecollection.listOnNavbar",
+    "reports/fee-defaulters": "feedefaulters.listOnNavbar",
+    "reports/fines-register": "finesregister.listOnNavbar",
+    "reports/fee-type": "feetypecollection.listOnNavbar",
+
+    // C. Payments (Expenses)
     "reports/salary": "salaryreport.listOnNavbar",
     "reports/transport-expenses": "transportexpensereport.listOnNavbar",
     "reports/category-expenses": "expensecategorywise.listOnNavbar",
     "reports/daily-expenses": "dailyexpenses.listOnNavbar",
-    "reports/transport-roster": "reports.listOnNavbar",
-    "reports/transport-profitability": "reports.listOnNavbar",
-    "reports/class-demographics": "reports.listOnNavbar",
-    "reports/student-progression": "reports.listOnNavbar",
-    "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
-    "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
-    "reports/daily-collection": "dailycollection.listOnNavbar",
-    "reports/term-fee-collection-report": "feecollectionreport.listOnNavbar",
-    "reports/daily-fee-collection": "dailyfeecollection.listOnNavbar",
-    "reports/student-outstanding": "studentoutstanding.listOnNavbar",
-    "reports/categories-by-expense": "expensecategorywise.listOnNavbar",
-    "reports/expense-summary": "expensesummary.listOnNavbar",
+
+    // D. Transportation
+    "reports/transport-roster": "transportroster.listOnNavbar",
+    "reports/transport-profitability": "transportprofitability.listOnNavbar",
+
+    // E. Admissions & Academics
+    "reports/class-demographics": "classdemographics.listOnNavbar",
+    "reports/student-progression": "studentprogression.listOnNavbar",
+
+    // --- PREVIOUS REPORTS (COMMENTED OUT) ---
+    // "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
+    // "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
+    // "reports/daily-collection": "dailycollection.listOnNavbar",
+    // "reports/term-fee-collection-report": "feecollectionreport.listOnNavbar",
+    // "reports/daily-fee-collection": "dailyfeecollection.listOnNavbar",
+    // "reports/student-outstanding": "studentoutstanding.listOnNavbar",
+    // "reports/categories-by-expense": "expensecategorywise.listOnNavbar",
+    // "reports/expense-summary": "expensesummary.listOnNavbar",
   }
   return map[slug] || `${slug.split("/")[0].replace(/-/g, "")}.listOnNavbar`
 }
