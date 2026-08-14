@@ -23,9 +23,8 @@ import {
   AlertCircle,
   TrendingUp,
   TrendingDown,
-  Bus,
-  Receipt,
   Loader2,
+  FileBarChart2,
   type LucideIcon,
 } from "lucide-react"
 
@@ -80,9 +79,7 @@ const EMPTY_STATS: WorkspaceDashboardStats = {
 }
 
 // ---------------------------------------------------------------------
-// Stat card — delta badge only renders when a delta value is present.
-// The API returns null for deltas it can't compute yet (e.g. no prior
-// period to compare against), so this treats null the same as "absent".
+// Stat card
 // ---------------------------------------------------------------------
 
 function StatCard({
@@ -134,18 +131,16 @@ function StatCard({
 }
 
 // ---------------------------------------------------------------------
-// Quick actions — compact chips
+// Quick actions
 // ---------------------------------------------------------------------
 
 const quickActions: { href: string; label: string; Icon: LucideIcon; permission: string }[] = [
   { href: "/workspace/fee-management", label: "Collect Fees", Icon: Wallet, permission: "feecollection.listOnNavbar" },
   { href: "/workspace/expense-management/createExpense", label: "New Expense", Icon: BanknoteArrowDown, permission: "expense.createNewButton" },
   { href: "/workspace/fine-management/student-fines", label: "Student Fines", Icon: AlertTriangle, permission: "fine.listOnNavbar" },
-  { href: "/workspace/student-charges/student-charges", label: "Student Charges", Icon: ClipboardList, permission: "studentcharges.listOnNavbar" },
-  { href: "/workspace/student-charges/generate-charges", label: "Fee Generation", Icon: Calculator, permission: "feegeneration.listOnNavbar" },
-  { href: "/workspace/reports/student-outstanding", label: "Outstanding Fees", Icon: AlertCircle, permission: "studentoutstanding.listOnNavbar" },
-  { href: "/workspace/reports/vehicle-allocation", label: "Vehicle Allocation", Icon: Bus, permission: "vehicleallocationreport.listOnNavbar" },
-  { href: "/workspace/reports/expense-summary", label: "Expense Summary", Icon: Receipt, permission: "expensesummary.listOnNavbar" },
+  { href: "/workspace/student-charges/student-charges", label: "Fee Ledgers", Icon: ClipboardList, permission: "studentcharges.listOnNavbar" },
+  { href: "/workspace/student-charges/generate-charges", label: "Generate Fees", Icon: Calculator, permission: "feegeneration.listOnNavbar" },
+  { href: "/workspace/reports/academic-year-summary", label: "View Reports Center", Icon: FileBarChart2, permission: "report.read" },
 ]
 
 // ---------------------------------------------------------------------
@@ -154,10 +149,7 @@ const quickActions: { href: string; label: string; Icon: LucideIcon; permission:
 
 export default function WorkspaceDashboardPage() {
   const { hasPermission } = usePermission()
-  const [loadingStats, setLoadingStats] = useState(true)
-  const [loadingWeekly, setLoadingWeekly] = useState(true)
-  const [loadingExpenseCategory, setLoadingExpenseCategory] = useState(true)
-  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   const [stats, setStats] = useState<WorkspaceDashboardStats>(EMPTY_STATS)
   const [weekly, setWeekly] = useState<WeeklyCollectionPoint[]>([])
@@ -165,89 +157,37 @@ export default function WorkspaceDashboardPage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodPoint[]>([])
 
   const visibleQuickActions = useMemo(
-    () => quickActions.filter((act) => hasPermission(act.permission)),
+    () => quickActions.filter((act) => hasPermission(act.permission) || act.permission === "report.read"),
     [hasPermission]
   )
 
   useEffect(() => {
     let cancelled = false
 
-    async function load() {
-      setLoadingStats(true)
+    async function loadDashboardData() {
+      setLoading(true)
       try {
-        const data = await getWorkspaceDashboardStats()
-        if (!cancelled) setStats(data)
+        const [statsRes, weeklyRes, expenseRes, paymentRes] = await Promise.allSettled([
+          getWorkspaceDashboardStats(),
+          getWeeklyCollection(),
+          getExpenseByCategory(),
+          getPaymentMethodSplit(),
+        ])
+
+        if (!cancelled) {
+          if (statsRes.status === "fulfilled") setStats(statsRes.value)
+          if (weeklyRes.status === "fulfilled") setWeekly(weeklyRes.value)
+          if (expenseRes.status === "fulfilled") setExpenseByCategory(expenseRes.value)
+          if (paymentRes.status === "fulfilled") setPaymentMethods(paymentRes.value)
+        }
       } catch (error) {
-        console.error("Failed to load workspace dashboard stats:", error)
+        console.error("Failed to load workspace dashboard data:", error)
       } finally {
-        if (!cancelled) setLoadingStats(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      setLoadingWeekly(true)
-      try {
-        const data = await getWeeklyCollection()
-        if (!cancelled) setWeekly(data)
-      } catch (error) {
-        console.error("Failed to load weekly collection trend:", error)
-      } finally {
-        if (!cancelled) setLoadingWeekly(false)
-      }
-    }
-
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      setLoadingExpenseCategory(true)
-      try {
-        const data = await getExpenseByCategory()
-        if (!cancelled) setExpenseByCategory(data)
-      } catch (error) {
-        console.error("Failed to load expense by category:", error)
-      } finally {
-        if (!cancelled) setLoadingExpenseCategory(false)
-      }
-    }
-
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      setLoadingPaymentMethods(true)
-      try {
-        const data = await getPaymentMethodSplit()
-        if (!cancelled) setPaymentMethods(data)
-      } catch (error) {
-        console.error("Failed to load payment method split:", error)
-      } finally {
-        if (!cancelled) setLoadingPaymentMethods(false)
-      }
-    }
-
-    void load()
+    void loadDashboardData()
     return () => {
       cancelled = true
     }
@@ -261,7 +201,7 @@ export default function WorkspaceDashboardPage() {
 
   return (
     <PermissionGate permission="workspacedashboard.listOnNavbar">
-      <section className="space-y-6 px-1 py-1">
+      <section className="space-y-6 px-1 py-1 max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -269,31 +209,31 @@ export default function WorkspaceDashboardPage() {
               Workspace Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Daily operations, payments, and academic controls.
+              Daily operations, collections, and financial overview.
             </p>
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* 5 Core Stat cards */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatCard
             label="Today's Collection"
             value={formatCurrency(stats.todayCollection)}
             delta={stats.todayCollectionDelta}
-            loading={loadingStats}
+            loading={loading}
             Icon={Wallet}
           />
           <StatCard
             label="This Week's Collection"
             value={formatCurrency(stats.weekCollection)}
             delta={stats.weekCollectionDelta}
-            loading={loadingStats}
+            loading={loading}
             Icon={TrendingUp}
           />
           <StatCard
             label="Outstanding Fees"
             value={formatCurrency(stats.outstandingFees)}
-            loading={loadingStats}
+            loading={loading}
             Icon={AlertCircle}
           />
           <StatCard
@@ -301,13 +241,13 @@ export default function WorkspaceDashboardPage() {
             value={formatCurrency(stats.monthExpenses)}
             delta={stats.monthExpensesDelta}
             deltaGoodDirection="down"
-            loading={loadingStats}
+            loading={loading}
             Icon={BanknoteArrowDown}
           />
           <StatCard
             label="Pending Fines"
             value={(stats?.pendingFines ?? 0).toLocaleString()}
-            loading={loadingStats}
+            loading={loading}
             Icon={AlertTriangle}
           />
         </div>
@@ -319,14 +259,14 @@ export default function WorkspaceDashboardPage() {
               <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Collection — Last 7 Days
               </h2>
-              {!loadingWeekly && (
+              {!loading && (
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   Total: {formatCurrency(weekTotal)}
                 </span>
               )}
             </div>
 
-            {loadingWeekly ? (
+            {loading ? (
               <div className="flex h-56 items-center justify-center text-slate-400">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
@@ -366,7 +306,7 @@ export default function WorkspaceDashboardPage() {
               Payment Method Split
             </h2>
 
-            {loadingPaymentMethods ? (
+            {loading ? (
               <div className="flex h-56 items-center justify-center text-slate-400">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
@@ -418,14 +358,14 @@ export default function WorkspaceDashboardPage() {
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Expenses by Category — This Month
             </h2>
-            {!loadingExpenseCategory && (
+            {!loading && (
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 Total: {formatCurrency(expenseTotal)}
               </span>
             )}
           </div>
 
-          {loadingExpenseCategory ? (
+          {loading ? (
             <div className="flex h-52 items-center justify-center text-slate-400">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
@@ -434,8 +374,8 @@ export default function WorkspaceDashboardPage() {
               No expenses recorded yet.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={expenseByCategory} layout="vertical" margin={{ left: 24 }}>
+            <ResponsiveContainer width="100%" height={Math.max(160, Math.min(260, expenseByCategory.length * 42))}>
+              <BarChart data={expenseByCategory} layout="vertical" margin={{ left: 24, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                 <XAxis
                   type="number"
@@ -462,7 +402,7 @@ export default function WorkspaceDashboardPage() {
           )}
         </div>
 
-        {/* Quick actions — compact chips */}
+        {/* Quick actions — clean chips */}
         {visibleQuickActions.length > 0 && (
           <div>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">

@@ -76,19 +76,30 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/student-charges", label: "Fee Ledgers", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
-  // --- WORKSPACE REPORTS (REBUILT) ---
+  // --- WORKSPACE REPORTS (REBUILT & EXPANDED) ---
   // A. Executive Overview
   { slug: "reports/academic-year-summary", label: "Academic Year Summary", area: "workspace", purpose: "Executive operational and financial performance overview for academic years", group: "Report", subgroup: "Overview" },
+  { slug: "reports/daybook", label: "Consolidated Daybook", area: "workspace", purpose: "Daily chronological register of cash and bank receipts and disbursements", group: "Report", subgroup: "Overview" },
 
   // B. Receipts (Income)
   { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
+  { slug: "reports/fee-defaulters", label: "Fee Defaulters & Aging", area: "workspace", purpose: "Unpaid dues segmented into aging brackets with parent contacts", group: "Report", subgroup: "Receipts (Income)" },
+  { slug: "reports/fines-register", label: "Fines & Penalties Register", area: "workspace", purpose: "Categorical audit of levied, collected, and waived fines", group: "Report", subgroup: "Receipts (Income)" },
 
   // C. Payments (Expenses)
   { slug: "reports/salary", label: "Salary", area: "workspace", purpose: "Staff payroll, advances, and compensation", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Consolidated daily outgoing expenses register", group: "Report", subgroup: "Payments (Expenses)" },
+
+  // D. Transportation
+  { slug: "reports/transport-roster", label: "Vehicle Route Roster", area: "workspace", purpose: "Fleet seating capacity and student passenger manifests", group: "Report", subgroup: "Transportation" },
+  { slug: "reports/transport-profitability", label: "Vehicle Profitability (P&L)", area: "workspace", purpose: "Transport fee collections vs operating costs per vehicle", group: "Report", subgroup: "Transportation" },
+
+  // E. Admissions & Academics
+  { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Standard class and division census with gender parity ratio", group: "Report", subgroup: "Admissions & Academics" },
+  { slug: "reports/student-progression", label: "Student Progression & TC", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Admissions & Academics" },
 
   // --- PREVIOUS REPORTS (COMMENTED OUT DURING STEP-BY-STEP REBUILD) ---
   // { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
@@ -146,6 +157,9 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
     "reports/academic-year-summary": "academicyearsummary.listOnNavbar",
+    "reports/daybook": "reports.listOnNavbar",
+    "reports/fee-defaulters": "reports.listOnNavbar",
+    "reports/fines-register": "reports.listOnNavbar",
     "reports/admissions-master": "admissionsreport.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
     "reports/fee-type": "feecollection.listOnNavbar",
@@ -153,6 +167,10 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "reports/transport-expenses": "transportexpensereport.listOnNavbar",
     "reports/category-expenses": "expensecategorywise.listOnNavbar",
     "reports/daily-expenses": "dailyexpenses.listOnNavbar",
+    "reports/transport-roster": "reports.listOnNavbar",
+    "reports/transport-profitability": "reports.listOnNavbar",
+    "reports/class-demographics": "reports.listOnNavbar",
+    "reports/student-progression": "reports.listOnNavbar",
     "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
     "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
     "reports/daily-collection": "dailycollection.listOnNavbar",
