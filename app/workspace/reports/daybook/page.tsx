@@ -159,12 +159,11 @@ export default function DaybookReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
-                                <BookOpen className="h-6 w-6 text-[#556043]" />
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Daybook & Cash Register
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Chronological daily log of cash & bank transactions with opening and closing balances.
+                                View all money received and spent on any selected day.
                             </p>
                         </div>
                     </div>

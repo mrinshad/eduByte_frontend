@@ -142,12 +142,11 @@ export default function AcademicYearSummaryPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
-                                <GraduationCap className="h-6 w-6 text-[#556043]" />
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Academic Year Summary
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Executive operational and financial performance overview for{" "}
+                                Overall summary of students, fee collection, expenses, and savings for{" "}
                                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                                     {activeYear?.name ?? "Academic Year"}
                                 </span>

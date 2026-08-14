@@ -36,6 +36,7 @@ import {
     X
 } from "lucide-react";
 import { usePermission } from "@/hooks/usePermission";
+import { toast } from "sonner";
 
 function formatCurrency(amount?: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -140,14 +141,7 @@ export default function FeeDefaultersReportPage() {
     }, [loadDefaulters]);
 
     const handleWhatsAppReminder = (student: FeeDefaulterItem) => {
-        const phone = student.whatsappNumber.replace(/[^0-9]/g, "");
-        const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
-        const msg = encodeURIComponent(
-            `Dear Parent of ${student.studentName} (${student.className}),\n` +
-            `This is a gentle reminder from School regarding pending fee dues of ₹${student.totalOutstanding.toLocaleString("en-IN")}.\n` +
-            `Kindly clear the pending balance at the school office or via online payment at your earliest convenience.\nThank you.`
-        );
-        window.open(`https://wa.me/${formattedPhone}?text=${msg}`, "_blank");
+        toast.info("Feature coming soon");
     };
 
     const selectedClassName = useMemo(() => {
@@ -196,12 +190,11 @@ export default function FeeDefaultersReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
-                                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Fee Defaulters & Aging Dues
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Overdue student fees categorized into aging brackets with parent contacts and reminder triggers.
+                                Students with unpaid fees, how long they are overdue, and parent contact details.
                             </p>
                         </div>
                     </div>
@@ -517,7 +510,7 @@ export default function FeeDefaultersReportPage() {
                                                 onClick={() => handleWhatsAppReminder(st)}
                                                 className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs inline-flex items-center gap-1"
                                             >
-                                                <MessageSquare className="h-3 w-3" /> WhatsApp
+                                                <MessageSquare className="h-3 w-3" /> Reminder
                                             </Button>
                                         </td>
                                     </tr>

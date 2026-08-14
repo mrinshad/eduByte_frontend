@@ -60,7 +60,7 @@ function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean 
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>Add</p>
+        <p>New Expense</p>
       </TooltipContent>
     </Tooltip>
   )
@@ -438,7 +438,7 @@ export default function Page() {
         <div className="mt-6 space-y-6">
           <Card className="w-full dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-black/5  dark:border-white/10">
-              <div className="flex w-full items-start justify-between gap-4">
+              <div className="flex w-full items-center justify-between gap-4">
                 <div className="space-y-1">
                   <CardTitle className="text-xl font-semibold tracking-tight">
                     Expenses

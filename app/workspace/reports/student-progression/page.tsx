@@ -158,12 +158,11 @@ export default function StudentProgressionReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
-                                <GraduationCap className="h-6 w-6 text-[#556043]" />
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Student Progression & Exit Register
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Student promotions, active enrolled students, and Transfer Certificate (TC) withdrawals.
+                                View student academic year status, promotions, and transfer certificates.
                             </p>
                         </div>
                     </div>

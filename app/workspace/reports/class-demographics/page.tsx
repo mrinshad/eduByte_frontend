@@ -158,12 +158,11 @@ export default function ClassDemographicsReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl flex items-center gap-2">
-                                <Users className="h-6 w-6 text-[#556043]" />
+                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                                 Class Demographics & Student Strength
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Grade-wise student headcount, division allocations, gender breakdown, and blood group distribution.
+                                Total student count, boys and girls count, and blood groups for each class.
                             </p>
                         </div>
                     </div>
