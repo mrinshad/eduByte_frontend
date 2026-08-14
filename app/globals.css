@@ -143,14 +143,40 @@ input[type="number"] {
 }
 
 @media print {
-    body {
-        background: white !important;
+    @page {
+        size: A4 portrait;
+        margin: 0;
     }
 
+    html,
+    body {
+        width: 210mm !important;
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    header,
+    nav,
+    aside,
     [data-sonner-toaster],
-    li[data-sonner-toast] {
+    li[data-sonner-toast],
+    .no-print {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
+    }
+
+    .bill-sheet {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .bill-container {
+        width: 210mm !important;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 }

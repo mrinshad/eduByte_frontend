@@ -363,8 +363,14 @@ export default function Page() {
     })
   }
 
-  function updateAmount(key: string, value: number, max: number) {
-    const clamped = Math.max(0, Math.min(value, max))
+  function updateAmount(key: string, rawVal: string, max: number) {
+    if (rawVal === "") {
+      setSelected((prev) => ({ ...prev, [key]: 0 }))
+      return
+    }
+    const val = Number(rawVal)
+    if (isNaN(val)) return
+    const clamped = Math.max(0, Math.min(val, max))
     setSelected((prev) => ({ ...prev, [key]: clamped }))
   }
 
@@ -472,8 +478,10 @@ export default function Page() {
     setPayments((prev) => prev.map((p, i) => (i === index ? { ...p, accountId } : p)))
   }
 
-  function updatePaymentAmount(index: number, amount: number) {
-    setPayments((prev) => prev.map((p, i) => (i === index ? { ...p, amount: Math.max(0, amount) } : p)))
+  function updatePaymentAmount(index: number, rawVal: string) {
+    const val = rawVal === "" ? 0 : Number(rawVal)
+    if (isNaN(val)) return
+    setPayments((prev) => prev.map((p, i) => (i === index ? { ...p, amount: Math.max(0, val) } : p)))
   }
 
   const canSubmit =
@@ -697,9 +705,10 @@ export default function Page() {
                                     min={0}
                                     max={charge.balance}
                                     disabled={!isSelected}
-                                    value={isSelected ? selected[key] : ""}
+                                    value={isSelected ? (selected[key] === 0 ? "" : selected[key]) : ""}
+                                    placeholder="0"
                                     onChange={(e) =>
-                                      updateAmount(key, Number(e.target.value), charge.balance)
+                                      updateAmount(key, e.target.value, charge.balance)
                                     }
                                     className="w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
                                   />
@@ -785,9 +794,10 @@ export default function Page() {
                                 min={0}
                                 max={fine.balance}
                                 disabled={!isSelected}
-                                value={isSelected ? selected[key] : ""}
+                                value={isSelected ? (selected[key] === 0 ? "" : selected[key]) : ""}
+                                placeholder="0"
                                 onChange={(e) =>
-                                  updateAmount(key, Number(e.target.value), fine.balance)
+                                  updateAmount(key, e.target.value, fine.balance)
                                 }
                                 className="w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
                               />
@@ -849,13 +859,14 @@ export default function Page() {
                       Payment Details
                     </h3>
                     <Button
-                      variant="ghost"
+                      type="button"
+                      variant="outline"
                       size="sm"
-                      className="h-7 gap-1 text-xs text-[#556043] hover:bg-[#556043] hover:text-white"
+                      className="h-7.5 gap-1.5 px-3 text-xs font-semibold bg-white text-slate-800 border-slate-300 hover:bg-slate-100 hover:text-slate-950 active:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700 shadow-2xs"
                       onClick={addPaymentLine}
                       disabled={payments.length >= paymentAccounts.length || paymentAccounts.length === 0}
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Plus className="h-3.5 w-3.5 text-slate-700 dark:text-slate-300" />
                       Add method
                     </Button>
                   </div>
@@ -888,8 +899,8 @@ export default function Page() {
                         <input
                           type="number"
                           min={0}
-                          value={p.amount || ""}
-                          onChange={(e) => updatePaymentAmount(index, Number(e.target.value))}
+                          value={p.amount === 0 ? "" : p.amount}
+                          onChange={(e) => updatePaymentAmount(index, e.target.value)}
                           placeholder="0"
                           className="h-9 w-28 rounded-md border border-slate-300 bg-white px-2 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
                         />

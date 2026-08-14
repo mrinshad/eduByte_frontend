@@ -1,11 +1,7 @@
-"use client";
-
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Printer, Download } from "lucide-react";
-import * as htmlToImage from "html-to-image";
-import { jsPDF } from "jspdf";
+import { ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +13,7 @@ type ExpenseVoucherProps = {
 
 export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
     const router = useRouter();
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         const dismissToasts = () => toast.dismiss();
@@ -26,11 +23,17 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
 
     const handleDownloadPdf = async () => {
         try {
+            setIsExporting(true);
             const element = document.getElementById("voucher-content");
             if (!element) return;
 
+            const [htmlToImage, { jsPDF }] = await Promise.all([
+                import("html-to-image"),
+                import("jspdf"),
+            ]);
+
             const imgData = await htmlToImage.toPng(element, {
-                pixelRatio: 3,
+                pixelRatio: 2,
                 backgroundColor: "#ffffff",
                 style: {
                     boxShadow: "none",
@@ -54,6 +57,8 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
         } catch (error: any) {
             console.error("Error generating PDF:", error);
             toast.error(`Failed to generate PDF: ${error?.message || "Unknown error"}`);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -86,10 +91,15 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                         <Button
                             type="button"
                             onClick={handleDownloadPdf}
-                            className="h-10 rounded-xl border border-slate-300 bg-white px-4 text-xs sm:text-sm font-semibold text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-950 active:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+                            disabled={isExporting}
+                            className="h-10 rounded-xl border border-slate-300 bg-white px-4 text-xs sm:text-sm font-semibold text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-950 active:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white disabled:opacity-60"
                         >
-                            <Download className="mr-2 h-4 w-4 text-slate-700 dark:text-slate-300" />
-                            Save PDF
+                            {isExporting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-slate-700 dark:text-slate-300" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4 text-slate-700 dark:text-slate-300" />
+                            )}
+                            {isExporting ? "Generating PDF..." : "Save PDF"}
                         </Button>
                         <Button
                             onClick={() => {
@@ -246,31 +256,6 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                     </div>
                 </div>
             </div>
-
-            {/* Print-specific sizing */}
-            <style jsx global>{`
-                @media print {
-                    @page {
-                        size: A4 portrait;
-                        margin: 0;
-                    }
-                    html,
-                    body {
-                        width: 210mm;
-                        background: white !important;
-                    }
-                    .bill-sheet {
-                        box-shadow: none !important;
-                    }
-                    .bill-container {
-                        width: 210mm !important;
-                        page-break-after: avoid;
-                        page-break-inside: avoid;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-                }
-            `}</style>
         </div>
     );
 }
