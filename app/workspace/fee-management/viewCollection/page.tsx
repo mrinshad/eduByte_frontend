@@ -487,7 +487,7 @@ export default function Page() {
   const canSubmit =
     !submitting &&
     ((payableOutstanding > 0 &&
-      difference === 0 &&
+      Math.abs(difference) < 0.005 &&
       payments.every((p) => p.amount > 0) &&
       payments.length > 0) ||
       (payableOutstanding === 0 && selectedZeroChargeIds.length > 0))
@@ -702,11 +702,12 @@ export default function Page() {
                                 <td className="px-3 py-2 text-right">
                                   <input
                                     type="number"
+                                    step="0.01"
                                     min={0}
                                     max={charge.balance}
                                     disabled={!isSelected}
                                     value={isSelected ? (selected[key] === 0 ? "" : selected[key]) : ""}
-                                    placeholder="0"
+                                    placeholder="0.00"
                                     onChange={(e) =>
                                       updateAmount(key, e.target.value, charge.balance)
                                     }
@@ -791,11 +792,12 @@ export default function Page() {
                             <td className="px-3 py-2 text-right">
                               <input
                                 type="number"
+                                step="0.01"
                                 min={0}
                                 max={fine.balance}
                                 disabled={!isSelected}
                                 value={isSelected ? (selected[key] === 0 ? "" : selected[key]) : ""}
-                                placeholder="0"
+                                placeholder="0.00"
                                 onChange={(e) =>
                                   updateAmount(key, e.target.value, fine.balance)
                                 }
@@ -898,10 +900,11 @@ export default function Page() {
                         </select>
                         <input
                           type="number"
+                          step="0.01"
                           min={0}
                           value={p.amount === 0 ? "" : p.amount}
                           onChange={(e) => updatePaymentAmount(index, e.target.value)}
-                          placeholder="0"
+                          placeholder="0.00"
                           className="h-9 w-28 rounded-md border border-slate-300 bg-white px-2 text-right text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
                         />
                         {payments.length > 1 && (

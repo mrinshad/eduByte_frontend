@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
 import {
   ArrowLeft,
@@ -342,7 +342,7 @@ export default function ViewStudentFinePage() {
                 Fine amount
               </div>
               <div className="text-lg text-slate-950 dark:text-slate-100">
-                ₹{amount.toLocaleString()}
+                {formatCurrency(amount)}
               </div>
             </div>
             <div className="px-5 py-4 text-center">
@@ -350,7 +350,7 @@ export default function ViewStudentFinePage() {
                 Paid
               </div>
               <div className="text-lg text-emerald-600 dark:text-emerald-400">
-                ₹{paidAmount.toLocaleString()}
+                {formatCurrency(paidAmount)}
               </div>
             </div>
             <div className="px-5 py-4 text-center">
@@ -358,7 +358,7 @@ export default function ViewStudentFinePage() {
                 Balance
               </div>
               <div className="text-lg text-slate-950 dark:text-slate-100">
-                ₹{safeBalanceAmount.toLocaleString()}
+                {formatCurrency(safeBalanceAmount)}
               </div>
             </div>
           </div>

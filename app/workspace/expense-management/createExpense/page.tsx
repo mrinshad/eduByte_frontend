@@ -831,8 +831,9 @@ export default function Page() {
                         <FieldLabel>Amount<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                         <Input
                             type="number"
+                            step="0.01"
                             min={0}
-                            placeholder="e.g. 4000"
+                            placeholder="e.g. 4000.00"
                             value={amount}
                             onChange={(e) => {
                                 setAmount(e.target.value === "" ? "" : Number(e.target.value));
@@ -1023,8 +1024,9 @@ export default function Page() {
 
                                             <Input
                                                 type="number"
+                                                step="0.01"
                                                 min={0}
-                                                placeholder="Amount"
+                                                placeholder="0.00"
                                                 value={row.amount}
                                                 onChange={(e) =>
                                                     updatePaymentAmount(row.id, e.target.value === "" ? "" : Number(e.target.value))
