@@ -44,7 +44,7 @@ import {
 
 function formatCurrency(value?: number | null) {
   const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
-  return `\u20b9${safeValue.toLocaleString("en-IN")}`;
+  return `₹${safeValue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function getMonthName(month: number) {

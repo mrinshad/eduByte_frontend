@@ -38,7 +38,7 @@ function formatClass(value: string) {
 }
 
 function formatCurrency(value?: number) {
-  return `₹${(value ?? 0).toLocaleString("en-IN")}`;
+  return `₹${(value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const statusStyles: Record<string, string> = {

@@ -28,6 +28,7 @@ import {
 import { getStudentFeeCollection, type StudentFeeCollection } from "@/lib/services/feeCollection";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getDivisions, type Division } from "@/lib/services/division";
+import { formatCurrency } from "@/lib/utils";
 
 function FilterChip({
   label,
@@ -502,7 +503,7 @@ export default function FeeCollectionPage() {
                       {student.vehicle || "-"}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-sm font-bold text-rose-600 dark:text-rose-400">
-                      ₹{student.TotalDue?.toLocaleString("en-IN") ?? 0}
+                      {formatCurrency(student.TotalDue)}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
                       {student.status === "NOT_GENERATED" ? (

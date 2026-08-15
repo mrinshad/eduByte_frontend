@@ -9,7 +9,7 @@ import type { FeeCollectionPrintResponse } from "@/lib/services/feeCollection";
 const SAGE = "#556043";
 
 const formatCurrency = (n: number) =>
-    `₹ ${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    `₹ ${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const formatPeriod = (period: { month: number; year: number } | null) => {
     if (!period) return "—";

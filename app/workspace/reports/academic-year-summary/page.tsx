@@ -55,17 +55,12 @@ const EXPENSE_COLOR = "#e11d48";
 
 const formatCurrency = (val: number | null | undefined) => {
     const num = Number(val ?? 0);
-    return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatCompactCurrency = (val: number | null | undefined) => {
     const num = Number(val ?? 0);
-    return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        notation: "compact",
-        maximumFractionDigits: 1,
-    }).format(num);
+    return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 export default function AcademicYearSummaryPage() {

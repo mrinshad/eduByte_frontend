@@ -36,7 +36,7 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 import {
     createExpense,
@@ -499,10 +499,10 @@ export default function Page() {
 
         if (Math.abs(remaining) >= 0.01) {
             if (remaining > 0) {
-                toast.error(`₹${remaining.toLocaleString()} is still unallocated.`);
+                toast.error(`${formatCurrency(remaining)} is still unallocated.`);
             } else {
                 toast.error(
-                    `Allocated amount exceeds the expense by ₹${Math.abs(remaining).toLocaleString()}.`
+                    `Allocated amount exceeds the expense by ${formatCurrency(Math.abs(remaining))}.`
                 );
             }
             return;
@@ -1072,7 +1072,7 @@ export default function Page() {
                     <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-white/60">Amount</p>
                         <p className="mt-1 text-4xl font-bold tracking-tight">
-                            ₹{(Number(amount) || 0).toLocaleString()}
+                            {formatCurrency(Number(amount) || 0)}
                         </p>
                         <p className="mt-1 text-xs text-white/60">
                             {expenseDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
@@ -1102,7 +1102,7 @@ export default function Page() {
                         <div className="flex items-center justify-between text-xs">
                             <span className="text-white/60">Allocated</span>
                             <span className="font-medium">
-                                ₹{totalAllocated.toLocaleString()} / ₹{(Number(amount) || 0).toLocaleString()}
+                                {formatCurrency(totalAllocated)} / {formatCurrency(Number(amount) || 0)}
                             </span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
@@ -1115,8 +1115,8 @@ export default function Page() {
                             {remaining === 0
                                 ? "Fully allocated"
                                 : remaining > 0
-                                    ? `₹${remaining.toLocaleString()} not yet allocated`
-                                    : `₹${Math.abs(remaining).toLocaleString()} over the expense amount`}
+                                    ? `${formatCurrency(remaining)} not yet allocated`
+                                    : `${formatCurrency(Math.abs(remaining))} over the expense amount`}
                         </p>
                     </div>
                 </div>

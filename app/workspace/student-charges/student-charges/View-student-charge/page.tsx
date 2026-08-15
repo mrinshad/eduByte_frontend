@@ -111,7 +111,7 @@ function formatDateOnly(value?: string | Date | null) {
 }
 
 function formatCurrency(value: number) {
-  return `₹${value.toLocaleString()}`;
+  return `₹${(value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ---------------------------------------------------------------------------

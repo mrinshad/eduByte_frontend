@@ -53,8 +53,9 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        maximumFractionDigits: 0,
-    }).format(amount);
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount ?? 0);
 }
 function formatPayments(payments: { accountId: string; amount: string | number }[] | undefined) {
     if (!payments || payments.length === 0) return "—";

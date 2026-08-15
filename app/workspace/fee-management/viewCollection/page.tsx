@@ -31,7 +31,7 @@ import React from "react"
 import { refreshLateFines } from "@/lib/services/lateFine"
 
 const formatCurrency = (n: number) =>
-  `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+  `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 // ---------------------------------------------------------------------------
 // Layout primitives

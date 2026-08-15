@@ -35,7 +35,7 @@ import {
 const CATEGORIES = ["TUITION", "TRANSPORT", "ADMISSION", "BOOK", "MADRASA", "EXAM", "OTHER"];
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount ?? 0);
 }
 
 function StatusBadge({ status }: { status: string }) {
