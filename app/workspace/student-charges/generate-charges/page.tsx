@@ -93,7 +93,7 @@ export default function FeeGenerationPage() {
   const generationWindowAllowed = !generationLocked;
   const readyToGenerate = Boolean(preview?.validation?.readyToGenerate);
   const hasPendingGeneration = Boolean(
-    preview && generationWindowAllowed && preview.summary.chargesToGenerate > 0 && readyToGenerate
+    preview && generationWindowAllowed && readyToGenerate
   );
 
   const catchUpCount = preview?.summary?.catchUpChargesCount ?? preview?.catchUpCharges?.length ?? 0;
@@ -245,7 +245,11 @@ export default function FeeGenerationPage() {
     }
 
     if (!hasPendingGeneration) {
-      toast.warning("No pending charges available to generate for this target month.");
+      if (!generationWindowAllowed) {
+        toast.warning("Generation is currently locked to this month and next month only.");
+      } else {
+        toast.warning("Generation is not ready for this target month.");
+      }
       return;
     }
 
@@ -260,9 +264,15 @@ export default function FeeGenerationPage() {
       const result = await generateFeeCharges(activeAcademicYearId);
       if (result) {
         setLastGenerationResult(result);
-        toast.success(
-          `Generated ${result.chargesGenerated} charge(s) for ${result.studentsProcessed} student(s)!`
-        );
+        if (result.chargesGenerated > 0) {
+          toast.success(
+            `Generated ${result.chargesGenerated} charge(s) for ${result.studentsProcessed} student(s)!`
+          );
+        } else {
+          toast.success(
+            `Completed ${monthLabel} with 0 charges. Advanced to the next academic month!`
+          );
+        }
       }
 
       setConfirmOpen(false);
@@ -298,12 +308,8 @@ export default function FeeGenerationPage() {
       return;
     }
 
-    if (!hasPendingGeneration) {
-      if (!generationWindowAllowed) {
-        toast.warning("Generation is currently locked to this month and next month only.");
-      } else {
-        toast.warning("No pending charges to generate for this month.");
-      }
+    if (!generationWindowAllowed) {
+      toast.warning("Generation is currently locked to this month and next month only.");
       return;
     }
 
@@ -350,8 +356,14 @@ export default function FeeGenerationPage() {
                 onClick={openGenerateDialog}
                 disabled={!preview || isLoadingPreview || isGenerating || !generationWindowAllowed}
               >
-                {isGenerating ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-white dark:text-slate-900" /> : <Zap className="mr-1.5 h-3.5 w-3.5" />}
-                Generate Charges for {monthLabel}
+                {isGenerating ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-white dark:text-slate-900" />
+                ) : (
+                  <Zap className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {preview && preview.summary.chargesToGenerate > 0
+                  ? `Generate Charges for ${monthLabel}`
+                  : `Advance Month (${monthLabel})`}
               </Button>
             </PermissionGate>
           </div>
@@ -400,14 +412,18 @@ export default function FeeGenerationPage() {
                 </span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    hasPendingGeneration
-                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300"
-                      : generationLocked
+                    generationLocked
                       ? "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300"
-                      : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                      : preview.summary.chargesToGenerate > 0
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300"
+                      : "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300"
                   }`}
                 >
-                  {hasPendingGeneration ? "READY TO GENERATE" : generationLocked ? "LOCKED" : "COMPLETED"}
+                  {generationLocked
+                    ? "LOCKED"
+                    : preview.summary.chargesToGenerate > 0
+                    ? "READY TO GENERATE"
+                    : "READY TO ADVANCE (0 CHARGES)"}
                 </span>
               </div>
               <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">{monthLabel}</p>
@@ -431,7 +447,11 @@ export default function FeeGenerationPage() {
                 {preview.summary.chargesToGenerate} Charge{preview.summary.chargesToGenerate !== 1 ? "s" : ""}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {catchUpCount > 0 ? `Includes ${catchUpCount} mid-year catch-up charge(s)` : "Standard monthly billing run"}
+                {preview.summary.chargesToGenerate === 0
+                  ? "No charges due for this month (fees start in a later month or no fees due)"
+                  : catchUpCount > 0
+                  ? `Includes ${catchUpCount} mid-year catch-up charge(s)`
+                  : "Standard monthly billing run"}
               </p>
             </div>
 
@@ -532,7 +552,11 @@ export default function FeeGenerationPage() {
                         </span>
                       ) : isCurrent ? (
                         <span className="inline-flex items-center text-[10px] font-bold text-[#556043] dark:text-slate-200 uppercase">
-                          {hasPendingGeneration ? "● Target Month" : "Locked"}
+                          {generationLocked
+                            ? "Locked"
+                            : preview?.summary?.chargesToGenerate > 0
+                            ? "● Target Month"
+                            : "● Target (0 Charges)"}
                         </span>
                       ) : (
                         <span className="inline-flex items-center text-[10px] font-medium text-slate-400">
@@ -740,10 +764,14 @@ export default function FeeGenerationPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">
-              Confirm Fee Generation for {monthLabel}
+              {preview && preview.summary.chargesToGenerate > 0
+                ? `Confirm Fee Generation for ${monthLabel}`
+                : `Confirm Month Advancement for ${monthLabel}`}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              This will create student charges in the system and advance the academic month counter.
+              {preview && preview.summary.chargesToGenerate > 0
+                ? "This will create student charges in the system and advance the academic month counter."
+                : "No charges are scheduled for this month (e.g. students admitted in later months or no fees due). Proceeding will complete this month with 0 charges and advance to the next academic month."}
             </DialogDescription>
           </DialogHeader>
 
@@ -789,8 +817,10 @@ export default function FeeGenerationPage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Generating...
+                  {preview?.summary?.chargesToGenerate === 0 ? "Advancing..." : "Generating..."}
                 </>
+              ) : preview?.summary?.chargesToGenerate === 0 ? (
+                "Confirm & Advance Month"
               ) : (
                 "Confirm & Run Generation"
               )}
