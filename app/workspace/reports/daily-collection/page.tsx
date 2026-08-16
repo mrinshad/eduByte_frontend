@@ -256,11 +256,11 @@ export default function DailyCollectionReportPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400 text-white" />
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
                                         <span className="truncate">{formatDisplayDate(fromDate)}</span>
                                     </Button>
                                 </PopoverTrigger>
@@ -287,11 +287,11 @@ export default function DailyCollectionReportPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400 text-white" />
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
                                         <span className="truncate">{formatDisplayDate(toDate)}</span>
                                     </Button>
                                 </PopoverTrigger>
@@ -313,7 +313,7 @@ export default function DailyCollectionReportPage() {
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-10 w-10 shrink-0 self-end text-white hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+                            className="h-10 w-10 shrink-0 self-end border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:self-auto"
                             onClick={handleRefresh}
                             disabled={isLoading || isRangeInvalid}
                         >
@@ -419,27 +419,27 @@ export default function DailyCollectionReportPage() {
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full min-w-[1000px] text-sm">
-                                            <thead className="bg-slate-50 dark:bg-slate-900/60">
-                                                <tr className="text-left text-slate-500 dark:text-slate-400">
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                            <thead className="bg-[#556043] dark:bg-background border-none">
+                                                <tr className="text-left text-white dark:text-slate-200 text-xs font-semibold uppercase tracking-wider">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Transaction #
                                                     </th>
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Date
                                                     </th>
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Student
                                                     </th>
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Class
                                                     </th>
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Payment Methods
                                                     </th>
-                                                    <th className="px-4 py-2.5 font-medium sm:px-5">
+                                                    <th className="px-4 py-3 sm:px-5">
                                                         Collections
                                                     </th>
-                                                    <th className="px-4 py-2.5 text-right font-medium sm:px-5">
+                                                    <th className="px-4 py-3 text-right sm:px-5">
                                                         Amount
                                                     </th>
                                                 </tr>

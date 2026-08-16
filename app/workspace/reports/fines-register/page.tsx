@@ -326,7 +326,7 @@ export default function FinesRegisterReportPage() {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm font-sans">
-                            <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
                                 <tr>
                                     <th className="px-4 py-2.5">Fine Type</th>
                                     <th className="px-4 py-2.5 text-center">Count</th>
@@ -477,7 +477,7 @@ export default function FinesRegisterReportPage() {
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm font-sans">
-                        <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
                             <tr>
                                 <th className="px-4 py-3">Date</th>
                                 <th className="px-4 py-3">Student Name</th>

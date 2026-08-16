@@ -502,7 +502,7 @@ export default function AcademicYearSummaryPage() {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm font-sans">
-                        <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
                             <tr>
                                 <th className="px-4 py-3">Class / Standard</th>
                                 <th className="px-4 py-3 text-center">Enrolled Students</th>
