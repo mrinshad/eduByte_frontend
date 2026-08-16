@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Loader2,
   ArrowLeft,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
+import { getClasses, type SchoolClass } from "@/lib/services/class";
+import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      {label}
+      <button onClick={onRemove} className="rounded-full hover:text-red-600">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
@@ -37,6 +58,8 @@ export default function StudentAdmissionListPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
+  const [feeStructureFilter, setFeeStructureFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pagination, setPagination] = useState({
@@ -45,6 +68,42 @@ export default function StudentAdmissionListPage() {
     total: 0,
     totalPages: 1,
   });
+
+  const [classOptions, setClassOptions] = useState<SchoolClass[]>([]);
+  const [classOptionsLoading, setClassOptionsLoading] = useState(true);
+  const [feeStructureOptions, setFeeStructureOptions] = useState<FeeStructureSummary[]>([]);
+  const [feeStructureOptionsLoading, setFeeStructureOptionsLoading] = useState(true);
+
+  const loadClassOptions = async () => {
+    try {
+      setClassOptionsLoading(true);
+      const classes = await getClasses();
+      setClassOptions(classes);
+    } catch (error) {
+      console.error("Failed to load classes:", error);
+      setClassOptions([]);
+    } finally {
+      setClassOptionsLoading(false);
+    }
+  };
+
+  const loadFeeStructureOptions = async () => {
+    try {
+      setFeeStructureOptionsLoading(true);
+      const feeStructures = await getFeeStructures({ page: 1, limit: 500 });
+      setFeeStructureOptions(feeStructures.items);
+    } catch (error) {
+      console.error("Failed to load fee structures:", error);
+      setFeeStructureOptions([]);
+    } finally {
+      setFeeStructureOptionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadClassOptions();
+    loadFeeStructureOptions();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,6 +124,8 @@ export default function StudentAdmissionListPage() {
           page: currentPage,
           limit: rowsPerPage,
           search,
+          className: classFilter === "all" ? "" : classFilter,
+          feeStructure: feeStructureFilter === "all" ? "" : feeStructureFilter,
         });
         if (!active) return;
 
@@ -97,7 +158,23 @@ export default function StudentAdmissionListPage() {
     return () => {
       active = false;
     };
-  }, [currentPage, rowsPerPage, search]);
+  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter]);
+
+  const hasActiveFilters = useMemo(
+    () =>
+      classFilter !== "all" ||
+      feeStructureFilter !== "all" ||
+      search.trim().length > 0,
+    [classFilter, feeStructureFilter, search]
+  );
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setClassFilter("all");
+    setFeeStructureFilter("all");
+    setCurrentPage(1);
+  };
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -105,42 +182,138 @@ export default function StudentAdmissionListPage() {
 
   return (
     <section className="w-full px-6 py-4 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Admissions
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Process new student admissions, manage enrollments, and assign fee structures.
-            </p>
+      {/* ── Header & Actions ── */}
+      <div className="flex flex-col gap-4">
+        {/* Top row: title (left) + Search + New Admission button (right) */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.back()} className="shrink-0">
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Admissions
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                Process new student admissions, manage enrollments, and assign fee structures.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+              <Input
+                placeholder="Search by name, ID, or phone..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+            <PermissionGate permission="admissions.newAdmissionButton">
+            <Button
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              onClick={() => router.push("/admin/admissions/createAdmission")}
+            >
+              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+              New Admission
+            </Button>
+            </PermissionGate>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search by name, ID, or phone..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[oklch(0.46_0.04_125)] focus-visible:border-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-          </div>
-          <PermissionGate permission="admissions.newAdmissionButton">
-          <Button
-            className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push("/admin/admissions/createAdmission")}
+        {/* Second row: filters, right-aligned below the search/button row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full flex-wrap sm:justify-end">
+          {/* 👇 Class filter dropdown */}
+          <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value);
+              setCurrentPage(1);
+            }}
           >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            New Admission
-          </Button>
-          </PermissionGate>
+            <SelectTrigger className="h-10 w-full sm:w-[160px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder={classOptionsLoading ? "Loading..." : "All Classes"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classOptions.map((c) => (
+                <SelectItem key={c.id} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* 👇 Fee Structure filter dropdown */}
+          <Select
+            value={feeStructureFilter}
+            onValueChange={(value) => {
+              setFeeStructureFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[220px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder={feeStructureOptionsLoading ? "Loading..." : "All Fee Structures"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Fee Structures</SelectItem>
+              {feeStructureOptions.map((f) => (
+                <SelectItem key={f.id} value={f.name}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-full sm:w-auto text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              onClick={clearAllFilters}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          <span className="text-xs font-medium text-slate-400">Filters:</span>
+          {classFilter !== "all" && (
+            <FilterChip
+              label={`Class: ${classFilter}`}
+              onRemove={() => {
+                setClassFilter("all");
+                setCurrentPage(1);
+              }}
+            />
+          )}
+          {feeStructureFilter !== "all" && (
+            <FilterChip
+              label={`Fee Structure: ${feeStructureFilter}`}
+              onRemove={() => {
+                setFeeStructureFilter("all");
+                setCurrentPage(1);
+              }}
+            />
+          )}
+          {search.trim() && (
+            <FilterChip
+              label={`Search: ${search}`}
+              onRemove={() => {
+                setSearchInput("");
+                setSearch("");
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
         <div className="overflow-x-auto">

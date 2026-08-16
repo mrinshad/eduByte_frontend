@@ -215,12 +215,16 @@ export async function getStudentAdmissions(params: {
   page?: number;
   limit?: number;
   search?: string;
+  className?: string;
+  feeStructure?: string;
 } = {}): Promise<AdmissionsListResponse> {
   const query = new URLSearchParams();
 
   if (params.page !== undefined) query.set("page", String(params.page));
   if (params.limit !== undefined) query.set("limit", String(params.limit));
   if (params.search) query.set("search", params.search);
+  if (params.className) query.set("className", params.className);
+  if (params.feeStructure) query.set("feeStructure", params.feeStructure);
 
   const payload = (await apiFetch(
     `/api/stdenrollment${query.toString() ? `?${query.toString()}` : ""}`
