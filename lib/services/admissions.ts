@@ -21,7 +21,7 @@ export interface BackendAdmission {
   divisionId: string;
   feeStructureId: string | null;
   rollNumber: string | null;
-  status: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "INACTIVE" | "WITHDRAWN" | "COMPLETED" | "PROMOTED" | string;
   createdAt: string;
   updatedAt: string;
   studentName?: string;
@@ -133,7 +133,7 @@ export interface CompleteEnrollmentRecord {
     gender: string;
     dob: string;
     bloodGroup: string;
-    status: "ACTIVE" | "INACTIVE";
+    status: "ACTIVE" | "INACTIVE" | "WITHDRAWN" | "COMPLETED" | "PROMOTED" | string;
     fatherName: string;
     fatherMobile: string;
     motherName: string;
@@ -285,4 +285,24 @@ export async function updateStudentAdmission(
   });
  
   return response as CreateAdmissionResponse;
+}
+
+export async function withdrawStudentAdmission(
+  enrollmentId: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await apiFetch(`/api/stdenrollment/${enrollmentId}/withdraw`, {
+    method: "PATCH",
+  });
+
+  return response as { success: boolean; message: string };
+}
+
+export async function deleteStudentAdmission(
+  enrollmentId: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await apiFetch(`/api/stdenrollment/${enrollmentId}`, {
+    method: "DELETE",
+  });
+
+  return response as { success: boolean; message: string };
 }

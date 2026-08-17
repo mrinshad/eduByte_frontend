@@ -417,7 +417,9 @@ export default function StudentAdmissionListPage() {
                         className={
                           student.status === "ACTIVE"
                             ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 font-medium"
-                            : "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 font-medium"
+                            : student.status === "WITHDRAWN"
+                            ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 font-medium"
+                            : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 font-medium"
                         }
                       >
                         {student.status}
@@ -427,36 +429,15 @@ export default function StudentAdmissionListPage() {
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <PermissionGate permission="admissions.viewAdmissionButton">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
-                          onClick={() => router.push(`/admin/admissions/viewAdmission?id=${student.id}`)}
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        </PermissionGate>
-                        <PermissionGate permission="admissions.editAdmissionButton">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
-                          onClick={() => router.push(`/admin/admissions/createAdmission?id=${student.id}`)}
-                          title="Edit Student"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        </PermissionGate>
-                        <PermissionGate permission="admissions.deleteAdmissionButton">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          title="Delete Student"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            onClick={() => router.push(`/admin/admissions/viewAdmission?id=${student.id}`)}
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </PermissionGate>
                       </div>
                     </TableCell>
