@@ -189,7 +189,8 @@ export default function PermissionsPage() {
     setLoading(true)
     try {
       const data = await getPermissions()
-      setPermissions(data)
+      const filtered = data.filter((p) => p.name !== "*")
+      setPermissions(filtered)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load permissions")
     } finally {
@@ -326,7 +327,11 @@ export default function PermissionsPage() {
     const description = (values.description ?? "").trim()
 
     const errs: Record<string, string | undefined> = {}
-    if (!name) errs.name = "Enter a permission name"
+    if (!name) {
+      errs.name = "Enter a permission name"
+    } else if (name === "*") {
+      errs.name = "Creating wildcard '*' permission is not allowed"
+    }
     if (!description) errs.description = "Enter a description"
     if (Object.keys(errs).length > 0) {
       setErrors(errs)

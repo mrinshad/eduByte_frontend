@@ -212,13 +212,14 @@ export default function Page() {
     setRolesLoading(true)
     try {
       const data = await getRoles()
-      setRoles(data)
-      if (data.length > 0) {
-        setSelectedRoleId((current) => current || data[0].id)
+      const filtered = data.filter((r) => r.name.toUpperCase() !== "SUPER ADMIN")
+      setRoles(filtered)
+      if (filtered.length > 0) {
+        setSelectedRoleId((current) => (filtered.some((r) => r.id === current) ? current : filtered[0].id))
       }
       const map: Record<string, string[]> = {}
       await Promise.all(
-        data.map(async (r) => {
+        filtered.map(async (r) => {
           try {
             const perms = await getRolePermissions(r.id)
             map[r.id] = perms.map((p) => p.name)
@@ -249,10 +250,11 @@ export default function Page() {
     setRolePermissionsLoading(true)
     try {
       const data = await getRolePermissions(roleId)
-      setRolePermissions(data)
+      const filteredPerms = data.filter((p) => p.name !== "*")
+      setRolePermissions(filteredPerms)
       setRolePermissionMap((prev) => ({
         ...prev,
-        [roleId]: data.map((p) => p.name),
+        [roleId]: filteredPerms.map((p) => p.name),
       }))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load role permissions")
@@ -289,7 +291,8 @@ export default function Page() {
     setAllPermissionsLoading(true)
     try {
       const data = await getPermissions()
-      setAllPermissions(data)
+      const filtered = data.filter((p) => p.name !== "*")
+      setAllPermissions(filtered)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load permissions")
     } finally {
