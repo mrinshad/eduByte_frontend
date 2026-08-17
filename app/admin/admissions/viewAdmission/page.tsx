@@ -9,10 +9,15 @@ import {
   Receipt,
   User,
   Pencil,
+  UserMinus,
+  Trash2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { refreshLateFines } from "@/lib/services/lateFine"
+import { refreshLateFines } from "@/lib/services/lateFine";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +30,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-import { getEnrollmentById, type CompleteEnrollmentRecord } from "@/lib/services/admissions";
+import {
+  getEnrollmentById,
+  withdrawStudentAdmission,
+  deleteStudentAdmission,
+  type CompleteEnrollmentRecord,
+} from "@/lib/services/admissions";
 import { formatDateOnly } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -83,7 +103,6 @@ function formatDob(dob: string) {
 function ViewAdmissionSkeleton() {
   return (
     <section className="w-full px-6 py-4">
-      {/* Header skeleton */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <Skeleton className="h-9 w-9 rounded-md" />
@@ -92,80 +111,22 @@ function ViewAdmissionSkeleton() {
             <Skeleton className="mt-2 h-4 w-28" />
           </div>
         </div>
-        <Skeleton className="h-8 w-20 rounded-md" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-16 rounded-md" />
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
       </div>
 
       <div className="space-y-6">
-        {/* Student information skeleton */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
-            <Skeleton className="h-4 w-4 rounded-sm" />
+          <div className="bg-slate-50 px-4 py-3 dark:bg-slate-950/50">
             <Skeleton className="h-4 w-36" />
           </div>
           <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="px-4 py-3">
-                <Skeleton className="mb-2 h-3 w-20" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="px-4 py-3 space-y-1.5">
+                <Skeleton className="h-2.5 w-16" />
                 <Skeleton className="h-4 w-28" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Enrollment details skeleton */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
-            <Skeleton className="h-4 w-4 rounded-sm" />
-            <Skeleton className="h-4 w-40" />
-          </div>
-
-          <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800/50 dark:border-slate-800/50 md:grid-cols-4 md:divide-y-0">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="px-4 py-4">
-                <Skeleton className="mb-2 h-3 w-20" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3 md:divide-x md:divide-y-0">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-4">
-                <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
-                <div className="flex-1">
-                  <Skeleton className="mb-2 h-3 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Student fee table skeleton */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-          <div className="flex items-center gap-2.5 bg-background px-4 py-3 dark:bg-background">
-            <Skeleton className="h-4 w-4 rounded-sm" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-
-          <div className="px-4 py-3">
-            <div className="mb-3 grid grid-cols-5 gap-4 border-b border-slate-100 pb-2 dark:border-slate-800/50">
-              <Skeleton className="h-3 w-10" />
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-20 justify-self-end" />
-            </div>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-5 items-center gap-4 border-b border-slate-100 py-3 last:border-b-0 dark:border-slate-800/50"
-              >
-                <Skeleton className="h-4 w-6" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-16 justify-self-end" />
               </div>
             ))}
           </div>
@@ -187,6 +148,12 @@ export default function ViewAdmissionPage() {
   const [enrollment, setEnrollment] = useState<CompleteEnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Dialog states
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     async function loadData() {
       if (!id) return;
@@ -194,7 +161,7 @@ export default function ViewAdmissionPage() {
         setLoading(true);
         const data = await getEnrollmentById(id);
         if (data?.enrollmentId) {
-          const refreshResponse = await refreshLateFines(data.enrollmentId);
+          await refreshLateFines(data.enrollmentId);
         }
         setEnrollment(data);
       } catch (err) {
@@ -205,6 +172,39 @@ export default function ViewAdmissionPage() {
     }
     loadData();
   }, [id]);
+
+  const handleWithdrawAdmission = async () => {
+    if (!id) return;
+    setIsWithdrawing(true);
+    try {
+      await withdrawStudentAdmission(id);
+      toast.success("Student admission withdrawn successfully");
+      const updatedData = await getEnrollmentById(id);
+      setEnrollment(updatedData);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to withdraw student admission");
+    } finally {
+      setIsWithdrawing(false);
+      setShowWithdrawDialog(false);
+    }
+  };
+
+  const handleDeleteAdmission = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      await deleteStudentAdmission(id);
+      toast.success("Admission deleted successfully");
+      router.push("/admin/admissions");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to delete admission");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   if (loading) {
     return <ViewAdmissionSkeleton />;
@@ -226,7 +226,7 @@ export default function ViewAdmissionPage() {
   return (
     <section className="w-full px-6 py-4">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button
             className="bg-background text-foreground hover:opacity-90 shadow-sm"
@@ -246,19 +246,48 @@ export default function ViewAdmissionPage() {
           </div>
         </div>
 
-        <Button
-          className="shrink-0 flex items-center gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
-          size="sm"
-          onClick={() => router.push(`/admin/admissions/createAdmission?id=${id}`)}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Edit
-        </Button>
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <PermissionGate permission="admissions.editAdmissionButton">
+            <Button
+              className="shrink-0 flex items-center gap-1.5 bg-background text-foreground hover:opacity-90 shadow-sm"
+              size="sm"
+              onClick={() => router.push(`/admin/admissions/createAdmission?id=${id}`)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          </PermissionGate>
+
+          {student.status === "ACTIVE" && (
+            <PermissionGate permission="admissions.editAdmissionButton">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 flex items-center gap-1.5 border-amber-200 bg-amber-50/50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/40 shadow-sm"
+                onClick={() => setShowWithdrawDialog(true)}
+              >
+                <UserMinus className="h-3.5 w-3.5" />
+                Withdraw
+              </Button>
+            </PermissionGate>
+          )}
+
+          <PermissionGate permission="admissions.deleteAdmissionButton">
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 flex items-center gap-1.5 border-red-200 bg-red-50/50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40 shadow-sm"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       <div className="space-y-6">
-
-        {/* ── Student information ── */}
         <InfoSection icon={User} title="Student Information">
           <InfoGrid>
             <InfoItem label="Full name" value={student.studentName} />
@@ -274,6 +303,8 @@ export default function ViewAdmissionPage() {
                   className={
                     student.status === "ACTIVE"
                       ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : student.status === "WITHDRAWN"
+                      ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
                       : "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
                   }
                 >
@@ -290,7 +321,6 @@ export default function ViewAdmissionPage() {
           </InfoGrid>
         </InfoSection>
 
-        {/* ── Enrollment details ── */}
         <InfoSection icon={GraduationCap} title="Enrollment Details">
           <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800/50 dark:border-slate-800/50 md:grid-cols-4 md:divide-y-0">
             {[
@@ -299,63 +329,48 @@ export default function ViewAdmissionPage() {
               { label: "Division", value: enrollment.division },
               { label: "Roll Number", value: enrollment.rollNumber },
             ].map(({ label, value }) => (
-              <div key={label} className="px-4 py-4">
+              <div key={label} className="px-4 py-3">
                 <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   {label}
                 </div>
-                <div className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                  {value}
+                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                  {value || "—"}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800/50 md:grid-cols-3 md:divide-x md:divide-y-0">
-            <div className="flex items-center gap-4 px-4 py-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-                <Bus className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+          <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800/50">
+            <div className="px-4 py-3">
+              <div className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <Bus className="h-3 w-3" />
+                Vehicle
               </div>
-              <div>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Assigned vehicle
-                </div>
-                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                  {enrollment.vehicleName || "No Vehicle Assigned"}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 px-4 py-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-                <Bus className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              </div>
-              <div>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Vehicle number
-                </div>
-                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                  {enrollment.vehicleNumber || "—"}
-                </div>
+              <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                {enrollment.vehicleName ? (
+                  <>
+                    {enrollment.vehicleName}
+                    <span className="ml-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      ({enrollment.vehicleNumber})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-slate-600 dark:text-slate-400">No Vehicle Assigned</span>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-4 px-4 py-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-                <Receipt className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+            <div className="px-4 py-3">
+              <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Fee structure
               </div>
-              <div>
-                <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Fee structure
-                </div>
-                <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                  {enrollment.feeStructureName}
-                </div>
+              <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                {enrollment.feeStructureName}
               </div>
             </div>
           </div>
         </InfoSection>
 
-        {/* ── Student charges (simplified: Sl No, name, frequency, category, final amount) ── */}
         <InfoSection icon={Receipt} title="Student Fee">
           <Table className="table-fixed w-full">
             <TableHeader>
@@ -407,8 +422,95 @@ export default function ViewAdmissionPage() {
             </TableBody>
           </Table>
         </InfoSection>
-
       </div>
+
+      <AlertDialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="break-words">
+              Withdraw "{student.studentName}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              <p>
+                This will mark the student's admission as <strong>WITHDRAWN</strong>.
+              </p>
+              <p>
+                • Future monthly fee generation will <strong>automatically stop</strong>.
+                <br />
+                • Unpaid pending future dues will be cancelled.
+                <br />
+                • All historical payments and receipts will be <strong>safely preserved</strong>.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+            <AlertDialogCancel disabled={isWithdrawing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isWithdrawing}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleWithdrawAdmission();
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isWithdrawing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Withdrawing...
+                </>
+              ) : (
+                "Confirm Withdrawal"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="break-words">
+              Permanently Delete Admission for "{student.studentName}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              <p>
+                This action is intended only for <strong>accidental draft entries</strong> (e.g. typos or wrong class selection).
+              </p>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                • This will permanently remove the admission and all unpaid draft charges.
+                <br />
+                • If any fee payments have already been collected, deletion will be blocked.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteAdmission();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Admission"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

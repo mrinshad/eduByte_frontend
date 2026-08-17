@@ -131,9 +131,10 @@ export async function createExpenseSubCategory(
   });
 }
 
-export async function getExpenseSubCategories() {
+export async function getExpenseSubCategories(categoryId?: string) {
+  const query = categoryId ? `?categoryId=${categoryId}` : "";
   const payload = (await apiFetch(
-    "/api/expensesubcategory"
+    `/api/expensesubcategory${query}`
   )) as ApiSuccess<ExpenseSubCategory[]>;
 
   return payload.data ?? [];

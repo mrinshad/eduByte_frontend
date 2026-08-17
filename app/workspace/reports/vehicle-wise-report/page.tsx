@@ -57,8 +57,9 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        maximumFractionDigits: 0,
-    }).format(amount);
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount ?? 0);
 }
 
 function todayISO() {
@@ -360,10 +361,10 @@ export default function VehicleFinancialReportPage() {
                     </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Vehicle Financial Report
+                                Transport Financials
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Income, expense &amp; profit per vehicle
+                                Track vehicle-wise income, operational expenses, and net profit.
                             </p>
                         </div>
                     </div>
@@ -376,11 +377,11 @@ export default function VehicleFinancialReportPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
                                         <span className="truncate">{formatDisplayDate(fromDate)}</span>
                                     </Button>
                                 </PopoverTrigger>
@@ -407,11 +408,11 @@ export default function VehicleFinancialReportPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 px-3 text-left text-sm font-normal dark:border-slate-700 sm:w-40 text-white",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
+                                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
                                         <span className="truncate">{formatDisplayDate(toDate)}</span>
                                     </Button>
                                 </PopoverTrigger>
@@ -433,7 +434,7 @@ export default function VehicleFinancialReportPage() {
                         <Button
                             size="icon"
                             variant="outline"
-                            className="h-10 w-10 shrink-0 self-end text-white hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 sm:self-auto"
+                            className="h-10 w-10 shrink-0 self-end border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:self-auto"
                             onClick={loadAll}
                             disabled={isLoading || isRangeInvalid}
                         >
@@ -511,41 +512,41 @@ export default function VehicleFinancialReportPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[900px] text-sm">
                                 <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/60">
+                                    <tr className="bg-[#556043] dark:bg-background border-none text-white dark:text-slate-200 text-xs font-semibold uppercase tracking-wider">
                                         <th
-                                            className="cursor-pointer px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 sm:px-5 select-none"
+                                            className="cursor-pointer px-4 py-3 text-left sm:px-5 select-none"
                                             onClick={() => toggleSort("vehicle")}
                                         >
                                             Vehicle <SortIcon col="vehicle" />
                                         </th>
                                         <th
-                                            className="cursor-pointer px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5 select-none"
+                                            className="cursor-pointer px-4 py-3 text-right sm:px-5 select-none"
                                             onClick={() => toggleSort("students")}
                                         >
                                             Students <SortIcon col="students" />
                                         </th>
                                         <th
-                                            className="cursor-pointer px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5 select-none"
+                                            className="cursor-pointer px-4 py-3 text-right sm:px-5 select-none"
                                             onClick={() => toggleSort("income")}
                                         >
                                             Income <SortIcon col="income" />
                                         </th>
-                                        <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5">
+                                        <th className="px-4 py-3 text-right sm:px-5">
                                             Transport
                                         </th>
                                         <th
-                                            className="cursor-pointer px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5 select-none"
+                                            className="cursor-pointer px-4 py-3 text-right sm:px-5 select-none"
                                             onClick={() => toggleSort("expense")}
                                         >
                                             Expense <SortIcon col="expense" />
                                         </th>
                                         <th
-                                            className="cursor-pointer px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 sm:px-5 select-none"
+                                            className="cursor-pointer px-4 py-3 text-right sm:px-5 select-none"
                                             onClick={() => toggleSort("profit")}
                                         >
                                             Profit / Loss <SortIcon col="profit" />
                                         </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300 sm:px-5">
+                                        <th className="px-4 py-3 text-center sm:px-5">
                                             Actions
                                         </th>
                                     </tr>

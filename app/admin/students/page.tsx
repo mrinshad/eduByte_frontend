@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
+import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -48,6 +49,17 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   );
 }
 
+const ADMISSION_STATUS_OPTIONS = [
+  { value: "ADMITTED", label: "Admitted" },
+  { value: "NOT_ADMITTED", label: "Not Admitted" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "WITHDRAWN", label: "Withdrawn" },
+  { value: "ALUMNI", label: "Alumni" },
+];
+
 export default function Page() {
   const router = useRouter();
 
@@ -56,6 +68,8 @@ export default function Page() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
+  const [admissionFilter, setAdmissionFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortByClass, setSortByClass] = useState(false); // ← off by default
@@ -67,7 +81,11 @@ export default function Page() {
     totalPages: 1,
   });
 
-  const [classOptions, setClassOptions] = useState<string[]>([]);
+  // Full, unpaginated list of classes for the filter dropdown — fetched
+  // once from the dedicated /api/classes endpoint, independent of the
+  // (paginated) students table data.
+  const [classOptions, setClassOptions] = useState<SchoolClass[]>([]);
+  const [classOptionsLoading, setClassOptionsLoading] = useState(true);
 
   const [studentToDelete, setStudentToDelete] = useState<StudentListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -80,28 +98,32 @@ export default function Page() {
         limit: rowsPerPage,
         search,
         className: classFilter === "all" ? "" : classFilter,
+        admissionStatus: admissionFilter === "all" ? "" : admissionFilter,
+        status: statusFilter === "all" ? "" : statusFilter,
         sortBy: sortByClass ? "className" : "admissionNumber",
         order: sortByClass ? order : "desc",
       });
       setStudents(response.data ?? []);
       setPagination(response.pagination);
-
-      setClassOptions((prev) =>
-        Array.from(
-          new Set([
-            ...prev,
-            ...(response.data ?? [])
-              .map((s) => s.className)
-              .filter((c): c is string => Boolean(c)),   // ← type predicate
-          ])
-        )
-      );
     } catch (error) {
       console.error(error);
       setStudents([]);
       setPagination((prev) => ({ ...prev, total: 0, totalPages: 1 }));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadClassOptions = async () => {
+    try {
+      setClassOptionsLoading(true);
+      const classes = await getClasses();
+      setClassOptions(classes);
+    } catch (error) {
+      console.error(error);
+      setClassOptions([]);
+    } finally {
+      setClassOptionsLoading(false);
     }
   };
 
@@ -127,6 +149,7 @@ export default function Page() {
       setIsDeleting(false);
     }
   };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -136,9 +159,25 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Fetch the full class list once on mount — not tied to pagination/search,
+  // so the dropdown always shows every class, not just whatever is on the
+  // current table page.
+  useEffect(() => {
+    loadClassOptions();
+  }, []);
+
   useEffect(() => {
     loadStudents();
-  }, [currentPage, rowsPerPage, search, classFilter, sortByClass, order]); // ← added classFilter
+  }, [
+    currentPage,
+    rowsPerPage,
+    search,
+    classFilter,
+    admissionFilter,
+    statusFilter,
+    sortByClass,
+    order,
+  ]);
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
   const startEntry = pagination.total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
@@ -155,52 +194,74 @@ export default function Page() {
   };
 
   const hasActiveFilters = useMemo(
-    () => classFilter !== "all" || search.trim().length > 0,
-    [classFilter, search]
+    () =>
+      classFilter !== "all" ||
+      admissionFilter !== "all" ||
+      statusFilter !== "all" ||
+      search.trim().length > 0,
+    [classFilter, admissionFilter, statusFilter, search]
   );
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearch("");
     setClassFilter("all");
+    setAdmissionFilter("all");
+    setStatusFilter("all");
     setCurrentPage(1);
   };
 
   return (
-    <section className="w-full px-6 py-4 space-y-6">
+    <section className="w-full px-4 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            size="icon"
-            className="bg-background text-foreground hover:opacity-90 shadow-sm"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Student Directory
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              View and manage student records, enrollment details, and academic information.
-            </p>
+      <div className="flex flex-col gap-4">
+        {/* Top row: title (left) + Search + Create Student button (right) */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              size="icon"
+              className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Student Directory
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                View and manage student records, enrollment details, and academic information.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+              <Input
+                placeholder="Search students..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
+            <PermissionGate permission="students.createStudentButton">
+              <Button
+                className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                onClick={() => router.push("/admin/students/createStudent")}
+              >
+                <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+                Create Student
+              </Button>
+            </PermissionGate>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search students..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-          </div>
-
-          {/* 👇 Class filter dropdown */}
+        {/* Second row: filters, right-aligned below the search/button row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full flex-wrap sm:justify-end">
+          {/* 👇 Class filter dropdown — populated from /api/classes, not the paginated table */}
           <Select
             value={classFilter}
             onValueChange={(value) => {
@@ -208,40 +269,72 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
-              <SelectValue placeholder="All Classes" />
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder={classOptionsLoading ? "Loading..." : "All Classes"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Classes</SelectItem>
-              {classOptions.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
+              {classOptions.map((c) => (
+                <SelectItem key={c.id} value={c.name}>
+                  {c.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
+          {/* 👇 Admission status filter */}
+          <Select
+            value={admissionFilter}
+            onValueChange={(value) => {
+              setAdmissionFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[150px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="Admission" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Admission</SelectItem>
+              {ADMISSION_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
+          {/* 👇 Status filter */}
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              className="h-10 w-full sm:w-auto text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
               onClick={clearAllFilters}
             >
               <X className="mr-1 h-3.5 w-3.5" />
               Clear
             </Button>
           )}
-
-          <PermissionGate permission="students.createStudentButton">
-            <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-              onClick={() => router.push("/admin/students/createStudent")}
-            >
-              <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-              Create Student
-            </Button>
-          </PermissionGate>
         </div>
       </div>
 
@@ -251,6 +344,18 @@ export default function Page() {
           <span className="text-xs font-medium text-slate-400">Filters:</span>
           {classFilter !== "all" && (
             <FilterChip label={`Class: ${classFilter}`} onRemove={() => { setClassFilter("all"); setCurrentPage(1); }} />
+          )}
+          {admissionFilter !== "all" && (
+            <FilterChip
+              label={`Admission: ${admissionFilter === "ADMITTED" ? "Admitted" : "Not Admitted"}`}
+              onRemove={() => { setAdmissionFilter("all"); setCurrentPage(1); }}
+            />
+          )}
+          {statusFilter !== "all" && (
+            <FilterChip
+              label={`Status: ${statusFilter}`}
+              onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
+            />
           )}
           {search.trim() && (
             <FilterChip

@@ -171,8 +171,16 @@ export default function UsersPage() {
     setLoading(true)
     try {
       const [userData, roleData] = await Promise.all([getUsers(), getRoles()])
-      setUsers(userData)
-      setRoles(roleData)
+      const filteredUsers = userData.filter(
+        (u) =>
+          u.username?.toLowerCase() !== "superadmin" &&
+          u.role?.toUpperCase() !== "SUPER ADMIN"
+      )
+      const filteredRoles = roleData.filter(
+        (r) => r.name?.toUpperCase() !== "SUPER ADMIN"
+      )
+      setUsers(filteredUsers)
+      setRoles(filteredRoles)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load users")
     } finally {
@@ -489,7 +497,7 @@ export default function UsersPage() {
             Users
           </h1>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Manage system user accounts and role assignments
+            Manage system user accounts, access credentials, and role assignments.
           </p>
         </div>
 

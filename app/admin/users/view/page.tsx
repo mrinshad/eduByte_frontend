@@ -206,13 +206,13 @@ function UserViewContent() {
     setLoading(true)
     try {
       const [userData, roleData] = await Promise.all([getUser(userId), getRoles()])
-      if (!userData) {
-        toast.error("User not found")
+      if (!userData || userData.username?.toLowerCase() === "superadmin" || userData.role?.toUpperCase() === "SUPER ADMIN") {
+        toast.error("User not found or access restricted")
         router.push("/admin/users")
         return
       }
       setUser(userData)
-      setRoles(roleData)
+      setRoles(roleData.filter((r) => r.name?.toUpperCase() !== "SUPER ADMIN"))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load user")
     } finally {

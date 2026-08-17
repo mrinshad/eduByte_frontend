@@ -49,8 +49,9 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        maximumFractionDigits: 0,
-    }).format(amount);
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount ?? 0);
 }
 
 function tomorrowISO() {
@@ -235,12 +236,12 @@ export default function ExpenseByCategoryReportPage() {
                     </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Expense By Category Report
+                                Expenses by Category
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {report
-                                    ? formatDisplayDateRange(report.fromDate, report.toDate)
-                                    : "Expense breakdown"}
+                                    ? `Category-wise expense breakdown for ${formatDisplayDateRange(report.fromDate, report.toDate)}`
+                                    : "Analyze expense distribution across primary categories and subcategories."}
                             </p>
                         </div>
                     </div>

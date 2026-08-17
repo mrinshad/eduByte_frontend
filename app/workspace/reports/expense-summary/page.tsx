@@ -53,8 +53,9 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        maximumFractionDigits: 0,
-    }).format(amount);
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount ?? 0);
 }
 function formatPayments(payments: { accountId: string; amount: string | number }[] | undefined) {
     if (!payments || payments.length === 0) return "—";
@@ -240,8 +241,8 @@ export default function ExpenseSummaryPage() {
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {fromDate === toDate
-                                    ? formatDisplayDate(fromDate)
-                                    : `${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
+                                    ? `Expense transactions for ${formatDisplayDate(fromDate)}`
+                                    : `Expense transactions for ${formatDisplayDate(fromDate)} — ${formatDisplayDate(toDate)}`}
                             </p>
                         </div>
                     </div>
@@ -416,19 +417,19 @@ export default function ExpenseSummaryPage() {
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[1100px] text-sm">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/60">
-                                        <tr className="text-left text-slate-500 dark:text-slate-400">
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Expense #</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Date</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Category</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Sub Category</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Account</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Vehicle</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Staff</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Notes</th>
-                                            <th className="px-4 py-2.5 text-right font-medium sm:px-5">Amount</th>
-                                            <th className="px-4 py-2.5 font-medium sm:px-5">Payments</th>
-                                            <th className="px-4 py-2.5 text-center font-medium sm:px-5">Actions</th>
+                                    <thead className="bg-[#556043] dark:bg-background border-none">
+                                        <tr className="text-left text-white dark:text-slate-200 text-xs font-semibold uppercase tracking-wider">
+                                            <th className="px-4 py-3 sm:px-5">Expense #</th>
+                                            <th className="px-4 py-3 sm:px-5">Date</th>
+                                            <th className="px-4 py-3 sm:px-5">Category</th>
+                                            <th className="px-4 py-3 sm:px-5">Sub Category</th>
+                                            <th className="px-4 py-3 sm:px-5">Account</th>
+                                            <th className="px-4 py-3 sm:px-5">Vehicle</th>
+                                            <th className="px-4 py-3 sm:px-5">Staff</th>
+                                            <th className="px-4 py-3 sm:px-5">Notes</th>
+                                            <th className="px-4 py-3 text-right sm:px-5">Amount</th>
+                                            <th className="px-4 py-3 sm:px-5">Payments</th>
+                                            <th className="px-4 py-3 text-center sm:px-5">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">

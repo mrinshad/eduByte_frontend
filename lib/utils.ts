@@ -37,8 +37,8 @@ export function formatDateTime(value?: string | Date | null) {
 }
 
 export function formatCurrency(value?: number | string | null) {
-  if (value === null || value === undefined) return "₹0";
-  const numeric = typeof value === "number" ? value : parseFloat(value);
-  if (Number.isNaN(numeric)) return "₹0";
-  return `₹${numeric.toLocaleString("en-IN")}`;
+  if (value === null || value === undefined) return "₹0.00";
+  const numeric = typeof value === "number" ? value : parseFloat(String(value));
+  if (Number.isNaN(numeric)) return "₹0.00";
+  return `₹${numeric.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

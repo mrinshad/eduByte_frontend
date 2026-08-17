@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { checkPermission } from "@/hooks/usePermission"
 import { permissionForSlug, type PortalArea, type PortalNavGroup, type PortalNavItem } from "@/lib/portal"
+import { getChargeTypes, type ChargeTypes } from "@/lib/services/chargeTypes"
 
 type SidebarProps = {
   area: PortalArea
@@ -44,6 +45,9 @@ type SidebarGroupView = {
 
 function getSubgroupIcon(subgroup: string): LucideIcon {
   const s = subgroup.toLowerCase()
+  if (s.includes("overview")) return GraduationCap
+  if (s.includes("receipt") || s.includes("income")) return Banknote
+  if (s.includes("payment") || s.includes("expense")) return Receipt
   if (s.includes("setup")) return Settings
   if (s.includes("collection")) return Banknote
   if (s.includes("operation")) return Briefcase
@@ -245,6 +249,16 @@ function SidebarBody({
 
   const permissions = userPermissions || []
 
+  const [chargeTypes, setChargeTypes] = React.useState<ChargeTypes[]>([])
+
+  React.useEffect(() => {
+    if (area === "workspace") {
+      getChargeTypes()
+        .then(setChargeTypes)
+        .catch(() => {})
+    }
+  }, [area])
+
   const isAllowed = React.useCallback(
     (item: PortalNavItem) => {
       if (area === "student") {
@@ -256,14 +270,38 @@ function SidebarBody({
     [area, permissions]
   )
 
+  const enhancedLinks = React.useMemo(() => {
+    if (area !== "workspace" || chargeTypes.length === 0) {
+      return links
+    }
+
+    return links.map((group) => {
+      if (group.label !== "Report") return group
+
+      const dynamicFeeItems: PortalNavItem[] = chargeTypes.map((ct) => ({
+        slug: "reports/fee-type",
+        href: `/workspace/reports/fee-type/${ct.id}`,
+        label: ct.name,
+        purpose: `Receipts report for ${ct.name}`,
+        group: "Report",
+        subgroup: "Receipts (Income)",
+      }))
+
+      return {
+        ...group,
+        items: [...group.items, ...dynamicFeeItems],
+      }
+    })
+  }, [links, area, chargeTypes])
+
   const filteredLinks = React.useMemo(() => {
-    return links
+    return enhancedLinks
       .map((group) => ({
         ...group,
         items: group.items.filter(isAllowed),
       }))
       .filter((group) => group.items.length > 0)
-  }, [links, isAllowed])
+  }, [enhancedLinks, isAllowed])
 
   const groupedLinks: SidebarGroupView[] = filteredLinks.map((group) => {
     const hasSubgroups = group.items.some((item) => item.subgroup)

@@ -221,37 +221,52 @@ export default function Page() {
     <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
       {/* ── Header & Actions ── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <Button
-            size="icon"
-            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              Staff Directory
-            </h1>
-            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              View and manage staff records, contact details, and employment status.
-            </p>
+      <div className="flex flex-col gap-4">
+        {/* Top row: title (left) + Search + Create Staff button (right) */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Button
+              size="icon"
+              className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                Staff Directory
+              </h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                View and manage staff records, contact details, and employment status.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-80 shadow-sm rounded-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
+              <Input
+                placeholder="Search staff..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
+            <PermissionGate permission="staff.creaStaffButton">
+              <Button
+                className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                onClick={() => router.push("/admin/staff/createStaff")}
+              >
+                <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
+                Create Staff
+              </Button>
+            </PermissionGate>
           </div>
         </div>
 
-        {/* Action bar: stacks on mobile, wraps on tablet, single row on desktop */}
-        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
-          <div className="relative w-full md:w-80 shadow-sm rounded-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 z-10" />
-            <Input
-              placeholder="Search staff..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-          </div>
-
+        {/* Second row: filters, right-aligned below the search/button row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full flex-wrap sm:justify-end">
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -259,7 +274,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-full md:w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -273,22 +288,13 @@ export default function Page() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              className="h-10 w-full sm:w-auto text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
               onClick={clearAllFilters}
             >
               <X className="mr-1 h-3.5 w-3.5" />
               Clear
             </Button>
           )}
-          <PermissionGate permission="staff.creaStaffButton">
-          <Button
-            className="w-full md:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            onClick={() => router.push("/admin/staff/createStaff")}
-          >
-            <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />
-            Create Staff
-          </Button>
-          </PermissionGate>
         </div>
       </div>
 

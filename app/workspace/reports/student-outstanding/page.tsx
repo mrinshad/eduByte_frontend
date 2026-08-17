@@ -11,6 +11,7 @@ import {
   getStudentOutstandingReport,
   type StudentOutstanding,
 } from "@/lib/services/reports";
+import { formatCurrency } from "@/lib/utils";
 
 export default function StudentOutstandingPage() {
 
@@ -105,12 +106,12 @@ export default function StudentOutstandingPage() {
             </Button>
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-                Student Outstanding
+                Outstanding Fees
               </h1>
               <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                 {academicYear
-                  ? `Outstanding fee and fine for ${academicYear}.`
-                  : "Outstanding fee and fine for the active academic year."}
+                  ? `View student outstanding fee balances and overdue fines for ${academicYear}.`
+                  : "View student outstanding fee balances and overdue fines for the active academic year."}
               </p>
             </div>
           </div>
@@ -135,7 +136,7 @@ export default function StudentOutstandingPage() {
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <span className="text-sm text-slate-500 dark:text-slate-400">Total Pending Amount</span>
         <span className="text-lg font-semibold text-[#556043] dark:text-slate-100">
-          ₹{totalPendingAmount.toLocaleString("en-IN")}
+          {formatCurrency(totalPendingAmount)}
         </span>
       </div>
 
@@ -194,13 +195,13 @@ export default function StudentOutstandingPage() {
                       {student.class || "-"}
                     </TableCell>
                     <TableCell className={`px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 ${hideOnClass("md")}`}>
-                      {student.feeOutstanding.toLocaleString("en-IN")}
+                      {formatCurrency(student.feeOutstanding)}
                     </TableCell>
                     <TableCell className={`px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 ${hideOnClass("md")}`}>
-                      {student.fineOutstanding.toLocaleString("en-IN")}
+                      {formatCurrency(student.fineOutstanding)}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-300">
-                      {student.totalOutstanding.toLocaleString("en-IN")}
+                      {formatCurrency(student.totalOutstanding)}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
                       {student.totalOutstanding === 0 ? (

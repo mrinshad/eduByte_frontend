@@ -173,6 +173,7 @@ export function ReusableFormDialog({
                 <Input
                   type={field.type === "number" ? "number" : "text"}
                   min={field.type === "number" ? 0 : undefined}
+                  step={field.type === "number" ? "0.01" : undefined}
                   onWheel={field.type === "number" ? (e) => e.currentTarget.blur() : undefined}
                   placeholder={field.placeholder}
                   value={values[field.name] ?? ""}

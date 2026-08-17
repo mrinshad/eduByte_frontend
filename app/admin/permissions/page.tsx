@@ -189,7 +189,8 @@ export default function PermissionsPage() {
     setLoading(true)
     try {
       const data = await getPermissions()
-      setPermissions(data)
+      const filtered = data.filter((p) => p.name !== "*")
+      setPermissions(filtered)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load permissions")
     } finally {
@@ -326,7 +327,11 @@ export default function PermissionsPage() {
     const description = (values.description ?? "").trim()
 
     const errs: Record<string, string | undefined> = {}
-    if (!name) errs.name = "Enter a permission name"
+    if (!name) {
+      errs.name = "Enter a permission name"
+    } else if (name === "*") {
+      errs.name = "Creating wildcard '*' permission is not allowed"
+    }
     if (!description) errs.description = "Enter a description"
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
@@ -491,7 +496,7 @@ export default function PermissionsPage() {
               </DropdownMenu>
             )}
           </div>
-          <PermissionGate permission="permission.addNewPermission">
+          <PermissionGate permission="permissions.addNewPermission">
             <Button
               className="rounded-xl gap-2 h-10 bg-amber-600 hover:bg-amber-700 text-white"
               onClick={() => openDialog("add")}
@@ -529,7 +534,7 @@ export default function PermissionsPage() {
               <X className="mr-1 h-3.5 w-3.5" />
               Clear
             </Button>
-            <PermissionGate permission="permission.deleteAllPermission">
+            <PermissionGate permission="permissions.deleteAllPermission">
               <Button
                 variant="ghost"
                 size="sm"
@@ -686,7 +691,7 @@ export default function PermissionsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 o group-hover:opacity-100 transition-opacity">
-                    <PermissionGate permission="permission.editPermission">
+                    <PermissionGate permission="permissions.editPermission">
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -696,7 +701,7 @@ export default function PermissionsPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </PermissionGate>
-                    <PermissionGate permission="permission.deletePermission">
+                    <PermissionGate permission="permissions.deletePermission">
                       <Button
                         variant="ghost"
                         size="icon-sm"

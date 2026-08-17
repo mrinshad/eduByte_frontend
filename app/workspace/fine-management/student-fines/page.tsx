@@ -38,7 +38,7 @@ import {
   Undo2
 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import StudentFineFormDialog from "@/components/common/StudentFineFormDialog"
@@ -380,7 +380,7 @@ export default function Page() {
               </TooltipProvider>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Manage and view all student fines.
+              Issue, configure, and manage student fines and penalties.
             </p>
           </div>
         </div>
@@ -589,10 +589,10 @@ export default function Page() {
                       {row.fine}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      {row.amount}
+                      {formatCurrency(row.amount)}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      {row.paidAmount}
+                      {formatCurrency(row.paidAmount)}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <span

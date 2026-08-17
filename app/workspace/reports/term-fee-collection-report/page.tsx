@@ -35,7 +35,7 @@ import {
 const CATEGORIES = ["TUITION", "TRANSPORT", "ADMISSION", "BOOK", "MADRASA", "EXAM", "OTHER"];
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount ?? 0);
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -177,10 +177,10 @@ export default function FeeCollectionReportPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                Fee Collection Report
+                Term Collection Report
               </h1>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Grouped by term/month based on charge frequency, including late fees.
+                View term-wise and monthly fee collections, payment statuses, and late fees.
               </p>
             </div>
           </div>

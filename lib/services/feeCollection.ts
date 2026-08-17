@@ -18,6 +18,10 @@ export interface StudentFeeCollection {
   admissionNumber: string;
   student: string;
   class: string;
+  className?: string;
+  divisionName?: string;
+  classId?: string;
+  divisionId?: string;
   vehicle: string;
   feeDue: number;
   fineDue: number;
@@ -95,15 +99,21 @@ export async function getStudentFeeCollection(params?: {
   page?: number;
   limit?: number;
   search?: string;
+  classId?: string;
   className?: string;
+  divisionId?: string;
+  divisionName?: string;
   vehicle?: string;
-  status?: "all" | "paid" | "pending";
+  status?: "all" | "paid" | "pending" | string;
 }) {
   const query = new URLSearchParams({
     page: String(params?.page ?? 1),
     limit: String(params?.limit ?? 10),
     search: params?.search ?? "",
+    classId: params?.classId ?? "",
     className: params?.className ?? "",
+    divisionId: params?.divisionId ?? "",
+    divisionName: params?.divisionName ?? "",
     vehicle: params?.vehicle ?? "",
     status: params?.status ?? "all",
   });
