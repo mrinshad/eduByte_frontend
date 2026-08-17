@@ -144,13 +144,13 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "students": "students.listOnNavbar",
     "admissions": "admissions.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
-    "fee-structures": "feestuctures.listOnNavbar",
+    "fee-structures": "feestructures.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
-    "permissions": "roles.listOnNavbar",
-    "permission": "roles.listOnNavbar",
+    "permissions": "permissions.listOnNavbar",
+    "permission": "permissions.listOnNavbar",
     "fee-management": "feecollection.listOnNavbar",
     "expense-management": "expense.listOnNavbar",
     "fine-management/student-fines": "fine.listOnNavbar",
@@ -286,8 +286,8 @@ export function getAlternateAccessiblePortal(
     currentArea === "workspace"
       ? ["admin", "student"]
       : currentArea === "admin"
-      ? ["workspace", "student"]
-      : ["workspace", "admin"]
+        ? ["workspace", "student"]
+        : ["workspace", "admin"]
 
   for (const altArea of checkOrder) {
     if (canAccessPortalArea(altArea, permissions, role)) {

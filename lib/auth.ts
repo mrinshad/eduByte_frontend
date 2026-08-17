@@ -31,6 +31,18 @@ function isBrowser() {
   return typeof window !== "undefined"
 }
 
+let cachedSession: AuthSession | null = null
+let inFlightSessionPromise: Promise<AuthSession> | null = null
+
+export function getCachedSessionSync(): AuthSession | null {
+  return cachedSession
+}
+
+export function clearSessionCache() {
+  cachedSession = null
+  inFlightSessionPromise = null
+}
+
 export function getStoredAccessToken() {
   if (!isBrowser()) {
     return null
@@ -48,6 +60,7 @@ export function storeAccessToken(token: string) {
 }
 
 export function clearAccessToken() {
+  clearSessionCache()
   if (!isBrowser()) {
     return
   }
@@ -70,6 +83,7 @@ async function apiFetch(path: string, init: RequestInit = {}) {
 }
 
 export async function loginUser(username: string, password: string) {
+  clearSessionCache()
   const response = await apiFetch("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ username, password }),
@@ -83,6 +97,7 @@ export async function loginUser(username: string, password: string) {
 
   const session = payload.data as AuthSession
   storeAccessToken(session.accessToken)
+  cachedSession = session
 
   return session
 }
@@ -101,6 +116,7 @@ export async function refreshSession() {
 
   const session = payload.data as AuthSession
   storeAccessToken(session.accessToken)
+  cachedSession = session
 
   return session
 }
@@ -117,23 +133,45 @@ export async function logoutUser() {
   }
 }
 
-export async function getCurrentSession() {
-  const storedToken = getStoredAccessToken()
-
-  if (storedToken) {
-    const currentResponse = await authFetch("/api/auth/me")
-    const currentPayload = await currentResponse.json()
-
-    if (currentResponse.ok) {
-      return {
-        user: currentPayload.data.user,
-        accessToken: storedToken,
-      } as AuthSession
-    }
+export async function getCurrentSession(forceRefresh = false): Promise<AuthSession> {
+  if (!forceRefresh && cachedSession) {
+    return cachedSession
   }
 
-  const refreshedSession = await refreshSession()
-  return refreshedSession
+  if (inFlightSessionPromise) {
+    return inFlightSessionPromise
+  }
+
+  inFlightSessionPromise = (async () => {
+    try {
+      const storedToken = getStoredAccessToken()
+
+      if (storedToken) {
+        const currentResponse = await authFetch("/api/auth/me")
+        const currentPayload = await currentResponse.json()
+
+        if (currentResponse.ok && currentPayload?.data?.user) {
+          const session = {
+            user: currentPayload.data.user,
+            accessToken: storedToken,
+          } as AuthSession
+          cachedSession = session
+          return session
+        }
+      }
+
+      const refreshedSession = await refreshSession()
+      cachedSession = refreshedSession
+      return refreshedSession
+    } catch (err) {
+      cachedSession = null
+      throw err
+    } finally {
+      inFlightSessionPromise = null
+    }
+  })()
+
+  return inFlightSessionPromise
 }
 
 export async function authFetch(path: string, init: RequestInit = {}) {

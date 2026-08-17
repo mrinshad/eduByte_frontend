@@ -3,22 +3,40 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, BookOpen, Building2, Loader2, MoonStar, ShieldCheck, SunMedium, Users } from "lucide-react"
+import {
+  AlertCircle,
+  ArrowRight,
+  BookOpen,
+  Building2,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  MoonStar,
+  ShieldCheck,
+  SunMedium,
+  User,
+  Users,
+} from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import { clearAccessToken, getCurrentSession, loginUser } from "@/lib/auth"
-import { getInitialUserRoute, getUserAccessiblePortal } from "@/lib/portal"
+import { getInitialUserRoute } from "@/lib/portal"
 
 export default function Page() {
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [username, setUsername] = React.useState("")
   const [password, setPassword] = React.useState("")
+  const [showPassword, setShowPassword] = React.useState(false)
   const [statusMessage, setStatusMessage] = React.useState("Sign in to continue")
+  const [isError, setIsError] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [session, setSession] = React.useState<{ user: { name: string; username: string; role?: string | null; defaultPortal?: string; permissions?: string[] } } | null>(null)
+  const [session, setSession] = React.useState<{
+    user: { name: string; username: string; role?: string | null; defaultPortal?: string; permissions?: string[] }
+  } | null>(null)
 
   React.useEffect(() => {
     let active = true
@@ -33,6 +51,7 @@ export default function Page() {
 
         setSession({ user: currentSession.user })
         setStatusMessage(`Welcome back, ${currentSession.user.name}`)
+        setIsError(false)
 
         const initialRoute = getInitialUserRoute(
           currentSession.user.permissions || [],
@@ -42,6 +61,7 @@ export default function Page() {
 
         if (!initialRoute) {
           setStatusMessage(`Access Restricted: No role or permissions assigned to '${currentSession.user.username}'`)
+          setIsError(true)
           return
         }
 
@@ -51,6 +71,7 @@ export default function Page() {
         if (active) {
           setSession(null)
           setStatusMessage("Sign in to continue")
+          setIsError(false)
         }
       } finally {
         if (active) {
@@ -70,6 +91,7 @@ export default function Page() {
     event.preventDefault()
     setIsSubmitting(true)
     setStatusMessage("Signing in...")
+    setIsError(false)
 
     const trimmedUsername = username.trim()
     const trimmedPassword = password.trim()
@@ -86,13 +108,16 @@ export default function Page() {
 
       if (!initialRoute) {
         setStatusMessage(`Access Restricted: Account '${currentSession.user.username}' has no assigned role or permissions. Contact admin.`)
+        setIsError(true)
         return
       }
 
       setStatusMessage(`Welcome, ${currentSession.user.name}`)
+      setIsError(false)
       router.replace(initialRoute)
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Unable to sign in")
+      setIsError(true)
     } finally {
       setIsSubmitting(false)
     }
@@ -129,7 +154,7 @@ export default function Page() {
                   size="icon"
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
-                  className="border-white/20 bg-white/10 text-white hover:bg-white/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 cursor-pointer"
                 >
                   {isDarkTheme ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
                 </Button>
@@ -175,7 +200,7 @@ export default function Page() {
                 size="icon"
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
-                className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                className="border-white/20 bg-white/5 text-white hover:bg-white/10 cursor-pointer"
               >
                 {isDarkTheme ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
               </Button>
@@ -184,8 +209,8 @@ export default function Page() {
             {isLoading ? (
               <div className="flex h-full min-h-0 items-center justify-center">
                 <div className="flex items-center gap-3 text-white/80 dark:text-slate-300">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Opening the KidsCove portal
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Opening the KidsCove portal...</span>
                 </div>
               </div>
             ) : session ? (
@@ -208,7 +233,7 @@ export default function Page() {
                 </div>
 
                 <div className="space-y-3">
-                  <Button asChild className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 py-6 text-base font-medium rounded-2xl shadow-md">
+                  <Button asChild className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 py-6 text-base font-medium rounded-2xl shadow-md cursor-pointer">
                     <Link href={getInitialUserRoute(session.user.permissions || [], session.user.role, session.user.defaultPortal) || "/workspace/dashboard"}>
                       Continue to portal
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -223,42 +248,93 @@ export default function Page() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70 dark:text-slate-400">Sign in</p>
                     <h2 className="mt-3 font-heading text-2xl sm:text-3xl font-semibold text-white">Access KidsCove portal</h2>
-                    <p className="mt-3 text-sm leading-6 text-white/80 dark:text-slate-300">
+                    <p className="mt-2 text-sm leading-6 text-white/80 dark:text-slate-300">
                       Use your school credentials to continue. The portal will open the correct area for your role.
                     </p>
                   </div>
 
                   <form className="space-y-4" onSubmit={handleLogin}>
-                    <label className="block space-y-2 text-sm">
-                      <span className="text-white/90">Username</span>
-                      <input
-                        className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/40 focus:bg-white/10"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        autoComplete="username"
-                        placeholder="Enter username"
-                      />
-                    </label>
+                    {/* Username Input */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-white/80">
+                        Username
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="pointer-events-none absolute left-3.5 text-white/40">
+                          <User className="h-4 w-4" />
+                        </span>
+                        <input
+                          className="h-12 w-full rounded-2xl border border-white/20 bg-white/5 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/10 focus:ring-2 focus:ring-white/20"
+                          value={username}
+                          onChange={(event) => setUsername(event.target.value)}
+                          autoComplete="username"
+                          placeholder="Enter your username"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                    <label className="block space-y-2 text-sm">
-                      <span className="text-white/90">Password</span>
-                      <input
-                        className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/40 focus:bg-white/10"
-                        type="password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        autoComplete="current-password"
-                        placeholder="Enter password"
-                      />
-                    </label>
+                    {/* Password Input with Show/Hide Toggle */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-white/80">
+                        Password
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="pointer-events-none absolute left-3.5 text-white/40">
+                          <Lock className="h-4 w-4" />
+                        </span>
+                        <input
+                          className="h-12 w-full rounded-2xl border border-white/20 bg-white/5 pl-10 pr-11 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/10 focus:ring-2 focus:ring-white/20"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          autoComplete="current-password"
+                          placeholder="Enter your password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 text-white/50 hover:text-white focus:outline-none transition-colors p-1"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-                    <Button type="submit" disabled={isSubmitting} className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 py-6 text-base font-medium rounded-2xl mt-2 shadow-md">
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-white text-stone-800 hover:bg-white/90 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 h-12 text-sm font-semibold rounded-2xl mt-3 shadow-md transition-transform active:scale-[0.99] cursor-pointer"
+                    >
                       {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Sign in
+                      Sign in to portal
                     </Button>
                   </form>
 
-                  <p className="text-sm text-white/80 dark:text-slate-300 text-center sm:text-left">{statusMessage}</p>
+                  {/* Status / Error Feedback */}
+                  {statusMessage && statusMessage !== "Sign in to continue" ? (
+                    <div
+                      className={`flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs ${
+                        isError
+                          ? "border border-red-500/30 bg-red-500/10 text-red-200"
+                          : "border border-white/15 bg-white/5 text-white/80"
+                      }`}
+                    >
+                      {isError ? <AlertCircle className="h-4 w-4 shrink-0 text-red-400" /> : null}
+                      <span className="leading-snug">{statusMessage}</span>
+                    </div>
+                  ) : (
+                    <p className="text-center text-xs text-white/50">
+                      KidsCove School Management System
+                    </p>
+                  )}
                 </div>
               </div>
             )}

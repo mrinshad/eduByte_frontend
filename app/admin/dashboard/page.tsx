@@ -121,7 +121,7 @@ const quickActions: { href: string; label: string; Icon: LucideIcon; permission:
   { href: "/admin/staff", label: "Staff", Icon: UserRound, permission: "staff.listOnNavbar" },
   { href: "/admin/students", label: "Students", Icon: Users, permission: "students.listOnNavbar" },
   { href: "/admin/charge-types", label: "Charge Types", Icon: Tags, permission: "chargetypes.listOnNavbar" },
-  { href: "/admin/fee-structures", label: "Fee Structures", Icon: Wallet, permission: "feestuctures.listOnNavbar" },
+  { href: "/admin/fee-structures", label: "Fee Structures", Icon: Wallet, permission: "feestructures.listOnNavbar" },
   { href: "/admin/accounts", label: "Accounts", Icon: Landmark, permission: "accounts.listOnNavbar" },
   { href: "/admin/vehicles", label: "Vehicles", Icon: Bus, permission: "vehicle.listOnNavbar" },
 ]

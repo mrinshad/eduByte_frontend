@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { getCurrentSession, type AuthUser } from "@/lib/auth"
+import { getCachedSessionSync, getCurrentSession, type AuthUser } from "@/lib/auth"
 
 /**
  * Checks whether a given set of permissions includes the requested permission.
@@ -34,10 +34,15 @@ export function checkPermission(userPermissions: string[] = [], permission: stri
  *   if (can("student.create")) { ... }
  */
 export function usePermission(initialPermissions?: string[]) {
-  const [user, setUser] = React.useState<AuthUser | null>(null)
-  const [permissions, setPermissions] = React.useState<string[]>(initialPermissions || [])
-  const [roles, setRoles] = React.useState<string[]>([])
-  const [isLoading, setIsLoading] = React.useState(!initialPermissions)
+  const cached = getCachedSessionSync()
+  const initialUser = cached?.user || null
+  const initialPerms = initialPermissions || initialUser?.permissions || []
+  const initialUserRoles = initialUser?.roles || (initialUser?.role ? [initialUser.role] : [])
+
+  const [user, setUser] = React.useState<AuthUser | null>(initialUser)
+  const [permissions, setPermissions] = React.useState<string[]>(initialPerms)
+  const [roles, setRoles] = React.useState<string[]>(initialUserRoles)
+  const [isLoading, setIsLoading] = React.useState(Boolean(!initialPermissions && !cached))
 
   React.useEffect(() => {
     if (initialPermissions) {
@@ -86,10 +91,10 @@ export function usePermission(initialPermissions?: string[]) {
 
   const hasRole = React.useCallback(
     (roleName: string): boolean => {
-      if (roles.includes("ADMIN") || roles.includes("*")) return true
+      if (roles.includes("SUPER ADMIN") || roles.includes("ADMIN") || permissions.includes("*")) return true
       return roles.includes(roleName)
     },
-    [roles]
+    [roles, permissions]
   )
 
   return {

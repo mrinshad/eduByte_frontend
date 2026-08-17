@@ -197,7 +197,7 @@ export default function Page() {
                 </p>
               </div>
             </div>
-            <PermissionGate permission="feestuctures.createFeeStuctures">
+            <PermissionGate permission="feestructures.createFeeStructureButton">
             <Button
               className="w-full bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto"
               onClick={() => router.push("/admin/fee-structures/createFee")}
@@ -371,7 +371,7 @@ export default function Page() {
                     <TableCell className="px-4 sm:px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {/* View */}
-                        <PermissionGate permission="feestructures.viewFeesturcturesButton">
+                        <PermissionGate permission="feestructures.viewFeeStructureButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -383,7 +383,7 @@ export default function Page() {
                         </PermissionGate>
 
                         {/* Edit */}
-                        <PermissionGate permission="feestuctures.editFeesturcturesButton">
+                        <PermissionGate permission="feestructures.editFeeStructureButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -395,7 +395,7 @@ export default function Page() {
                         </PermissionGate>
 
                         {/* Delete */}
-                        <PermissionGate permission="feesturctures.deleteFeesturcturesButton">
+                        <PermissionGate permission="feestructures.deleteFeeStructureButton">
                         <Button
                           variant="ghost"
                           size="icon"
