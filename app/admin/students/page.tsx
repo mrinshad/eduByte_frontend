@@ -193,6 +193,13 @@ export default function Page() {
     setCurrentPage(1);
   };
 
+  const availableAdmissionOptions = useMemo(() => {
+    if (classFilter !== "all") {
+      return ADMISSION_STATUS_OPTIONS.filter((opt) => opt.value !== "NOT_ADMITTED");
+    }
+    return ADMISSION_STATUS_OPTIONS;
+  }, [classFilter]);
+
   const hasActiveFilters = useMemo(
     () =>
       classFilter !== "all" ||
@@ -264,8 +271,12 @@ export default function Page() {
           {/* 👇 Class filter dropdown — populated from /api/classes, not the paginated table */}
           <Select
             value={classFilter}
+            disabled={admissionFilter === "NOT_ADMITTED"}
             onValueChange={(value) => {
               setClassFilter(value);
+              if (value !== "all" && admissionFilter === "NOT_ADMITTED") {
+                setAdmissionFilter("all");
+              }
               setCurrentPage(1);
             }}
           >
@@ -287,6 +298,9 @@ export default function Page() {
             value={admissionFilter}
             onValueChange={(value) => {
               setAdmissionFilter(value);
+              if (value === "NOT_ADMITTED") {
+                setClassFilter("all");
+              }
               setCurrentPage(1);
             }}
           >
@@ -295,7 +309,7 @@ export default function Page() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Admission</SelectItem>
-              {ADMISSION_STATUS_OPTIONS.map((opt) => (
+              {availableAdmissionOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
