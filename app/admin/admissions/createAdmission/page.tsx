@@ -112,6 +112,7 @@ interface EditableFeeItem {
     amount: number | "";
     dueDay: number | "";
     description: string;
+    generationStartAcademicMonth?: number;
 }
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
@@ -487,6 +488,7 @@ export default function Page() {
                         amount: charge.finalAmount,
                         dueDay: charge.dueDay ?? "",
                         description: charge.description ?? "",
+                        generationStartAcademicMonth: charge.generationStartAcademicMonth,
                     }))
                 );
 
@@ -683,6 +685,7 @@ export default function Page() {
                     discountAmount: String(item.originalAmount - (Number(item.amount) || 0)),
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
+                    generationStartAcademicMonth: item.generationStartAcademicMonth,
                 }));
 
                 result = await updateStudentAdmission(enrollmentId!, {

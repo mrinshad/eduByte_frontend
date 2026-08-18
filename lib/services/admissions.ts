@@ -54,6 +54,7 @@ export interface EnrollmentCharge {
   discountAmount: string;
   description: string | null;
   dueDay: number | null;
+  generationStartAcademicMonth?: number;
 }
  
 export interface CreateAdmissionPayload {
@@ -98,6 +99,7 @@ interface RawEnrollmentCharge {
   discountAmount: string;
   finalAmount: string;
   dueDay: number | null;
+  generationStartAcademicMonth?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,6 +156,7 @@ export interface CompleteEnrollmentRecord {
     paidAmount: number;
     balanceAmount: number;
     dueDay: number | null;
+    generationStartAcademicMonth?: number;
     status: string;
     periodMonth: number | null;
     periodYear: number | null;
@@ -190,6 +193,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
       paidAmount: 0,
       balanceAmount: finalAmount,
       dueDay: c.dueDay ?? null,
+      generationStartAcademicMonth: c.generationStartAcademicMonth ?? 1,
       status: "PENDING",
       periodMonth: null,
       periodYear: null,

@@ -474,6 +474,17 @@ export default function StudentAdmissionListPage() {
 
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <PermissionGate permission="admissions.editAdmissionButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            onClick={() => router.push(`/admin/admissions/createAdmission?id=${student.id}`)}
+                            title="Edit Admission"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                         <PermissionGate permission="admissions.viewAdmissionButton">
                           <Button
                             variant="ghost"
