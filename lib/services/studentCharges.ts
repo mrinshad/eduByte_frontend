@@ -7,6 +7,10 @@ export interface StudentCharge {
   class: string;
   finalAmount?: number;
   paidAmount?: number;
+  fineAmount?: number;
+  finePaidAmount?: number;
+  totalAmount?: number;
+  totalPaidAmount?: number;
   enrollmentId: string;
   status: string;
 }

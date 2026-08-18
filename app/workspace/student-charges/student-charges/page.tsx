@@ -214,7 +214,7 @@ export default function StudentChargesListPage() {
                 </TableRow>
               ) : (
                 paginatedCharges.map((charge) => {
-                  const balance = (charge.finalAmount ?? 0) - (charge.paidAmount ?? 0);
+                  const balance = (charge.totalAmount ?? 0) - (charge.totalPaidAmount ?? 0);
                   return (
                     <TableRow
                       key={charge.admissionNumber}
@@ -233,11 +233,11 @@ export default function StudentChargesListPage() {
                       </TableCell>
 
                       <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-right">
-                        {formatCurrency(charge.finalAmount)}
+                        {formatCurrency(charge.totalAmount)}
                       </TableCell>
 
                       <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-right">
-                        {formatCurrency(charge.paidAmount)}
+                        {formatCurrency(charge.totalPaidAmount)}
                       </TableCell>
 
                       <TableCell
