@@ -160,6 +160,30 @@ export default function StudentAdmissionListPage() {
     };
   }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter]);
 
+  const filteredClassOptions = useMemo(() => {
+    if (feeStructureFilter !== "all") {
+      const selectedFee = feeStructureOptions.find((f) => f.name === feeStructureFilter);
+      if (selectedFee) {
+        return classOptions.filter(
+          (c) => c.name === selectedFee.className || c.id === selectedFee.classId
+        );
+      }
+    }
+    return classOptions;
+  }, [feeStructureFilter, feeStructureOptions, classOptions]);
+
+  const filteredFeeStructureOptions = useMemo(() => {
+    if (classFilter !== "all") {
+      const selectedClass = classOptions.find((c) => c.name === classFilter);
+      return feeStructureOptions.filter(
+        (f) =>
+          f.className === classFilter ||
+          (selectedClass && f.classId === selectedClass.id)
+      );
+    }
+    return feeStructureOptions;
+  }, [classFilter, classOptions, feeStructureOptions]);
+
   const hasActiveFilters = useMemo(
     () =>
       classFilter !== "all" ||
@@ -229,6 +253,17 @@ export default function StudentAdmissionListPage() {
             value={classFilter}
             onValueChange={(value) => {
               setClassFilter(value);
+              if (value !== "all" && feeStructureFilter !== "all") {
+                const selectedFee = feeStructureOptions.find((f) => f.name === feeStructureFilter);
+                const selectedClass = classOptions.find((c) => c.name === value);
+                const matches =
+                  selectedFee &&
+                  (selectedFee.className === value ||
+                    (selectedClass && selectedFee.classId === selectedClass.id));
+                if (!matches) {
+                  setFeeStructureFilter("all");
+                }
+              }
               setCurrentPage(1);
             }}
           >
@@ -237,7 +272,7 @@ export default function StudentAdmissionListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Classes</SelectItem>
-              {classOptions.map((c) => (
+              {filteredClassOptions.map((c) => (
                 <SelectItem key={c.id} value={c.name}>
                   {c.name}
                 </SelectItem>
@@ -250,6 +285,17 @@ export default function StudentAdmissionListPage() {
             value={feeStructureFilter}
             onValueChange={(value) => {
               setFeeStructureFilter(value);
+              if (value !== "all" && classFilter !== "all") {
+                const selectedFee = feeStructureOptions.find((f) => f.name === value);
+                const selectedClass = classOptions.find((c) => c.name === classFilter);
+                const matches =
+                  selectedFee &&
+                  (selectedFee.className === classFilter ||
+                    (selectedClass && selectedFee.classId === selectedClass.id));
+                if (!matches) {
+                  setClassFilter("all");
+                }
+              }
               setCurrentPage(1);
             }}
           >
@@ -258,7 +304,7 @@ export default function StudentAdmissionListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Fee Structures</SelectItem>
-              {feeStructureOptions.map((f) => (
+              {filteredFeeStructureOptions.map((f) => (
                 <SelectItem key={f.id} value={f.name}>
                   {f.name}
                 </SelectItem>
