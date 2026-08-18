@@ -490,7 +490,10 @@ export default function FeeCollectionPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-slate-900 dark:text-slate-100">{student.className}</span>
                           {student.divisionName && (
-                            <Badge variant="outline" className="text-xs px-1.5 py-0 font-semibold bg-slate-50 dark:bg-slate-800">
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2 py-0.5 font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                            >
                               {student.divisionName}
                             </Badge>
                           )}
