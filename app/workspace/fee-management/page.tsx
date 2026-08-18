@@ -54,14 +54,14 @@ export default function FeeCollectionPage() {
   const router = useRouter();
 
   // Table headers
-  const tableHeader: { label: string; hideOn?: "sm" | "md" }[] = [
-    { label: "Admission No" },
-    { label: "Name" },
-    { label: "Class & Division", hideOn: "sm" },
-    { label: "Vehicle", hideOn: "md" },
-    { label: "Total Due" },
-    { label: "Status" },
-    { label: "Action" },
+  const tableHeader: string[] = [
+    "Admission No",
+    "Name",
+    "Class & Division",
+    "Vehicle",
+    "Total Due",
+    "Status",
+    "Action",
   ];
 
   // Real Data, Loading & Error States
@@ -229,12 +229,6 @@ export default function FeeCollectionPage() {
     setVehicleFilter("all");
     setStatusFilter("all");
     setCurrentPage(1);
-  };
-
-  const hideOnClass = (hideOn?: "sm" | "md") => {
-    if (hideOn === "sm") return "hidden sm:table-cell";
-    if (hideOn === "md") return "hidden md:table-cell";
-    return "";
   };
 
   return (
@@ -440,10 +434,10 @@ export default function FeeCollectionPage() {
           <Table className="w-full min-w-[720px]">
             <TableHeader>
               <TableRow className="bg-slate-50/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
-                {tableHeader.map(({ label, hideOn }) => (
+                {tableHeader.map((label) => (
                   <TableHead
                     key={label}
-                    className={`px-4 sm:px-6 h-11 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 whitespace-nowrap ${hideOnClass(hideOn)} ${label === "Action" ? "text-right" : "text-left"}`}
+                    className={`px-4 sm:px-6 h-11 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 whitespace-nowrap ${label === "Action" ? "text-right" : "text-left"}`}
                   >
                     {label}
                   </TableHead>
@@ -479,13 +473,13 @@ export default function FeeCollectionPage() {
               ) : (
                 students.map((student) => (
                   <TableRow key={student.enrollmentId} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 font-medium">
-                    <TableCell className="px-4 sm:px-6 py-4 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                    <TableCell className="px-4 sm:px-6 py-4 text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                       {student.admissionNumber || "-"}
                     </TableCell>
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 whitespace-nowrap">
                       {student.student || "-"}
                     </TableCell>
-                    <TableCell className={`px-4 sm:px-6 py-4 text-sm ${hideOnClass("sm")}`}>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm whitespace-nowrap">
                       {student.className ? (
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-slate-900 dark:text-slate-100">{student.className}</span>
@@ -502,7 +496,7 @@ export default function FeeCollectionPage() {
                         <span className="text-slate-700 dark:text-slate-300">{student.class || "-"}</span>
                       )}
                     </TableCell>
-                    <TableCell className={`px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 ${hideOnClass("md")}`}>
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       {student.vehicle || "-"}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-sm font-bold text-rose-600 dark:text-rose-400">
