@@ -312,8 +312,12 @@ export default function Page() {
         setFines(finesData)
         setPaymentAccounts(paymentAccountsData)
 
-        if (paymentAccountsData.length > 0) {
-          setPayments([{ accountId: paymentAccountsData[0].id, amount: 0 }])
+        const defaultAccount =
+          paymentAccountsData.find((a) => a.name.trim().toLowerCase() === "cash") ??
+          paymentAccountsData[0]
+
+        if (defaultAccount) {
+          setPayments([{ accountId: defaultAccount.id, amount: 0 }])
         } else {
           setPayments([])
         }
@@ -467,7 +471,7 @@ export default function Page() {
   function addPaymentLine() {
     const unused = paymentAccounts.find((m) => !payments.some((p) => p.accountId === m.id))
     if (!unused) return
-    setPayments((prev) => [...prev, { accountId: unused.id, amount: 0 }])
+    setPayments((prev) => [{ accountId: unused.id, amount: 0 }, ...prev])
   }
 
   function removePaymentLine(index: number) {
@@ -525,7 +529,10 @@ export default function Page() {
 
       setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
       setSelected({})
-      setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
+      const defaultAccount =
+        paymentAccounts.find((a) => a.name.trim().toLowerCase() === "cash") ??
+        paymentAccounts[0]
+      setPayments(defaultAccount ? [{ accountId: defaultAccount.id, amount: 0 }] : [])
 
       const [chargesData, finesData] = await Promise.all([
         getStudentCharges(enrollmentId),
@@ -881,23 +888,25 @@ export default function Page() {
                   ) : null}
 
                   <div className="space-y-2">
-                    {payments.map((p, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <select
-                          value={p.accountId}
-                          onChange={(e) => updatePaymentAccount(index, e.target.value)}
-                          className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
-                        >
-                          {paymentAccounts.map((m) => (
-                            <option
-                              key={m.id}
-                              value={m.id}
-                              disabled={payments.some((pp, i) => i !== index && pp.accountId === m.id)}
-                            >
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
+                    {payments.map((p, index) => {
+                      const availableAccounts = paymentAccounts.filter(
+                        (m) =>
+                          m.id === p.accountId ||
+                          !payments.some((pp, i) => i !== index && pp.accountId === m.id)
+                      )
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <select
+                            value={p.accountId}
+                            onChange={(e) => updatePaymentAccount(index, e.target.value)}
+                            className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
+                          >
+                            {availableAccounts.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
                         <input
                           type="number"
                           step="0.01"
@@ -916,8 +925,9 @@ export default function Page() {
                             <X className="h-4 w-4" />
                           </button>
                         )}
-                      </div>
-                    ))}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm dark:border-slate-800/50">
