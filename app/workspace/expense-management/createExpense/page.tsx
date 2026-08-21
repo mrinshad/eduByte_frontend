@@ -16,6 +16,7 @@ import {
     Layers3,
     Bus,
     User,
+    Activity,
     Plus,
     Trash2,
 } from "lucide-react";
@@ -55,6 +56,7 @@ import {
     updateExpenseSummary,
     type ExpenseDetail,
 } from "@/lib/services/reports";
+import { getCCAActivities, recordCCAExpense, type CCAActivity } from "@/lib/services/cca";
 
 // ---------------------------------------------------------------------
 // Shared bits — same sage accent (#6D755F) as the rest of the app.
@@ -139,6 +141,8 @@ export default function Page() {
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>("");
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
     const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+    const [ccaActivities, setCcaActivities] = useState<CCAActivity[]>([]);
+    const [selectedCCAActivity, setSelectedCCAActivity] = useState<string>("");
 
     // ── Split payments ────────────────────────────────────────────────────
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
@@ -161,6 +165,7 @@ export default function Page() {
     const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false);
     const [staffPopoverOpen, setStaffPopoverOpen] = useState(false);
+    const [ccaPopoverOpen, setCcaPopoverOpen] = useState(false);
 
     // ── Loading state ───────────────────────────────────────────────────────
     const [loadingCategoryList, setLoadingCategoryList] = useState(false);
@@ -242,6 +247,12 @@ export default function Page() {
             });
         }
     }, [accountsDropdown, isEditMode]);
+
+    useEffect(() => {
+        getCCAActivities()
+            .then(setCcaActivities)
+            .catch((err) => console.error("Failed to load CCA activities for expense:", err));
+    }, []);
 
     // ── Load expense data in edit mode ────────────────────────────────────
     useEffect(() => {
@@ -529,6 +540,16 @@ export default function Page() {
             if (isEditMode && editId) {
                 const result = await updateExpenseSummary(editId, payload);
                 if (result.success) {
+                    if (selectedCCAActivity) {
+                        recordCCAExpense({
+                            id: editId,
+                            expenseNumber: expenseDetail?.expenseNumber || "EXP",
+                            activityName: selectedCCAActivity,
+                            amount: Number(amount),
+                            notes: notes.trim(),
+                            expenseDate: expenseDate.toISOString(),
+                        });
+                    }
                     toast.success(result.message || "Expense updated successfully");
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${editId}`);
@@ -541,6 +562,16 @@ export default function Page() {
             } else {
                 const result = await createExpense(payload);
                 if (result.success) {
+                    if (selectedCCAActivity) {
+                        recordCCAExpense({
+                            id: result.data.id || String(Date.now()),
+                            expenseNumber: result.data.expenseNumber || "EXP",
+                            activityName: selectedCCAActivity,
+                            amount: Number(amount),
+                            notes: notes.trim(),
+                            expenseDate: expenseDate.toISOString(),
+                        });
+                    }
                     toast.success(result.message || "Expense created successfully");
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${result.data.id}`);
@@ -905,6 +936,64 @@ export default function Page() {
                                                 </CommandGroup>
                                             </>
                                         )}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Linked Activity (optional)</FieldLabel>
+                        <Popover open={ccaPopoverOpen} onOpenChange={setCcaPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={ccaPopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                        <Activity className="h-3.5 w-3.5 shrink-0 text-[#6D755F]" />
+                                        <span className="truncate">{selectedCCAActivity || "Not linked"}</span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search CCA activity..." />
+                                    <CommandList>
+                                        <CommandEmpty>No activities found.</CommandEmpty>
+                                        <CommandGroup>
+                                            <CommandItem
+                                                value="none"
+                                                onSelect={() => {
+                                                    setSelectedCCAActivity("");
+                                                    setCcaPopoverOpen(false);
+                                                }}
+                                                className="cursor-pointer"
+                                            >
+                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivity === "" ? "opacity-100" : "opacity-0")} />
+                                                <span className="text-slate-600 dark:text-slate-400">Not linked</span>
+                                            </CommandItem>
+                                            {ccaActivities.map((act) => (
+                                                <CommandItem
+                                                    key={act.id}
+                                                    value={act.name}
+                                                    onSelect={() => {
+                                                        setSelectedCCAActivity(act.name);
+                                                        setCcaPopoverOpen(false);
+                                                    }}
+                                                    className="py-2.5 cursor-pointer"
+                                                >
+                                                    <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivity === act.name ? "opacity-100" : "opacity-0")} />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{act.name}</span>
+                                                        <span className="text-[11px] text-slate-400">Default: ₹{act.defaultFee}/mo</span>
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
                                     </CommandList>
                                 </Command>
                             </PopoverContent>

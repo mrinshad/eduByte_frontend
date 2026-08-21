@@ -16,7 +16,8 @@ import {
     Loader2,
     Layers,
     GitBranch,
-    Binary
+    Binary,
+    Activity
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
 
 import { useSearchParams } from "next/navigation";
 
@@ -201,6 +203,7 @@ export default function Page() {
     const [selectedFeeStructureId, setSelectedFeeStructureId] = useState<string>("");
     const [fullFeeStructureData, setFullFeeStructureData] = useState<FeeStructureView | null>(null);
     const [editableFeeItems, setEditableFeeItems] = useState<EditableFeeItem[]>([]);
+    const [ccaActivities, setCcaActivities] = useState<CCAActivity[]>([]);
 
     const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
     const [classPopoverOpen, setClassPopoverOpen] = useState(false);
@@ -333,6 +336,40 @@ export default function Page() {
         setSelectedFeeStructureId("");
         setEditableFeeItems([]);
         setFieldErrors((prev) => ({ ...prev, class: undefined }));
+    };
+
+    useEffect(() => {
+        getCCAActivities()
+            .then(setCcaActivities)
+            .catch((err) => console.error("Failed to load CCA activities:", err));
+    }, []);
+
+    const handleToggleCCA = (cca: CCAActivity) => {
+        const isSelected = editableFeeItems.some(
+            (item) => item.chargeTypeId === cca.id || item.name.toLowerCase() === cca.name.toLowerCase()
+        );
+        if (isSelected) {
+            setEditableFeeItems((prev) =>
+                prev.filter(
+                    (item) => item.chargeTypeId !== cca.id && item.name.toLowerCase() !== cca.name.toLowerCase()
+                )
+            );
+        } else {
+            setEditableFeeItems((prev) => [
+                ...prev,
+                {
+                    chargeTypeId: cca.id,
+                    frequency: cca.frequency || "MONTHLY",
+                    name: cca.name,
+                    originalAmount: cca.defaultFee,
+                    baseAmount: cca.defaultFee,
+                    amount: cca.defaultFee,
+                    dueDay: 10,
+                    description: `Co-Curricular Activity: ${cca.name}`,
+                    generationStartAcademicMonth: 1,
+                },
+            ]);
+        }
     };
 
     // ── Student detail fetch ──────────────────────────────────────────────────
@@ -1139,9 +1176,57 @@ export default function Page() {
                         )}
                     </StepSection>
 
-                    {/* Step 4: Fee Structure */}
+                    {/* Step 4: Assign CCA Activities (Optional) */}
                     <StepSection
                         stepNumber="4"
+                        title="Assign CCA Activities (Optional)"
+                        description="Select optional co-curricular activities. Participating activities will automatically be added to the student's monthly fee ledger."
+                    >
+                        {ccaActivities.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-xs text-slate-500">
+                                No CCA activities configured in Admin Setup yet. You can still add custom charge types below.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                {ccaActivities.map((cca) => {
+                                    const isSelected = editableFeeItems.some(
+                                        (item) => item.chargeTypeId === cca.id || item.name.toLowerCase() === cca.name.toLowerCase()
+                                    );
+                                    return (
+                                        <div
+                                            key={cca.id}
+                                            onClick={() => handleToggleCCA(cca)}
+                                            className={cn(
+                                                "flex items-center justify-between p-3.5 rounded-xl border-2 transition-all cursor-pointer",
+                                                isSelected
+                                                    ? "border-[#6D755F] bg-[#6D755F]/10 dark:bg-[#6D755F]/20 shadow-sm"
+                                                    : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            )}
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    className="h-4 w-4 rounded border-slate-400 data-[state=checked]:bg-[#6D755F] data-[state=checked]:border-[#6D755F]"
+                                                />
+                                                <div>
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                                                        {cca.name}
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-500">
+                                                        ₹{cca.defaultFee.toLocaleString()} / Month
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </StepSection>
+
+                    {/* Step 5: Fee Structure */}
+                    <StepSection
+                        stepNumber="5"
                         title="Configure Fee Structure Template"
                         description="Load templates dynamically scoped to your selected class. All charge items are included in the submission."
                     >

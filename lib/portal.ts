@@ -36,6 +36,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
+  { slug: "cca", label: "Co-Curricular (CCA)", area: "admin", purpose: "Manage CCA activities and student allocations", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Transport", area: "admin", purpose: "Manage transport vehicles", group: "Transport Management" },
@@ -83,6 +84,7 @@ export const portalSections: PortalSection[] = [
 
   // B. Receipts (Income)
   { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
+  { slug: "reports/cca-report", label: "CCA Report", area: "workspace", purpose: "Financial P&L and student roster for Co-Curricular activities", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/fee-defaulters", label: "Fee Defaulters & Aging", area: "workspace", purpose: "Unpaid dues segmented into aging brackets with parent contacts", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/fines-register", label: "Fines & Penalties Register", area: "workspace", purpose: "Categorical audit of levied, collected, and waived fines", group: "Report", subgroup: "Receipts (Income)" },
@@ -145,6 +147,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "admissions": "admissions.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
+    "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
@@ -164,6 +167,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
 
     // B. Receipts (Income)
     "reports/admissions-master": "admissionsreport.listOnNavbar",
+    "reports/cca-report": "ccareport.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
     "reports/fee-defaulters": "feedefaulters.listOnNavbar",
     "reports/fines-register": "finesregister.listOnNavbar",
