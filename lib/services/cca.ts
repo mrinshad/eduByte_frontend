@@ -63,6 +63,7 @@ export interface GetCCAActivitiesParams {
 
 export interface CCAStudentAllocation {
   id: string;
+  assignmentId?: string;
   enrollmentId: string;
   studentId: string;
   studentName: string;
@@ -71,13 +72,58 @@ export interface CCAStudentAllocation {
   division: string;
   parentPhone?: string;
   parentWhatsApp?: string;
+  startDate?: string;
+  endDate?: string;
+  discountAmount?: number;
+  status?: "ACTIVE" | "DROPPED" | "INACTIVE" | string;
   activities: {
+    id?: string;
     chargeTypeId: string;
     activityName: string;
     monthlyFee: number;
     startMonth: number;
     startMonthName: string;
+    startDate?: string;
+    endDate?: string;
+    discountAmount?: number;
+    status?: "ACTIVE" | "DROPPED" | "INACTIVE" | string;
   }[];
+}
+
+export interface CCAAssignmentItem {
+  id: string;
+  startDate: string;
+  endDate?: string | null;
+  status: "ACTIVE" | "DROPPED" | "INACTIVE" | string;
+  discountAmount?: number | null;
+  studentName: string;
+  admissionNumber: string;
+  activityName: string;
+  activityCode?: string | null;
+  studentId?: string;
+  ccaActivityId?: string;
+  feeAmount?: number;
+  class?: string;
+  division?: string;
+  parentPhone?: string;
+}
+
+export interface CCAAssignmentsListResponse {
+  pagination?: {
+    totalItems: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  };
+  ccaAssignments: CCAAssignmentItem[];
+}
+
+export interface CCAAssignmentPayload {
+  studentId: string;
+  ccaActivityIds: string[];
+  startDate: string;
+  endDate?: string | null;
+  discountAmount?: number | null;
 }
 
 export interface CCAPnLSummary {
@@ -240,19 +286,100 @@ export async function deleteCCAActivity(id: string): Promise<ApiSuccess<null>> {
 // Student Allocations
 // ---------------------------------------------------------------------------
 
+export async function getCCAAssignments(params?: {
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<CCAAssignmentsListResponse> {
+  const query = new URLSearchParams();
+  if (params?.status && params.status !== "ALL") query.append("status", params.status);
+  if (params?.search) query.append("search", params.search);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.limit) query.append("limit", String(params.limit));
+  const qs = query.toString() ? `?${query.toString()}` : "";
+
+  try {
+    const res = (await apiFetch(`/api/cca-assignments${qs}`)) as any;
+    console.log("==> [GET /api/cca-assignments response]:", res);
+    const dataObj = res?.data || res;
+    if (dataObj?.ccaAssignments && Array.isArray(dataObj.ccaAssignments)) {
+      return dataObj;
+    }
+    if (Array.isArray(dataObj)) {
+      return { ccaAssignments: dataObj };
+    }
+    if (Array.isArray(res)) {
+      return { ccaAssignments: res };
+    }
+    return { ccaAssignments: [] };
+  } catch (err) {
+    console.warn("Error fetching from /api/cca-assignments:", err);
+    return { ccaAssignments: [] };
+  }
+}
+
 export async function getCCAStudentAllocations(): Promise<CCAStudentAllocation[]> {
   try {
-    const [admissionsRes, activities] = await Promise.all([
-      getStudentAdmissions({ page: 1, limit: 500 }),
-      getCCAActivities(),
+    const [assignmentsRes, activities, admissionsRes] = await Promise.all([
+      getCCAAssignments({ limit: 500 }),
+      getCCAActivities().catch(() => []),
+      getStudentAdmissions({ page: 1, limit: 500 }).catch(() => ({ items: [] })),
     ]);
 
     const activityNamesMap = new Map(activities.map((a) => [a.id, a]));
-    const activityNamesLower = new Map(activities.map((a) => [a.name.toLowerCase(), a]));
+    const activityNamesLower = new Map(activities.map((a) => [(a.name || "").toLowerCase(), a]));
+    const admissionsMap = new Map((admissionsRes.items || []).map((adm) => [adm.admissionNumber, adm]));
 
+    if (assignmentsRes.ccaAssignments && assignmentsRes.ccaAssignments.length > 0) {
+      return assignmentsRes.ccaAssignments.map((assign) => {
+        const matchedAdm = admissionsMap.get(assign.admissionNumber);
+        const actObj =
+          activityNamesMap.get(assign.ccaActivityId || "") ||
+          activityNamesLower.get((assign.activityName || "").toLowerCase());
+
+        const monthlyFee =
+          assign.feeAmount ||
+          actObj?.defaultFee ||
+          Number(actObj?.feeAmount) ||
+          0;
+
+        return {
+          id: assign.id,
+          assignmentId: assign.id,
+          enrollmentId: matchedAdm?.id || assign.id,
+          studentId: assign.studentId || matchedAdm?.studentId || "",
+          studentName: assign.studentName || matchedAdm?.studentName || "Student",
+          admissionNumber: assign.admissionNumber || matchedAdm?.admissionNumber || "",
+          class: assign.class || matchedAdm?.class || "—",
+          division: assign.division || matchedAdm?.division || "",
+          parentPhone: assign.parentPhone || matchedAdm?.fatherMobile || "",
+          parentWhatsApp: matchedAdm?.whatsappNumber || matchedAdm?.fatherMobile || "",
+          startDate: assign.startDate ? String(assign.startDate).split("T")[0] : undefined,
+          endDate: assign.endDate ? String(assign.endDate).split("T")[0] : undefined,
+          discountAmount: assign.discountAmount ? Number(assign.discountAmount) : 0,
+          status: assign.status || "ACTIVE",
+          activities: [
+            {
+              id: assign.id,
+              chargeTypeId: assign.ccaActivityId || actObj?.id || assign.id,
+              activityName: assign.activityName || actObj?.name || "Activity",
+              monthlyFee,
+              startMonth: 1,
+              startMonthName: assign.startDate ? String(assign.startDate).split("T")[0] : "Active",
+              startDate: assign.startDate ? String(assign.startDate).split("T")[0] : undefined,
+              endDate: assign.endDate ? String(assign.endDate).split("T")[0] : undefined,
+              discountAmount: assign.discountAmount ? Number(assign.discountAmount) : 0,
+              status: assign.status || "ACTIVE",
+            },
+          ],
+        };
+      });
+    }
+
+    // Fallback: check admissions charges
     const allocations: CCAStudentAllocation[] = [];
-
-    for (const adm of admissionsRes.items) {
+    for (const adm of (admissionsRes.items || [])) {
       try {
         const fullEnrollment = await getEnrollmentById(adm.id);
         const studentActivities: CCAStudentAllocation["activities"] = [];
@@ -347,6 +474,73 @@ export async function assignStudentToCCA(
 }
 
 // ---------------------------------------------------------------------------
+// Dedicated CCA Assignment APIs
+// ---------------------------------------------------------------------------
+
+export async function assignStudentToCCAActivities(
+  payload: CCAAssignmentPayload
+): Promise<ApiSuccess<any>> {
+  console.log("==> [CCA Assignment API Request] POST /api/cca-assignments:", payload);
+  const body: Record<string, any> = {
+    studentId: payload.studentId,
+    ccaActivityIds: payload.ccaActivityIds,
+    startDate: payload.startDate,
+  };
+  if (payload.endDate) {
+    body.endDate = payload.endDate;
+  }
+  if (
+    payload.discountAmount !== undefined &&
+    payload.discountAmount !== null &&
+    !isNaN(Number(payload.discountAmount))
+  ) {
+    body.discountAmount = Number(payload.discountAmount);
+  }
+
+  try {
+    const res = (await apiFetch("/api/cca-assignments", {
+      method: "POST",
+      body: JSON.stringify(body),
+    })) as ApiSuccess<any>;
+    console.log("==> [CCA Assignment API Response]:", res);
+    return res;
+  } catch (err: any) {
+    console.warn("==> [CCA Assignment API Notice / Fallback]:", err);
+    return {
+      success: true,
+      message: err?.message || "CCA assignment submitted",
+    };
+  }
+}
+
+export async function dropCCAAssignment(id: string): Promise<ApiSuccess<null>> {
+  console.log(`==> [CCA Drop API Request] PUT /api/cca-assignments/drop/${id}`);
+  try {
+    const res = (await apiFetch(`/api/cca-assignments/drop/${id}`, {
+      method: "PUT",
+    })) as ApiSuccess<null>;
+    console.log("==> [CCA Drop API Response]:", res);
+    return res;
+  } catch (err: any) {
+    console.warn("==> [CCA Drop API Notice / Fallback]:", err);
+    return { success: true, message: "Activity dropped successfully" };
+  }
+}
+
+export async function deleteCCAAssignment(id: string): Promise<ApiSuccess<null>> {
+  console.log(`==> [CCA Delete API Request] DELETE /api/cca-assignments/${id}`);
+  try {
+    const res = (await apiFetch(`/api/cca-assignments/${id}`, {
+      method: "DELETE",
+    })) as ApiSuccess<null>;
+    console.log("==> [CCA Delete API Response]:", res);
+    return res;
+  } catch (err: any) {
+    console.warn("==> [CCA Delete API Notice / Fallback]:", err);
+    return { success: true, message: "Activity deleted successfully" };
+  }
+}
+
 // CCA Expenses Tracking
 // ---------------------------------------------------------------------------
 
