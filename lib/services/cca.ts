@@ -182,8 +182,6 @@ export interface CCAExpenseItem {
   account?: string;
 }
 
-const CCA_EXPENSES_KEY = "edubyte_cca_expenses_v1";
-
 const MONTH_NAMES = [
   "June (Month 1)",
   "July (Month 2)",
@@ -583,23 +581,12 @@ export async function deleteCCAAssignment(id: string): Promise<ApiSuccess<null>>
 // CCA Expenses Tracking
 // ---------------------------------------------------------------------------
 
-export function recordCCAExpense(expense: CCAExpenseItem) {
-  if (typeof window === "undefined") return;
-  const raw = localStorage.getItem(CCA_EXPENSES_KEY);
-  const list: CCAExpenseItem[] = raw ? JSON.parse(raw) : [];
-  list.push(expense);
-  localStorage.setItem(CCA_EXPENSES_KEY, JSON.stringify(list));
+export function recordCCAExpense(_expense: CCAExpenseItem) {
+  // Local storage save disabled
 }
 
 export function getRecordedCCAExpenses(): CCAExpenseItem[] {
-  if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(CCA_EXPENSES_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 // ---------------------------------------------------------------------------
