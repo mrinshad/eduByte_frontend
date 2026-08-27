@@ -1,5 +1,8 @@
 import { apiFetch } from "@/lib/api";
 import { getStudentAdmissions, getEnrollmentById, updateStudentAdmission } from "./admissions";
+import { getDivisions, createDivisions, updateDivision, deleteDivision, type Division } from "./division";
+
+export { getDivisions, createDivisions, updateDivision, deleteDivision, type Division };
 
 type ApiSuccess<T> = {
   success: boolean;
