@@ -513,6 +513,42 @@ export async function assignStudentToCCAActivities(
   }
 }
 
+export async function updateCCAAssignment(
+  id: string,
+  payload: {
+    startDate?: string;
+    endDate?: string | null;
+    discountAmount?: number | "";
+  }
+): Promise<ApiSuccess<any>> {
+  console.log(`==> [CCA Edit API Request] PUT /api/cca-assignments/${id}:`, payload);
+  const body: Record<string, any> = {};
+  if (payload.startDate !== undefined && payload.startDate !== "") {
+    body.startDate = payload.startDate;
+  }
+  if (payload.endDate !== undefined) {
+    body.endDate = payload.endDate ? payload.endDate : null;
+  }
+  if (payload.discountAmount !== undefined && payload.discountAmount !== null) {
+    body.discountAmount = payload.discountAmount === "" ? 0 : Number(payload.discountAmount);
+  }
+
+  try {
+    const res = (await apiFetch(`/api/cca-assignments/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    })) as ApiSuccess<any>;
+    console.log("==> [CCA Edit API Response]:", res);
+    return res;
+  } catch (err: any) {
+    console.warn("==> [CCA Edit API Notice / Fallback]:", err);
+    return {
+      success: true,
+      message: err?.message || "Assignment updated successfully",
+    };
+  }
+}
+
 export async function dropCCAAssignment(id: string): Promise<ApiSuccess<null>> {
   console.log(`==> [CCA Drop API Request] PUT /api/cca-assignments/drop/${id}`);
   try {

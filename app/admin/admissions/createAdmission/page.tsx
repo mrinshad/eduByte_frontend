@@ -17,7 +17,8 @@ import {
     Layers,
     GitBranch,
     Binary,
-    Activity
+    Activity,
+    Plus
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -1473,24 +1474,13 @@ export default function Page() {
                     >
                         <div className="space-y-4">
                             {selectedCCAConfigs.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 py-10 px-4 text-center">
-                                    <div className="h-10 w-10 rounded-full bg-[#6D755F]/10 dark:bg-[#6D755F]/20 flex items-center justify-center text-[#6D755F] mb-3">
-                                        <Activity className="h-5 w-5" />
-                                    </div>
-                                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                        No CCA Activities Assigned
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                                        Assign extra-curricular activities (swimming, martial arts, etc.) with custom start dates and discounts.
-                                    </p>
+                                <div className="pt-1">
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        size="sm"
                                         onClick={handleOpenAddCCADialog}
-                                        className="mt-4 bg-[#6D755F] hover:bg-[#5b624f] text-white border-none font-medium shadow-sm"
+                                        className="bg-[#6D755F] hover:bg-[#5b624f] text-white font-medium text-xs h-9 shadow-sm"
                                     >
-                                        <Activity className="h-4 w-4 mr-2" /> Add CCA Activity
+                                        <Plus className="h-4 w-4 mr-1.5" /> Add CCA Activity
                                     </Button>
                                 </div>
                             ) : (

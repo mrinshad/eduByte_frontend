@@ -90,6 +90,7 @@ import {
   deleteCCAActivity,
   getCCAStudentAllocations,
   assignStudentToCCAActivities,
+  updateCCAAssignment,
   dropCCAAssignment,
   deleteCCAAssignment,
   getMonthName,
@@ -166,6 +167,20 @@ export default function CCAManagementPage() {
     }>
   >([]);
   const [isSavingAllocation, setIsSavingAllocation] = useState(false);
+
+  // Edit Assignment Modal State
+  const [editingAssignment, setEditingAssignment] = useState<{
+    id: string;
+    studentName: string;
+    admissionNumber: string;
+    activityName: string;
+    feeAmount: number;
+    frequency: string;
+    startDate: string;
+    endDate: string;
+    discountAmount: number | "";
+  } | null>(null);
+  const [isSavingEditAssignment, setIsSavingEditAssignment] = useState(false);
 
   // Drop / Delete Action States
   const [assignmentToDrop, setAssignmentToDrop] = useState<{ id: string; studentName: string; activityName: string } | null>(null);
@@ -483,6 +498,58 @@ export default function CCAManagementPage() {
       toast.error(err.message || "Failed to save student assignment");
     } finally {
       setIsSavingAllocation(false);
+    }
+  };
+
+  const handleOpenEditAssignment = (item: CCAStudentAllocation) => {
+    const act = item.activities?.[0];
+    const feeAmount = act?.monthlyFee || (item.activities || []).reduce((s, a) => s + (a.monthlyFee || 0), 0) || 0;
+    const discount =
+      item.discountAmount !== undefined && item.discountAmount !== null
+        ? item.discountAmount
+        : act?.discountAmount !== undefined && act?.discountAmount !== null
+        ? act.discountAmount
+        : "";
+
+    setEditingAssignment({
+      id: item.assignmentId || item.id,
+      studentName: item.studentName,
+      admissionNumber: item.admissionNumber,
+      activityName: act?.activityName || item.activities?.map((a) => a.activityName).join(", ") || "CCA Activity",
+      feeAmount,
+      frequency: "MONTHLY",
+      startDate: item.startDate || act?.startDate || new Date().toISOString().split("T")[0],
+      endDate: item.endDate || act?.endDate || "",
+      discountAmount: discount,
+    });
+  };
+
+  const handleSaveEditAssignment = async () => {
+    if (!editingAssignment) return;
+    if (!editingAssignment.startDate) {
+      toast.error("Please provide a valid start date");
+      return;
+    }
+    if (editingAssignment.endDate && editingAssignment.endDate < editingAssignment.startDate) {
+      toast.error("End date cannot be earlier than start date");
+      return;
+    }
+
+    try {
+      setIsSavingEditAssignment(true);
+      await updateCCAAssignment(editingAssignment.id, {
+        startDate: editingAssignment.startDate,
+        endDate: editingAssignment.endDate ? editingAssignment.endDate : null,
+        discountAmount: editingAssignment.discountAmount !== "" ? Number(editingAssignment.discountAmount) : 0,
+      });
+      toast.success("CCA Assignment updated successfully");
+      setEditingAssignment(null);
+      await loadAllocations();
+    } catch (err: any) {
+      console.error("Failed to update assignment:", err);
+      toast.error(err.message || "Failed to update assignment");
+    } finally {
+      setIsSavingEditAssignment(false);
     }
   };
 
@@ -1091,6 +1158,16 @@ export default function CCAManagementPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleOpenEditAssignment(item)}
+                                className="h-8 px-2 text-slate-600 hover:text-[#6D755F] hover:bg-[#6D755F]/10 dark:text-slate-300 dark:hover:text-[#9ea98a] text-xs font-medium"
+                                title="Edit Assignment"
+                              >
+                                <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() =>
                                   setAssignmentToDrop({
                                     id: item.assignmentId || item.id,
@@ -1301,12 +1378,12 @@ export default function CCAManagementPage() {
 
       {/* ── ASSIGN STUDENT DIALOG ─────────────────────────────────────────── */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Users className="h-5 w-5 text-[#6D755F]" /> Assign Student to CCA Activities
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               Select an active student, choose one or multiple CCA activities, set the billing start date, optional end date, and discount amount.
             </DialogDescription>
           </DialogHeader>
@@ -1322,11 +1399,13 @@ export default function CCAManagementPage() {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between font-normal text-left h-10 text-xs rounded-xl"
+                    className="w-full justify-between font-normal text-left h-10 text-xs rounded-xl truncate"
                   >
-                    {selectedStudentObj
-                      ? `[${selectedStudentObj.admissionNumber}] ${selectedStudentObj.studentName} (${selectedStudentObj.class})`
-                      : "Search and choose student..."}
+                    <span className="truncate">
+                      {selectedStudentObj
+                        ? `[${selectedStudentObj.admissionNumber}] ${selectedStudentObj.studentName} (${selectedStudentObj.class})`
+                        : "Search and choose student..."}
+                    </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -1374,7 +1453,7 @@ export default function CCAManagementPage() {
               <label className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
                 Choose CCA Activities <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
                 {activities.map((act) => {
                   const isChecked = selectedAssignConfigs.some((c) => c.activityId === act.id);
                   return (
@@ -1388,13 +1467,13 @@ export default function CCAManagementPage() {
                           : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                       )}
                     >
-                      <div className="flex items-center space-x-2.5">
+                      <div className="flex items-center space-x-2.5 min-w-0">
                         <Checkbox
                           checked={isChecked}
                           className="data-[state=checked]:bg-[#6D755F] data-[state=checked]:border-[#6D755F]"
                         />
-                        <div>
-                          <span className="text-xs font-bold block text-slate-900 dark:text-slate-100">
+                        <div className="truncate">
+                          <span className="text-xs font-bold block text-slate-900 dark:text-slate-100 truncate">
                             {act.name}
                           </span>
                           <span className="text-[10px] text-slate-500">
@@ -1408,7 +1487,7 @@ export default function CCAManagementPage() {
               </div>
             </div>
 
-            {/* Per-Activity Configuration Table */}
+            {/* Per-Activity Configuration Table (Desktop) & Cards (Mobile) */}
             {selectedAssignConfigs.length > 0 && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm">
                 <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 px-4 py-2.5 flex items-center justify-between">
@@ -1422,7 +1501,89 @@ export default function CCAManagementPage() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto max-h-56">
+                {/* Mobile View: Cards */}
+                <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-64 overflow-y-auto p-2 space-y-2">
+                  {selectedAssignConfigs.map((item) => {
+                    const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
+                    const net = Math.max(0, item.fee - disc);
+                    return (
+                      <div key={item.activityId} className="p-3 bg-slate-50/80 dark:bg-slate-900/50 rounded-xl space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">
+                              {item.name}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              ₹{item.fee.toLocaleString()} / {item.frequency || "Month"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-[#6D755F]/15 text-[#6D755F] dark:bg-[#6D755F]/25 text-[11px] font-bold">
+                              ₹{net.toLocaleString()}/mo
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-red-600"
+                              onClick={() => handleRemoveAssignItem(item.activityId)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-slate-500 block mb-0.5 font-medium">Start Date *</label>
+                            <Input
+                              type="date"
+                              value={item.startDate}
+                              onChange={(e) =>
+                                handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
+                              }
+                              className="h-8 text-[11px] rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-500 block mb-0.5 font-medium">End Date</label>
+                            <Input
+                              type="date"
+                              value={item.endDate}
+                              onChange={(e) =>
+                                handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
+                              }
+                              className="h-8 text-[11px] rounded-lg"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-slate-500 block mb-0.5 font-medium">Discount Amount (₹)</label>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="0"
+                              value={item.discountAmount}
+                              onChange={(e) =>
+                                handleUpdateAssignItem(
+                                  item.activityId,
+                                  "discountAmount",
+                                  e.target.value === "" ? "" : Number(e.target.value)
+                                )
+                              }
+                              className="pl-5 h-8 text-[11px] rounded-lg"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View: Table */}
+                <div className="hidden sm:block overflow-x-auto max-h-56">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
@@ -1525,11 +1686,11 @@ export default function CCAManagementPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 px-4 py-2.5 text-xs gap-2">
-                  <span className="text-slate-500">
+                  <span className="text-slate-500 text-[11px] sm:text-xs">
                     Selected {selectedAssignConfigs.length} Activities &bull; Gross: ₹{modalFeeSummary.grossFee.toLocaleString()}
                     {modalFeeSummary.discount > 0 && ` | Discount: −₹${modalFeeSummary.discount.toLocaleString()}`}
                   </span>
-                  <span className="font-bold text-sm text-[#6D755F] dark:text-[#9ea98a]">
+                  <span className="font-bold text-xs sm:text-sm text-[#6D755F] dark:text-[#9ea98a]">
                     Net Monthly: ₹{modalFeeSummary.netFee.toLocaleString()}
                   </span>
                 </div>
@@ -1537,7 +1698,7 @@ export default function CCAManagementPage() {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setAssignModalOpen(false)} className="text-xs">
               Cancel
             </Button>
@@ -1552,6 +1713,167 @@ export default function CCAManagementPage() {
                 </>
               ) : (
                 "Save & Assign Student"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── EDIT CCA ASSIGNMENT DIALOG ─────────────────────────────────────── */}
+      <Dialog
+        open={!!editingAssignment}
+        onOpenChange={(open) => !open && setEditingAssignment(null)}
+      >
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
+              <Pencil className="h-5 w-5 text-[#6D755F]" /> Edit CCA Student Assignment
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Update the billing start date, optional end date, and discount configuration for this student.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingAssignment && (
+            <div className="space-y-4 py-2 text-xs">
+              {/* Student & Activity Info Card */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-3.5 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                      Student
+                    </span>
+                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100 block">
+                      {editingAssignment.studentName}
+                    </span>
+                    <span className="text-xs text-slate-500 font-mono">
+                      Adm: {editingAssignment.admissionNumber}
+                    </span>
+                  </div>
+                  <div className="sm:text-right">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                      Activity & Fee
+                    </span>
+                    <Badge className="bg-[#6D755F]/15 text-[#6D755F] dark:bg-[#6D755F]/25 dark:text-[#9ea98a] border-none text-xs font-semibold">
+                      {editingAssignment.activityName}
+                    </Badge>
+                    <span className="text-xs text-slate-500 block font-medium mt-0.5">
+                      ₹{editingAssignment.feeAmount.toLocaleString()} / Month
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={editingAssignment.startDate}
+                    onChange={(e) =>
+                      setEditingAssignment((prev) =>
+                        prev ? { ...prev, startDate: e.target.value } : null
+                      )
+                    }
+                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    End Date (Optional)
+                  </label>
+                  <Input
+                    type="date"
+                    value={editingAssignment.endDate}
+                    onChange={(e) =>
+                      setEditingAssignment((prev) =>
+                        prev ? { ...prev, endDate: e.target.value } : null
+                      )
+                    }
+                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  Discount Amount (₹)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                    ₹
+                  </span>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={editingAssignment.discountAmount}
+                    onChange={(e) =>
+                      setEditingAssignment((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              discountAmount:
+                                e.target.value === "" ? "" : Number(e.target.value),
+                            }
+                          : null
+                      )
+                    }
+                    className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+
+              {/* Net Rate Summary Box */}
+              {(() => {
+                const disc =
+                  editingAssignment.discountAmount !== ""
+                    ? Number(editingAssignment.discountAmount)
+                    : 0;
+                const net = Math.max(0, editingAssignment.feeAmount - disc);
+                return (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#6D755F]/10 dark:bg-[#6D755F]/20 border border-[#6D755F]/20">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                        Net Monthly Rate
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        Base: ₹{editingAssignment.feeAmount.toLocaleString()}
+                        {disc > 0 && ` − Discount: ₹${disc.toLocaleString()}`}
+                      </span>
+                    </div>
+                    <span className="text-base font-bold text-[#6D755F] dark:text-[#9ea98a]">
+                      ₹{net.toLocaleString()} / mo
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setEditingAssignment(null)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEditAssignment}
+              disabled={isSavingEditAssignment}
+              className="bg-[#6D755F] hover:bg-[#5b624f] text-white text-xs font-medium"
+            >
+              {isSavingEditAssignment ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...
+                </>
+              ) : (
+                "Update Assignment"
               )}
             </Button>
           </DialogFooter>
