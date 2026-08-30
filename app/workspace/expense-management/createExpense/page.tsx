@@ -56,7 +56,7 @@ import {
     updateExpenseSummary,
     type ExpenseDetail,
 } from "@/lib/services/reports";
-import { getCCAActivities, recordCCAExpense, type CCAActivity } from "@/lib/services/cca";
+import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
 
 // ---------------------------------------------------------------------
 // Shared bits — same sage accent (#6D755F) as the rest of the app.
@@ -540,16 +540,7 @@ export default function Page() {
             if (isEditMode && editId) {
                 const result = await updateExpenseSummary(editId, payload);
                 if (result.success) {
-                    if (selectedCCAActivity) {
-                        recordCCAExpense({
-                            id: editId,
-                            expenseNumber: expenseDetail?.expenseNumber || "EXP",
-                            activityName: selectedCCAActivity,
-                            amount: Number(amount),
-                            notes: notes.trim(),
-                            expenseDate: expenseDate.toISOString(),
-                        });
-                    }
+
                     toast.success(result.message || "Expense updated successfully");
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${editId}`);
@@ -562,16 +553,7 @@ export default function Page() {
             } else {
                 const result = await createExpense(payload);
                 if (result.success) {
-                    if (selectedCCAActivity) {
-                        recordCCAExpense({
-                            id: result.data.id || String(Date.now()),
-                            expenseNumber: result.data.expenseNumber || "EXP",
-                            activityName: selectedCCAActivity,
-                            amount: Number(amount),
-                            notes: notes.trim(),
-                            expenseDate: expenseDate.toISOString(),
-                        });
-                    }
+
                     toast.success(result.message || "Expense created successfully");
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${result.data.id}`);
