@@ -482,8 +482,8 @@ export default function CCAManagementPage() {
       activityName: item.activityName || "CCA Activity",
       feeAmount: item.feeAmount || 0,
       frequency: "MONTHLY",
-      startDate: item.startDate || new Date().toISOString().split("T")[0],
-      endDate: item.endDate || "",
+      startDate: item.startDate ? (item.startDate.includes("T") ? item.startDate.split("T")[0] : item.startDate) : new Date().toISOString().split("T")[0],
+      endDate: item.endDate ? (item.endDate.includes("T") ? item.endDate.split("T")[0] : item.endDate) : "",
       discountAmount: item.discountAmount !== undefined && item.discountAmount !== null ? item.discountAmount : "",
     });
   };
@@ -994,11 +994,11 @@ export default function CCAManagementPage() {
                             <div className="flex flex-col text-xs text-slate-600 dark:text-slate-300">
                               <span className="flex items-center gap-1 font-medium">
                                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                {item.startDate || "Active"}
+                                {item.startDate ? new Date(item.startDate).toLocaleDateString('en-GB') : "Active"}
                               </span>
                               {item.endDate && (
                                 <span className="text-[10px] text-slate-400">
-                                  Until: {item.endDate}
+                                  Until: {new Date(item.endDate).toLocaleDateString('en-GB')}
                                 </span>
                               )}
                             </div>
