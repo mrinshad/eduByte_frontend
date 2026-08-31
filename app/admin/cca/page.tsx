@@ -1365,7 +1365,7 @@ export default function CCAManagementPage() {
 
       {/* ── ASSIGN STUDENT DIALOG ─────────────────────────────────────────── */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Users className="h-5 w-5 text-[#6D755F]" /> Assign Student to CCA Activities
@@ -1560,7 +1560,7 @@ export default function CCAManagementPage() {
                                   e.target.value === "" ? "" : Number(e.target.value)
                                 )
                               }
-                              className="pl-5 h-8 text-[11px] rounded-lg"
+                              className="pl-5 h-8 text-[11px] rounded-lg text-slate-900 dark:text-slate-100"
                             />
                           </div>
                         </div>
@@ -1570,7 +1570,7 @@ export default function CCAManagementPage() {
                 </div>
 
                 {/* Desktop View: Table */}
-                <div className="hidden sm:block overflow-x-auto max-h-56">
+                <div className="hidden sm:block overflow-x-auto max-h-56 w-full max-w-full">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
@@ -1648,7 +1648,7 @@ export default function CCAManagementPage() {
                                       e.target.value === "" ? "" : Number(e.target.value)
                                     )
                                   }
-                                  className="pl-5 h-8 text-xs rounded-lg"
+                                  className="pl-5 h-8 text-xs rounded-lg text-slate-900 dark:text-slate-100"
                                 />
                               </div>
                             </TableCell>

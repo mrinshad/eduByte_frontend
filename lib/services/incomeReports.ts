@@ -385,3 +385,43 @@ export async function getAcademicYearSummaryReport(
 
     return payload.data ?? null;
 }
+
+//
+// 6. CCA Income Report
+//
+
+export interface CcaIncomeReportItem {
+    period: string;
+    datePaid: string;
+    amountCollected: number;
+    studentName: string;
+    activityName: string;
+}
+
+export interface CcaIncomeReportSummary {
+    totalIncome: number;
+    chargeCount: number;
+    activityFiltered: string;
+}
+
+export interface CcaIncomeReportResponse {
+    summary: CcaIncomeReportSummary;
+    collectedDues: CcaIncomeReportItem[];
+}
+
+export async function getCcaIncomeReport(params: {
+    startDate?: string;
+    endDate?: string;
+    ccaActivityId?: string;
+}): Promise<CcaIncomeReportResponse | null> {
+    const query = new URLSearchParams();
+    if (params.startDate) query.set("startDate", params.startDate);
+    if (params.endDate) query.set("endDate", params.endDate);
+    if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
+
+    const payload = (await apiFetch(
+        `/api/reports/cca/income?${query.toString()}`
+    )) as ApiSuccess<CcaIncomeReportResponse>;
+
+    return payload.data ?? null;
+}
