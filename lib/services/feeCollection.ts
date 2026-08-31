@@ -264,7 +264,7 @@ export async function collectFee(payload: CollectFeePayload) {
 }
 
 export interface FeeCollectionPrintItem {
-  type: "CHARGE" | "FINE";
+  type: "CHARGE" | "FINE" | "CCA";
   name: string;
   period: { month: number; year: number } | null;
   description: string | null;
@@ -293,9 +293,13 @@ export interface FeeCollectionPrintResponse {
   payments: FeeCollectionPrintPayment[];
 }
 
-export async function getFeeCollectionPrint(transactionId: string) {
+export async function getFeeCollectionPrint(
+  transactionId: string,
+  ccaPaymentId?: string
+) {
+  const query = ccaPaymentId ? `?ccaPaymentId=${ccaPaymentId}` : "";
   const payload = (await apiFetch(
-    `/api/feecollection/print/${transactionId}`
+    `/api/feecollection/print/${transactionId}${query}`
   )) as { success: boolean; data: FeeCollectionPrintResponse };
   return payload.data;
 }

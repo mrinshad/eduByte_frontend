@@ -620,7 +620,11 @@ export default function Page() {
       }
 
       if (academicResult && printAfterCreate) {
-        router.push(`/print/fee-collection/${academicResult.id}`)
+        const ccaParam = ccaResult ? `?ccaPaymentId=${ccaResult.paymentId}` : ""
+        router.push(`/print/fee-collection/${academicResult.id}${ccaParam}`)
+        return
+      } else if (ccaResult && printAfterCreate) {
+        router.push(`/print/fee-collection/${ccaResult.paymentId}`)
         return
       }
 

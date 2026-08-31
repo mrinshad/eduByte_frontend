@@ -221,6 +221,11 @@ export interface ExpensePrintResponse {
       name: string;
     } | null;
 
+    ccaActivity?: {
+      name: string;
+      code?: string | null;
+    } | null;
+
     payments: {
       account: string;
       amount: number;
