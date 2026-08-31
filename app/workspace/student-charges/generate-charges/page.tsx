@@ -771,12 +771,20 @@ export default function FeeGenerationPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  CCA Fee Generation
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Generate co-curricular activity fees for all assigned students up to the last generated academic month.
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    CCA Fee Generation
+                  </h2>
+                  {ccaPreview && ccaPreview.lastGeneratedAcademicMonth > 0 && (
+                    <Badge variant="outline" className="text-[10px] font-semibold bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
+                      Billed Through Month {ccaPreview.lastGeneratedAcademicMonth}
+                      {ccaPreview.generatedMonths?.length ? ` (${ccaPreview.generatedMonths[ccaPreview.generatedMonths.length - 1]})` : ""}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Co-curricular activity fees are synchronized with the academic timeline with duplicate protection per month.
                 </p>
               </div>
 
@@ -810,46 +818,56 @@ export default function FeeGenerationPage() {
                 </div>
               </div>
             ) : ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-violet-50/80 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/30">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
-                        CCA Activity
-                      </th>
-                      <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                        Charges to Generate
-                      </th>
-                      <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
-                        Estimated Total (₹)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                    {Object.entries(ccaPreview.byActivity).map(([name, count]) => (
-                      <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                        <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
-                          {name}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-slate-300">
+                  <span>
+                    Found <strong className="text-violet-700 dark:text-violet-300">{ccaPreview.summary.chargesToGenerate}</strong> pending charge(s) for newly assigned students across generated months.
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Existing charges are safely skipped.
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-violet-50/80 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/30">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                          CCA Activity
+                        </th>
+                        <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                          Charges to Generate
+                        </th>
+                        <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                          Estimated Total (₹)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      {Object.entries(ccaPreview.byActivity).map(([name, count]) => (
+                        <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                          <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                            {name}
+                          </td>
+                          <td className="px-4 py-2.5 text-center text-slate-700 dark:text-slate-300 font-semibold">
+                            {count}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
+                            {formatCurrency(ccaPreview.financialByActivity[name] ?? 0)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-violet-50/60 dark:bg-violet-950/20">
+                        <td className="px-4 py-2.5 font-bold text-slate-900 dark:text-slate-100">Total</td>
+                        <td className="px-4 py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
+                          {ccaPreview.summary.chargesToGenerate}
                         </td>
-                        <td className="px-4 py-2.5 text-center text-slate-700 dark:text-slate-300 font-semibold">
-                          {count}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
-                          {formatCurrency(ccaPreview.financialByActivity[name] ?? 0)}
+                        <td className="px-4 py-2.5 text-right font-bold text-violet-700 dark:text-violet-300">
+                          {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
                         </td>
                       </tr>
-                    ))}
-                    <tr className="bg-violet-50/60 dark:bg-violet-950/20">
-                      <td className="px-4 py-2.5 font-bold text-slate-900 dark:text-slate-100">Total</td>
-                      <td className="px-4 py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
-                        {ccaPreview.summary.chargesToGenerate}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-bold text-violet-700 dark:text-violet-300">
-                        {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
@@ -858,10 +876,10 @@ export default function FeeGenerationPage() {
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     CCA Fees Are Up to Date
                   </p>
-                  <p className="text-xs">
+                  <p className="text-xs text-slate-500">
                     {ccaPreview?.activeAssignmentCount === 0
                       ? "No active CCA assignments found."
-                      : "All CCA charges have been generated for the current academic months."}
+                      : `All CCA charges have been generated through Month ${ccaPreview?.lastGeneratedAcademicMonth ?? 0}.`}
                   </p>
                 </div>
               </div>
