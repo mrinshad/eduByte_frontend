@@ -705,7 +705,7 @@ export default function CCAManagementPage() {
               <Button
                 onClick={handleOpenBulkAssign}
                 variant="outline"
-                className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs font-medium text-xs h-9 gap-1.5"
+                className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200  dark:hover:bg-slate-700 shadow-2xs font-medium text-xs h-9 gap-1.5"
               >
                 <Layers className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
                 Bulk Assign Class
