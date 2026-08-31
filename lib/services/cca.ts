@@ -257,3 +257,53 @@ export async function deleteCCAAssignment(id: string): Promise<ApiSuccess<null>>
     method: "DELETE",
   })) as ApiSuccess<null>;
 }
+
+// ---------------------------------------------------------------------------
+// CCA Charges (Fee Generation) API
+// ---------------------------------------------------------------------------
+
+export interface CCAChargePreviewSummary {
+  chargesToGenerate: number;
+  alreadyGenerated: number;
+  zeroAmountSkipped: number;
+  totalEstimatedAmount: number;
+}
+
+export interface CCAChargePreviewData {
+  academicYear: { id: string; name: string };
+  lastGeneratedAcademicMonth: number;
+  totalAcademicMonths: number;
+  message?: string | null;
+  activeAssignmentCount: number;
+  summary: CCAChargePreviewSummary;
+  byActivity: Record<string, number>;
+  financialByActivity: Record<string, number>;
+  generatedMonths: string[];
+}
+
+export interface CCAChargeGenerateResult {
+  academicYear: { id: string; name: string };
+  activeAssignments: number;
+  chargesGenerated: number;
+  chargesSkipped: number;
+  totalEstimatedAmount: number;
+  byActivity: Record<string, number>;
+  financialByActivity: Record<string, number>;
+}
+
+export async function previewCcaCharges(academicYearId: string): Promise<CCAChargePreviewData | null> {
+  const res = (await apiFetch("/api/cca-charges/preview", {
+    method: "POST",
+    body: JSON.stringify({ academicYearId }),
+  })) as ApiSuccess<CCAChargePreviewData>;
+  return res.data ?? null;
+}
+
+export async function generateCcaCharges(academicYearId: string): Promise<CCAChargeGenerateResult | null> {
+  const res = (await apiFetch("/api/cca-charges/generate", {
+    method: "POST",
+    body: JSON.stringify({ academicYearId }),
+  })) as ApiSuccess<CCAChargeGenerateResult>;
+  return res.data ?? null;
+}
+
