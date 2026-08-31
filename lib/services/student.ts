@@ -40,6 +40,7 @@ export interface Student {
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
+  ccaAssignments?: any[];
   createdAt: string;
   updatedAt: string;
 }

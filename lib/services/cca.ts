@@ -171,12 +171,14 @@ export async function deleteCCAActivity(id: string): Promise<ApiSuccess<null>> {
 export async function getCCAAssignments(params?: {
   status?: string;
   search?: string;
+  studentId?: string;
   page?: number;
   limit?: number;
 }): Promise<CCAAssignmentsListResponse> {
   const query = new URLSearchParams();
   if (params?.status && params.status !== "ALL") query.append("status", params.status);
   if (params?.search) query.append("search", params.search);
+  if (params?.studentId) query.append("studentId", params.studentId);
   if (params?.page) query.append("page", String(params.page));
   if (params?.limit) query.append("limit", String(params.limit));
   const qs = query.toString() ? `?${query.toString()}` : "";

@@ -292,14 +292,34 @@ export default function Page() {
 
         setStudent(response);
 
+        // Map student's own CCA assignments from response if present
+        let studentCcaList: CCAAssignmentItem[] = [];
+        if (response?.ccaAssignments && Array.isArray(response.ccaAssignments)) {
+          studentCcaList = response.ccaAssignments.map((a: any) => ({
+            id: a.id,
+            startDate: a.startDate,
+            endDate: a.endDate,
+            status: a.status,
+            discountAmount: Number(a.discountAmount) || 0,
+            studentId: response.id,
+            studentName: response.studentName,
+            admissionNumber: response.admissionNumber,
+            activityName: a.ccaActivity?.name || "CCA Activity",
+            activityCode: a.ccaActivity?.code,
+            feeAmount: Number(a.ccaActivity?.feeAmount) || 0
+          }));
+        }
+
         const fetchPromises: Promise<any>[] = [
           getStudentCcaCharges(studentId, "student").catch(() => []),
         ];
 
-        if (response?.admissionNumber) {
+        if (studentCcaList.length === 0 && response?.id) {
           fetchPromises.push(
-            getCCAAssignments({ search: response.admissionNumber }).catch(() => ({ ccaAssignments: [] }))
+            getCCAAssignments({ studentId: response.id }).catch(() => ({ ccaAssignments: [] }))
           );
+        } else {
+          fetchPromises.push(Promise.resolve({ ccaAssignments: studentCcaList }));
         }
 
         if (response?.enrollmentId) {
@@ -313,6 +333,8 @@ export default function Page() {
         setCcaCharges(results[0] || []);
         if (results[1]?.ccaAssignments) {
           setCcaAssignments(results[1].ccaAssignments);
+        } else {
+          setCcaAssignments(studentCcaList);
         }
         if (results[2]) {
           setFeeData(results[2]);
