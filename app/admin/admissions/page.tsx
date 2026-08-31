@@ -38,6 +38,7 @@ import {
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -52,6 +53,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
+  const currentAcademicYear = useCurrentAcademicYear();
 
   const [students, setStudents] = useState<BackendAdmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,11 @@ export default function StudentAdmissionListPage() {
   const loadFeeStructureOptions = async () => {
     try {
       setFeeStructureOptionsLoading(true);
-      const feeStructures = await getFeeStructures({ page: 1, limit: 500 });
+      const feeStructures = await getFeeStructures({
+        page: 1,
+        limit: 500,
+        academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined
+      });
       setFeeStructureOptions(feeStructures.items);
     } catch (error) {
       console.error("Failed to load fee structures:", error);
@@ -103,7 +109,7 @@ export default function StudentAdmissionListPage() {
   useEffect(() => {
     loadClassOptions();
     loadFeeStructureOptions();
-  }, []);
+  }, [currentAcademicYear]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,6 +132,7 @@ export default function StudentAdmissionListPage() {
           search,
           className: classFilter === "all" ? "" : classFilter,
           feeStructure: feeStructureFilter === "all" ? "" : feeStructureFilter,
+          academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined,
         });
         if (!active) return;
 
@@ -158,7 +165,7 @@ export default function StudentAdmissionListPage() {
     return () => {
       active = false;
     };
-  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter]);
+  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter, currentAcademicYear]);
 
   const filteredClassOptions = useMemo(() => {
     if (feeStructureFilter !== "all") {

@@ -42,6 +42,7 @@ import {
   type DivisionCountPoint,
   type StudentStatusPoint,
 } from "@/lib/services/adminDashboard"
+import { useCurrentAcademicYear } from "@/lib/academic-year-store"
 
 function formatCompact(n: number) {
   return new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 }).format(n)
@@ -132,6 +133,7 @@ const quickActions: { href: string; label: string; Icon: LucideIcon; permission:
 
 export default function Page() {
   const { hasPermission } = usePermission()
+  const currentAcademicYear = useCurrentAcademicYear()
   const [loadingCards, setLoadingCards] = useState(true)
   const [loadingDivisions, setLoadingDivisions] = useState(true)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -164,7 +166,7 @@ export default function Page() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [currentAcademicYear])
 
   useEffect(() => {
     let cancelled = false
@@ -185,7 +187,7 @@ export default function Page() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [currentAcademicYear])
 
   useEffect(() => {
     let cancelled = false
@@ -206,7 +208,7 @@ export default function Page() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [currentAcademicYear])
 
   const studentStatusTotal = useMemo(
     () => studentStatus.reduce((sum, s) => sum + s.value, 0),

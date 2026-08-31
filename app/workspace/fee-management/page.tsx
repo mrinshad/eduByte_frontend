@@ -29,6 +29,7 @@ import { getStudentFeeCollection, type StudentFeeCollection } from "@/lib/servic
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getDivisions, type Division } from "@/lib/services/division";
 import { formatCurrency } from "@/lib/utils";
+import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 function FilterChip({
   label,
@@ -52,6 +53,7 @@ function FilterChip({
 
 export default function FeeCollectionPage() {
   const router = useRouter();
+  const currentAcademicYear = useCurrentAcademicYear();
 
   // Table headers
   const tableHeader: string[] = [
@@ -149,6 +151,7 @@ export default function FeeCollectionPage() {
           divisionId: divisionFilter === "all" ? undefined : divisionFilter,
           vehicle: vehicleFilter === "all" ? "" : vehicleFilter,
           status: statusFilter,
+          academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined,
         });
 
         setStudents(response.items);
@@ -183,6 +186,7 @@ export default function FeeCollectionPage() {
     divisionFilter,
     vehicleFilter,
     statusFilter,
+    currentAcademicYear,
   ]);
 
   useEffect(() => {
