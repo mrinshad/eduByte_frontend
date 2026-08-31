@@ -104,6 +104,19 @@ interface RawEnrollmentCharge {
   updatedAt: string;
 }
  
+interface RawCcaAssignment {
+  id: string;
+  ccaActivityId: string;
+  activityName: string;
+  activityCode: string | null;
+  feeAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  startDate: string;
+  endDate: string | null;
+  status: string;
+}
+
 interface RawEnrollmentRecord {
   enrollmentId: string;
   academicYearName: string;
@@ -116,6 +129,7 @@ interface RawEnrollmentRecord {
   driverName: string | null;
   student: CompleteEnrollmentRecord["student"];
   enrollmentCharges: RawEnrollmentCharge[];
+  ccaAssignments?: RawCcaAssignment[];
 }
  
 export interface CompleteEnrollmentRecord {
@@ -160,6 +174,18 @@ export interface CompleteEnrollmentRecord {
     status: string;
     periodMonth: number | null;
     periodYear: number | null;
+  }[];
+  ccaAssignments?: {
+    id: string;
+    ccaActivityId: string;
+    activityName: string;
+    activityCode: string | null;
+    feeAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+    startDate: string;
+    endDate: string | null;
+    status: string;
   }[];
 }
  
@@ -212,6 +238,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
     driverName: raw.driverName,
     student: raw.student,
     charges,
+    ccaAssignments: raw.ccaAssignments ?? [],
   };
 }
  

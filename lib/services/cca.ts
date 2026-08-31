@@ -307,3 +307,76 @@ export async function generateCcaCharges(academicYearId: string): Promise<CCACha
   return res.data ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// Student CCA Charges & Fee Collection API
+// ---------------------------------------------------------------------------
+
+export interface StudentCcaCharge {
+  id: string;
+  assignmentId: string;
+  activityId: string;
+  activityName: string;
+  activityCode?: string | null;
+  description: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paidAmount: number;
+  balance: number;
+  periodMonth: number;
+  periodYear: number;
+  periodLabel: string;
+  status: "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | string;
+  canCollect: boolean;
+  createdAt: string;
+}
+
+export interface CollectCcaPayload {
+  studentId?: string;
+  enrollmentId?: string;
+  payments: Array<{
+    accountId?: string | null;
+    amount: number;
+    paymentMethod?: string;
+  }>;
+  allocations: Array<{
+    ccaChargeId: string;
+    amount: number;
+  }>;
+}
+
+export interface CollectCcaResult {
+  paymentId: string;
+  receiptNumber: string;
+  totalAmount: number;
+  updatedCount: number;
+}
+
+export async function getStudentCcaCharges(
+  enrollmentOrStudentId: string,
+  type: "enrollment" | "student" = "enrollment"
+): Promise<StudentCcaCharge[]> {
+  const endpoint =
+    type === "student"
+      ? `/api/cca-charges/student/${enrollmentOrStudentId}`
+      : `/api/cca-charges/enrollment/${enrollmentOrStudentId}`;
+
+  const res = (await apiFetch(endpoint)) as ApiSuccess<StudentCcaCharge[]>;
+  return res.data ?? [];
+}
+
+export async function collectCcaFee(
+  payload: CollectCcaPayload
+): Promise<CollectCcaResult> {
+  const res = (await apiFetch("/api/cca-charges/collect", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })) as ApiSuccess<CollectCcaResult>;
+
+  if (!res.data) {
+    throw new Error(res.message || "Failed to collect CCA fee");
+  }
+  return res.data;
+}
+
+
