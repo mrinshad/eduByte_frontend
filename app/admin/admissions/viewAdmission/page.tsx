@@ -296,6 +296,10 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Gender" value={student.gender} />
             <InfoItem label="Date of birth" value={formatDob(student.dob)} />
             <InfoItem label="Blood group" value={student.bloodGroup} />
+            <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+            <InfoItem label="Religion" value={student.religion || "—"} />
+            <InfoItem label="Community" value={student.community || "—"} />
+            <InfoItem label="Category" value={student.category || "—"} />
             <InfoItem
               label="Status"
               value={
