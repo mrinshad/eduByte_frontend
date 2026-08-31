@@ -184,7 +184,7 @@ export default function CCAManagementPage() {
     studentName: string;
     admissionNumber: string;
     activityName: string;
-    feeAmount: number;
+    feeAmount: number | "";
     frequency: string;
     startDate: string;
     endDate: string;
@@ -599,7 +599,7 @@ export default function CCAManagementPage() {
       studentName: item.studentName,
       admissionNumber: item.admissionNumber,
       activityName: item.activityName || "CCA Activity",
-      feeAmount: item.feeAmount || 0,
+      feeAmount: item.feeAmount !== undefined && item.feeAmount !== null ? item.feeAmount : "",
       frequency: "MONTHLY",
       startDate: item.startDate ? (item.startDate.includes("T") ? item.startDate.split("T")[0] : item.startDate) : new Date().toISOString().split("T")[0],
       endDate: item.endDate ? (item.endDate.includes("T") ? item.endDate.split("T")[0] : item.endDate) : "",
@@ -624,10 +624,12 @@ export default function CCAManagementPage() {
         startDate: editingAssignment.startDate,
         endDate: editingAssignment.endDate ? editingAssignment.endDate : null,
         discountAmount: editingAssignment.discountAmount !== "" ? Number(editingAssignment.discountAmount) : 0,
+        feeAmount: editingAssignment.feeAmount !== "" ? Number(editingAssignment.feeAmount) : 0,
       });
       toast.success("CCA Assignment updated successfully");
       setEditingAssignment(null);
       await loadAllocations();
+      await loadActivities();
     } catch (err: any) {
       console.error("Failed to update assignment:", err);
       toast.error(err.message || "Failed to update assignment");
@@ -1134,11 +1136,14 @@ export default function CCAManagementPage() {
                               <span className="font-bold text-slate-900 dark:text-slate-100">
                                 ₹{net.toLocaleString()} / mo
                               </span>
-                              {discount > 0 && (
-                                <span className="text-[10px] text-emerald-600 font-semibold">
-                                  Disc: −₹{discount}
-                                </span>
-                              )}
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                <span>Base: ₹{totalGross.toLocaleString()}</span>
+                                {discount > 0 && (
+                                  <span className="text-emerald-600 font-semibold">
+                                    (−₹{discount.toLocaleString()})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
 
@@ -2000,7 +2005,7 @@ export default function CCAManagementPage() {
 
           {editingAssignment && (
             <div className="space-y-4 py-2 text-xs">
-              {/* Student & Activity Info Card */}
+              {/* Activity Info Card */}
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-3.5 space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
@@ -2016,19 +2021,77 @@ export default function CCAManagementPage() {
                   </div>
                   <div className="sm:text-right">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                      Activity & Fee
+                      Activity
                     </span>
                     <Badge className="bg-[#6D755F]/15 text-[#6D755F] dark:bg-[#6D755F]/25 dark:text-[#9ea98a] border-none text-xs font-semibold">
                       {editingAssignment.activityName}
                     </Badge>
-                    <span className="text-xs text-slate-500 block font-medium mt-0.5">
-                      ₹{editingAssignment.feeAmount.toLocaleString()} / Month
-                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Form Fields */}
+              {/* Editable Amount & Discount Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Base Charge Amount (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                      ₹
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={editingAssignment.feeAmount}
+                      onChange={(e) =>
+                        setEditingAssignment((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                feeAmount:
+                                  e.target.value === "" ? "" : Number(e.target.value),
+                              }
+                            : null
+                        )
+                      }
+                      className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Discount Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                      ₹
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={editingAssignment.discountAmount}
+                      onChange={(e) =>
+                        setEditingAssignment((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                discountAmount:
+                                  e.target.value === "" ? "" : Number(e.target.value),
+                              }
+                            : null
+                        )
+                      }
+                      className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Fields: Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-slate-700 dark:text-slate-300">
@@ -2063,42 +2126,17 @@ export default function CCAManagementPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  Discount Amount (₹)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                    ₹
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={editingAssignment.discountAmount}
-                    onChange={(e) =>
-                      setEditingAssignment((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              discountAmount:
-                                e.target.value === "" ? "" : Number(e.target.value),
-                            }
-                          : null
-                      )
-                    }
-                    className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-
               {/* Net Rate Summary Box */}
               {(() => {
+                const base =
+                  editingAssignment.feeAmount !== ""
+                    ? Number(editingAssignment.feeAmount)
+                    : 0;
                 const disc =
                   editingAssignment.discountAmount !== ""
                     ? Number(editingAssignment.discountAmount)
                     : 0;
-                const net = Math.max(0, editingAssignment.feeAmount - disc);
+                const net = Math.max(0, base - disc);
                 return (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-[#6D755F]/10 dark:bg-[#6D755F]/20 border border-[#6D755F]/20">
                     <div>
@@ -2106,7 +2144,7 @@ export default function CCAManagementPage() {
                         Net Monthly Rate
                       </span>
                       <span className="text-[11px] text-slate-500">
-                        Base: ₹{editingAssignment.feeAmount.toLocaleString()}
+                        Base: ₹{base.toLocaleString()}
                         {disc > 0 && ` − Discount: ₹${disc.toLocaleString()}`}
                       </span>
                     </div>

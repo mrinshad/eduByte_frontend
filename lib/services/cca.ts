@@ -256,6 +256,7 @@ export async function updateCCAAssignment(
     startDate?: string;
     endDate?: string | null;
     discountAmount?: number | "";
+    feeAmount?: number | "";
   }
 ): Promise<ApiSuccess<any>> {
   const body: Record<string, any> = {};
@@ -267,6 +268,9 @@ export async function updateCCAAssignment(
   }
   if (payload.discountAmount !== undefined && payload.discountAmount !== null) {
     body.discountAmount = payload.discountAmount === "" ? 0 : Number(payload.discountAmount);
+  }
+  if (payload.feeAmount !== undefined && payload.feeAmount !== null) {
+    body.feeAmount = payload.feeAmount === "" ? 0 : Number(payload.feeAmount);
   }
 
   return (await apiFetch(`/api/cca-assignments/${id}`, {
