@@ -221,6 +221,35 @@ export async function assignStudentToCCAActivities(
   })) as ApiSuccess<any>;
 }
 
+export async function bulkAssignStudentToCCAActivity(payload: {
+  ccaActivityId: string;
+  studentIds: string[];
+  startDate: string;
+  endDate?: string | null;
+  discountAmount?: number | null;
+}): Promise<ApiSuccess<{ assignedCount: number; skippedCount: number }>> {
+  const body: Record<string, any> = {
+    ccaActivityId: payload.ccaActivityId,
+    studentIds: payload.studentIds,
+    startDate: payload.startDate,
+  };
+  if (payload.endDate) {
+    body.endDate = payload.endDate;
+  }
+  if (
+    payload.discountAmount !== undefined &&
+    payload.discountAmount !== null &&
+    !isNaN(Number(payload.discountAmount))
+  ) {
+    body.discountAmount = Number(payload.discountAmount);
+  }
+
+  return (await apiFetch("/api/cca-assignments/bulk", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })) as ApiSuccess<{ assignedCount: number; skippedCount: number }>;
+}
+
 export async function updateCCAAssignment(
   id: string,
   payload: {

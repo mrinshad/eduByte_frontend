@@ -89,6 +89,7 @@ import {
   deleteCCAActivity,
   getCCAAssignments,
   assignStudentToCCAActivities,
+  bulkAssignStudentToCCAActivity,
   updateCCAAssignment,
   dropCCAAssignment,
   deleteCCAAssignment,
@@ -163,6 +164,17 @@ export default function CCAManagementPage() {
     }>
   >([]);
   const [isSavingAllocation, setIsSavingAllocation] = useState(false);
+
+  // Bulk Assign Modal State
+  const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState(false);
+  const [bulkActivityId, setBulkActivityId] = useState("");
+  const [bulkClassId, setBulkClassId] = useState("");
+  const [bulkDivision, setBulkDivision] = useState("all");
+  const [bulkStartDate, setBulkStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [bulkEndDate, setBulkEndDate] = useState("");
+  const [bulkDiscount, setBulkDiscount] = useState<number | "">(0);
+  const [bulkSelectedStudentIds, setBulkSelectedStudentIds] = useState<string[]>([]);
+  const [isSavingBulkAssign, setIsSavingBulkAssign] = useState(false);
 
   // Edit Assignment Modal State
   const [editingAssignment, setEditingAssignment] = useState<{
@@ -392,6 +404,111 @@ export default function CCAManagementPage() {
     }
   };
 
+  // ── Bulk Allocation Actions ───────────────────────────────────────────────
+  const bulkClassStudents = useMemo(() => {
+    if (!bulkClassId) return [];
+    return allAdmissions.filter((adm) => {
+      const classMatch = adm.class?.toLowerCase() === bulkClassId.toLowerCase();
+      if (!classMatch) return false;
+      if (bulkDivision !== "all") {
+        return adm.division?.toLowerCase() === bulkDivision.toLowerCase();
+      }
+      return true;
+    });
+  }, [allAdmissions, bulkClassId, bulkDivision]);
+
+  const availableDivisions = useMemo(() => {
+    if (!bulkClassId) return [];
+    const divs = new Set<string>();
+    allAdmissions.forEach((adm) => {
+      if (adm.class?.toLowerCase() === bulkClassId.toLowerCase() && adm.division) {
+        divs.add(adm.division);
+      }
+    });
+    return Array.from(divs).sort();
+  }, [allAdmissions, bulkClassId]);
+
+  const isAlreadyEnrolled = (studentAdmissionNo: string) => {
+    if (!bulkActivityId) return false;
+    const targetActivity = activities.find((a) => a.id === bulkActivityId);
+    return allocations.some(
+      (alloc) =>
+        alloc.admissionNumber === studentAdmissionNo &&
+        (alloc.ccaActivityId === bulkActivityId || (targetActivity && alloc.activityName === targetActivity.name)) &&
+        alloc.status === "ACTIVE"
+    );
+  };
+
+  const handleOpenBulkAssign = () => {
+    const firstActiveActivity = activities.find((a) => a.status === "ACTIVE");
+    setBulkActivityId(firstActiveActivity ? firstActiveActivity.id : activities[0]?.id || "");
+    setBulkClassId(classes[0] ? classes[0].name : "");
+    setBulkDivision("all");
+    setBulkStartDate(new Date().toISOString().split("T")[0]);
+    setBulkEndDate("");
+    setBulkDiscount(0);
+    setBulkSelectedStudentIds([]);
+    setBulkAssignModalOpen(true);
+  };
+
+  const handleSelectAllStudents = () => {
+    const eligibleStudentIds = bulkClassStudents
+      .filter((adm) => !isAlreadyEnrolled(adm.admissionNumber || ""))
+      .map((adm) => adm.studentId);
+
+    if (bulkSelectedStudentIds.length === eligibleStudentIds.length && eligibleStudentIds.length > 0) {
+      setBulkSelectedStudentIds([]);
+    } else {
+      setBulkSelectedStudentIds(eligibleStudentIds);
+    }
+  };
+
+  const toggleStudentSelection = (studentId: string) => {
+    setBulkSelectedStudentIds((prev) =>
+      prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
+    );
+  };
+
+  const handleSaveBulkAssign = async () => {
+    if (!bulkActivityId) {
+      toast.error("Please select a CCA activity.");
+      return;
+    }
+    if (!bulkClassId) {
+      toast.error("Please select a class.");
+      return;
+    }
+    if (bulkSelectedStudentIds.length === 0) {
+      toast.error("Please select at least one student.");
+      return;
+    }
+    if (!bulkStartDate) {
+      toast.error("Please select a start date.");
+      return;
+    }
+
+    try {
+      setIsSavingBulkAssign(true);
+      const res = await bulkAssignStudentToCCAActivity({
+        ccaActivityId: bulkActivityId,
+        studentIds: bulkSelectedStudentIds,
+        startDate: bulkStartDate,
+        endDate: bulkEndDate || null,
+        discountAmount: bulkDiscount === "" ? 0 : Number(bulkDiscount),
+      });
+
+      toast.success(res.message || `Successfully assigned ${bulkSelectedStudentIds.length} student(s).`);
+      setBulkAssignModalOpen(false);
+      setBulkSelectedStudentIds([]);
+      loadAllocations();
+    } catch (err: any) {
+      console.error("Bulk assign failed:", err);
+      toast.error(err.message || "Failed to bulk assign students.");
+    } finally {
+      setIsSavingBulkAssign(false);
+    }
+  };
+
   // ── Allocation Actions ────────────────────────────────────────────────────
   const handleOpenAssignStudent = () => {
     setSelectedStudentAdmissionId("");
@@ -584,12 +701,22 @@ export default function CCAManagementPage() {
               <Plus className="h-4 w-4 mr-1.5" /> Add CCA Activity
             </Button>
           ) : (
-            <Button
-              onClick={handleOpenAssignStudent}
-              className="bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-sm font-medium text-xs h-9"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Assign Student
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleOpenBulkAssign}
+                variant="outline"
+                className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs font-medium text-xs h-9 gap-1.5"
+              >
+                <Layers className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                Bulk Assign Class
+              </Button>
+              <Button
+                onClick={handleOpenAssignStudent}
+                className="bg-[#6D755F] hover:bg-[#5b624f] text-white shadow-sm font-medium text-xs h-9"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Assign Student
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -1578,6 +1705,281 @@ export default function CCAManagementPage() {
                 </>
               ) : (
                 "Save & Assign Student"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── BULK ASSIGN BY CLASS DIALOG ─────────────────────────────────────── */}
+      <Dialog open={bulkAssignModalOpen} onOpenChange={setBulkAssignModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Layers className="h-5 w-5 text-violet-600 dark:text-violet-400" /> Bulk Assign Students to CCA Activity
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Select an activity, pick a class/division, configure start date and discounts, and enroll multiple students at once.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            {/* Row 1: CCA Activity & Class */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  Target CCA Activity <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={bulkActivityId}
+                  onValueChange={(val) => {
+                    setBulkActivityId(val);
+                    setBulkSelectedStudentIds([]);
+                  }}
+                >
+                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                    <SelectValue placeholder="Select CCA Activity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activities
+                      .filter((a) => a.status === "ACTIVE")
+                      .map((act) => (
+                        <SelectItem key={act.id} value={act.id}>
+                          {act.name} (₹{act.defaultFee || Number(act.feeAmount) || 0}/mo)
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  Target Class <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={bulkClassId}
+                  onValueChange={(val) => {
+                    setBulkClassId(val);
+                    setBulkDivision("all");
+                    setBulkSelectedStudentIds([]);
+                  }}
+                >
+                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.name}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Row 2: Division & Start Date & Discount */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">Division</label>
+                <Select
+                  value={bulkDivision}
+                  onValueChange={(val) => {
+                    setBulkDivision(val);
+                    setBulkSelectedStudentIds([]);
+                  }}
+                >
+                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                    <SelectValue placeholder="All Divisions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {availableDivisions.map((div) => (
+                      <SelectItem key={div} value={div}>
+                        Division {div}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={bulkStartDate}
+                  onChange={(e) => setBulkStartDate(e.target.value)}
+                  className="h-10 text-xs rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">Discount per Student (₹)</label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">₹</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={bulkDiscount === "" ? "" : bulkDiscount}
+                    onChange={(e) => setBulkDiscount(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="pl-6 h-10 text-xs rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Student Checklist Table */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-slate-500" />
+                  Students in Class ({bulkClassStudents.length})
+                </label>
+                {bulkClassStudents.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSelectAllStudents}
+                    className="h-7 px-2 text-xs text-violet-700 hover:text-violet-800 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/40"
+                  >
+                    {bulkSelectedStudentIds.length > 0 &&
+                    bulkSelectedStudentIds.length ===
+                      bulkClassStudents.filter(
+                        (s) => !isAlreadyEnrolled(s.admissionNumber || "")
+                      ).length
+                      ? "Deselect All"
+                      : "Select All Eligible"}
+                  </Button>
+                )}
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 max-h-60 overflow-y-auto">
+                {bulkClassStudents.length === 0 ? (
+                  <div className="py-8 text-center text-slate-500">
+                    <p className="text-xs">No active students found in the selected class/division.</p>
+                  </div>
+                ) : (
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800">
+                      <tr className="text-slate-500">
+                        <th className="p-2.5 w-10 text-center"></th>
+                        <th className="p-2.5 font-medium">Roll / Adm #</th>
+                        <th className="p-2.5 font-medium">Student Name</th>
+                        <th className="p-2.5 font-medium">Division</th>
+                        <th className="p-2.5 font-medium text-right pr-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                      {bulkClassStudents.map((adm) => {
+                        const sId = adm.studentId;
+                        const admNo = adm.admissionNumber || "—";
+                        const sName = adm.studentName || "—";
+                        const enrolled = isAlreadyEnrolled(admNo);
+                        const isSelected = bulkSelectedStudentIds.includes(sId);
+
+                        return (
+                          <tr
+                            key={sId}
+                            onClick={() => {
+                              if (!enrolled) toggleStudentSelection(sId);
+                            }}
+                            className={cn(
+                              "cursor-pointer transition-colors",
+                              enrolled
+                                ? "bg-slate-50/60 opacity-60 cursor-not-allowed dark:bg-slate-950/40"
+                                : isSelected
+                                ? "bg-violet-50/60 dark:bg-violet-950/30"
+                                : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+                            )}
+                          >
+                            <td className="p-2.5 text-center">
+                              <input
+                                type="checkbox"
+                                disabled={enrolled}
+                                checked={isSelected}
+                                onChange={() => toggleStudentSelection(sId)}
+                                className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                              />
+                            </td>
+                            <td className="p-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                              {adm.rollNumber ? `#${adm.rollNumber} • ` : ""}
+                              {admNo}
+                            </td>
+                            <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100">
+                              {sName}
+                            </td>
+                            <td className="p-2.5 text-slate-500">
+                              {adm.division || "—"}
+                            </td>
+                            <td className="p-2.5 text-right pr-3">
+                              {enrolled ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                >
+                                  Already Enrolled
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200"
+                                >
+                                  Available
+                                </Badge>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Summary Bar */}
+              {bulkSelectedStudentIds.length > 0 && (
+                <div className="flex items-center justify-between rounded-xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 p-3 text-xs">
+                  <div>
+                    <span className="font-semibold text-violet-950 dark:text-violet-200">
+                      {bulkSelectedStudentIds.length} Student(s) Selected
+                    </span>
+                    {bulkDiscount !== "" && Number(bulkDiscount) > 0 && (
+                      <span className="text-[11px] text-violet-600 dark:text-violet-400 block">
+                        Discount applied: ₹{Number(bulkDiscount).toLocaleString()} / student
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-bold text-sm text-violet-700 dark:text-violet-300">
+                    Ready to Enroll
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setBulkAssignModalOpen(false)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveBulkAssign}
+              disabled={isSavingBulkAssign || bulkSelectedStudentIds.length === 0}
+              className="bg-violet-700 hover:bg-violet-800 text-white text-xs font-medium"
+            >
+              {isSavingBulkAssign ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Assigning Students...
+                </>
+              ) : (
+                `Assign ${bulkSelectedStudentIds.length} Students`
               )}
             </Button>
           </DialogFooter>
