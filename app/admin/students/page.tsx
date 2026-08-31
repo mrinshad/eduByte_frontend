@@ -37,7 +37,6 @@ import {
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { PermissionGate } from "@/components/auth/PermissionGate";
-import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -63,7 +62,6 @@ const STATUS_OPTIONS = [
 
 export default function Page() {
   const router = useRouter();
-  const currentAcademicYear = useCurrentAcademicYear();
 
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +102,6 @@ export default function Page() {
         status: statusFilter === "all" ? "" : statusFilter,
         sortBy: sortByClass ? "className" : "admissionNumber",
         order: sortByClass ? order : "desc",
-        academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined,
       });
       setStudents(response.data ?? []);
       setPagination(response.pagination);
@@ -180,7 +177,6 @@ export default function Page() {
     statusFilter,
     sortByClass,
     order,
-    currentAcademicYear,
   ]);
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
