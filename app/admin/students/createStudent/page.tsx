@@ -117,6 +117,10 @@ export default function Page() {
         gender: "Male",
         dob: "",
         bloodGroup: "",
+        adharNo: "",
+        religion: "",
+        community: "",
+        category: "",
         fatherName: "",
         fatherMobile: "",
         motherName: "",
@@ -140,6 +144,10 @@ export default function Page() {
                         gender: student.gender,
                         dob: student.dob ?? "",
                         bloodGroup: student.bloodGroup ?? "",
+                        adharNo: student.adharNo ?? "",
+                        religion: student.religion ?? "",
+                        community: student.community ?? "",
+                        category: student.category ?? "",
                         fatherName: student.fatherName,
                         fatherMobile: student.fatherMobile,
                         motherName: student.motherName,
@@ -519,6 +527,62 @@ export default function Page() {
                                     className={cn(fieldClass, fieldErrors.whatsappNumber && fieldErrorClass)}
                                 />
                                 <FieldError message={fieldErrors.whatsappNumber} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="adharNo" className="text-slate-700 dark:text-slate-300">
+                                    Aadhaar Number
+                                </Label>
+                                <Input
+                                    id="adharNo"
+                                    name="adharNo"
+                                    value={formData.adharNo || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 1234 5678 9012"
+                                    className={fieldClass}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="religion" className="text-slate-700 dark:text-slate-300">
+                                    Religion
+                                </Label>
+                                <Input
+                                    id="religion"
+                                    name="religion"
+                                    value={formData.religion || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Islam / Hinduism / Christianity"
+                                    className={fieldClass}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="community" className="text-slate-700 dark:text-slate-300">
+                                    Community
+                                </Label>
+                                <Input
+                                    id="community"
+                                    name="community"
+                                    value={formData.community || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Community"
+                                    className={fieldClass}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="category" className="text-slate-700 dark:text-slate-300">
+                                    Category
+                                </Label>
+                                <Input
+                                    id="category"
+                                    name="category"
+                                    value={formData.category || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. General / OBC / SC / ST"
+                                    className={fieldClass}
+                                />
                             </div>
                         </div>
                     </StepSection>

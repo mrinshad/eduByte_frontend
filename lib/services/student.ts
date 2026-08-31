@@ -6,6 +6,10 @@ export interface StudentInput {
   gender: "Male" | "Female";
   dob: string;
   bloodGroup: string;
+  adharNo?: string;
+  religion?: string;
+  community?: string;
+  category?: string;
   fatherName: string;
   fatherMobile: string;
   motherName: string;
@@ -21,6 +25,10 @@ export interface Student {
   gender: "Male" | "Female";
   dob: string | null;
   bloodGroup: string | null;
+  adharNo?: string | null;
+  religion?: string | null;
+  community?: string | null;
+  category?: string | null;
   fatherName: string;
   fatherMobile: string;
   motherName: string;
@@ -42,6 +50,11 @@ export interface StudentListItem {
   studentName: string;
   gender: "Male" | "Female";
   dob: string | null;
+  bloodGroup?: string | null;
+  adharNo?: string | null;
+  religion?: string | null;
+  community?: string | null;
+  category?: string | null;
   whatsappNumber: string;
   address: string;
   status: string;

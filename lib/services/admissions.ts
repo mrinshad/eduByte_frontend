@@ -149,6 +149,10 @@ export interface CompleteEnrollmentRecord {
     gender: string;
     dob: string;
     bloodGroup: string;
+    adharNo?: string;
+    religion?: string;
+    community?: string;
+    category?: string;
     status: "ACTIVE" | "INACTIVE" | "WITHDRAWN" | "COMPLETED" | "PROMOTED" | string;
     fatherName: string;
     fatherMobile: string;
