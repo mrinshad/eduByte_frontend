@@ -92,6 +92,8 @@ export interface GetStudentsParams {
   status?: string; // ACTIVE | WITHDRAWN | ALUMNI
   sortBy?: string;
   order?: "asc" | "desc";
+  academicYearId?: string;
+  academicYear?: string;
 }
 
 export interface StudentAdmissionAndName {
@@ -118,6 +120,8 @@ export async function getStudents({
   status = "",
   sortBy = "admissionNumber",
   order = "desc",
+  academicYearId = "",
+  academicYear = "",
 }: GetStudentsParams = {}) {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -135,6 +139,12 @@ export async function getStudents({
   }
   if (status) {
     params.set("status", status);
+  }
+  if (academicYearId) {
+    params.set("academicYearId", academicYearId);
+  }
+  if (academicYear) {
+    params.set("academicYear", academicYear);
   }
 
   const payload = (await apiFetch(

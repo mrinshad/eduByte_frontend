@@ -99,9 +99,11 @@ import {
 import { getNonPayment, type accountName } from "@/lib/services/accountTypes";
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
+import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 export default function CCAManagementPage() {
   const router = useRouter();
+  const currentAcademicYear = useCurrentAcademicYear();
 
   const [activeTab, setActiveTab] = useState<"activities" | "allocations">("activities");
 
@@ -249,7 +251,7 @@ export default function CCAManagementPage() {
     loadAccounts();
     loadAllocations();
     loadAdmissionsAndClasses();
-  }, []);
+  }, [currentAcademicYear]);
 
 
   // ── Filtered Activities ───────────────────────────────────────────────────

@@ -76,9 +76,11 @@ import {
   type FineType,
   type StudentFine,
 } from "@/lib/services/fineTypes"
+import { useCurrentAcademicYear } from "@/lib/academic-year-store"
 
 export default function Page() {
   const router = useRouter()
+  const currentAcademicYear = useCurrentAcademicYear()
 
   // ---------------------------------------------------------------------
   // Fine Types (list + create/edit dialog)
@@ -242,8 +244,7 @@ export default function Page() {
 
   useEffect(() => {
     void loadFines()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, page, limit])
+  }, [search, page, limit, currentAcademicYear])
 
   const usingServerPagination = serverTotal !== null && serverTotalPages !== null
 

@@ -252,6 +252,8 @@ export async function getStudentAdmissions(params: {
   search?: string;
   className?: string;
   feeStructure?: string;
+  academicYearId?: string;
+  academicYear?: string;
 } = {}): Promise<AdmissionsListResponse> {
   const query = new URLSearchParams();
 
@@ -260,6 +262,8 @@ export async function getStudentAdmissions(params: {
   if (params.search) query.set("search", params.search);
   if (params.className) query.set("className", params.className);
   if (params.feeStructure) query.set("feeStructure", params.feeStructure);
+  if (params.academicYearId) query.set("academicYearId", params.academicYearId);
+  if (params.academicYear) query.set("academicYear", params.academicYear);
 
   const payload = (await apiFetch(
     `/api/stdenrollment${query.toString() ? `?${query.toString()}` : ""}`

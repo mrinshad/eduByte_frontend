@@ -105,6 +105,8 @@ export async function getStudentFeeCollection(params?: {
   divisionName?: string;
   vehicle?: string;
   status?: "all" | "paid" | "pending" | string;
+  academicYearId?: string;
+  academicYear?: string;
 }) {
   const query = new URLSearchParams({
     page: String(params?.page ?? 1),
@@ -117,6 +119,13 @@ export async function getStudentFeeCollection(params?: {
     vehicle: params?.vehicle ?? "",
     status: params?.status ?? "all",
   });
+
+  if (params?.academicYearId) {
+    query.set("academicYearId", params.academicYearId);
+  }
+  if (params?.academicYear) {
+    query.set("academicYear", params.academicYear);
+  }
 
   const payload = (await apiFetch(
     `/api/feecollection/stdlist?${query.toString()}`
