@@ -768,7 +768,7 @@ export default function CCAManagementPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Select value={activityStatusFilter} onValueChange={setActivityStatusFilter}>
-                <SelectTrigger className="h-10 w-[130px]">
+                <SelectTrigger className="h-10 w-[130px] border border-slate-300 dark:border-slate-700">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2085,7 +2085,7 @@ export default function CCAManagementPage() {
                           : null
                       )
                     }
-                    className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950"
+                    className="pl-7 h-10 text-xs font-semibold rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
