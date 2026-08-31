@@ -959,7 +959,7 @@ export default function CCAManagementPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="h-10 w-[150px]">
+                <SelectTrigger className="h-10 w-[150px] border border-slate-300 dark:border-slate-700">
                   <SelectValue placeholder="All Activities" />
                 </SelectTrigger>
                 <SelectContent>
@@ -973,7 +973,7 @@ export default function CCAManagementPage() {
               </Select>
 
               <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger className="h-9 w-[130px] text-xs">
+                <SelectTrigger className="h-9 w-[130px] text-xs border border-slate-300 dark:border-slate-700">
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -990,7 +990,7 @@ export default function CCAManagementPage() {
                 value={statusFilter}
                 onValueChange={(val: "ALL" | "ACTIVE" | "DROPPED") => setStatusFilter(val)}
               >
-                <SelectTrigger className="h-9 w-[120px] text-xs">
+                <SelectTrigger className="h-9 w-[120px] text-xs border border-slate-300 dark:border-slate-700">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1060,9 +1060,6 @@ export default function CCAManagementPage() {
                       </TableHead>
                       <TableHead className="h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                         Discount / Net Fee
-                      </TableHead>
-                      <TableHead className="h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                        Parent Contact
                       </TableHead>
                       <TableHead className="pr-6 text-right h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                         Actions
@@ -1142,9 +1139,7 @@ export default function CCAManagementPage() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-slate-500 font-mono">
-                            {item.parentPhone || "—"}
-                          </TableCell>
+
                           <TableCell className="pr-6 text-right">
                             <div className="flex items-center justify-end gap-1">
                               <Button
@@ -1533,7 +1528,7 @@ export default function CCAManagementPage() {
                               onChange={(e) =>
                                 handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
                               }
-                              className="h-8 text-[11px] rounded-lg"
+                              className="h-8 text-[11px] rounded-lg text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />
                           </div>
                           <div>
@@ -1544,7 +1539,7 @@ export default function CCAManagementPage() {
                               onChange={(e) =>
                                 handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
                               }
-                              className="h-8 text-[11px] rounded-lg"
+                              className="h-8 text-[11px] rounded-lg text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                             />
                           </div>
                         </div>
@@ -1579,19 +1574,19 @@ export default function CCAManagementPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
-                        <TableHead className="pl-4 text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[120px]">
+                        <TableHead className="pl-4 text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[100px]">
                           Activity
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
                           Start Date *
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
                           End Date
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[90px]">
                           Discount (₹)
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[100px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[70px]">
                           Net Rate
                         </TableHead>
                         <TableHead className="pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-slate-500 w-[40px]">
@@ -1623,7 +1618,7 @@ export default function CCAManagementPage() {
                                 onChange={(e) =>
                                   handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
                                 }
-                                className="h-8 text-xs rounded-lg"
+                                className="h-8 text-xs rounded-lg text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                               />
                             </TableCell>
                             <TableCell>
@@ -1633,7 +1628,7 @@ export default function CCAManagementPage() {
                                 onChange={(e) =>
                                   handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
                                 }
-                                className="h-8 text-xs rounded-lg"
+                                className="h-8 text-xs rounded-lg text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                               />
                             </TableCell>
                             <TableCell>
@@ -1811,7 +1806,7 @@ export default function CCAManagementPage() {
                   type="date"
                   value={bulkStartDate}
                   onChange={(e) => setBulkStartDate(e.target.value)}
-                  className="h-10 text-xs rounded-xl"
+                  className="h-10 text-xs rounded-xl text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
 
@@ -2045,7 +2040,7 @@ export default function CCAManagementPage() {
                         prev ? { ...prev, startDate: e.target.value } : null
                       )
                     }
-                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950"
+                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
@@ -2061,7 +2056,7 @@ export default function CCAManagementPage() {
                         prev ? { ...prev, endDate: e.target.value } : null
                       )
                     }
-                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950"
+                    className="h-10 text-xs rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
               </div>
