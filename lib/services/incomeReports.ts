@@ -425,3 +425,41 @@ export async function getCcaIncomeReport(params: {
 
     return payload.data ?? null;
 }
+
+export interface CcaExpenseItem {
+    id: string;
+    expenseNumber: string;
+    amount: number;
+    expenseDate: string;
+    notes: string | null;
+    createdAt: string;
+    category: string | null;
+    subCategory: string | null;
+    account: string | null;
+    ccaActivityName: string | null;
+    payments: { accountId: string; amount: number }[];
+}
+
+export interface CcaExpenseReportResponse {
+    totalCcaExpenses: number;
+    items: CcaExpenseItem[];
+}
+
+export async function getCcaExpenseSummary(params: {
+    startDate?: string;
+    endDate?: string;
+    ccaActivityId?: string;
+    search?: string;
+}): Promise<CcaExpenseReportResponse | null> {
+    const query = new URLSearchParams();
+    if (params.startDate) query.set("from", params.startDate);
+    if (params.endDate) query.set("to", params.endDate);
+    if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
+    if (params.search) query.set("search", params.search);
+
+    const payload = (await apiFetch(
+        `/api/reports/cca/expense?${query.toString()}`
+    )) as ApiSuccess<CcaExpenseReportResponse>;
+
+    return payload.data ?? null;
+}

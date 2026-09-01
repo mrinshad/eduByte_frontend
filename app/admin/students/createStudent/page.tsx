@@ -139,21 +139,21 @@ export default function Page() {
                 const student = await getStudentById(id);
                 if (student) {
                     setFormData({
-                        admissionNumber: student.admissionNumber,
-                        studentName: student.studentName,
-                        gender: student.gender,
+                        admissionNumber: student.admissionNumber ?? "",
+                        studentName: student.studentName ?? "",
+                        gender: student.gender ?? "Male",
                         dob: student.dob ?? "",
                         bloodGroup: student.bloodGroup ?? "",
                         adharNo: student.adharNo ?? "",
                         religion: student.religion ?? "",
                         community: student.community ?? "",
                         category: student.category ?? "",
-                        fatherName: student.fatherName,
-                        fatherMobile: student.fatherMobile,
-                        motherName: student.motherName,
-                        motherMobile: student.motherMobile,
-                        whatsappNumber: student.whatsappNumber,
-                        address: student.address,
+                        fatherName: student.fatherName ?? "",
+                        fatherMobile: student.fatherMobile ?? "",
+                        motherName: student.motherName ?? "",
+                        motherMobile: student.motherMobile ?? "",
+                        whatsappNumber: student.whatsappNumber ?? "",
+                        address: student.address ?? "",
                     });
                     setDate(student.dob ? new Date(student.dob) : undefined);
                 }

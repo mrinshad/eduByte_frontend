@@ -76,6 +76,7 @@ export interface ExpenseInput {
   vehicleId?: string | null;
   subCategoryId: string;
   staffId?: string | null;
+  ccaActivityId?: string | null;
   notes?: string;
   amount: number;
   accountId: string;

@@ -142,7 +142,7 @@ export default function Page() {
     const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
     const [selectedStaffId, setSelectedStaffId] = useState<string>("");
     const [ccaActivities, setCcaActivities] = useState<CCAActivity[]>([]);
-    const [selectedCCAActivity, setSelectedCCAActivity] = useState<string>("");
+    const [selectedCCAActivityId, setSelectedCCAActivityId] = useState<string>("");
 
     // ── Split payments ────────────────────────────────────────────────────
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
@@ -288,6 +288,7 @@ export default function Page() {
                     setSelectedSubCategoryId(toId(detail.subCategory));
                     setSelectedVehicleId(toId(detail.vehicle));
                     setSelectedStaffId(toId(detail.staff));
+                    setSelectedCCAActivityId(toId(detail.ccaActivity));
 
                     if (detail.payments && detail.payments.length > 0) {
                         setPayments(
@@ -524,6 +525,7 @@ export default function Page() {
             vehicleId: selectedVehicleId || null,
             subCategoryId: selectedSubCategoryId,
             staffId: selectedStaffId || null,
+            ccaActivityId: selectedCCAActivityId || null,
             notes: notes.trim(),
             amount: Number(amount),
             accountId: selectedSubCategory?.expenseAccountId ?? "",  // ← ADD THIS
@@ -936,7 +938,11 @@ export default function Page() {
                                 >
                                     <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
                                         <Activity className="h-3.5 w-3.5 shrink-0 text-[#6D755F]" />
-                                        <span className="truncate">{selectedCCAActivity || "Not linked"}</span>
+                                        <span className="truncate">
+                                            {selectedCCAActivityId 
+                                                ? ccaActivities.find(a => toId(a.id) === selectedCCAActivityId)?.name || "Not linked" 
+                                                : "Not linked"}
+                                        </span>
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -950,12 +956,12 @@ export default function Page() {
                                             <CommandItem
                                                 value="none"
                                                 onSelect={() => {
-                                                    setSelectedCCAActivity("");
+                                                    setSelectedCCAActivityId("");
                                                     setCcaPopoverOpen(false);
                                                 }}
                                                 className="cursor-pointer"
                                             >
-                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivity === "" ? "opacity-100" : "opacity-0")} />
+                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === "" ? "opacity-100" : "opacity-0")} />
                                                 <span className="text-slate-600 dark:text-slate-400">Not linked</span>
                                             </CommandItem>
                                             {ccaActivities.map((act) => (
@@ -963,12 +969,12 @@ export default function Page() {
                                                     key={act.id}
                                                     value={act.name}
                                                     onSelect={() => {
-                                                        setSelectedCCAActivity(act.name);
+                                                        setSelectedCCAActivityId(toId(act.id));
                                                         setCcaPopoverOpen(false);
                                                     }}
                                                     className="py-2.5 cursor-pointer"
                                                 >
-                                                    <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivity === act.name ? "opacity-100" : "opacity-0")} />
+                                                    <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === toId(act.id) ? "opacity-100" : "opacity-0")} />
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-slate-900 dark:text-slate-100">{act.name}</span>
                                                         <span className="text-[11px] text-slate-400">Default: ₹{act.defaultFee}/mo</span>
