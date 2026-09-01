@@ -1385,7 +1385,7 @@ export default function CCAManagementPage() {
           <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
             {/* Student Search & Select */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-700 dark:text-slate-300">
+              <label className="font-semibold text-slate-900 dark:text-white">
                 Select Active Student <span className="text-red-500">*</span>
               </label>
               <Popover open={studentPopoverOpen} onOpenChange={setStudentPopoverOpen}>
@@ -1393,7 +1393,7 @@ export default function CCAManagementPage() {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between font-normal text-left h-10 text-xs rounded-xl truncate"
+                    className="w-full justify-between font-normal text-left h-10 text-xs rounded-xl truncate bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700"
                   >
                     <span className="truncate">
                       {selectedStudentObj
@@ -1444,7 +1444,7 @@ export default function CCAManagementPage() {
 
             {/* Activities Checkboxes */}
             <div className="space-y-2">
-              <label className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
+              <label className="font-semibold text-slate-900 dark:text-white text-xs">
                 Choose CCA Activities <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
@@ -1455,22 +1455,22 @@ export default function CCAManagementPage() {
                       key={act.id}
                       onClick={() => handleToggleAssignActivity(act)}
                       className={cn(
-                        "flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer",
+                        "flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer bg-white dark:bg-slate-900",
                         isChecked
-                          ? "border-[#556043] bg-[#556043]/10 dark:bg-[#556043]/20"
-                          : "border-slate-200 dark:border-slate-800  dark:hover:bg-slate-900"
+                          ? "border-[#556043]"
+                          : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       )}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
                         <Checkbox
                           checked={isChecked}
-                          className="pointer-events-none data-[state=checked]:bg-[#556043] data-[state=checked]:text-white data-[state=checked]:border-[#556043]"
+                          className="pointer-events-none bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-600 data-[state=checked]:bg-[#556043] data-[state=checked]:text-white data-[state=checked]:border-[#556043]"
                         />
                         <div className="truncate">
-                          <span className="text-xs font-bold block text-slate-900 dark:text-slate-100 truncate">
+                          <span className="text-xs font-bold block text-slate-900 dark:text-white truncate">
                             {act.name}
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
                             ₹{(act.defaultFee || Number(act.feeAmount) || 0).toLocaleString()} / {act.frequency || "MONTHLY"}
                           </span>
                         </div>
@@ -1728,8 +1728,8 @@ export default function CCAManagementPage() {
           <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
             {/* Row 1: CCA Activity & Class */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+              <div className="space-y-2">
+                <label className="font-semibold dark:text-white">
                   Target CCA Activity <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -1739,7 +1739,7 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                  <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700">
                     <SelectValue placeholder="Select CCA Activity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1755,7 +1755,7 @@ export default function CCAManagementPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                <label className="font-semibold text-slate-900 dark:text-white">
                   Target Class <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -1766,7 +1766,7 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                  <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700">
                     <SelectValue placeholder="Select Class" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1783,7 +1783,7 @@ export default function CCAManagementPage() {
             {/* Row 2: Division & Start Date & Discount */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Division</label>
+                <label className="font-semibold text-slate-900 dark:text-white">Division</label>
                 <Select
                   value={bulkDivision}
                   onValueChange={(val) => {
@@ -1791,7 +1791,7 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs rounded-xl">
+                  <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700">
                     <SelectValue placeholder="All Divisions" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1806,19 +1806,19 @@ export default function CCAManagementPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                <label className="font-semibold text-slate-900 dark:text-white">
                   Start Date <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="date"
                   value={bulkStartDate}
                   onChange={(e) => setBulkStartDate(e.target.value)}
-                  className="h-10 text-xs rounded-xl text-slate-900 dark:text-slate-100 [color-scheme:light] dark:[color-scheme:dark]"
+                  className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Discount per Student (₹)</label>
+                <label className="font-semibold text-slate-900 dark:text-white">Discount per Student (₹)</label>
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">₹</span>
                   <Input
@@ -1827,7 +1827,7 @@ export default function CCAManagementPage() {
                     placeholder="0"
                     value={bulkDiscount === "" ? "" : bulkDiscount}
                     onChange={(e) => setBulkDiscount(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="pl-6 h-10 text-xs rounded-xl"
+                    className="pl-6 h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700"
                   />
                 </div>
               </div>
@@ -1836,7 +1836,7 @@ export default function CCAManagementPage() {
             {/* Student Checklist Table */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <label className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-slate-500" />
                   Students in Class ({bulkClassStudents.length})
                 </label>

@@ -17,6 +17,7 @@ import {
     TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -543,9 +544,9 @@ export default function CcaIncomeReportPage() {
                                                 </span>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-400/20">
+                                                <Badge className="border-none text-[11px] font-medium bg-[#556043]/15 text-[#556043] dark:bg-[#556043]/25 dark:text-[#9ea98a]">
                                                     {item.activityName}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-sm text-slate-600 dark:text-slate-400">
                                                 {item.period}
@@ -659,9 +660,9 @@ export default function CcaIncomeReportPage() {
                                                 </span>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-400/20">
+                                                <Badge className="border-none text-[11px] font-medium bg-[#556043]/15 text-[#556043] dark:bg-[#556043]/25 dark:text-[#9ea98a]">
                                                     {item.ccaActivityName || "N/A"}
-                                                </span>
+                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
