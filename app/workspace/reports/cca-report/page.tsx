@@ -12,6 +12,7 @@ import {
     Activity,
     Search,
     TrendingDown,
+    TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,8 @@ import {
     type CcaIncomeReportResponse,
     getCcaExpenseSummary,
     type CcaExpenseReportResponse,
+    getCcaFinancialSummary,
+    type CcaFinancialSummaryResponse,
 } from "@/lib/services/incomeReports";
 import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
 
@@ -111,19 +114,34 @@ export default function CcaIncomeReportPage() {
 
     const [report, setReport] = useState<CcaIncomeReportResponse | null>(null);
     const [expenseReport, setExpenseReport] = useState<CcaExpenseReportResponse | null>(null);
+    const [financialSummary, setFinancialSummary] = useState<CcaFinancialSummaryResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isFinancialLoading, setIsFinancialLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const isRangeInvalid = fromDate > toDate;
 
-    // Load CCA activities
+    const loadFinancialSummary = async () => {
+        try {
+            setIsFinancialLoading(true);
+            const data = await getCcaFinancialSummary();
+            if (data) setFinancialSummary(data);
+        } catch (err) {
+            console.error("Failed to load CCA financial summary:", err);
+        } finally {
+            setIsFinancialLoading(false);
+        }
+    };
+
+    // Load CCA activities and financial summary on mount
     useEffect(() => {
         getCCAActivities()
             .then((data) => setActivities(data || []))
             .catch(() => {});
+        loadFinancialSummary();
     }, []);
 
-    // Load report
+    // Load report table data
     useEffect(() => {
         if (!fromDate || !toDate || fromDate > toDate) return;
         let cancelled = false;
@@ -173,20 +191,7 @@ export default function CcaIncomeReportPage() {
         };
     }, [fromDate, toDate, activityFilter, activeTab, searchQuery]);
 
-    const summary = report?.summary ?? {
-        totalIncome: 0,
-        chargeCount: 0,
-        activityFiltered: "All Activities",
-    };
-    
     const items = report?.collectedDues ?? [];
-
-    const expenseSummary = {
-        totalExpenses: expenseReport?.totalCcaExpenses ?? 0,
-        expenseCount: expenseReport?.items?.length ?? 0,
-        activityFiltered: activities.find(a => a.id === activityFilter)?.name || "All Activities"
-    };
-
     const expenseItems = expenseReport?.items ?? [];
 
     function handleFromDateSelect(date: Date | undefined) {
@@ -205,7 +210,7 @@ export default function CcaIncomeReportPage() {
 
     return (
         <section className="w-full space-y-4 px-3 py-4 sm:space-y-6 sm:px-6">
-            {/* Header */}
+            {/* Header with Filters */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
@@ -226,36 +231,8 @@ export default function CcaIncomeReportPage() {
                         </div>
                     </div>
 
-                    {/* Tabs Navigation */}
-                    <div className="flex items-center gap-1.5 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800/60 w-fit">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab("income")}
-                            className={cn(
-                                "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
-                                activeTab === "income"
-                                    ? "bg-white text-[#556043] shadow-sm dark:bg-slate-900 dark:text-white"
-                                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                            )}
-                        >
-                            <IndianRupee className="h-4 w-4" /> Income Report
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab("expense")}
-                            className={cn(
-                                "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
-                                activeTab === "expense"
-                                    ? "bg-white text-[#556043] shadow-sm dark:bg-slate-900 dark:text-white"
-                                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                            )}
-                        >
-                            <TrendingDown className="h-4 w-4" /> Expense Report
-                        </button>
-                    </div>
-
                     {/* Filters & Controls */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center mt-4 lg:mt-0">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <Select value={activityFilter} onValueChange={setActivityFilter}>
                             <SelectTrigger className="h-10 w-full sm:w-[200px] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
                                 <SelectValue placeholder="All Activities" />
@@ -340,60 +317,109 @@ export default function CcaIncomeReportPage() {
                             className="h-10 w-10 shrink-0 self-end border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:self-auto"
                             onClick={() => {
                                 setIsLoading(true);
-                                // A trick to force re-fetch without changing states by adding a micro delay or just trusting the refresh logic
+                                loadFinancialSummary();
                                 setTimeout(() => setActivityFilter((prev) => prev), 10);
                             }}
-                            disabled={isLoading || isRangeInvalid}
+                            disabled={isLoading || isFinancialLoading || isRangeInvalid}
+                            title="Refresh Report"
                         >
-                            <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                            <RefreshCcw className={`h-4 w-4 ${isLoading || isFinancialLoading ? "animate-spin" : ""}`} />
                         </Button>
                     </div>
                 </div>
             </div>
 
-            {/* Summary Cards */}
+            {/* Financial Summary Cards */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {/* 1. Total Income Card */}
                 <div className="rounded-2xl border border-slate-200 bg-[#556043] p-4 text-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                        {activeTab === "income" ? <IndianRupee className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                        {activeTab === "income" ? "Total Income" : "Total Expenses"}
+                        <IndianRupee className="h-4 w-4" />
+                        Total Income
                     </div>
                     <p className="mt-2 text-2xl font-bold tracking-tight text-white">
-                        {formatCurrency(activeTab === "income" ? summary.totalIncome : expenseSummary.totalExpenses)}
+                        {isFinancialLoading && !financialSummary ? (
+                            <span className="inline-block h-7 w-28 animate-pulse rounded bg-white/20" />
+                        ) : (
+                            formatCurrency(financialSummary?.totalIncome ?? 0)
+                        )}
                     </p>
                     <p className="mt-1 text-xs text-slate-200">
-                        {activeTab === "income" ? summary.activityFiltered : expenseSummary.activityFiltered}
+                        Overall CCA Collections
                     </p>
                 </div>
 
+                {/* 2. Total Expense Card */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        <Receipt className="h-4 w-4 text-[#556043]" />
-                        {activeTab === "income" ? "Total Collections" : "Expense Count"}
+                        <TrendingDown className="h-4 w-4 text-[#556043]" />
+                        Total Expense
                     </div>
                     <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                        {activeTab === "income" ? summary.chargeCount.toLocaleString() : expenseSummary.expenseCount.toLocaleString()}
+                        {isFinancialLoading && !financialSummary ? (
+                            <span className="inline-block h-7 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                        ) : (
+                            formatCurrency(financialSummary?.totalExpense ?? 0)
+                        )}
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                        {activeTab === "income" ? "Number of charges collected" : "Number of expenses"}
+                        Overall CCA Expenses
                     </p>
                 </div>
 
+                {/* 3. Net Profit Card */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        <Activity className="h-4 w-4 text-[#556043]" />
-                        Filtered Activity
+                        <TrendingUp className="h-4 w-4 text-[#556043]" />
+                        Net Profit
                     </div>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white truncate">
-                        {activeTab === "income" ? summary.activityFiltered : expenseSummary.activityFiltered}
+                    <p className={cn(
+                        "mt-2 text-2xl font-bold tracking-tight",
+                        (financialSummary?.netProfit ?? 0) >= 0 
+                            ? "text-emerald-600 dark:text-emerald-400" 
+                            : "text-rose-600 dark:text-rose-400"
+                    )}>
+                        {isFinancialLoading && !financialSummary ? (
+                            <span className="inline-block h-7 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                        ) : (
+                            formatCurrency(financialSummary?.netProfit ?? 0)
+                        )}
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                        Current selection
+                        Income − Expense
                     </p>
                 </div>
             </div>
 
-            {/* Main Content Area */}
+            {/* Tabs Navigation Switch under the Cards */}
+            <div className="flex items-center gap-1.5 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800/60 w-fit">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("income")}
+                    className={cn(
+                        "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
+                        activeTab === "income"
+                            ? "bg-white text-[#556043] shadow-sm dark:bg-slate-900 dark:text-white"
+                            : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    )}
+                >
+                    <IndianRupee className="h-4 w-4" /> 1. Income Report ({items.length})
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("expense")}
+                    className={cn(
+                        "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
+                        activeTab === "expense"
+                            ? "bg-white text-[#556043] shadow-sm dark:bg-slate-900 dark:text-white"
+                            : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    )}
+                >
+                    <TrendingDown className="h-4 w-4" /> 2. Expense Report ({expenseItems.length})
+                </button>
+            </div>
+
+            {/* Main Content Area / Tables */}
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                 <div className="overflow-x-auto">
                     {activeTab === "income" ? (

@@ -465,3 +465,18 @@ export async function getCcaExpenseSummary(params: {
 
     return payload.data ?? null;
 }
+
+export interface CcaFinancialSummaryResponse {
+    totalIncome: number;
+    totalExpense: number;
+    netProfit: number;
+}
+
+export async function getCcaFinancialSummary(): Promise<CcaFinancialSummaryResponse | null> {
+    const payload = (await apiFetch(
+        `/api/reports/cca/financial`
+    )) as ApiSuccess<CcaFinancialSummaryResponse>;
+
+    return payload.data ?? null;
+}
+
