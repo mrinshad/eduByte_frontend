@@ -413,11 +413,13 @@ export async function getCcaIncomeReport(params: {
     startDate?: string;
     endDate?: string;
     ccaActivityId?: string;
+    search?: string;
 }): Promise<CcaIncomeReportResponse | null> {
     const query = new URLSearchParams();
     if (params.startDate) query.set("startDate", params.startDate);
     if (params.endDate) query.set("endDate", params.endDate);
     if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
+    if (params.search) query.set("search", params.search);
 
     const payload = (await apiFetch(
         `/api/reports/cca/income?${query.toString()}`

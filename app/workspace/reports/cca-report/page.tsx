@@ -138,6 +138,7 @@ export default function CcaIncomeReportPage() {
                         startDate: fromDate,
                         endDate: toDate,
                         ccaActivityId: activityFilter === "all" ? undefined : activityFilter,
+                        search: searchQuery
                     });
                     if (!cancelled) setReport(data);
                 } else {
@@ -269,18 +270,16 @@ export default function CcaIncomeReportPage() {
                             </SelectContent>
                         </Select>
 
-                        {activeTab === "expense" && (
-                            <div className="relative w-full sm:w-[200px]">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input
-                                    type="text"
-                                    placeholder="Search expenses..."
-                                    className="pl-9 h-10 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        )}
+                        <div className="relative w-full sm:w-[200px]">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input
+                                type="text"
+                                placeholder="Search..."
+                                className="pl-9 h-10 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
 
                         <div className="flex flex-1 flex-col gap-2 sm:flex-row">
                             <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
