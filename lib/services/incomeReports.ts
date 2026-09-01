@@ -414,12 +414,16 @@ export async function getCcaIncomeReport(params: {
     endDate?: string;
     ccaActivityId?: string;
     search?: string;
+    page?: number;
+    limit?: number;
 }): Promise<CcaIncomeReportResponse | null> {
     const query = new URLSearchParams();
     if (params.startDate) query.set("startDate", params.startDate);
     if (params.endDate) query.set("endDate", params.endDate);
     if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
     if (params.search) query.set("search", params.search);
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
 
     const payload = (await apiFetch(
         `/api/reports/cca/income?${query.toString()}`
@@ -452,12 +456,16 @@ export async function getCcaExpenseSummary(params: {
     endDate?: string;
     ccaActivityId?: string;
     search?: string;
+    page?: number;
+    limit?: number;
 }): Promise<CcaExpenseReportResponse | null> {
     const query = new URLSearchParams();
     if (params.startDate) query.set("from", params.startDate);
     if (params.endDate) query.set("to", params.endDate);
     if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
     if (params.search) query.set("search", params.search);
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
 
     const payload = (await apiFetch(
         `/api/reports/cca/expense?${query.toString()}`

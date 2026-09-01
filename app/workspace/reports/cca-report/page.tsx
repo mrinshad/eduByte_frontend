@@ -6,6 +6,8 @@ import {
     ArrowLeft,
     ArrowRight,
     Calendar as CalendarIcon,
+    ChevronLeft,
+    ChevronRight,
     IndianRupee,
     Receipt,
     RefreshCcw,
@@ -112,6 +114,9 @@ export default function CcaIncomeReportPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activities, setActivities] = useState<CCAActivity[]>([]);
 
+    const [page, setPage] = useState<number>(1);
+    const [limit, setLimit] = useState<number>(10);
+
     const [report, setReport] = useState<CcaIncomeReportResponse | null>(null);
     const [expenseReport, setExpenseReport] = useState<CcaExpenseReportResponse | null>(null);
     const [financialSummary, setFinancialSummary] = useState<CcaFinancialSummaryResponse | null>(null);
@@ -141,7 +146,7 @@ export default function CcaIncomeReportPage() {
         loadFinancialSummary();
     }, []);
 
-    // Load report table data
+    // Load report table data with pagination
     useEffect(() => {
         if (!fromDate || !toDate || fromDate > toDate) return;
         let cancelled = false;
@@ -156,7 +161,9 @@ export default function CcaIncomeReportPage() {
                         startDate: fromDate,
                         endDate: toDate,
                         ccaActivityId: activityFilter === "all" ? undefined : activityFilter,
-                        search: searchQuery
+                        search: searchQuery,
+                        page,
+                        limit,
                     });
                     if (!cancelled) setReport(data);
                 } else {
@@ -164,7 +171,9 @@ export default function CcaIncomeReportPage() {
                         startDate: fromDate,
                         endDate: toDate,
                         ccaActivityId: activityFilter === "all" ? undefined : activityFilter,
-                        search: searchQuery
+                        search: searchQuery,
+                        page,
+                        limit,
                     });
                     if (!cancelled) setExpenseReport(data);
                 }
@@ -180,7 +189,6 @@ export default function CcaIncomeReportPage() {
             }
         }
 
-        // Add a slight debounce for search
         const timeoutId = setTimeout(() => {
             load();
         }, 300);
@@ -189,15 +197,32 @@ export default function CcaIncomeReportPage() {
             cancelled = true;
             clearTimeout(timeoutId);
         };
-    }, [fromDate, toDate, activityFilter, activeTab, searchQuery]);
+    }, [fromDate, toDate, activityFilter, activeTab, searchQuery, page, limit]);
 
     const items = report?.collectedDues ?? [];
     const expenseItems = expenseReport?.items ?? [];
+    const currentCount = activeTab === "income" ? items.length : expenseItems.length;
+
+    const handleTabChange = (tab: "income" | "expense") => {
+        setActiveTab(tab);
+        setPage(1);
+    };
+
+    const handleActivityChange = (act: string) => {
+        setActivityFilter(act);
+        setPage(1);
+    };
+
+    const handleSearchChange = (query: string) => {
+        setSearchQuery(query);
+        setPage(1);
+    };
 
     function handleFromDateSelect(date: Date | undefined) {
         if (!date) return;
         const newFrom = toISODate(date);
         setFromDate(newFrom);
+        setPage(1);
         if (newFrom > toDate) setToDate(newFrom);
         setFromCalendarOpen(false);
     }
@@ -205,6 +230,7 @@ export default function CcaIncomeReportPage() {
     function handleToDateSelect(date: Date | undefined) {
         if (!date) return;
         setToDate(toISODate(date));
+        setPage(1);
         setToCalendarOpen(false);
     }
 
@@ -233,7 +259,7 @@ export default function CcaIncomeReportPage() {
 
                     {/* Filters & Controls */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <Select value={activityFilter} onValueChange={setActivityFilter}>
+                        <Select value={activityFilter} onValueChange={handleActivityChange}>
                             <SelectTrigger className="h-10 w-full sm:w-[200px] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
                                 <SelectValue placeholder="All Activities" />
                             </SelectTrigger>
@@ -254,7 +280,7 @@ export default function CcaIncomeReportPage() {
                                 placeholder="Search..."
                                 className="pl-9 h-10 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                             />
                         </div>
 
@@ -318,7 +344,7 @@ export default function CcaIncomeReportPage() {
                             onClick={() => {
                                 setIsLoading(true);
                                 loadFinancialSummary();
-                                setTimeout(() => setActivityFilter((prev) => prev), 10);
+                                setPage(1);
                             }}
                             disabled={isLoading || isFinancialLoading || isRangeInvalid}
                             title="Refresh Report"
@@ -395,7 +421,7 @@ export default function CcaIncomeReportPage() {
             <div className="flex items-center gap-1.5 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800/60 w-fit">
                 <button
                     type="button"
-                    onClick={() => setActiveTab("income")}
+                    onClick={() => handleTabChange("income")}
                     className={cn(
                         "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
                         activeTab === "income"
@@ -403,11 +429,11 @@ export default function CcaIncomeReportPage() {
                             : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     )}
                 >
-                    <IndianRupee className="h-4 w-4" /> 1. Income Report ({items.length})
+                    <IndianRupee className="h-4 w-4" /> 1. Income Report
                 </button>
                 <button
                     type="button"
-                    onClick={() => setActiveTab("expense")}
+                    onClick={() => handleTabChange("expense")}
                     className={cn(
                         "flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all",
                         activeTab === "expense"
@@ -415,12 +441,12 @@ export default function CcaIncomeReportPage() {
                             : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     )}
                 >
-                    <TrendingDown className="h-4 w-4" /> 2. Expense Report ({expenseItems.length})
+                    <TrendingDown className="h-4 w-4" /> 2. Expense Report
                 </button>
             </div>
 
             {/* Main Content Area / Tables */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     {activeTab === "income" ? (
                         <Table>
@@ -448,7 +474,7 @@ export default function CcaIncomeReportPage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
+                                    Array.from({ length: limit }).map((_, i) => (
                                         <TableRow key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                             <TableCell className="py-4">
                                                 <div className="mx-auto h-4 w-6 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
@@ -506,7 +532,7 @@ export default function CcaIncomeReportPage() {
                                             className="transition-colors hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-800/50"
                                         >
                                             <TableCell className="text-center text-sm font-medium text-slate-500">
-                                                {index + 1}
+                                                {(page - 1) * limit + index + 1}
                                             </TableCell>
                                             <TableCell className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                                 {formatDateTime(item.datePaid)}
@@ -561,7 +587,7 @@ export default function CcaIncomeReportPage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
+                                    Array.from({ length: limit }).map((_, i) => (
                                         <TableRow key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                             <TableCell className="py-4">
                                                 <div className="mx-auto h-4 w-6 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
@@ -622,7 +648,7 @@ export default function CcaIncomeReportPage() {
                                             className="transition-colors hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-800/50"
                                         >
                                             <TableCell className="text-center text-sm font-medium text-slate-500">
-                                                {index + 1}
+                                                {(page - 1) * limit + index + 1}
                                             </TableCell>
                                             <TableCell className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                                 {formatDateTime(item.expenseDate)}
@@ -659,6 +685,78 @@ export default function CcaIncomeReportPage() {
                             </TableBody>
                         </Table>
                     )}
+                </div>
+
+                {/* Uniform Pagination Footer */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 px-4 sm:px-6 py-3.5 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 order-2 sm:order-1">
+                        {currentCount === 0 ? (
+                            "No entries to show"
+                        ) : (
+                            <>
+                                Showing{" "}
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {(page - 1) * limit + 1}
+                                </span>{" "}
+                                to{" "}
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {(page - 1) * limit + currentCount}
+                                </span>
+                            </>
+                        )}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 order-1 sm:order-2 w-full sm:w-auto justify-end">
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span>Rows per page:</span>
+                            <Select
+                                value={String(limit)}
+                                onValueChange={(val) => {
+                                    setLimit(Number(val));
+                                    setPage(1);
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-[70px] rounded-lg bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[10, 25, 50].map((opt) => (
+                                        <SelectItem key={opt} value={String(opt)} className="text-xs">
+                                            {opt}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2.5 text-xs font-medium border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+                                disabled={page <= 1 || isLoading}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                                Prev
+                            </Button>
+
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-200 px-2">
+                                Page {page}
+                            </span>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2.5 text-xs font-medium border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+                                disabled={currentCount < limit || isLoading}
+                                onClick={() => setPage((p) => p + 1)}
+                            >
+                                Next
+                                <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
