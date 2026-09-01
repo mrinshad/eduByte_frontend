@@ -1168,7 +1168,7 @@ export default function Page() {
                                         aria-expanded={vehiclePopoverOpen}
                                         className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
                                     >
-                                        {selectedVehicle ? `${selectedVehicle.vehicleName} (${selectedVehicle.vehicleNumber})` : "Click to view transport fleet..."}
+                                        {selectedVehicle ? selectedVehicle.vehicleName : "Click to view transport fleet..."}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
@@ -1188,7 +1188,7 @@ export default function Page() {
                                                         {vehiclesDropdown.map((vehicle) => (
                                                             <CommandItem
                                                                 key={vehicle.id}
-                                                                value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
+                                                                value={vehicle.vehicleName}
                                                                 onSelect={() => {
                                                                     setSelectedVehicle(vehicle);
                                                                     setVehiclePopoverOpen(false);
@@ -1196,10 +1196,7 @@ export default function Page() {
                                                                 className="py-3 cursor-pointer"
                                                             >
                                                                 <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicle?.id === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
-                                                                    <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
-                                                                </div>
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>

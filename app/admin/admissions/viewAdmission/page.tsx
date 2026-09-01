@@ -352,14 +352,7 @@ export default function ViewAdmissionPage() {
                 Vehicle
               </div>
               <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                {enrollment.vehicleName ? (
-                  <>
-                    {enrollment.vehicleName}
-                    <span className="ml-1.5 text-xs text-slate-600 dark:text-slate-400">
-                      ({enrollment.vehicleNumber})
-                    </span>
-                  </>
-                ) : (
+                {enrollment.vehicleName || (
                   <span className="text-slate-600 dark:text-slate-400">No Vehicle Assigned</span>
                 )}
               </div>

@@ -457,7 +457,7 @@ export default function StudentAdmissionListPage() {
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {student.vehicleName ? `${student.vehicleName}${student.vehicleNumber ? ` (${student.vehicleNumber})` : ""}` : "-"}
+                      {student.vehicleName || "-"}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
