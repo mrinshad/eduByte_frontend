@@ -37,6 +37,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
+  { slug: "fee-structures/bulk-assign", label: "Bulk Assign Fees", area: "admin", purpose: "Bulk assign fee structures to students", group: "Fee Configuration" },
   { slug: "cca", label: "Co-Curricular (CCA)", area: "admin", purpose: "Manage CCA activities and student allocations", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
 
@@ -151,6 +152,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "promotion": "students.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
+    "fee-structures/bulk-assign": "feestructures.listOnNavbar",
     "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",

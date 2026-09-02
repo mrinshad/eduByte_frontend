@@ -197,15 +197,25 @@ export default function Page() {
                 </p>
               </div>
             </div>
-            <PermissionGate permission="feestructures.createFeeStructureButton">
-            <Button
-              className="w-full bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto"
-              onClick={() => router.push("/admin/fee-structures/createFee")}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Fee Structure
-            </Button>
-            </PermissionGate>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:w-auto"
+                onClick={() => router.push("/admin/fee-structures/bulk-assign")}
+              >
+                <Receipt className="mr-2 h-4 w-4 text-slate-500" />
+                Bulk Assign Fees
+              </Button>
+              <PermissionGate permission="feestructures.createFeeStructureButton">
+                <Button
+                  className="w-full bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto"
+                  onClick={() => router.push("/admin/fee-structures/createFee")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Fee Structure
+                </Button>
+              </PermissionGate>
+            </div>
           </div>
 
           {/* Search + filters row */}
