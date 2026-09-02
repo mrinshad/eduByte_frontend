@@ -169,7 +169,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     // B. Receipts (Income)
     "reports/admissions-master": "admissionsreport.listOnNavbar",
     "reports/cca-report": "ccareport.listOnNavbar",
-    "reports/cca-activity-profit": "ccareport.listOnNavbar",
+    "reports/cca-activity-profit": "ccaactivityprofit.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
     "reports/fee-defaulters": "feedefaulters.listOnNavbar",
     "reports/fines-register": "finesregister.listOnNavbar",
@@ -366,6 +366,8 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
     "dailyfeecollection",
     "feecollectionreport",
     "expensecategorywise",
+    "ccareport",
+    "ccaactivityprofit",
   ]
 
   if (workspaceDomains.some((d) => lower.startsWith(d))) {
