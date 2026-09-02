@@ -260,7 +260,7 @@ export default function Page() {
                         Username
                       </label>
                       <div className="relative flex items-center">
-                        <span className="pointer-events-none absolute left-3.5 text-white/40">
+                        <span className="pointer-events-none absolute left-3.5 text-slate-700 dark:text-white/40">
                           <User className="h-4 w-4" />
                         </span>
                         <input
@@ -280,7 +280,7 @@ export default function Page() {
                         Password
                       </label>
                       <div className="relative flex items-center">
-                        <span className="pointer-events-none absolute left-3.5 text-white/40">
+                        <span className="pointer-events-none absolute left-3.5 text-slate-700 dark:text-white/40">
                           <Lock className="h-4 w-4" />
                         </span>
                         <input
@@ -295,7 +295,7 @@ export default function Page() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 text-white/50 hover:text-white focus:outline-none transition-colors p-1"
+                          className="absolute right-3.5 text-slate-700 dark:text-white/40 hover:text-white focus:outline-none transition-colors p-1"
                           aria-label={showPassword ? "Hide password" : "Show password"}
                         >
                           {showPassword ? (
