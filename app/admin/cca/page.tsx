@@ -28,6 +28,7 @@ import {
   Award,
   CalendarDays,
   FileSpreadsheet,
+  TrendingUp,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -918,6 +919,15 @@ export default function CCAManagementPage() {
                         </TableCell>
                         <TableCell className="pr-6 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => router.push(`/workspace/reports/cca-activity-profit?activityId=${act.id}`)}
+                              className="h-8 w-8 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-[#9ea98a] dark:hover:bg-[#556043]/20"
+                              title="View Activity Profit Report"
+                            >
+                              <TrendingUp className="h-3.5 w-3.5" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

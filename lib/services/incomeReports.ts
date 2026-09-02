@@ -488,3 +488,24 @@ export async function getCcaFinancialSummary(): Promise<CcaFinancialSummaryRespo
     return payload.data ?? null;
 }
 
+export interface ActivityProfitReportResponse {
+    activityId: string;
+    activityName: string;
+    activityCode: string | null;
+    financials: {
+        totalIncome: number;
+        totalExpense: number;
+        netProfit: number;
+    };
+}
+
+export async function getActivityProfitReport(
+    activityId: string
+): Promise<ActivityProfitReportResponse | null> {
+    const payload = (await apiFetch(
+        `/api/reports/cca/${activityId}/profit`
+    )) as ApiSuccess<ActivityProfitReportResponse>;
+
+    return payload.data ?? null;
+}
+

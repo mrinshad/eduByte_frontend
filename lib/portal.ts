@@ -85,6 +85,7 @@ export const portalSections: PortalSection[] = [
   // B. Receipts (Income)
   { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/cca-report", label: "CCA Report", area: "workspace", purpose: "Financial P&L and student roster for Co-Curricular activities", group: "Report", subgroup: "Receipts (Income)" },
+  { slug: "reports/cca-activity-profit", label: "CCA Activity Profit & Loss", area: "workspace", purpose: "Individual activity profitability with separate income and expense breakdown", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/fee-defaulters", label: "Fee Defaulters & Aging", area: "workspace", purpose: "Unpaid dues segmented into aging brackets with parent contacts", group: "Report", subgroup: "Receipts (Income)" },
   { slug: "reports/fines-register", label: "Fines & Penalties Register", area: "workspace", purpose: "Categorical audit of levied, collected, and waived fines", group: "Report", subgroup: "Receipts (Income)" },
@@ -168,6 +169,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     // B. Receipts (Income)
     "reports/admissions-master": "admissionsreport.listOnNavbar",
     "reports/cca-report": "ccareport.listOnNavbar",
+    "reports/cca-activity-profit": "ccareport.listOnNavbar",
     "reports/daily-receipts": "dailyreceipts.listOnNavbar",
     "reports/fee-defaulters": "feedefaulters.listOnNavbar",
     "reports/fines-register": "finesregister.listOnNavbar",
