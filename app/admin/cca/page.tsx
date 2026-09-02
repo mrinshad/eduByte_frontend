@@ -1375,17 +1375,17 @@ export default function CCAManagementPage() {
         <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-2xl">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Users className="h-5 w-5 text-[#556043]" /> Assign Student to CCA Activities
+              <Users className="h-5 w-5 text-slate-200" /> Assign Student to CCA Activities
             </DialogTitle>
             <DialogDescription className="text-xs">
               Select an active student, choose one or multiple CCA activities, set the billing start date, optional end date, and discount amount.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
+          <div className="space-y-5 py-2 text-xs flex-1 overflow-y-auto pr-2">
             {/* Student Search & Select */}
-            <div className="space-y-1.5">
-              <label className="font-semibold text-slate-900 dark:text-white">
+            <div>
+              <label className="block mb-2.5 font-semibold text-white">
                 Select Active Student <span className="text-red-500">*</span>
               </label>
               <Popover open={studentPopoverOpen} onOpenChange={setStudentPopoverOpen}>
@@ -1443,11 +1443,11 @@ export default function CCAManagementPage() {
             </div>
 
             {/* Activities Checkboxes */}
-            <div className="space-y-2">
-              <label className="font-semibold text-slate-900 dark:text-white text-xs">
+            <div>
+              <label className="block mb-2.5 font-semibold text-white text-xs">
                 Choose CCA Activities <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-44 overflow-y-auto pr-1">
                 {activities.map((act) => {
                   const isChecked = selectedAssignConfigs.some((c) => c.activityId === act.id);
                   return (
@@ -1725,11 +1725,11 @@ export default function CCAManagementPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
+          <div className="space-y-5 py-2 text-xs flex-1 overflow-y-auto pr-2">
             {/* Row 1: CCA Activity & Class */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label className="font-semibold dark:text-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2.5 font-semibold text-white">
                   Target CCA Activity <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -1754,8 +1754,8 @@ export default function CCAManagementPage() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-900 dark:text-white">
+              <div>
+                <label className="block mb-2.5 font-semibold text-white">
                   Target Class <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -1781,9 +1781,9 @@ export default function CCAManagementPage() {
             </div>
 
             {/* Row 2: Division & Start Date & Discount */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-900 dark:text-white">Division</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block mb-2.5 font-semibold text-white">Division</label>
                 <Select
                   value={bulkDivision}
                   onValueChange={(val) => {
@@ -1805,8 +1805,8 @@ export default function CCAManagementPage() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-900 dark:text-white">
+              <div>
+                <label className="block mb-2.5 font-semibold text-white">
                   Start Date <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -1817,8 +1817,8 @@ export default function CCAManagementPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-900 dark:text-white">Discount per Student (₹)</label>
+              <div>
+                <label className="block mb-2.5 font-semibold text-white">Discount per Student (₹)</label>
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">₹</span>
                   <Input
@@ -1834,9 +1834,9 @@ export default function CCAManagementPage() {
             </div>
 
             {/* Student Checklist Table */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2.5 pt-2">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <label className="font-semibold text-white flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-slate-500" />
                   Students in Class ({bulkClassStudents.length})
                 </label>
