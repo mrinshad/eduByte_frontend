@@ -65,9 +65,9 @@ import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
 const SAGE = "#6D755F";
 
 const fieldClass = `
-  h-11 rounded-lg border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400
+  h-11 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
-  dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
+  dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 transition-all
 `;
 
 const fieldErrorClass = "!border-red-400 dark:!border-red-500/60 focus:!ring-red-400";
@@ -635,7 +635,7 @@ export default function Page() {
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                 <Command>
                                     <CommandInput placeholder="Search staff..." />
                                     <CommandList>
@@ -742,7 +742,7 @@ export default function Page() {
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                 <Command>
                                     <CommandInput placeholder="Filter categories..." />
                                     <CommandList>
@@ -793,7 +793,7 @@ export default function Page() {
                                         fieldErrors.subCategory && fieldErrorClass
                                     )}
                                 >
-                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                    <span className="flex items-center gap-2 truncate text-slate-900 dark:text-slate-100">
                                         <Layers3 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                                         <span className="truncate">
                                             {selectedSubCategory ? selectedSubCategory.name : selectedCategoryId ? "Choose sub category" : "Pick a category first"}
@@ -802,7 +802,7 @@ export default function Page() {
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                 <Command>
                                     <CommandInput placeholder="Filter sub categories..." />
                                     <CommandList>
@@ -870,14 +870,14 @@ export default function Page() {
                                     aria-expanded={vehiclePopoverOpen}
                                     className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
                                 >
-                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                    <span className="flex items-center gap-2 truncate text-slate-900 dark:text-slate-100">
                                         <Bus className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                                         <span className="truncate">{selectedVehicle ? selectedVehicle.vehicleName : "Not linked"}</span>
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                 <Command>
                                     <CommandInput placeholder="Search vehicles..." />
                                     <CommandList>
@@ -912,7 +912,7 @@ export default function Page() {
                                                         >
                                                             <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", toId(vehicle.id) === selectedVehicleId ? "opacity-100" : "opacity-0")} />
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                                 <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
                                                             </div>
                                                         </CommandItem>
@@ -936,7 +936,7 @@ export default function Page() {
                                     aria-expanded={ccaPopoverOpen}
                                     className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
                                 >
-                                    <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
+                                    <span className="flex items-center gap-2 truncate text-slate-900 dark:text-slate-100">
                                         <Activity className="h-3.5 w-3.5 shrink-0 text-[#6D755F]" />
                                         <span className="truncate">
                                             {selectedCCAActivityId 
@@ -947,7 +947,7 @@ export default function Page() {
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                 <Command>
                                     <CommandInput placeholder="Search CCA activity..." />
                                     <CommandList>
@@ -976,7 +976,7 @@ export default function Page() {
                                                 >
                                                     <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === toId(act.id) ? "opacity-100" : "opacity-0")} />
                                                     <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{act.name}</span>
+                                                        <span className="font-medium text-slate-200 dark:text-slate-100">{act.name}</span>
                                                         <span className="text-[11px] text-slate-400">Default: ₹{act.defaultFee}/mo</span>
                                                     </div>
                                                 </CommandItem>
@@ -987,7 +987,6 @@ export default function Page() {
                             </PopoverContent>
                         </Popover>
                     </div>
-
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -1056,7 +1055,7 @@ export default function Page() {
                                                         role="combobox"
                                                         aria-expanded={openPaymentRowId === row.id}
                                                         className={cn(
-                                                            "h-10 flex-1 justify-between font-normal text-left px-3 border-slate-200 bg-white dark:bg-slate-950",
+                                                            "h-10 flex-1 justify-between font-normal text-left px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100",
                                                             fieldClass,
                                                             rowError && fieldErrorClass
                                                         )}
@@ -1065,7 +1064,7 @@ export default function Page() {
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                                     <Command>
                                                         <CommandInput placeholder="Filter accounts..." />
                                                         <CommandList>

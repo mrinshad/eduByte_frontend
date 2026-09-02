@@ -181,9 +181,9 @@ const InfoItem = ({ label, value, className }: { label: string; value?: string |
 );
 
 const fieldClass = `
-  h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+  h-12 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
-  dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
+  dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 transition-all
 `;
 
 // Applied on top of fieldClass when that field currently has a validation error
@@ -931,7 +931,7 @@ export default function Page() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Filter student records..." />
                                         <CommandList>
@@ -957,7 +957,7 @@ export default function Page() {
                                                             >
                                                                 <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStudentId === student.id ? "opacity-100" : "opacity-0")} />
                                                                 <div className="flex flex-col">
-                                                                    <span className="font-medium text-slate-900 dark:text-slate-100">{student.studentName}</span>
+                                                                    <span className="font-medium text-slate-200 dark:text-slate-100">{student.studentName}</span>
                                                                     <span className="text-xs text-slate-400">Admission No: {student.admissionNumber}</span>
                                                                 </div>
                                                             </CommandItem>
@@ -1043,7 +1043,7 @@ export default function Page() {
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                         <Command>
                                             <CommandInput placeholder="Filter classes..." />
                                             <CommandList>
@@ -1102,7 +1102,7 @@ export default function Page() {
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                         <Command>
                                             <CommandInput placeholder="Filter sections..." />
                                             <CommandList>
@@ -1172,7 +1172,7 @@ export default function Page() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Search vehicles..." />
                                         <CommandList>
@@ -1196,7 +1196,7 @@ export default function Page() {
                                                                 className="py-3 cursor-pointer"
                                                             >
                                                                 <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicle?.id === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -1261,7 +1261,7 @@ export default function Page() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Search fee templates..." />
                                         <CommandList>

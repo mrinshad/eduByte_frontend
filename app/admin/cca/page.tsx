@@ -1413,7 +1413,7 @@ export default function CCAManagementPage() {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                   <Command>
                     <CommandInput placeholder="Search student name or admission #..." className="text-xs" />
                     <CommandList>
@@ -1431,12 +1431,12 @@ export default function CCAManagementPage() {
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4 text-[#556043]",
+                                "mr-2 h-4 w-4 text-[#6D755F]",
                                 selectedStudentAdmissionId === adm.id ? "opacity-100" : "opacity-0"
                               )}
                             />
                             <div className="flex flex-col">
-                              <span className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                              <span className="font-medium text-xs text-slate-200 dark:text-slate-100">
                                 {adm.studentName}
                               </span>
                               <span className="text-[11px] text-slate-400 font-mono">
