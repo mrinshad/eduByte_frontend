@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Loader2, FileWarning } from "lucide-react";
 
 import FeeCollectionVoucher from "@/components/print/FeeCollectionVoucher";
@@ -14,6 +14,8 @@ const SAGE = "#6D755F";
 
 export default function Page() {
     const { id } = useParams();
+    const searchParams = useSearchParams();
+    const ccaPaymentId = searchParams.get("ccaPaymentId") || undefined;
 
     const [transaction, setTransaction] =
         useState<FeeCollectionPrintResponse | null>(null);
@@ -23,7 +25,7 @@ export default function Page() {
     useEffect(() => {
         const loadTransaction = async () => {
             try {
-                const data = await getFeeCollectionPrint(id as string);
+                const data = await getFeeCollectionPrint(id as string, ccaPaymentId);
                 setTransaction(data);
             } finally {
                 setLoading(false);
@@ -31,7 +33,7 @@ export default function Page() {
         };
 
         loadTransaction();
-    }, [id]);
+    }, [id, ccaPaymentId]);
 
     if (loading) {
         return (

@@ -74,6 +74,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
 
     const charges = transaction.items.filter((i) => i.type === "CHARGE");
     const fines = transaction.items.filter((i) => i.type === "FINE");
+    const ccaItems = transaction.items.filter((i) => i.type === "CCA");
 
     return (
         <div className="min-h-screen bg-slate-100/60 pb-12 print:pb-0 print:bg-white dark:bg-slate-950">
@@ -241,6 +242,24 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                                                 )}
                                             </td>
                                             <td className="border border-black p-2">—</td>
+                                            <td className="border border-black p-2 text-right font-medium">
+                                                {formatCurrency(item.amount)}
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {/* Map through CCA Activities */}
+                                    {ccaItems.length > 0 && ccaItems.map((item, idx) => (
+                                        <tr key={`cca-${idx}`}>
+                                            <td className="border border-black p-2">
+                                                <span className="font-semibold">{item.name}</span>
+                                                {item.description && (
+                                                    <span className="block text-[11px] text-slate-600 mt-0.5 font-normal">
+                                                        {item.description}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="border border-black p-2">{formatPeriod(item.period)}</td>
                                             <td className="border border-black p-2 text-right font-medium">
                                                 {formatCurrency(item.amount)}
                                             </td>

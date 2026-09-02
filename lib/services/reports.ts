@@ -361,6 +361,7 @@ export interface ExpenseDetail {
   subCategory: string | null; // this is the sub-category ID, not a display name
   vehicle: string | null; // this is the vehicle ID, not a display name
   staff: string | null; // this is the staff ID, not a display name
+  ccaActivity?: string | null; // this is the ccaActivity ID, not a display name
   payments: { accountId: string; amount: number }[];
 }
 
@@ -378,6 +379,7 @@ export async function updateExpenseSummary(
     subCategoryId: string;
     vehicleId?: string | null;
     staffId?: string | null;
+    ccaActivityId?: string | null;
     notes?: string;
     amount: number;
     expenseDate: string;

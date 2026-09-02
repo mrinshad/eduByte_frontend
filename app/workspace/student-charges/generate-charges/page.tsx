@@ -20,6 +20,7 @@ import {
   Clock,
   Check,
   Zap,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +42,12 @@ import {
   generateFeeCharges,
   generateCatchUpFeeCharges,
 } from "@/lib/services/studentCharges";
+import {
+  type CCAChargePreviewData,
+  type CCAChargeGenerateResult,
+  previewCcaCharges,
+  generateCcaCharges,
+} from "@/lib/services/cca";
 
 function formatCurrency(value?: number | null) {
   const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
@@ -73,6 +80,12 @@ export default function FeeGenerationPage() {
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+
+  // CCA Generation State
+  const [ccaPreview, setCcaPreview] = useState<CCAChargePreviewData | null>(null);
+  const [isLoadingCcaPreview, setIsLoadingCcaPreview] = useState(false);
+  const [isGeneratingCca, setIsGeneratingCca] = useState(false);
+  const [ccaConfirmOpen, setCcaConfirmOpen] = useState(false);
 
   const generateLockRef = useRef(false);
 
@@ -188,6 +201,18 @@ export default function FeeGenerationPage() {
     setPreview(payload);
   }
 
+  async function loadCcaPreview(academicYearId: string) {
+    try {
+      setIsLoadingCcaPreview(true);
+      const data = await previewCcaCharges(academicYearId);
+      setCcaPreview(data);
+    } catch {
+      setCcaPreview(null);
+    } finally {
+      setIsLoadingCcaPreview(false);
+    }
+  }
+
   async function initializePage() {
     try {
       setIsLoadingPreview(true);
@@ -209,6 +234,7 @@ export default function FeeGenerationPage() {
 
       setActiveAcademicYearId(resolvedAcademicYearId);
       await loadPreviewForAcademicYear(resolvedAcademicYearId);
+      await loadCcaPreview(resolvedAcademicYearId);
     } catch (error) {
       const message = getErrorMessage(error);
       setLoadError(message);
@@ -229,6 +255,7 @@ export default function FeeGenerationPage() {
       setIsLoadingPreview(true);
       setLoadError(null);
       await loadPreviewForAcademicYear(activeAcademicYearId);
+      await loadCcaPreview(activeAcademicYearId);
     } catch (error) {
       const message = getErrorMessage(error);
       setLoadError(message);
@@ -314,6 +341,23 @@ export default function FeeGenerationPage() {
     }
 
     setConfirmOpen(true);
+  }
+
+  async function handleGenerateCcaCharges() {
+    if (!activeAcademicYearId) return;
+    setIsGeneratingCca(true);
+    try {
+      const result = await generateCcaCharges(activeAcademicYearId);
+      if (result) {
+        toast.success(`Generated ${result.chargesGenerated} CCA charge(s) successfully!`);
+      }
+      setCcaConfirmOpen(false);
+      await loadCcaPreview(activeAcademicYearId);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsGeneratingCca(false);
+    }
   }
 
   return (
@@ -723,6 +767,125 @@ export default function FeeGenerationPage() {
             )}
           </div>
 
+          {/* ── 3. CCA FEE GENERATION SECTION ── */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    CCA Fee Generation
+                  </h2>
+                  {ccaPreview && ccaPreview.lastGeneratedAcademicMonth > 0 && (
+                    <Badge variant="outline" className="text-[10px] font-semibold bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
+                      Billed Through Month {ccaPreview.lastGeneratedAcademicMonth}
+                      {ccaPreview.generatedMonths?.length ? ` (${ccaPreview.generatedMonths[ccaPreview.generatedMonths.length - 1]})` : ""}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Co-curricular activity fees are synchronized with the academic timeline with duplicate protection per month.
+                </p>
+              </div>
+
+              {ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => setCcaConfirmOpen(true)}
+                  disabled={isGeneratingCca || isLoadingCcaPreview}
+                  className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:text-white dark:hover:bg-violet-400 text-xs font-semibold h-9 shadow-sm"
+                >
+                  {isGeneratingCca ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trophy className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Generate CCA Fees ({ccaPreview.summary.chargesToGenerate})
+                </Button>
+              )}
+            </div>
+
+            {isLoadingCcaPreview ? (
+              <div className="flex items-center justify-center py-6 gap-2 text-slate-500">
+                <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
+                <span className="text-xs font-medium">Loading CCA preview...</span>
+              </div>
+            ) : ccaPreview?.message ? (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
+                <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <p className="text-xs font-medium">{ccaPreview.message}</p>
+                </div>
+              </div>
+            ) : ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 ? (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-slate-300">
+                  <span>
+                    Found <strong className="text-violet-700 dark:text-violet-300">{ccaPreview.summary.chargesToGenerate}</strong> pending charge(s) for newly assigned students across generated months.
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Existing charges are safely skipped.
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-violet-50/80 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/30">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                          CCA Activity
+                        </th>
+                        <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                          Charges to Generate
+                        </th>
+                        <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                          Estimated Total (₹)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      {Object.entries(ccaPreview.byActivity).map(([name, count]) => (
+                        <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                          <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                            {name}
+                          </td>
+                          <td className="px-4 py-2.5 text-center text-slate-700 dark:text-slate-300 font-semibold">
+                            {count}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
+                            {formatCurrency(ccaPreview.financialByActivity[name] ?? 0)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-violet-50/60 dark:bg-violet-950/20">
+                        <td className="px-4 py-2.5 font-bold text-slate-900 dark:text-slate-100">Total</td>
+                        <td className="px-4 py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
+                          {ccaPreview.summary.chargesToGenerate}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-bold text-violet-700 dark:text-violet-300">
+                          {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
+                <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    CCA Fees Are Up to Date
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {ccaPreview?.activeAssignmentCount === 0
+                      ? "No active CCA assignments found."
+                      : `All CCA charges have been generated through Month ${ccaPreview?.lastGeneratedAcademicMonth ?? 0}.`}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* ── Collapsible How Fee Generation Works Instructions ── */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
             <div
@@ -823,6 +986,70 @@ export default function FeeGenerationPage() {
                 "Confirm & Advance Month"
               ) : (
                 "Confirm & Run Generation"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CCA Generation Confirmation Modal */}
+      <Dialog open={ccaConfirmOpen} onOpenChange={setCcaConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">
+              Confirm CCA Fee Generation
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              This will generate CCA charges for all active CCA students up to the last generated academic month.
+            </DialogDescription>
+          </DialogHeader>
+
+          {ccaPreview && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2 dark:border-slate-800 dark:bg-slate-900/60 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Active CCA Assignments:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{ccaPreview.activeAssignmentCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Charges to Create:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{ccaPreview.summary.chargesToGenerate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Already Generated (Skipped):</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{ccaPreview.summary.alreadyGenerated}</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Total Estimated:</span>
+                <span className="font-bold text-violet-600 dark:text-violet-400 text-sm">
+                  {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCcaConfirmOpen(false)}
+              disabled={isGeneratingCca}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleGenerateCcaCharges}
+              disabled={isGeneratingCca}
+              className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:text-white dark:hover:bg-violet-400 text-xs font-semibold"
+            >
+              {isGeneratingCca ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Confirm & Generate CCA Fees"
               )}
             </Button>
           </DialogFooter>

@@ -13,6 +13,7 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -295,6 +296,10 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Gender" value={student.gender} />
             <InfoItem label="Date of birth" value={formatDob(student.dob)} />
             <InfoItem label="Blood group" value={student.bloodGroup} />
+            <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+            <InfoItem label="Religion" value={student.religion || "—"} />
+            <InfoItem label="Community" value={student.community || "—"} />
+            <InfoItem label="Category" value={student.category || "—"} />
             <InfoItem
               label="Status"
               value={
@@ -347,14 +352,7 @@ export default function ViewAdmissionPage() {
                 Vehicle
               </div>
               <div className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                {enrollment.vehicleName ? (
-                  <>
-                    {enrollment.vehicleName}
-                    <span className="ml-1.5 text-xs text-slate-600 dark:text-slate-400">
-                      ({enrollment.vehicleNumber})
-                    </span>
-                  </>
-                ) : (
+                {enrollment.vehicleName || (
                   <span className="text-slate-600 dark:text-slate-400">No Vehicle Assigned</span>
                 )}
               </div>
@@ -421,6 +419,102 @@ export default function ViewAdmissionPage() {
               ))}
             </TableBody>
           </Table>
+        </InfoSection>
+
+        {/* Co-Curricular Activities (CCA) Section */}
+        <InfoSection icon={Trophy} title="Co-Curricular Activities (CCA)">
+          {enrollment.ccaAssignments && enrollment.ccaAssignments.length > 0 ? (
+            <Table className="table-fixed w-full">
+              <TableHeader>
+                <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50 dark:hover:bg-slate-950/50">
+                  <TableHead className="h-10 w-12 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Sl. No.
+                  </TableHead>
+                  <TableHead className="h-10 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Activity Name
+                  </TableHead>
+                  <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Duration
+                  </TableHead>
+                  <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Status
+                  </TableHead>
+                  <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Fee Amount
+                  </TableHead>
+                  <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Discount
+                  </TableHead>
+                  <TableHead className="h-10 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Net Monthly
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {enrollment.ccaAssignments.map((cca, index) => (
+                  <TableRow key={cca.id} className="border-slate-100 dark:border-slate-800/50">
+                    <TableCell className="pl-4 text-sm text-slate-500 dark:text-slate-400">
+                      {index + 1}
+                    </TableCell>
+
+                    <TableCell className="pl-4 text-sm font-medium text-slate-950 dark:text-slate-100">
+                      <div className="flex flex-col">
+                        <span>{cca.activityName}</span>
+                        {cca.activityCode && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                            {cca.activityCode}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                      <div className="flex flex-col text-xs">
+                        <span>From: {formatDateOnly(cca.startDate)}</span>
+                        {cca.endDate && (
+                          <span className="text-slate-500 dark:text-slate-400">
+                            To: {formatDateOnly(cca.endDate)}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          cca.status === "ACTIVE"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                            : cca.status === "DROPPED"
+                            ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+                            : "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                        }
+                      >
+                        {cca.status}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-right text-sm text-slate-600 dark:text-slate-300">
+                      ₹{cca.feeAmount.toLocaleString()}
+                    </TableCell>
+
+                    <TableCell className="text-right text-sm text-amber-600 dark:text-amber-400">
+                      {cca.discountAmount > 0 ? `−₹${cca.discountAmount.toLocaleString()}` : "—"}
+                    </TableCell>
+
+                    <TableCell className="pr-4 text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
+                      ₹{cca.finalAmount.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="px-5 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+              No co-curricular activities assigned to this student.
+            </div>
+          )}
         </InfoSection>
       </div>
 

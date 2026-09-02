@@ -198,6 +198,14 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                                         </span>
                                     </div>
                                 )}
+                                {expense.ccaActivity && (
+                                    <div className="grid grid-cols-[110px_1fr]">
+                                        <span className="font-bold">CCA Activity</span>
+                                        <span>
+                                            : {expense.ccaActivity.name} {expense.ccaActivity.code ? `(${expense.ccaActivity.code})` : ""}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Accounts Table */}

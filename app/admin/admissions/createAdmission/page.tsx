@@ -16,7 +16,9 @@ import {
     Loader2,
     Layers,
     GitBranch,
-    Binary
+    Binary,
+    Activity,
+    Plus
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getCCAActivities, assignStudentToCCAActivities, type CCAActivity } from "@/lib/services/cca";
 
 import { useSearchParams } from "next/navigation";
 
@@ -112,6 +115,17 @@ interface EditableFeeItem {
     amount: number | "";
     dueDay: number | "";
     description: string;
+    generationStartAcademicMonth?: number;
+}
+
+export interface SelectedCCAItemConfig {
+    activityId: string;
+    name: string;
+    fee: number;
+    frequency: string;
+    startDate: string;
+    endDate: string;
+    discountAmount: number | "";
 }
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
@@ -167,9 +181,9 @@ const InfoItem = ({ label, value, className }: { label: string; value?: string |
 );
 
 const fieldClass = `
-  h-12 rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+  h-12 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
   focus:ring-2 focus:ring-[#6D755F] focus:border-transparent
-  dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 transition-all
+  dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 transition-all
 `;
 
 // Applied on top of fieldClass when that field currently has a validation error
@@ -200,6 +214,8 @@ export default function Page() {
     const [selectedFeeStructureId, setSelectedFeeStructureId] = useState<string>("");
     const [fullFeeStructureData, setFullFeeStructureData] = useState<FeeStructureView | null>(null);
     const [editableFeeItems, setEditableFeeItems] = useState<EditableFeeItem[]>([]);
+    const [ccaActivities, setCcaActivities] = useState<CCAActivity[]>([]);
+    const [selectedCCAConfigs, setSelectedCCAConfigs] = useState<SelectedCCAItemConfig[]>([]);
 
     const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
     const [classPopoverOpen, setClassPopoverOpen] = useState(false);
@@ -210,6 +226,8 @@ export default function Page() {
     const [chargeTypesList, setChargeTypesList] = useState<ChargeTypes[]>([]);
     const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
     const [selectedNewChargeTypeIds, setSelectedNewChargeTypeIds] = useState<string[]>([]);
+    const [isAddCCADialogOpen, setIsAddCCADialogOpen] = useState(false);
+    const [selectedNewCCAIds, setSelectedNewCCAIds] = useState<string[]>([]);
     const [isClearFieldsDialogOpen, setIsClearFieldsDialogOpen] = useState(false);
     const [loadingChargeTypes, setLoadingChargeTypes] = useState(false);
 
@@ -333,6 +351,67 @@ export default function Page() {
         setEditableFeeItems([]);
         setFieldErrors((prev) => ({ ...prev, class: undefined }));
     };
+
+    useEffect(() => {
+        getCCAActivities()
+            .then(setCcaActivities)
+            .catch((err) => console.error("Failed to load CCA activities:", err));
+    }, []);
+
+    const handleOpenAddCCADialog = () => {
+        setSelectedNewCCAIds(selectedCCAConfigs.map((c) => c.activityId));
+        setIsAddCCADialogOpen(true);
+    };
+
+    const handleConfirmAddCCA = () => {
+        setSelectedCCAConfigs((prev) => {
+            const kept = prev.filter((item) => selectedNewCCAIds.includes(item.activityId));
+            const newIds = selectedNewCCAIds.filter((id) => !prev.some((item) => item.activityId === id));
+            const newlyAdded: SelectedCCAItemConfig[] = newIds.map((id) => {
+                const act = ccaActivities.find((a) => a.id === id);
+                return {
+                    activityId: id,
+                    name: act?.name || "Activity",
+                    fee: act?.defaultFee || Number(act?.feeAmount) || 0,
+                    frequency: act?.frequency || "MONTHLY",
+                    startDate: new Date().toISOString().split("T")[0],
+                    endDate: "",
+                    discountAmount: "",
+                };
+            });
+            return [...kept, ...newlyAdded];
+        });
+        setIsAddCCADialogOpen(false);
+    };
+
+    const handleUpdateCCAItem = (
+        activityId: string,
+        field: "startDate" | "endDate" | "discountAmount",
+        value: any
+    ) => {
+        setSelectedCCAConfigs((prev) =>
+            prev.map((item) => (item.activityId === activityId ? { ...item, [field]: value } : item))
+        );
+    };
+
+    const handleRemoveCCAItem = (activityId: string) => {
+        setSelectedCCAConfigs((prev) => prev.filter((item) => item.activityId !== activityId));
+    };
+
+    const ccaGrossAmount = useMemo(() => {
+        return selectedCCAConfigs.reduce((sum, item) => sum + (Number(item.fee) || 0), 0);
+    }, [selectedCCAConfigs]);
+
+    const ccaTotalDiscount = useMemo(() => {
+        return selectedCCAConfigs.reduce(
+            (sum, item) => sum + (item.discountAmount !== "" ? Number(item.discountAmount) : 0),
+            0
+        );
+    }, [selectedCCAConfigs]);
+
+    const ccaNetAmount = useMemo(() => {
+        return Math.max(0, ccaGrossAmount - ccaTotalDiscount);
+    }, [ccaGrossAmount, ccaTotalDiscount]);
 
     // ── Student detail fetch ──────────────────────────────────────────────────
     useEffect(() => {
@@ -487,6 +566,7 @@ export default function Page() {
                         amount: charge.finalAmount,
                         dueDay: charge.dueDay ?? "",
                         description: charge.description ?? "",
+                        generationStartAcademicMonth: charge.generationStartAcademicMonth,
                     }))
                 );
 
@@ -575,6 +655,7 @@ export default function Page() {
     const handleClearFields = () => {
         setSelectedFeeStructureId("");
         setEditableFeeItems([]);
+        setSelectedCCAConfigs([]);
         setItemErrors({});
         setIsClearFieldsDialogOpen(false);
     };
@@ -683,6 +764,7 @@ export default function Page() {
                     discountAmount: String(item.originalAmount - (Number(item.amount) || 0)),
                     description: item.description.trim() !== "" ? item.description.trim() : null,
                     dueDay: item.dueDay !== "" ? Number(item.dueDay) : null,
+                    generationStartAcademicMonth: item.generationStartAcademicMonth,
                 }));
 
                 result = await updateStudentAdmission(enrollmentId!, {
@@ -720,6 +802,23 @@ export default function Page() {
             }
 
             if (result?.success) {
+                if (selectedCCAConfigs.length > 0 && selectedStudentId) {
+                    for (const config of selectedCCAConfigs) {
+                        try {
+                            const ccaPayload = {
+                                studentId: selectedStudentId,
+                                ccaActivityIds: [config.activityId],
+                                startDate: config.startDate || new Date().toISOString().split("T")[0],
+                                endDate: config.endDate ? config.endDate : undefined,
+                                discountAmount: config.discountAmount !== "" ? Number(config.discountAmount) : undefined,
+                            };
+                            console.log(`==> [Admission CCA Assignment Dispatch - ${config.name}]:`, ccaPayload);
+                            await assignStudentToCCAActivities(ccaPayload);
+                        } catch (ccaError) {
+                            console.warn(`CCA Assignment error (${config.name}):`, ccaError);
+                        }
+                    }
+                }
                 router.back();
             } else {
                 toast.error(result?.message || "An error occurred during submission.");
@@ -832,7 +931,7 @@ export default function Page() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Filter student records..." />
                                         <CommandList>
@@ -858,7 +957,7 @@ export default function Page() {
                                                             >
                                                                 <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedStudentId === student.id ? "opacity-100" : "opacity-0")} />
                                                                 <div className="flex flex-col">
-                                                                    <span className="font-medium text-slate-900 dark:text-slate-100">{student.studentName}</span>
+                                                                    <span className="font-medium text-slate-200 dark:text-slate-100">{student.studentName}</span>
                                                                     <span className="text-xs text-slate-400">Admission No: {student.admissionNumber}</span>
                                                                 </div>
                                                             </CommandItem>
@@ -944,7 +1043,7 @@ export default function Page() {
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                         <Command>
                                             <CommandInput placeholder="Filter classes..." />
                                             <CommandList>
@@ -1003,7 +1102,7 @@ export default function Page() {
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                         <Command>
                                             <CommandInput placeholder="Filter sections..." />
                                             <CommandList>
@@ -1069,11 +1168,11 @@ export default function Page() {
                                         aria-expanded={vehiclePopoverOpen}
                                         className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
                                     >
-                                        {selectedVehicle ? `${selectedVehicle.vehicleName} (${selectedVehicle.vehicleNumber})` : "Click to view transport fleet..."}
+                                        {selectedVehicle ? selectedVehicle.vehicleName : "Click to view transport fleet..."}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Search vehicles..." />
                                         <CommandList>
@@ -1089,7 +1188,7 @@ export default function Page() {
                                                         {vehiclesDropdown.map((vehicle) => (
                                                             <CommandItem
                                                                 key={vehicle.id}
-                                                                value={`${vehicle.vehicleName} ${vehicle.vehicleNumber}`}
+                                                                value={vehicle.vehicleName}
                                                                 onSelect={() => {
                                                                     setSelectedVehicle(vehicle);
                                                                     setVehiclePopoverOpen(false);
@@ -1097,10 +1196,7 @@ export default function Page() {
                                                                 className="py-3 cursor-pointer"
                                                             >
                                                                 <Check className={cn("mr-3 h-4 w-4 text-[#6D755F]", selectedVehicle?.id === vehicle.id ? "opacity-100" : "opacity-0")} />
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-medium text-slate-900 dark:text-slate-100">{vehicle.vehicleName}</span>
-                                                                    <span className="text-xs text-slate-400">Plate: {vehicle.vehicleNumber} | Driver: {vehicle.driverName}</span>
-                                                                </div>
+                                                                <span className="font-medium text-slate-200 dark:text-slate-100">{vehicle.vehicleName}</span>
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -1165,7 +1261,7 @@ export default function Page() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
                                     <Command>
                                         <CommandInput placeholder="Search fee templates..." />
                                         <CommandList>
@@ -1367,6 +1463,176 @@ export default function Page() {
                         )}
                     </StepSection>
 
+                    {/* Step 5: Assign CCA Activities (Optional) */}
+                    <StepSection
+                        stepNumber="5"
+                        title="Assign CCA Activities (Optional)"
+                        description="Select optional co-curricular activities. Each selected activity has its own start date, end date, and discount configuration."
+                    >
+                        <div className="space-y-4">
+                            {selectedCCAConfigs.length === 0 ? (
+                                <div className="pt-1">
+                                    <Button
+                                        type="button"
+                                        onClick={handleOpenAddCCADialog}
+                                        className="bg-[#6D755F] hover:bg-[#5b624f] text-white font-medium text-xs h-9 shadow-sm"
+                                    >
+                                        <Plus className="h-4 w-4 mr-1.5" /> Add CCA Activity
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-sm animate-in fade-in duration-200">
+                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-6 py-4">
+                                        <div>
+                                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 block">
+                                                Configured CCA Activity Allocations ({selectedCCAConfigs.length})
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                                Configure separate start dates, end dates, and discounts for each activity.
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleOpenAddCCADialog}
+                                                className="bg-[#6D755F]/10 text-[#6D755F] border border-[#6D755F] font-medium hover:bg-[#6D755F]/20 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+                                            >
+                                                <Activity className="h-3.5 w-3.5 mr-1.5" /> Add / Manage Activities
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50"
+                                                onClick={() => setSelectedCCAConfigs([])}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-1.5" /> Clear All
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                                                    <TableHead className="pl-6 text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[150px]">
+                                                        Activity Name
+                                                    </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
+                                                        Default Fee
+                                                    </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">
+                                                        Start Date <RequiredMark />
+                                                    </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">
+                                                        End Date (Optional)
+                                                    </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">
+                                                        Discount (₹)
+                                                    </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[120px]">
+                                                        Net Monthly Rate
+                                                    </TableHead>
+                                                    <TableHead className="pr-6 text-right text-xs font-medium uppercase tracking-wider text-slate-500 w-[60px]">
+                                                        Remove
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {selectedCCAConfigs.map((item) => {
+                                                    const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
+                                                    const net = Math.max(0, item.fee - disc);
+                                                    return (
+                                                        <TableRow
+                                                            key={item.activityId}
+                                                            className="border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+                                                        >
+                                                            <TableCell className="pl-6 font-semibold text-xs text-slate-900 dark:text-slate-100">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Activity className="h-3.5 w-3.5 text-[#6D755F]" />
+                                                                    <span>{item.name}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                                                ₹{item.fee.toLocaleString()} / {item.frequency || "Month"}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={item.startDate}
+                                                                    onChange={(e) =>
+                                                                        handleUpdateCCAItem(item.activityId, "startDate", e.target.value)
+                                                                    }
+                                                                    className="h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={item.endDate}
+                                                                    onChange={(e) =>
+                                                                        handleUpdateCCAItem(item.activityId, "endDate", e.target.value)
+                                                                    }
+                                                                    className="h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
+                                                                        ₹
+                                                                    </span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        min={0}
+                                                                        placeholder="0"
+                                                                        value={item.discountAmount}
+                                                                        onChange={(e) =>
+                                                                            handleUpdateCCAItem(
+                                                                                item.activityId,
+                                                                                "discountAmount",
+                                                                                e.target.value === "" ? "" : Number(e.target.value)
+                                                                            )
+                                                                        }
+                                                                        className="pl-6 h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
+                                                                    />
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="font-bold text-xs text-[#6D755F] dark:text-[#9ea98a]">
+                                                                ₹{net.toLocaleString()} / Month
+                                                            </TableCell>
+                                                            <TableCell className="pr-6 text-right">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                                                    onClick={() => handleRemoveCCAItem(item.activityId)}
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 px-6 py-3.5 text-xs gap-2">
+                                        <span className="text-slate-500">
+                                            Selected {selectedCCAConfigs.length} Activities &bull; Gross: ₹{ccaGrossAmount.toLocaleString()}
+                                            {ccaTotalDiscount > 0 && ` | Total Discount: −₹${ccaTotalDiscount.toLocaleString()}`}
+                                        </span>
+                                        <span className="font-bold text-sm text-[#6D755F] dark:text-[#9ea98a]">
+                                            Net Monthly CCA Total: ₹{ccaNetAmount.toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </StepSection>
+
                 </div>
             )}
 
@@ -1477,6 +1743,89 @@ export default function Page() {
                             className="!text-white font-medium shadow-sm hover:!bg-[#5b624f] disabled:opacity-40 disabled:shadow-none disabled:hover:!bg-[#6D755F]"
                         >
                             Done ({selectedNewChargeTypeIds.length})
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Add CCA Activity Dialog */}
+            <AlertDialog open={isAddCCADialogOpen} onOpenChange={setIsAddCCADialogOpen}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Select Co-Curricular Activities (CCA)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Choose one or more CCA activities to assign with this student admission.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="py-2 max-h-[320px] overflow-y-auto space-y-2 pr-1">
+                        {ccaActivities.length === 0 ? (
+                            <div className="text-center py-6 text-xs text-slate-500">
+                                No CCA activities configured yet. Manage activities in Admin &gt; Co-Curricular (CCA).
+                            </div>
+                        ) : (
+                            ccaActivities.map((act) => {
+                                const isSelected = selectedNewCCAIds.includes(act.id);
+                                return (
+                                    <div
+                                        key={act.id}
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                setSelectedNewCCAIds((prev) => prev.filter((id) => id !== act.id));
+                                            } else {
+                                                setSelectedNewCCAIds((prev) => [...prev, act.id]);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "flex items-center justify-between p-3 rounded-xl border-2 transition-colors cursor-pointer",
+                                            isSelected
+                                                ? "border-[#6D755F] bg-[#6D755F] shadow-sm"
+                                                : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                        )}
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            <Checkbox
+                                                id={`cca-${act.id}`}
+                                                checked={isSelected}
+                                                tabIndex={-1}
+                                                className={cn(
+                                                    "h-4 w-4 rounded border-slate-400 dark:border-slate-600 pointer-events-none data-[state=checked]:!bg-white data-[state=checked]:!text-[#6D755F] data-[state=checked]:!border-white",
+                                                    isSelected && "border-white"
+                                                )}
+                                            />
+                                            <div>
+                                                <span className={cn("text-sm font-medium block", isSelected ? "text-white" : "text-slate-900 dark:text-slate-100")}>
+                                                    {act.name}
+                                                </span>
+                                                <span className={cn("text-xs", isSelected ? "text-white/80" : "text-slate-500")}>
+                                                    ₹{(act.defaultFee || Number(act.feeAmount) || 0).toLocaleString()} / {act.frequency || "MONTHLY"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {act.code && (
+                                            <span className={cn(
+                                                "text-xs px-2 py-0.5 rounded-md font-mono",
+                                                isSelected ? "bg-white/20 text-white" : "text-slate-500 bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+                                            )}>
+                                                {act.code}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setIsAddCCADialogOpen(false)}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmAddCCA}
+                            style={{ backgroundColor: "#6D755F" }}
+                            className="!text-white font-medium shadow-sm hover:!bg-[#5b624f]"
+                        >
+                            Done ({selectedNewCCAIds.length})
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

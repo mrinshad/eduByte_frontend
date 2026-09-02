@@ -38,6 +38,7 @@ import {
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getFeeStructures, type FeeStructureSummary } from "@/lib/services/feeStructure";
+import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -52,6 +53,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 export default function StudentAdmissionListPage() {
   const router = useRouter();
+  const currentAcademicYear = useCurrentAcademicYear();
 
   const [students, setStudents] = useState<BackendAdmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,11 @@ export default function StudentAdmissionListPage() {
   const loadFeeStructureOptions = async () => {
     try {
       setFeeStructureOptionsLoading(true);
-      const feeStructures = await getFeeStructures({ page: 1, limit: 500 });
+      const feeStructures = await getFeeStructures({
+        page: 1,
+        limit: 500,
+        academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined
+      });
       setFeeStructureOptions(feeStructures.items);
     } catch (error) {
       console.error("Failed to load fee structures:", error);
@@ -103,7 +109,7 @@ export default function StudentAdmissionListPage() {
   useEffect(() => {
     loadClassOptions();
     loadFeeStructureOptions();
-  }, []);
+  }, [currentAcademicYear]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,6 +132,7 @@ export default function StudentAdmissionListPage() {
           search,
           className: classFilter === "all" ? "" : classFilter,
           feeStructure: feeStructureFilter === "all" ? "" : feeStructureFilter,
+          academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined,
         });
         if (!active) return;
 
@@ -158,7 +165,31 @@ export default function StudentAdmissionListPage() {
     return () => {
       active = false;
     };
-  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter]);
+  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter, currentAcademicYear]);
+
+  const filteredClassOptions = useMemo(() => {
+    if (feeStructureFilter !== "all") {
+      const selectedFee = feeStructureOptions.find((f) => f.name === feeStructureFilter);
+      if (selectedFee) {
+        return classOptions.filter(
+          (c) => c.name === selectedFee.className || c.id === selectedFee.classId
+        );
+      }
+    }
+    return classOptions;
+  }, [feeStructureFilter, feeStructureOptions, classOptions]);
+
+  const filteredFeeStructureOptions = useMemo(() => {
+    if (classFilter !== "all") {
+      const selectedClass = classOptions.find((c) => c.name === classFilter);
+      return feeStructureOptions.filter(
+        (f) =>
+          f.className === classFilter ||
+          (selectedClass && f.classId === selectedClass.id)
+      );
+    }
+    return feeStructureOptions;
+  }, [classFilter, classOptions, feeStructureOptions]);
 
   const hasActiveFilters = useMemo(
     () =>
@@ -229,6 +260,17 @@ export default function StudentAdmissionListPage() {
             value={classFilter}
             onValueChange={(value) => {
               setClassFilter(value);
+              if (value !== "all" && feeStructureFilter !== "all") {
+                const selectedFee = feeStructureOptions.find((f) => f.name === feeStructureFilter);
+                const selectedClass = classOptions.find((c) => c.name === value);
+                const matches =
+                  selectedFee &&
+                  (selectedFee.className === value ||
+                    (selectedClass && selectedFee.classId === selectedClass.id));
+                if (!matches) {
+                  setFeeStructureFilter("all");
+                }
+              }
               setCurrentPage(1);
             }}
           >
@@ -237,7 +279,7 @@ export default function StudentAdmissionListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Classes</SelectItem>
-              {classOptions.map((c) => (
+              {filteredClassOptions.map((c) => (
                 <SelectItem key={c.id} value={c.name}>
                   {c.name}
                 </SelectItem>
@@ -250,6 +292,17 @@ export default function StudentAdmissionListPage() {
             value={feeStructureFilter}
             onValueChange={(value) => {
               setFeeStructureFilter(value);
+              if (value !== "all" && classFilter !== "all") {
+                const selectedFee = feeStructureOptions.find((f) => f.name === value);
+                const selectedClass = classOptions.find((c) => c.name === classFilter);
+                const matches =
+                  selectedFee &&
+                  (selectedFee.className === classFilter ||
+                    (selectedClass && selectedFee.classId === selectedClass.id));
+                if (!matches) {
+                  setClassFilter("all");
+                }
+              }
               setCurrentPage(1);
             }}
           >
@@ -258,7 +311,7 @@ export default function StudentAdmissionListPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Fee Structures</SelectItem>
-              {feeStructureOptions.map((f) => (
+              {filteredFeeStructureOptions.map((f) => (
                 <SelectItem key={f.id} value={f.name}>
                   {f.name}
                 </SelectItem>
@@ -404,7 +457,7 @@ export default function StudentAdmissionListPage() {
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {student.vehicleName ? `${student.vehicleName}${student.vehicleNumber ? ` (${student.vehicleNumber})` : ""}` : "-"}
+                      {student.vehicleName || "-"}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
@@ -428,6 +481,17 @@ export default function StudentAdmissionListPage() {
 
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <PermissionGate permission="admissions.editAdmissionButton">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-500 hover:text-[oklch(0.46_0.04_125)] hover:bg-[oklch(0.46_0.04_125)]/10 dark:text-slate-400"
+                            onClick={() => router.push(`/admin/admissions/createAdmission?id=${student.id}`)}
+                            title="Edit Admission"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                         <PermissionGate permission="admissions.viewAdmissionButton">
                           <Button
                             variant="ghost"

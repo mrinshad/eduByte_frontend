@@ -18,6 +18,7 @@ import {
   CreditCard,
   IndianRupee,
   AlertCircle,
+  Trophy,
 } from "lucide-react"
 
 import {
@@ -37,6 +38,12 @@ import {
   getStudentChargesByEnrollmentId,
   type StudentEnrollmentCharges,
 } from "@/lib/services/studentCharges"
+import {
+  getCCAAssignments,
+  getStudentCcaCharges,
+  type CCAAssignmentItem,
+  type StudentCcaCharge,
+} from "@/lib/services/cca"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -266,6 +273,8 @@ export default function Page() {
 
   const [student, setStudent] = useState<Student | null>(null)
   const [feeData, setFeeData] = useState<StudentEnrollmentCharges | null>(null)
+  const [ccaAssignments, setCcaAssignments] = useState<CCAAssignmentItem[]>([])
+  const [ccaCharges, setCcaCharges] = useState<StudentCcaCharge[]>([])
   const [loading, setLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -283,10 +292,52 @@ export default function Page() {
 
         setStudent(response);
 
+        // Map student's own CCA assignments from response if present
+        let studentCcaList: CCAAssignmentItem[] = [];
+        if (response?.ccaAssignments && Array.isArray(response.ccaAssignments)) {
+          studentCcaList = response.ccaAssignments.map((a: any) => ({
+            id: a.id,
+            startDate: a.startDate,
+            endDate: a.endDate,
+            status: a.status,
+            discountAmount: Number(a.discountAmount) || 0,
+            studentId: response.id,
+            studentName: response.studentName,
+            admissionNumber: response.admissionNumber,
+            activityName: a.ccaActivity?.name || "CCA Activity",
+            activityCode: a.ccaActivity?.code,
+            feeAmount: Number(a.ccaActivity?.feeAmount) || 0
+          }));
+        }
+
+        const fetchPromises: Promise<any>[] = [
+          getStudentCcaCharges(studentId, "student").catch(() => []),
+        ];
+
+        if (studentCcaList.length === 0 && response?.id) {
+          fetchPromises.push(
+            getCCAAssignments({ studentId: response.id }).catch(() => ({ ccaAssignments: [] }))
+          );
+        } else {
+          fetchPromises.push(Promise.resolve({ ccaAssignments: studentCcaList }));
+        }
+
         if (response?.enrollmentId) {
           await refreshLateFines(response.enrollmentId);
-          const feeRes = await getStudentChargesByEnrollmentId(response.enrollmentId).catch(() => null);
-          setFeeData(feeRes);
+          fetchPromises.push(
+            getStudentChargesByEnrollmentId(response.enrollmentId).catch(() => null)
+          );
+        }
+
+        const results = await Promise.all(fetchPromises);
+        setCcaCharges(results[0] || []);
+        if (results[1]?.ccaAssignments) {
+          setCcaAssignments(results[1].ccaAssignments);
+        } else {
+          setCcaAssignments(studentCcaList);
+        }
+        if (results[2]) {
+          setFeeData(results[2]);
         }
       } catch (error) {
         console.error("Failed to load student details:", error)
@@ -459,6 +510,10 @@ export default function Page() {
                 {student.dob ? <InfoItem label="Date of birth" value={formatDateOnly(student.dob)} /> : null}
                 <InfoItem label="Status" value={student.status} />
                 <InfoItem label="Admission status" value={admissionStatus} />
+                <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+                <InfoItem label="Religion" value={student.religion || "—"} />
+                <InfoItem label="Community" value={student.community || "—"} />
+                <InfoItem label="Category" value={student.category || "—"} />
                 <InfoItem label="WhatsApp" value={student.whatsappNumber || "—"} />
                 <InfoItem label="Father mobile" value={student.fatherMobile || "—"} />
                 <InfoItem label="Mother mobile" value={student.motherMobile || "—"} />
@@ -874,6 +929,129 @@ export default function Page() {
               })()}
             </>
           ) : null}
+
+          {/* ── Co-Curricular Activities (CCA) Section ── */}
+          <InfoSection icon={Trophy} title="Co-Curricular Activities (CCA)">
+            {ccaAssignments.length > 0 ? (
+              <div className="p-4 sm:p-5 space-y-5">
+                {/* Active Subscriptions Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {ccaAssignments.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-950 dark:text-slate-100">
+                          {assignment.activityName}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            assignment.status === "ACTIVE"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px]"
+                              : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 text-[10px]"
+                          }
+                        >
+                          {assignment.status}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                        <p>Joined: {formatDateOnly(assignment.startDate)}</p>
+                        {assignment.endDate && <p>Ended: {formatDateOnly(assignment.endDate)}</p>}
+                        {assignment.discountAmount && assignment.discountAmount > 0 ? (
+                          <p className="text-amber-600 dark:text-amber-400">
+                            Monthly Discount: −{formatCurrency(assignment.discountAmount)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CCA Charges / Dues Table */}
+                {ccaCharges.length > 0 ? (
+                  <div className="space-y-2 pt-2">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      CCA Charges & Billing History
+                    </div>
+                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-slate-100 bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                            <TableHead className="h-9 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Activity & Period
+                            </TableHead>
+                            <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Base Fee
+                            </TableHead>
+                            <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Discount
+                            </TableHead>
+                            <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Net Fee
+                            </TableHead>
+                            <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Paid
+                            </TableHead>
+                            <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Balance
+                            </TableHead>
+                            <TableHead className="h-9 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ccaCharges.map((charge) => (
+                            <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                              <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
+                                {charge.description || `${charge.activityName} - ${charge.periodLabel}`}
+                              </TableCell>
+                              <TableCell className="text-right text-sm text-slate-600 dark:text-slate-400">
+                                {formatCurrency(charge.originalAmount)}
+                              </TableCell>
+                              <TableCell className="text-right text-sm text-amber-600 dark:text-amber-400">
+                                {charge.discountAmount > 0 ? `−${formatCurrency(charge.discountAmount)}` : "—"}
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                {formatCurrency(charge.finalAmount)}
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                {formatCurrency(charge.paidAmount)}
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
+                                {formatCurrency(charge.balance)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    CHARGE_STATUS_STYLES[charge.status] ??
+                                    "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                  }
+                                >
+                                  {charge.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                    No CCA charges have been generated for this student yet.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="px-5 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                No co-curricular activities assigned to this student.
+              </div>
+            )}
+          </InfoSection>
         </div>
       </div>
       <AlertDialog

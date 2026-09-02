@@ -385,3 +385,127 @@ export async function getAcademicYearSummaryReport(
 
     return payload.data ?? null;
 }
+
+//
+// 6. CCA Income Report
+//
+
+export interface CcaIncomeReportItem {
+    period: string;
+    datePaid: string;
+    amountCollected: number;
+    studentName: string;
+    activityName: string;
+}
+
+export interface CcaIncomeReportSummary {
+    totalIncome: number;
+    chargeCount: number;
+    activityFiltered: string;
+}
+
+export interface CcaIncomeReportResponse {
+    summary: CcaIncomeReportSummary;
+    collectedDues: CcaIncomeReportItem[];
+}
+
+export async function getCcaIncomeReport(params: {
+    startDate?: string;
+    endDate?: string;
+    ccaActivityId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}): Promise<CcaIncomeReportResponse | null> {
+    const query = new URLSearchParams();
+    if (params.startDate) query.set("startDate", params.startDate);
+    if (params.endDate) query.set("endDate", params.endDate);
+    if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
+    if (params.search) query.set("search", params.search);
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
+
+    const payload = (await apiFetch(
+        `/api/reports/cca/income?${query.toString()}`
+    )) as ApiSuccess<CcaIncomeReportResponse>;
+
+    return payload.data ?? null;
+}
+
+export interface CcaExpenseItem {
+    id: string;
+    expenseNumber: string;
+    amount: number;
+    expenseDate: string;
+    notes: string | null;
+    createdAt: string;
+    category: string | null;
+    subCategory: string | null;
+    account: string | null;
+    ccaActivityName: string | null;
+    payments: { accountId: string; amount: number }[];
+}
+
+export interface CcaExpenseReportResponse {
+    totalCcaExpenses: number;
+    items: CcaExpenseItem[];
+}
+
+export async function getCcaExpenseSummary(params: {
+    startDate?: string;
+    endDate?: string;
+    ccaActivityId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}): Promise<CcaExpenseReportResponse | null> {
+    const query = new URLSearchParams();
+    if (params.startDate) query.set("from", params.startDate);
+    if (params.endDate) query.set("to", params.endDate);
+    if (params.ccaActivityId && params.ccaActivityId !== "all") query.set("ccaActivityId", params.ccaActivityId);
+    if (params.search) query.set("search", params.search);
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
+
+    const payload = (await apiFetch(
+        `/api/reports/cca/expense?${query.toString()}`
+    )) as ApiSuccess<CcaExpenseReportResponse>;
+
+    return payload.data ?? null;
+}
+
+export interface CcaFinancialSummaryResponse {
+    totalIncome: number;
+    totalExpense: number;
+    netProfit: number;
+}
+
+export async function getCcaFinancialSummary(): Promise<CcaFinancialSummaryResponse | null> {
+    const payload = (await apiFetch(
+        `/api/reports/cca/financial`
+    )) as ApiSuccess<CcaFinancialSummaryResponse>;
+
+    return payload.data ?? null;
+}
+
+export interface ActivityProfitReportResponse {
+    activityId: string;
+    activityName: string;
+    activityCode: string | null;
+    financials: {
+        totalIncome: number;
+        totalExpense: number;
+        netProfit: number;
+    };
+}
+
+export async function getActivityProfitReport(
+    activityId: string
+): Promise<ActivityProfitReportResponse | null> {
+    const payload = (await apiFetch(
+        `/api/reports/cca/${activityId}/profit`
+    )) as ApiSuccess<ActivityProfitReportResponse>;
+
+    return payload.data ?? null;
+}
+

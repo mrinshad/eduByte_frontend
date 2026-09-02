@@ -10,6 +10,7 @@ import {
   X,
   CheckCircle2,
   Loader2,
+  Trophy,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,6 +28,11 @@ import {
   type CollectAllocation,
   type PaymentMethodAccount,
 } from "@/lib/services/feeCollection"
+import {
+  getStudentCcaCharges,
+  collectCcaFee,
+  type StudentCcaCharge,
+} from "@/lib/services/cca"
 import React from "react"
 import { refreshLateFines } from "@/lib/services/lateFine"
 
@@ -268,6 +274,7 @@ export default function Page() {
 
   const [charges, setCharges] = useState<StudentCharge[]>([])
   const [fines, setFines] = useState<Fine[]>([])
+  const [ccaCharges, setCcaCharges] = useState<StudentCcaCharge[]>([])
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([])
   const [chargesLoading, setChargesLoading] = useState(true)
   const [chargesError, setChargesError] = useState<string | null>(null)
@@ -281,6 +288,7 @@ export default function Page() {
 
   const chargeKey = (id: string) => `charge:${id}`
   const fineKey = (id: string) => `fine:${id}`
+  const ccaKey = (id: string) => `cca:${id}`
 
   useEffect(() => {
     async function fetchStudentDetails() {
@@ -303,17 +311,23 @@ export default function Page() {
         setChargesError(null)
         await refreshLateFines(enrollmentId)
 
-        const [chargesData, finesData, paymentAccountsData] = await Promise.all([
+        const [chargesData, finesData, ccaData, paymentAccountsData] = await Promise.all([
           getStudentCharges(enrollmentId),
           getStudentFines(enrollmentId),
+          getStudentCcaCharges(enrollmentId).catch(() => []),
           getPaymentMethodAccounts(),
         ])
         setCharges(chargesData)
         setFines(finesData)
+        setCcaCharges(ccaData)
         setPaymentAccounts(paymentAccountsData)
 
-        if (paymentAccountsData.length > 0) {
-          setPayments([{ accountId: paymentAccountsData[0].id, amount: 0 }])
+        const defaultAccount =
+          paymentAccountsData.find((a) => a.name.trim().toLowerCase() === "cash") ??
+          paymentAccountsData[0]
+
+        if (defaultAccount) {
+          setPayments([{ accountId: defaultAccount.id, amount: 0 }])
         } else {
           setPayments([])
         }
@@ -363,6 +377,19 @@ export default function Page() {
     })
   }
 
+  function toggleCcaCharge(cca: StudentCcaCharge) {
+    setSelected((prev) => {
+      const key = ccaKey(cca.id)
+      const next = { ...prev }
+      if (key in next) {
+        delete next[key]
+      } else {
+        next[key] = cca.finalAmount === 0 ? 0 : cca.balance
+      }
+      return next
+    })
+  }
+
   function updateAmount(key: string, rawVal: string, max: number) {
     if (rawVal === "") {
       setSelected((prev) => ({ ...prev, [key]: 0 }))
@@ -388,7 +415,14 @@ export default function Page() {
     }, 0)
   }, [fines, selected])
 
-  const totalOutstanding = feeOutstanding + fineOutstanding
+  const ccaOutstanding = useMemo(() => {
+    return ccaCharges.reduce((sum, c) => {
+      const key = ccaKey(c.id)
+      return key in selected ? sum + selected[key] : sum
+    }, 0)
+  }, [ccaCharges, selected])
+
+  const totalOutstanding = feeOutstanding + fineOutstanding + ccaOutstanding
   const totalPayments = useMemo(
     () => payments.reduce((sum, p) => sum + (p.amount || 0), 0),
     [payments]
@@ -416,7 +450,8 @@ export default function Page() {
     [selectedPositiveCharges, selected]
   )
 
-  const payableOutstanding = positiveOutstanding + fineOutstanding
+  const academicPayable = positiveOutstanding + fineOutstanding
+  const payableOutstanding = academicPayable + ccaOutstanding
   const difference = payableOutstanding - totalPayments
 
   const displayFines = useMemo(() => {
@@ -429,6 +464,17 @@ export default function Page() {
       return 0
     })
   }, [fines])
+
+  const displayCcaCharges = useMemo(() => {
+    return [...ccaCharges].sort((a, b) => {
+      const aPaid = a.balance <= 0
+      const bPaid = b.balance <= 0
+      if (aPaid !== bPaid) {
+        return aPaid ? 1 : -1
+      }
+      return 0
+    })
+  }, [ccaCharges])
 
   const groupedCharges = useMemo(() => {
     const groups = new Map<string, { label: string; periodKey: number; items: StudentCharge[] }>()
@@ -467,7 +513,7 @@ export default function Page() {
   function addPaymentLine() {
     const unused = paymentAccounts.find((m) => !payments.some((p) => p.accountId === m.id))
     if (!unused) return
-    setPayments((prev) => [...prev, { accountId: unused.id, amount: 0 }])
+    setPayments((prev) => [{ accountId: unused.id, amount: 0 }, ...prev])
   }
 
   function removePaymentLine(index: number) {
@@ -497,7 +543,7 @@ export default function Page() {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const allocations: CollectAllocation[] = [
+      const academicAllocations: CollectAllocation[] = [
         ...charges
           .filter((c) => c.finalAmount > 0 && chargeKey(c.id) in selected && selected[chargeKey(c.id)] > 0)
           .map((c) => ({ studentChargeId: c.id, amount: selected[chargeKey(c.id)] })),
@@ -506,33 +552,102 @@ export default function Page() {
           .map((f) => ({ fineId: f.id, amount: selected[fineKey(f.id)] })),
       ]
 
-      const result = await collectFee({
-        enrollmentId,
-        payments:
-          payableOutstanding > 0 ? payments.map((p) => ({ accountId: p.accountId, amount: p.amount })) : [],
-        allocations,
-        zeroChargeIds: selectedZeroChargeIds,
-      })
+      const ccaAllocations = ccaCharges
+        .filter((c) => ccaKey(c.id) in selected && selected[ccaKey(c.id)] > 0)
+        .map((c) => ({ ccaChargeId: c.id, amount: selected[ccaKey(c.id)] }))
 
-      toast.success(
-        `Fee collected successfully. Txn ${result.transactionNumber} for ${formatCurrency(result.totalAmount)}.`
-      )
+      // Sequential Payment Distribution: Academic first, then CCA
+      let remainingAcademicNeed = academicPayable
+      const academicPayments: { accountId: string; amount: number; paymentMethod?: string }[] = []
+      const ccaPaymentLines: { accountId: string; amount: number; paymentMethod?: string }[] = []
 
-      if (printAfterCreate) {
-        router.push(`/print/fee-collection/${result.id}`)
+      for (const p of payments) {
+        if (p.amount <= 0) continue
+        const accountObj = paymentAccounts.find((a) => a.id === p.accountId)
+        const method = accountObj?.name || "CASH"
+
+        if (remainingAcademicNeed > 0) {
+          if (p.amount <= remainingAcademicNeed) {
+            academicPayments.push({ accountId: p.accountId, amount: p.amount, paymentMethod: method })
+            remainingAcademicNeed = Math.round((remainingAcademicNeed - p.amount) * 100) / 100
+          } else {
+            academicPayments.push({ accountId: p.accountId, amount: remainingAcademicNeed, paymentMethod: method })
+            const remainingForCca = Math.round((p.amount - remainingAcademicNeed) * 100) / 100
+            if (remainingForCca > 0) {
+              ccaPaymentLines.push({ accountId: p.accountId, amount: remainingForCca, paymentMethod: method })
+            }
+            remainingAcademicNeed = 0
+          }
+        } else {
+          ccaPaymentLines.push({ accountId: p.accountId, amount: p.amount, paymentMethod: method })
+        }
+      }
+
+      let academicResult = null
+      let ccaResult = null
+
+      if (academicAllocations.length > 0 || selectedZeroChargeIds.length > 0) {
+        academicResult = await collectFee({
+          enrollmentId,
+          payments:
+            academicPayable > 0 ? academicPayments.map((p) => ({ accountId: p.accountId, amount: p.amount })) : [],
+          allocations: academicAllocations,
+          zeroChargeIds: selectedZeroChargeIds,
+        })
+      }
+
+      if (ccaAllocations.length > 0) {
+        ccaResult = await collectCcaFee({
+          enrollmentId,
+          studentId: student?.id,
+          payments: ccaPaymentLines,
+          allocations: ccaAllocations,
+        })
+      }
+
+      if (academicResult && ccaResult) {
+        toast.success(
+          `Fee & CCA collected successfully. Academic Txn ${academicResult.transactionNumber}, CCA Receipt ${ccaResult.receiptNumber}.`
+        )
+      } else if (academicResult) {
+        toast.success(
+          `Fee collected successfully. Txn ${academicResult.transactionNumber} for ${formatCurrency(academicResult.totalAmount)}.`
+        )
+      } else if (ccaResult) {
+        toast.success(
+          `CCA Fee collected successfully. Receipt ${ccaResult.receiptNumber} for ${formatCurrency(ccaResult.totalAmount)}.`
+        )
+      }
+
+      if (academicResult && printAfterCreate) {
+        const ccaParam = ccaResult ? `?ccaPaymentId=${ccaResult.paymentId}` : ""
+        router.push(`/print/fee-collection/${academicResult.id}${ccaParam}`)
+        return
+      } else if (ccaResult && printAfterCreate) {
+        router.push(`/print/fee-collection/${ccaResult.paymentId}`)
         return
       }
 
-      setSuccessInfo({ transactionNumber: result.transactionNumber, totalAmount: result.totalAmount })
-      setSelected({})
-      setPayments(paymentAccounts.length > 0 ? [{ accountId: paymentAccounts[0].id, amount: 0 }] : [])
+      if (academicResult) {
+        setSuccessInfo({ transactionNumber: academicResult.transactionNumber, totalAmount: academicResult.totalAmount })
+      } else if (ccaResult) {
+        setSuccessInfo({ transactionNumber: ccaResult.receiptNumber, totalAmount: ccaResult.totalAmount })
+      }
 
-      const [chargesData, finesData] = await Promise.all([
+      setSelected({})
+      const defaultAccount =
+        paymentAccounts.find((a) => a.name.trim().toLowerCase() === "cash") ??
+        paymentAccounts[0]
+      setPayments(defaultAccount ? [{ accountId: defaultAccount.id, amount: 0 }] : [])
+
+      const [chargesData, finesData, ccaData] = await Promise.all([
         getStudentCharges(enrollmentId),
         getStudentFines(enrollmentId),
+        getStudentCcaCharges(enrollmentId).catch(() => []),
       ])
       setCharges(chargesData)
       setFines(finesData)
+      setCcaCharges(ccaData)
     } catch (err) {
       console.error("Collect Fee API Error:", err)
       setSubmitError(err instanceof Error ? err.message : "Payment failed. Please try again.")
@@ -819,6 +934,99 @@ export default function Page() {
                 </div>
               </div>
 
+              {/* Co-Curricular Activities (CCA) Table */}
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <Trophy className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                  Co-Curricular Activities (CCA)
+                </h3>
+                <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[220px]">
+                  <table className="w-full min-w-[520px] text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                      <tr className="text-left text-slate-500 dark:text-slate-400">
+                        <th className="px-3 py-2 font-medium w-10"></th>
+                        <th className="px-3 py-2 font-medium">Activity & Period</th>
+                        <th className="px-3 py-2 font-medium text-right">Amount</th>
+                        <th className="px-3 py-2 font-medium text-right">Paid</th>
+                        <th className="px-3 py-2 font-medium text-right">Balance</th>
+                        <th className="px-3 py-2 font-medium text-right w-32">Collect</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                      {displayCcaCharges.map((cca) => {
+                        const key = ccaKey(cca.id)
+                        const isSelected = key in selected
+                        const isPaid = cca.balance <= 0
+                        const disabled = !cca.canCollect || cca.balance <= 0
+                        return (
+                          <tr key={cca.id} className={disabled ? "opacity-50" : ""}>
+                            <td className="px-3 py-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={disabled}
+                                onChange={() => toggleCcaCharge(cca)}
+                                className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-slate-950 dark:text-slate-100">
+                                  {cca.activityName}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  ({cca.periodLabel})
+                                </span>
+                                {isPaid ? (
+                                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    Paid
+                                  </span>
+                                ) : cca.status === "PARTIALLY_PAID" ? (
+                                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                                    Partially Paid
+                                  </span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
+                              {formatCurrency(cca.finalAmount)}
+                            </td>
+                            <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
+                              {formatCurrency(cca.paidAmount)}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium text-slate-950 dark:text-slate-100">
+                              {formatCurrency(cca.balance)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                max={cca.balance}
+                                disabled={!isSelected}
+                                value={isSelected ? (selected[key] === 0 ? "" : selected[key]) : ""}
+                                placeholder="0.00"
+                                onChange={(e) =>
+                                  updateAmount(key, e.target.value, cca.balance)
+                                }
+                                className="w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
+                              />
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {ccaCharges.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
+                            No CCA charges found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* Summary + Payment details */}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Summary */}
@@ -837,6 +1045,12 @@ export default function Page() {
                       <span className="text-slate-600 dark:text-slate-300">Fine Outstanding</span>
                       <span className="font-medium text-slate-950 dark:text-slate-100">
                         {formatCurrency(fineOutstanding)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-300">CCA Outstanding</span>
+                      <span className="font-medium text-slate-950 dark:text-slate-100">
+                        {formatCurrency(ccaOutstanding)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t border-slate-200 pt-2 dark:border-slate-800/50">
@@ -881,23 +1095,25 @@ export default function Page() {
                   ) : null}
 
                   <div className="space-y-2">
-                    {payments.map((p, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <select
-                          value={p.accountId}
-                          onChange={(e) => updatePaymentAccount(index, e.target.value)}
-                          className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
-                        >
-                          {paymentAccounts.map((m) => (
-                            <option
-                              key={m.id}
-                              value={m.id}
-                              disabled={payments.some((pp, i) => i !== index && pp.accountId === m.id)}
-                            >
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
+                    {payments.map((p, index) => {
+                      const availableAccounts = paymentAccounts.filter(
+                        (m) =>
+                          m.id === p.accountId ||
+                          !payments.some((pp, i) => i !== index && pp.accountId === m.id)
+                      )
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <select
+                            value={p.accountId}
+                            onChange={(e) => updatePaymentAccount(index, e.target.value)}
+                            className="h-9 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[oklch(0.46_0.04_125)] focus:ring-1 focus:ring-[oklch(0.46_0.04_125)] dark:border-slate-700 dark:bg-slate-950"
+                          >
+                            {availableAccounts.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
                         <input
                           type="number"
                           step="0.01"
@@ -916,8 +1132,9 @@ export default function Page() {
                             <X className="h-4 w-4" />
                           </button>
                         )}
-                      </div>
-                    ))}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm dark:border-slate-800/50">

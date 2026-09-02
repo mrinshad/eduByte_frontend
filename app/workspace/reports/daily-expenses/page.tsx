@@ -244,7 +244,7 @@ export default function DailyExpensesRegisterPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >
@@ -271,7 +271,7 @@ export default function DailyExpensesRegisterPage() {
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
+                                            "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40",
                                             isRangeInvalid && "border-amber-400 dark:border-amber-500/60"
                                         )}
                                     >

@@ -105,6 +105,8 @@ export async function getStudentFeeCollection(params?: {
   divisionName?: string;
   vehicle?: string;
   status?: "all" | "paid" | "pending" | string;
+  academicYearId?: string;
+  academicYear?: string;
 }) {
   const query = new URLSearchParams({
     page: String(params?.page ?? 1),
@@ -117,6 +119,13 @@ export async function getStudentFeeCollection(params?: {
     vehicle: params?.vehicle ?? "",
     status: params?.status ?? "all",
   });
+
+  if (params?.academicYearId) {
+    query.set("academicYearId", params.academicYearId);
+  }
+  if (params?.academicYear) {
+    query.set("academicYear", params.academicYear);
+  }
 
   const payload = (await apiFetch(
     `/api/feecollection/stdlist?${query.toString()}`
@@ -264,7 +273,7 @@ export async function collectFee(payload: CollectFeePayload) {
 }
 
 export interface FeeCollectionPrintItem {
-  type: "CHARGE" | "FINE";
+  type: "CHARGE" | "FINE" | "CCA";
   name: string;
   period: { month: number; year: number } | null;
   description: string | null;
@@ -293,9 +302,13 @@ export interface FeeCollectionPrintResponse {
   payments: FeeCollectionPrintPayment[];
 }
 
-export async function getFeeCollectionPrint(transactionId: string) {
+export async function getFeeCollectionPrint(
+  transactionId: string,
+  ccaPaymentId?: string
+) {
+  const query = ccaPaymentId ? `?ccaPaymentId=${ccaPaymentId}` : "";
   const payload = (await apiFetch(
-    `/api/feecollection/print/${transactionId}`
+    `/api/feecollection/print/${transactionId}${query}`
   )) as { success: boolean; data: FeeCollectionPrintResponse };
   return payload.data;
 }

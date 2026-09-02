@@ -18,6 +18,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -45,6 +53,34 @@ function formatCurrency(amount?: number) {
     }).format(amount ?? 0);
 }
 
+function todayISO() {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(new Date());
+}
+
+function formatDisplayDate(date: string) {
+    if (!date) return "";
+    const datePart = date.slice(0, 10);
+    return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+}
+
+function parseISODate(dateStr: string) {
+    return new Date(`${dateStr}T00:00:00`);
+}
+
+function toISODate(date: Date) {
+    return format(date, "yyyy-MM-dd");
+}
+
 function FilterChip({
     label,
     onRemove,
@@ -70,10 +106,8 @@ export default function DaybookReportPage() {
     const { can } = usePermission();
     const canView = can("report.read");
 
-    const [date, setDate] = useState<string>(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
+    const [date, setDate] = useState<string>(todayISO());
+    const [calendarOpen, setCalendarOpen] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<string>("ALL");
     const [searchInput, setSearchInput] = useState<string>("");
     const [search, setSearch] = useState<string>("");
@@ -114,6 +148,12 @@ export default function DaybookReportPage() {
     useEffect(() => {
         loadDaybook();
     }, [loadDaybook]);
+
+    function handleDateSelect(newDate: Date | undefined) {
+        if (!newDate) return;
+        setDate(toISODate(newDate));
+        setCalendarOpen(false);
+    }
 
     const filteredEntries = useMemo(() => {
         if (!data?.entries) return [];
@@ -176,22 +216,34 @@ export default function DaybookReportPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded-lg">
-                            <CalendarIcon className="h-4 w-4 text-slate-500" />
-                            <input
-                                type="date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="bg-transparent text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none"
-                            />
-                        </div>
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "h-10 w-full justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-40"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+                                    <span className="truncate">{formatDisplayDate(date)}</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={parseISODate(date)}
+                                    onSelect={handleDateSelect}
+                                    defaultMonth={parseISODate(date)}
+                                />
+                            </PopoverContent>
+                        </Popover>
 
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={loadDaybook}
                             disabled={loading}
-                            className="h-9 w-9 shrink-0 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                            className="h-10 w-10 shrink-0 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 rounded-lg shadow-sm"
                             title="Refresh Daybook"
                         >
                             <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />

@@ -30,6 +30,7 @@ import {
 
 // Import your charges API function and type definition
 import { getStudentCharges, StudentCharge } from "@/lib/services/studentCharges";
+import { useCurrentAcademicYear } from "@/lib/academic-year-store";
 
 // Small helper so "undefined - undefined" class strings render cleanly
 function formatClass(value: string) {
@@ -58,6 +59,7 @@ const statusStyles: Record<string, string> = {
 
 export default function StudentChargesListPage() {
   const router = useRouter();
+  const currentAcademicYear = useCurrentAcademicYear();
 
   // Real Data, Loading & Error States
   const [charges, setCharges] = useState<StudentCharge[]>([]);
@@ -74,7 +76,9 @@ export default function StudentChargesListPage() {
     async function fetchCharges() {
       try {
         setIsLoading(true);
-        const data = await getStudentCharges();
+        const data = await getStudentCharges({
+          academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined
+        });
         setCharges(data);
       } catch (err) {
         console.error("Failed to load student charges:", err);
@@ -84,7 +88,7 @@ export default function StudentChargesListPage() {
       }
     }
     fetchCharges();
-  }, []);
+  }, [currentAcademicYear]);
 
   // 1. Client-side filtering + automatic pagination reset on query mutation
   const filteredCharges = useMemo(() => {
@@ -214,7 +218,7 @@ export default function StudentChargesListPage() {
                 </TableRow>
               ) : (
                 paginatedCharges.map((charge) => {
-                  const balance = (charge.finalAmount ?? 0) - (charge.paidAmount ?? 0);
+                  const balance = (charge.totalAmount ?? 0) - (charge.totalPaidAmount ?? 0);
                   return (
                     <TableRow
                       key={charge.admissionNumber}
@@ -233,11 +237,11 @@ export default function StudentChargesListPage() {
                       </TableCell>
 
                       <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-right">
-                        {formatCurrency(charge.finalAmount)}
+                        {formatCurrency(charge.totalAmount)}
                       </TableCell>
 
                       <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-right">
-                        {formatCurrency(charge.paidAmount)}
+                        {formatCurrency(charge.totalPaidAmount)}
                       </TableCell>
 
                       <TableCell

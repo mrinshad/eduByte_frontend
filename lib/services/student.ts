@@ -6,6 +6,10 @@ export interface StudentInput {
   gender: "Male" | "Female";
   dob: string;
   bloodGroup: string;
+  adharNo?: string;
+  religion?: string;
+  community?: string;
+  category?: string;
   fatherName: string;
   fatherMobile: string;
   motherName: string;
@@ -21,6 +25,10 @@ export interface Student {
   gender: "Male" | "Female";
   dob: string | null;
   bloodGroup: string | null;
+  adharNo?: string | null;
+  religion?: string | null;
+  community?: string | null;
+  category?: string | null;
   fatherName: string;
   fatherMobile: string;
   motherName: string;
@@ -32,6 +40,7 @@ export interface Student {
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
+  ccaAssignments?: any[];
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +51,11 @@ export interface StudentListItem {
   studentName: string;
   gender: "Male" | "Female";
   dob: string | null;
+  bloodGroup?: string | null;
+  adharNo?: string | null;
+  religion?: string | null;
+  community?: string | null;
+  category?: string | null;
   whatsappNumber: string;
   address: string;
   status: string;
@@ -79,6 +93,8 @@ export interface GetStudentsParams {
   status?: string; // ACTIVE | WITHDRAWN | ALUMNI
   sortBy?: string;
   order?: "asc" | "desc";
+  academicYearId?: string;
+  academicYear?: string;
 }
 
 export interface StudentAdmissionAndName {
@@ -105,6 +121,8 @@ export async function getStudents({
   status = "",
   sortBy = "admissionNumber",
   order = "desc",
+  academicYearId = "",
+  academicYear = "",
 }: GetStudentsParams = {}) {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -122,6 +140,12 @@ export async function getStudents({
   }
   if (status) {
     params.set("status", status);
+  }
+  if (academicYearId) {
+    params.set("academicYearId", academicYearId);
+  }
+  if (academicYear) {
+    params.set("academicYear", academicYear);
   }
 
   const payload = (await apiFetch(

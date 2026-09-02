@@ -76,6 +76,7 @@ export interface ExpenseInput {
   vehicleId?: string | null;
   subCategoryId: string;
   staffId?: string | null;
+  ccaActivityId?: string | null;
   notes?: string;
   amount: number;
   accountId: string;
@@ -219,6 +220,11 @@ export interface ExpensePrintResponse {
 
     staff: {
       name: string;
+    } | null;
+
+    ccaActivity?: {
+      name: string;
+      code?: string | null;
     } | null;
 
     payments: {

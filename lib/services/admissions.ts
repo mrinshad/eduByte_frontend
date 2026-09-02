@@ -54,6 +54,7 @@ export interface EnrollmentCharge {
   discountAmount: string;
   description: string | null;
   dueDay: number | null;
+  generationStartAcademicMonth?: number;
 }
  
 export interface CreateAdmissionPayload {
@@ -98,10 +99,24 @@ interface RawEnrollmentCharge {
   discountAmount: string;
   finalAmount: string;
   dueDay: number | null;
+  generationStartAcademicMonth?: number;
   createdAt: string;
   updatedAt: string;
 }
  
+interface RawCcaAssignment {
+  id: string;
+  ccaActivityId: string;
+  activityName: string;
+  activityCode: string | null;
+  feeAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  startDate: string;
+  endDate: string | null;
+  status: string;
+}
+
 interface RawEnrollmentRecord {
   enrollmentId: string;
   academicYearName: string;
@@ -114,6 +129,7 @@ interface RawEnrollmentRecord {
   driverName: string | null;
   student: CompleteEnrollmentRecord["student"];
   enrollmentCharges: RawEnrollmentCharge[];
+  ccaAssignments?: RawCcaAssignment[];
 }
  
 export interface CompleteEnrollmentRecord {
@@ -133,6 +149,10 @@ export interface CompleteEnrollmentRecord {
     gender: string;
     dob: string;
     bloodGroup: string;
+    adharNo?: string;
+    religion?: string;
+    community?: string;
+    category?: string;
     status: "ACTIVE" | "INACTIVE" | "WITHDRAWN" | "COMPLETED" | "PROMOTED" | string;
     fatherName: string;
     fatherMobile: string;
@@ -154,9 +174,22 @@ export interface CompleteEnrollmentRecord {
     paidAmount: number;
     balanceAmount: number;
     dueDay: number | null;
+    generationStartAcademicMonth?: number;
     status: string;
     periodMonth: number | null;
     periodYear: number | null;
+  }[];
+  ccaAssignments?: {
+    id: string;
+    ccaActivityId: string;
+    activityName: string;
+    activityCode: string | null;
+    feeAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+    startDate: string;
+    endDate: string | null;
+    status: string;
   }[];
 }
  
@@ -190,6 +223,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
       paidAmount: 0,
       balanceAmount: finalAmount,
       dueDay: c.dueDay ?? null,
+      generationStartAcademicMonth: c.generationStartAcademicMonth ?? 1,
       status: "PENDING",
       periodMonth: null,
       periodYear: null,
@@ -208,6 +242,7 @@ export async function getEnrollmentById(id: string): Promise<CompleteEnrollmentR
     driverName: raw.driverName,
     student: raw.student,
     charges,
+    ccaAssignments: raw.ccaAssignments ?? [],
   };
 }
  
@@ -217,6 +252,8 @@ export async function getStudentAdmissions(params: {
   search?: string;
   className?: string;
   feeStructure?: string;
+  academicYearId?: string;
+  academicYear?: string;
 } = {}): Promise<AdmissionsListResponse> {
   const query = new URLSearchParams();
 
@@ -225,6 +262,8 @@ export async function getStudentAdmissions(params: {
   if (params.search) query.set("search", params.search);
   if (params.className) query.set("className", params.className);
   if (params.feeStructure) query.set("feeStructure", params.feeStructure);
+  if (params.academicYearId) query.set("academicYearId", params.academicYearId);
+  if (params.academicYear) query.set("academicYear", params.academicYear);
 
   const payload = (await apiFetch(
     `/api/stdenrollment${query.toString() ? `?${query.toString()}` : ""}`
