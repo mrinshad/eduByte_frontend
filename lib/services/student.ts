@@ -35,7 +35,7 @@ export interface Student {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
-  status: "ACTIVE" | "WITHDRAWN" | "ALUMNI";
+  status: "ACTIVE" | "WITHDRAWN";
   enrollmentId?: string;
   className?: string | null;
   divisionName?: string | null;
@@ -90,7 +90,7 @@ export interface GetStudentsParams {
   search?: string;
   className?: string;
   admissionStatus?: string; // ADMITTED | NOT_ADMITTED
-  status?: string; // ACTIVE | WITHDRAWN | ALUMNI
+  status?: string; // ACTIVE | WITHDRAWN
   sortBy?: string;
   order?: "asc" | "desc";
   academicYearId?: string;

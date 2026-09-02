@@ -56,8 +56,7 @@ const ADMISSION_STATUS_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
-  { value: "WITHDRAWN", label: "Withdrawn" },
-  { value: "ALUMNI", label: "Alumni" },
+  { value: "WITHDRAWN", label: "Withdrawn" }
 ];
 
 export default function Page() {

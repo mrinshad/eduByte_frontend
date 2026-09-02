@@ -33,6 +33,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "students", label: "Student Directory", area: "admin", purpose: "Manage student master data", group: "Academic" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", group: "Academic" },
+  { slug: "promotion", label: "Student Promotion", area: "admin", purpose: "Promote students to next class", group: "Academic" },
 
   { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
@@ -101,6 +102,7 @@ export const portalSections: PortalSection[] = [
   { slug: "reports/transport-profitability", label: "Vehicle Profitability (P&L)", area: "workspace", purpose: "Transport fee collections vs operating costs per vehicle", group: "Report", subgroup: "Transportation" },
 
   // E. Admissions & Academics
+
   { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Standard class and division census with gender parity ratio", group: "Report", subgroup: "Admissions & Academics" },
   { slug: "reports/student-progression", label: "Student Progression & TC", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Admissions & Academics" },
 
@@ -146,6 +148,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "staff": "staff.listOnNavbar",
     "students": "students.listOnNavbar",
     "admissions": "admissions.listOnNavbar",
+    "promotion": "students.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
     "cca": "cca.listOnNavbar",
