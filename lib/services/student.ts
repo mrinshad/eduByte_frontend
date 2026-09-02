@@ -37,6 +37,7 @@ export interface Student {
   address: string;
   status: "ACTIVE" | "WITHDRAWN";
   enrollmentId?: string;
+  enrollmentStatus?: string | null;
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
@@ -59,6 +60,8 @@ export interface StudentListItem {
   whatsappNumber: string;
   address: string;
   status: string;
+  enrollmentId?: string;
+  enrollmentStatus?: string | null;
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";

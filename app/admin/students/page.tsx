@@ -68,7 +68,7 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [admissionFilter, setAdmissionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortByClass, setSortByClass] = useState(false); // ← off by default
@@ -366,7 +366,7 @@ export default function Page() {
           )}
           {statusFilter !== "all" && (
             <FilterChip
-              label={`Status: ${statusFilter}`}
+              label={`Status: ${statusFilter === "ACTIVE" ? "Active" : statusFilter === "WITHDRAWN" ? "Withdrawn" : statusFilter}`}
               onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
             />
           )}
