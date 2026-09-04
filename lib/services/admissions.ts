@@ -81,6 +81,7 @@ export interface UpdateAdmissionPayload {
 export interface CreateAdmissionResponse {
   success: boolean;
   message: string;
+  data?: { id: string; [key: string]: any };
 }
 
 export interface AdmissionsListResponse {

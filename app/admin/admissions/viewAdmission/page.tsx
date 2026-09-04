@@ -14,11 +14,13 @@ import {
   AlertCircle,
   Loader2,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { refreshLateFines } from "@/lib/services/lateFine";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +154,7 @@ export default function ViewAdmissionPage() {
   // Dialog states
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showManualFeeModal, setShowManualFeeModal] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -264,6 +267,20 @@ export default function ViewAdmissionPage() {
               Edit
             </Button>
           </PermissionGate>
+
+          {student.status === "ACTIVE" && (
+            <PermissionGate permission="admissions.editAdmissionButton">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 flex items-center gap-1.5 border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/40 shadow-sm"
+                onClick={() => setShowManualFeeModal(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Generate Fees
+              </Button>
+            </PermissionGate>
+          )}
 
           {student.status === "ACTIVE" && (
             <PermissionGate permission="admissions.editAdmissionButton">
@@ -610,6 +627,18 @@ export default function ViewAdmissionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {id && (
+        <ManualFeeGenerationModal
+          enrollmentId={id}
+          isOpen={showManualFeeModal}
+          onClose={() => setShowManualFeeModal(false)}
+          onSuccess={async () => {
+            const updatedData = await getEnrollmentById(id);
+            setEnrollment(updatedData);
+          }}
+        />
+      )}
     </section>
   );
 }
