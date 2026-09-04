@@ -302,8 +302,17 @@ export default function ViewAdmissionPage() {
           getStudentChargesByEnrollmentId(id),
           getEnrollmentById(id),
         ]);
-        if (studentChargeData?.enrollmentId) {
-          await refreshLateFines(studentChargeData.enrollmentId).catch((err) => {
+        const hasUnpaidRecurringCharges = (studentChargeData?.charges ?? []).some(
+          (c: any) =>
+            c.status !== "PAID" &&
+            (c.frequency === "MONTHLY" || c.frequency === "QUARTERLY")
+        );
+        const isStudentActive = enrollmentData?.student?.status === "ACTIVE";
+
+        if (studentChargeData?.enrollmentId && isStudentActive && hasUnpaidRecurringCharges) {
+          await refreshLateFines(studentChargeData.enrollmentId, {
+            hasUnpaidCharges: true,
+          }).catch((err) => {
             console.warn("Non-fatal: could not refresh late fines", err);
           });
         }

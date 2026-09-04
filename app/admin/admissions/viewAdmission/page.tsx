@@ -161,7 +161,10 @@ export default function ViewAdmissionPage() {
       try {
         setLoading(true);
         const data = await getEnrollmentById(id);
-        if (data?.enrollmentId) {
+        const hasRecurringCharges = data?.charges?.some(
+          (c) => c.frequency === "MONTHLY" || c.frequency === "QUARTERLY"
+        );
+        if (data?.enrollmentId && data?.student?.status === "ACTIVE" && hasRecurringCharges) {
           await refreshLateFines(data.enrollmentId).catch((err) => {
             console.warn("Non-fatal: could not refresh late fines", err);
           });
