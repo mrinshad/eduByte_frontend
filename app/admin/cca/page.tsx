@@ -34,8 +34,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ReusableFormDialog } from "@/components/common/resusable-dialoge-form";
 import {
   Table,
   TableBody,
@@ -1233,210 +1235,144 @@ export default function CCAManagementPage() {
       )}
 
       {/* ── CREATE / EDIT ACTIVITY DIALOG ──────────────────────────────────── */}
-      <Dialog open={activityModalOpen} onOpenChange={setActivityModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">
-              {editingActivityId ? "Edit CCA Activity" : "Add Co-Curricular Activity"}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Assign the activity to an income account and specify its default fee rate.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Activity Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="e.g. Swimming, Karate, KungFu, Robotics"
-                  value={activityForm.name}
-                  onChange={(e) => setActivityForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#556043]"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Code
-                </label>
-                <Input
-                  placeholder="e.g. KGF"
-                  value={activityForm.code}
-                  onChange={(e) =>
-                    setActivityForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))
-                  }
-                  className="h-10 font-mono uppercase text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#556043]"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Fee Amount (₹) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">
-                    ₹
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="500"
-                    value={activityForm.defaultFee}
-                    onChange={(e) =>
-                      setActivityForm((prev) => ({
-                        ...prev,
-                        defaultFee: e.target.value === "" ? "" : Number(e.target.value),
-                      }))
-                    }
-                    className="pl-7 h-10 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Billing Frequency
-                </label>
-                <Select
-                  value={activityForm.frequency}
-                  onValueChange={(val: "MONTHLY" | "QUARTERLY" | "ANNUAL" | "ONE_TIME") =>
-                    setActivityForm((prev) => ({ ...prev, frequency: val }))
-                  }
-                >
-                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
-                    <SelectValue placeholder="Select Frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MONTHLY">MONTHLY</SelectItem>
-                    <SelectItem value="QUARTERLY">QUARTERLY</SelectItem>
-                    <SelectItem value="ANNUAL">ANNUAL</SelectItem>
-                    <SelectItem value="ONE_TIME">ONE_TIME</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Income Account
-              </label>
-              <Select
-                value={activityForm.incomeAccountId}
-                onValueChange={(val) => setActivityForm((prev) => ({ ...prev, incomeAccountId: val }))}
-              >
-                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
-                  <SelectValue placeholder="Select Account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Status
-              </label>
-              <Select
-                value={activityForm.status}
-                onValueChange={(val: "ACTIVE" | "INACTIVE") =>
-                  setActivityForm((prev) => ({ ...prev, status: val }))
-                }
-              >
-                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                  <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Description / Notes (Optional)
-              </label>
-              <Input
-                placeholder="Brief description of training sessions, coach, or equipment..."
-                value={activityForm.description}
-                onChange={(e) => setActivityForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#556043]"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
-            <Button variant="outline" onClick={() => setActivityModalOpen(false)} className="h-10 text-xs sm:text-sm rounded-lg">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveActivity}
-              disabled={isSavingActivity}
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs sm:text-sm font-medium h-10 px-4 rounded-lg"
-            >
-              {isSavingActivity ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-white dark:text-slate-900" /> Saving...
-                </>
-              ) : editingActivityId ? (
-                "Update Activity"
-              ) : (
-                "Create Activity"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReusableFormDialog
+        open={activityModalOpen}
+        onOpenChange={(val) => {
+          setActivityModalOpen(val);
+          if (!val) {
+            setEditingActivityId(null);
+            setActivityForm({
+              name: "",
+              code: "",
+              defaultFee: 500,
+              frequency: "MONTHLY",
+              incomeAccountId: "",
+              description: "",
+              status: "ACTIVE",
+            });
+          }
+        }}
+        theme="vehicle"
+        title={editingActivityId ? "Edit CCA Activity" : "Add Co-Curricular Activity"}
+        description="Assign the activity to an income account and specify its default fee rate."
+        contentClassName="w-[92vw] sm:max-w-2xl max-h-[90vh]"
+        fieldsContainerClassName="grid grid-cols-1 sm:grid-cols-2 gap-3.5 space-y-0"
+        fields={[
+          {
+            type: "text",
+            name: "name",
+            label: "Activity Name",
+            placeholder: "e.g. Swimming, Karate, KungFu, Robotics",
+            required: true,
+            colSpan: 2,
+          },
+          {
+            type: "text",
+            name: "code",
+            label: "Code",
+            placeholder: "e.g. KGF",
+            colSpan: 1,
+          },
+          {
+            type: "number",
+            name: "defaultFee",
+            label: "Fee Amount (₹)",
+            placeholder: "500",
+            required: true,
+            colSpan: 1,
+          },
+          {
+            type: "select",
+            name: "frequency",
+            label: "Billing Frequency",
+            options: [
+              { label: "MONTHLY", value: "MONTHLY" },
+              { label: "QUARTERLY", value: "QUARTERLY" },
+              { label: "ANNUAL", value: "ANNUAL" },
+              { label: "ONE_TIME", value: "ONE_TIME" },
+            ],
+            colSpan: 1,
+          },
+          {
+            type: "select",
+            name: "incomeAccountId",
+            label: "Income Account",
+            placeholder: "Select Account",
+            options: accounts.map((acc) => ({ label: acc.name, value: acc.id })),
+            colSpan: 1,
+          },
+          {
+            type: "select",
+            name: "status",
+            label: "Status",
+            options: [
+              { label: "ACTIVE", value: "ACTIVE" },
+              { label: "INACTIVE", value: "INACTIVE" },
+            ],
+            colSpan: 2,
+          },
+          {
+            type: "text",
+            name: "description",
+            label: "Description / Notes (Optional)",
+            placeholder: "Brief description of training sessions, coach, or equipment...",
+            colSpan: 2,
+          },
+        ]}
+        values={activityForm}
+        onChange={(name, value) => {
+          setActivityForm((prev) => ({
+            ...prev,
+            [name]: name === "code" && typeof value === "string" ? value.toUpperCase() : value,
+          }));
+        }}
+        onSubmit={handleSaveActivity}
+        isSaving={isSavingActivity}
+        isEditing={!!editingActivityId}
+        submitLabel="Create Activity"
+        editSubmitLabel="Update Activity"
+      />
 
       {/* ── ASSIGN STUDENT DIALOG ─────────────────────────────────────────── */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-slate-950 dark:text-white">
-              <Users className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" /> Assign Student to CCA Activities
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Select an active student, choose one or multiple CCA activities, set the billing start date, optional end date, and discount amount.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[92vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden">
+          <div className="p-6 pb-2 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold text-white dark:text-white">
+                <Users className="h-5 w-5 text-white/90 dark:text-[#9ea98a]" /> Assign Student to CCA Activities
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                Select an active student, choose one or multiple CCA activities, set the billing start date, optional end date, and discount amount.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
+          <div className="space-y-4 px-6 py-2 text-xs flex-1 overflow-y-auto">
             {/* Student Search & Select */}
-            <div>
-              <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                Select Active Student <span className="text-red-500">*</span>
-              </label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-white dark:text-slate-200">
+                Select Active Student <span className="text-red-500 ml-0.5">*</span>
+              </Label>
               <Popover open={studentPopoverOpen} onOpenChange={setStudentPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between font-normal text-left h-10 text-xs sm:text-sm rounded-lg truncate bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700"
+                    className="w-full justify-between font-normal text-left h-10 text-xs sm:text-sm rounded-xl truncate bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 hover:bg-[#5a6448] hover:text-white dark:hover:bg-slate-750"
                   >
-                    <span className="truncate">
+                    <span className={cn("truncate", !selectedStudentObj && "text-slate-300 dark:text-slate-400")}>
                       {selectedStudentObj
                         ? `[${selectedStudentObj.admissionNumber}] ${selectedStudentObj.studentName} (${selectedStudentObj.class})`
                         : "Search and choose student..."}
                     </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search student name or admission #..." className="text-xs sm:text-sm" />
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-xl" align="start">
+                  <Command className="bg-transparent text-white dark:text-slate-100">
+                    <CommandInput placeholder="Search student name or admission #..." className="text-xs sm:text-sm text-white placeholder:text-slate-300 dark:text-slate-100" />
                     <CommandList>
-                      <CommandEmpty>No matching active students found.</CommandEmpty>
+                      <CommandEmpty className="py-6 text-center text-xs text-slate-200 dark:text-slate-400">No matching active students found.</CommandEmpty>
                       <CommandGroup className="max-h-56 overflow-y-auto">
                         {allAdmissions.map((adm) => (
                           <CommandItem
@@ -1446,19 +1382,19 @@ export default function CCAManagementPage() {
                               setSelectedStudentAdmissionId(adm.id);
                               setStudentPopoverOpen(false);
                             }}
-                            className="cursor-pointer py-2"
+                            className="cursor-pointer py-2 text-white dark:text-slate-100 aria-selected:bg-[#556043] dark:aria-selected:bg-slate-800"
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4 text-[#6D755F]",
+                                "mr-2 h-4 w-4 text-white",
                                 selectedStudentAdmissionId === adm.id ? "opacity-100" : "opacity-0"
                               )}
                             />
                             <div className="flex flex-col">
-                              <span className="font-medium text-xs sm:text-sm text-slate-900 dark:text-slate-100">
+                              <span className="font-medium text-xs sm:text-sm text-white dark:text-slate-100">
                                 {adm.studentName}
                               </span>
-                              <span className="text-[11px] text-slate-400 font-mono">
+                              <span className="text-[11px] text-slate-200 dark:text-slate-400 font-mono">
                                 Adm: {adm.admissionNumber} | Class: {adm.class} {adm.division}
                               </span>
                             </div>
@@ -1472,10 +1408,10 @@ export default function CCAManagementPage() {
             </div>
 
             {/* Activities Checkboxes */}
-            <div>
-              <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                Choose CCA Activities <span className="text-red-500">*</span>
-              </label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-white dark:text-slate-200">
+                Choose CCA Activities <span className="text-red-500 ml-0.5">*</span>
+              </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-44 overflow-y-auto pr-1">
                 {activities.map((act) => {
                   const isChecked = selectedAssignConfigs.some((c) => c.activityId === act.id);
@@ -1484,22 +1420,22 @@ export default function CCAManagementPage() {
                       key={act.id}
                       onClick={() => handleToggleAssignActivity(act)}
                       className={cn(
-                        "flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-slate-900",
+                        "flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer",
                         isChecked
-                          ? "border-[#556043] bg-[#556043]/5 dark:bg-[#556043]/10"
-                          : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                          ? "border-white/60 bg-[#6a7459] dark:border-slate-600 dark:bg-slate-800"
+                          : "border-[#8b9478]/50 bg-[#667155]/60 hover:bg-[#667155] dark:border-slate-700 dark:bg-slate-850 dark:hover:bg-slate-800"
                       )}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
                         <Checkbox
                           checked={isChecked}
-                          className="pointer-events-none bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-600 data-[state=checked]:bg-[#556043] data-[state=checked]:text-white data-[state=checked]:border-[#556043]"
+                          className="pointer-events-none border-[#8b9478] data-[state=checked]:bg-white data-[state=checked]:text-[#556043] data-[state=checked]:border-white dark:border-slate-600 dark:data-[state=checked]:bg-slate-100 dark:data-[state=checked]:text-slate-900"
                         />
                         <div className="truncate">
-                          <span className="text-xs font-bold block text-slate-900 dark:text-white truncate">
+                          <span className="text-xs font-bold block text-white dark:text-white truncate">
                             {act.name}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          <span className="text-[10px] text-slate-200 dark:text-slate-400">
                             ₹{(act.defaultFee || Number(act.feeAmount) || 0).toLocaleString()} / {act.frequency || "MONTHLY"}
                           </span>
                         </div>
@@ -1512,42 +1448,42 @@ export default function CCAManagementPage() {
 
             {/* Per-Activity Configuration Table (Desktop) & Cards (Mobile) */}
             {selectedAssignConfigs.length > 0 && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm">
-                <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 px-4 py-2.5 flex items-center justify-between">
+              <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-950/40 overflow-hidden shadow-sm">
+                <div className="border-b border-[#8b9478]/40 dark:border-slate-800 bg-[#6a7459]/50 dark:bg-slate-900/60 px-4 py-2.5 flex items-center justify-between">
                   <div>
-                    <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <h4 className="text-xs font-semibold text-white dark:text-slate-200">
                       Configured CCA Allocations ({selectedAssignConfigs.length})
                     </h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[10px] text-slate-200 dark:text-slate-400">
                       Configure separate start dates, end dates, and discounts per activity.
                     </p>
                   </div>
                 </div>
 
                 {/* Mobile View: Cards */}
-                <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-64 overflow-y-auto p-2 space-y-2">
+                <div className="block sm:hidden divide-y divide-[#8b9478]/30 dark:divide-slate-800 max-h-64 overflow-y-auto p-2 space-y-2">
                   {selectedAssignConfigs.map((item) => {
                     const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
                     const net = Math.max(0, item.fee - disc);
                     return (
-                      <div key={item.activityId} className="p-3 bg-slate-50/80 dark:bg-slate-900/50 rounded-lg space-y-2.5">
+                      <div key={item.activityId} className="p-3 bg-[#667155]/40 dark:bg-slate-900/60 border border-[#8b9478]/30 dark:border-slate-800 rounded-xl space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">
+                            <span className="font-semibold text-xs text-white dark:text-slate-100 block">
                               {item.name}
                             </span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] text-slate-200 dark:text-slate-400">
                               ₹{item.fee.toLocaleString()} / {item.frequency || "Month"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-[#556043]/15 text-[#556043] dark:bg-[#556043]/25 text-[11px] font-bold rounded-md">
+                            <Badge className="bg-white/20 text-white dark:bg-slate-800 dark:text-slate-200 text-[11px] font-bold rounded-lg border-0">
                               ₹{net.toLocaleString()}/mo
                             </Badge>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-red-600 rounded-lg"
+                              className="h-7 w-7 text-slate-200 hover:text-red-300 hover:bg-white/10 rounded-lg"
                               onClick={() => handleRemoveAssignItem(item.activityId)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1557,33 +1493,33 @@ export default function CCAManagementPage() {
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">Start Date *</label>
+                            <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Start Date *</Label>
                             <Input
                               type="date"
                               value={item.startDate}
                               onChange={(e) =>
                                 handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
                               }
-                              className="h-8 text-[11px] rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                              className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">End Date</label>
+                            <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">End Date</Label>
                             <Input
                               type="date"
                               value={item.endDate}
                               onChange={(e) =>
                                 handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
                               }
-                              className="h-8 text-[11px] rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                              className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">Discount Amount (₹)</label>
+                          <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Discount Amount (₹)</Label>
                           <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">₹</span>
                             <Input
                               type="number"
                               min={0}
@@ -1596,7 +1532,7 @@ export default function CCAManagementPage() {
                                   e.target.value === "" ? "" : Number(e.target.value)
                                 )
                               }
-                              className="pl-5 h-8 text-[11px] rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700"
+                              className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                             />
                           </div>
                         </div>
@@ -1609,23 +1545,23 @@ export default function CCAManagementPage() {
                 <div className="hidden sm:block overflow-x-auto max-h-56 w-full max-w-full">
                   <Table>
                     <TableHeader>
-                      <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
-                        <TableHead className="pl-4 text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[100px]">
+                      <TableRow className="hover:bg-transparent border-[#8b9478]/30 dark:border-slate-800">
+                        <TableHead className="pl-4 text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[100px]">
                           Activity
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[110px]">
                           Start Date *
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[110px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[110px]">
                           End Date
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[90px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[90px]">
                           Discount (₹)
                         </TableHead>
-                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-500 min-w-[70px]">
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[70px]">
                           Net Rate
                         </TableHead>
-                        <TableHead className="pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-slate-500 w-[40px]">
+                        <TableHead className="pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 w-[40px]">
                           Action
                         </TableHead>
                       </TableRow>
@@ -1637,12 +1573,12 @@ export default function CCAManagementPage() {
                         return (
                           <TableRow
                             key={item.activityId}
-                            className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+                            className="border-[#8b9478]/30 dark:border-slate-800/50 hover:bg-[#667155]/30 dark:hover:bg-slate-800/40"
                           >
-                            <TableCell className="pl-4 font-semibold text-xs text-slate-900 dark:text-slate-100">
+                            <TableCell className="pl-4 font-semibold text-xs text-white dark:text-slate-100">
                               <div className="flex flex-col">
                                 <span>{item.name}</span>
-                                <span className="text-[10px] text-slate-400 font-normal">
+                                <span className="text-[10px] text-slate-300 dark:text-slate-400 font-normal">
                                   ₹{item.fee.toLocaleString()} / {item.frequency || "Month"}
                                 </span>
                               </div>
@@ -1654,7 +1590,7 @@ export default function CCAManagementPage() {
                                 onChange={(e) =>
                                   handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
                                 }
-                                className="h-8 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                                className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                               />
                             </TableCell>
                             <TableCell>
@@ -1664,12 +1600,12 @@ export default function CCAManagementPage() {
                                 onChange={(e) =>
                                   handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
                                 }
-                                className="h-8 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                                className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                               />
                             </TableCell>
                             <TableCell>
                               <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">
                                   ₹
                                 </span>
                                 <Input
@@ -1684,18 +1620,18 @@ export default function CCAManagementPage() {
                                       e.target.value === "" ? "" : Number(e.target.value)
                                     )
                                   }
-                                  className="pl-5 h-8 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700"
+                                  className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                                 />
                               </div>
                             </TableCell>
-                            <TableCell className="font-bold text-xs text-[#556043] dark:text-[#9ea98a]">
+                            <TableCell className="font-bold text-xs text-white dark:text-[#9ea98a]">
                               ₹{net.toLocaleString()}
                             </TableCell>
                             <TableCell className="pr-4 text-right">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg"
+                                className="h-7 w-7 text-slate-200 hover:text-red-300 hover:bg-white/10 dark:hover:bg-red-950/50 rounded-lg"
                                 onClick={() => handleRemoveAssignItem(item.activityId)}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -1708,12 +1644,12 @@ export default function CCAManagementPage() {
                   </Table>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 px-4 py-2.5 text-xs gap-2">
-                  <span className="text-slate-500 text-[11px] sm:text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-[#8b9478]/40 dark:border-slate-800 bg-[#6a7459]/50 dark:bg-slate-900/60 px-4 py-2.5 text-xs gap-2">
+                  <span className="text-slate-200 dark:text-slate-300 text-[11px] sm:text-xs">
                     Selected {selectedAssignConfigs.length} Activities &bull; Gross: ₹{modalFeeSummary.grossFee.toLocaleString()}
                     {modalFeeSummary.discount > 0 && ` | Discount: −₹${modalFeeSummary.discount.toLocaleString()}`}
                   </span>
-                  <span className="font-bold text-xs sm:text-sm text-[#556043] dark:text-[#9ea98a]">
+                  <span className="font-bold text-xs sm:text-sm text-white dark:text-white">
                     Net Monthly: ₹{modalFeeSummary.netFee.toLocaleString()}
                   </span>
                 </div>
@@ -1721,18 +1657,22 @@ export default function CCAManagementPage() {
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 shrink-0 mt-4">
-            <Button variant="outline" onClick={() => setAssignModalOpen(false)} className="h-10 text-xs sm:text-sm rounded-lg">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-6 mt-0 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setAssignModalOpen(false)}
+              className="w-full sm:w-auto rounded-full border-[#8b9478] bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
+            >
               Cancel
             </Button>
             <Button
               onClick={handleSaveAllocation}
               disabled={isSavingAllocation}
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs sm:text-sm font-medium h-10 px-4 rounded-lg"
+              className="w-full sm:w-auto rounded-full bg-white text-[#556043] hover:bg-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
             >
               {isSavingAllocation ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-white dark:text-slate-900" /> Assigning...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-[#556043] dark:text-slate-900" /> Assigning...
                 </>
               ) : (
                 "Save & Assign Student"
@@ -1744,23 +1684,25 @@ export default function CCAManagementPage() {
 
       {/* ── BULK ASSIGN BY CLASS DIALOG ─────────────────────────────────────── */}
       <Dialog open={bulkAssignModalOpen} onOpenChange={setBulkAssignModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-slate-950 dark:text-white">
-              <Layers className="h-5 w-5 text-orange-600 dark:text-orange-400" /> Bulk Assign Students to CCA Activity
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Select an activity, pick a class/division, configure start date and discounts, and enroll multiple students at once.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[92vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden">
+          <div className="p-6 pb-2 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold text-white dark:text-white">
+                <Layers className="h-5 w-5 text-white/90 dark:text-orange-400" /> Bulk Assign Students to CCA Activity
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                Select an activity, pick a class/division, configure start date and discounts, and enroll multiple students at once.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
+          <div className="space-y-4 px-6 py-2 text-xs flex-1 overflow-y-auto">
             {/* Row 1: CCA Activity & Class */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                  Target CCA Activity <span className="text-red-500">*</span>
-                </label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">
+                  Target CCA Activity <span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Select
                   value={bulkActivityId}
                   onValueChange={(val) => {
@@ -1768,14 +1710,14 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40">
                     <SelectValue placeholder="Select CCA Activity" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
                     {activities
                       .filter((a) => a.status === "ACTIVE")
                       .map((act) => (
-                        <SelectItem key={act.id} value={act.id}>
+                        <SelectItem key={act.id} value={act.id} className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800">
                           {act.name} (₹{act.defaultFee || Number(act.feeAmount) || 0}/mo)
                         </SelectItem>
                       ))}
@@ -1783,10 +1725,10 @@ export default function CCAManagementPage() {
                 </Select>
               </div>
 
-              <div>
-                <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                  Target Class <span className="text-red-500">*</span>
-                </label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">
+                  Target Class <span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Select
                   value={bulkClassId}
                   onValueChange={(val) => {
@@ -1795,12 +1737,12 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40">
                     <SelectValue placeholder="Select Class" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
                     {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.name}>
+                      <SelectItem key={cls.id} value={cls.name} className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800">
                         {cls.name}
                       </SelectItem>
                     ))}
@@ -1811,8 +1753,8 @@ export default function CCAManagementPage() {
 
             {/* Row 2: Division & Start Date & Discount */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">Division</label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">Division</Label>
                 <Select
                   value={bulkDivision}
                   onValueChange={(val) => {
@@ -1820,13 +1762,13 @@ export default function CCAManagementPage() {
                     setBulkSelectedStudentIds([]);
                   }}
                 >
-                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                  <SelectTrigger className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40">
                     <SelectValue placeholder="All Divisions" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Divisions</SelectItem>
+                  <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
+                    <SelectItem value="all" className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800">All Divisions</SelectItem>
                     {availableDivisions.map((div) => (
-                      <SelectItem key={div} value={div}>
+                      <SelectItem key={div} value={div} className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800">
                         Division {div}
                       </SelectItem>
                     ))}
@@ -1834,29 +1776,29 @@ export default function CCAManagementPage() {
                 </Select>
               </div>
 
-              <div>
-                <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">
+                  Start Date <span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Input
                   type="date"
                   value={bulkStartDate}
                   onChange={(e) => setBulkStartDate(e.target.value)}
-                  className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                  className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                 />
               </div>
 
-              <div>
-                <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">Discount per Student (₹)</label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">Discount per Student (₹)</Label>
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">₹</span>
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs font-semibold">₹</span>
                   <Input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={bulkDiscount === "" ? "" : bulkDiscount}
                     onChange={(e) => setBulkDiscount(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="pl-6 h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700"
+                    className="pl-6 h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1865,17 +1807,17 @@ export default function CCAManagementPage() {
             {/* Student Checklist Table */}
             <div className="space-y-2.5 pt-2">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-xs">
-                  <Users className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
+                <Label className="font-semibold text-white dark:text-slate-200 flex items-center gap-1.5 text-xs">
+                  <Users className="h-3.5 w-3.5 text-white/90 dark:text-[#9ea98a]" />
                   Students in Class ({bulkClassStudents.length})
-                </label>
+                </Label>
                 {bulkClassStudents.length > 0 && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={handleSelectAllStudents}
-                    className="h-8 px-2 text-xs text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-[#556043]/20 rounded-lg"
+                    className="h-8 px-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 dark:text-slate-300 dark:hover:bg-slate-800 rounded-lg"
                   >
                     {bulkSelectedStudentIds.length > 0 &&
                     bulkSelectedStudentIds.length ===
@@ -1888,15 +1830,15 @@ export default function CCAManagementPage() {
                 )}
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 max-h-60 overflow-y-auto">
+              <div className="overflow-hidden rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-950/40 max-h-60 overflow-y-auto">
                 {bulkClassStudents.length === 0 ? (
-                  <div className="py-8 text-center text-slate-500">
+                  <div className="py-8 text-center text-slate-200 dark:text-slate-400">
                     <p className="text-xs">No active students found in the selected class/division.</p>
                   </div>
                 ) : (
                   <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800">
-                      <tr className="text-slate-500">
+                    <thead className="sticky top-0 bg-[#6a7459] dark:bg-slate-900/95 border-b border-[#8b9478]/40 dark:border-slate-800">
+                      <tr className="text-slate-200 dark:text-slate-400">
                         <th className="p-2.5 w-10 text-center"></th>
                         <th className="p-2.5 font-medium">Roll / Adm #</th>
                         <th className="p-2.5 font-medium">Student Name</th>
@@ -1904,7 +1846,7 @@ export default function CCAManagementPage() {
                         <th className="p-2.5 font-medium text-right pr-3">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                    <tbody className="divide-y divide-[#8b9478]/30 dark:divide-slate-800/50">
                       {bulkClassStudents.map((adm) => {
                         const sId = adm.studentId;
                         const admNo = adm.admissionNumber || "—";
@@ -1921,10 +1863,10 @@ export default function CCAManagementPage() {
                             className={cn(
                               "cursor-pointer transition-colors",
                               enrolled
-                                ? "bg-slate-50/60 opacity-60 cursor-not-allowed dark:bg-slate-950/40"
+                                ? "bg-[#556043]/40 opacity-60 cursor-not-allowed dark:bg-slate-950/40"
                                 : isSelected
-                                ? "bg-[#556043]/10 dark:bg-[#556043]/20"
-                                : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+                                ? "bg-[#6a7459] dark:bg-[#556043]/30"
+                                : "hover:bg-[#667155]/40 dark:hover:bg-slate-800/40"
                             )}
                           >
                             <td className="p-2.5 text-center">
@@ -1933,31 +1875,31 @@ export default function CCAManagementPage() {
                                 disabled={enrolled}
                                 checked={isSelected}
                                 readOnly
-                                className="h-4 w-4 rounded border-slate-300 accent-[#556043] pointer-events-none"
+                                className="h-4 w-4 rounded border-[#8b9478] accent-white pointer-events-none"
                               />
                             </td>
-                            <td className="p-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                            <td className="p-2.5 font-mono text-[11px] text-slate-200 dark:text-slate-400">
                               {adm.rollNumber ? `#${adm.rollNumber} • ` : ""}
                               {admNo}
                             </td>
-                            <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100">
+                            <td className="p-2.5 font-medium text-white dark:text-slate-100">
                               {sName}
                             </td>
-                            <td className="p-2.5 text-slate-500">
+                            <td className="p-2.5 text-slate-200 dark:text-slate-300">
                               {adm.division || "—"}
                             </td>
                             <td className="p-2.5 text-right pr-3">
                               {enrolled ? (
                                 <Badge
                                   variant="outline"
-                                  className="text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-md"
+                                  className="text-[10px] bg-white/15 text-slate-200 dark:bg-slate-800 dark:text-slate-400 border-0 rounded-md"
                                 >
                                   Already Enrolled
                                 </Badge>
                               ) : (
                                 <Badge
                                   variant="outline"
-                                  className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 rounded-md"
+                                  className="text-[10px] bg-emerald-500/20 text-emerald-200 border-emerald-500/40 rounded-md"
                                 >
                                   Available
                                 </Badge>
@@ -1973,18 +1915,18 @@ export default function CCAManagementPage() {
 
               {/* Summary Bar */}
               {bulkSelectedStudentIds.length > 0 && (
-                <div className="flex items-center justify-between rounded-lg bg-[#556043]/10 dark:bg-[#556043]/20 border border-[#556043]/20 p-3 text-xs">
+                <div className="flex items-center justify-between rounded-xl bg-[#6a7459]/50 dark:bg-[#556043]/20 border border-[#8b9478]/40 p-3 text-xs">
                   <div>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    <span className="font-semibold text-white dark:text-slate-100">
                       {bulkSelectedStudentIds.length} Student(s) Selected
                     </span>
                     {bulkDiscount !== "" && Number(bulkDiscount) > 0 && (
-                      <span className="text-[11px] text-[#556043] dark:text-[#9ea98a] block">
+                      <span className="text-[11px] text-slate-200 dark:text-slate-300 block">
                         Discount applied: ₹{Number(bulkDiscount).toLocaleString()} / student
                       </span>
                     )}
                   </div>
-                  <span className="font-bold text-sm text-[#556043] dark:text-[#9ea98a]">
+                  <span className="font-bold text-sm text-white dark:text-[#9ea98a]">
                     Ready to Enroll
                   </span>
                 </div>
@@ -1992,22 +1934,22 @@ export default function CCAManagementPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 shrink-0 mt-4">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-6 mt-0 shrink-0">
             <Button
               variant="outline"
               onClick={() => setBulkAssignModalOpen(false)}
-              className="h-10 text-xs sm:text-sm rounded-lg"
+              className="w-full sm:w-auto rounded-full border-[#8b9478] bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveBulkAssign}
               disabled={isSavingBulkAssign || bulkSelectedStudentIds.length === 0}
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs sm:text-sm font-medium h-10 px-4 rounded-lg"
+              className="w-full sm:w-auto rounded-full bg-white text-[#556043] hover:bg-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
             >
               {isSavingBulkAssign ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-white dark:text-slate-900" /> Assigning Students...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-[#556043] dark:text-slate-900" /> Assigning Students...
                 </>
               ) : (
                 `Assign ${bulkSelectedStudentIds.length} Students`
@@ -2022,37 +1964,39 @@ export default function CCAManagementPage() {
         open={!!editingAssignment}
         onOpenChange={(open) => !open && setEditingAssignment(null)}
       >
-        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-slate-950 dark:text-white">
-              <Pencil className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" /> Edit CCA Student Assignment
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Update the billing start date, optional end date, and discount configuration for this student.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[92vw] sm:max-w-lg max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden">
+          <div className="p-6 pb-2 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold text-white dark:text-white">
+                <Pencil className="h-5 w-5 text-white/90 dark:text-[#9ea98a]" /> Edit CCA Student Assignment
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                Update the billing start date, optional end date, and discount configuration for this student.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           {editingAssignment && (
-            <div className="space-y-4 py-2 text-xs flex-1 overflow-y-auto pr-2">
+            <div className="space-y-4 px-6 py-2 text-xs flex-1 overflow-y-auto">
               {/* Activity Info Card */}
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-3.5 space-y-2">
+              <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#667155]/40 dark:bg-slate-900/60 p-3.5 space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-200 dark:text-slate-400 block">
                       Student
                     </span>
-                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100 block">
+                    <span className="font-bold text-sm text-white dark:text-slate-100 block">
                       {editingAssignment.studentName}
                     </span>
-                    <span className="text-xs text-slate-500 font-mono">
+                    <span className="text-xs text-slate-300 dark:text-slate-400 font-mono">
                       Adm: {editingAssignment.admissionNumber}
                     </span>
                   </div>
                   <div className="sm:text-right">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-200 dark:text-slate-400 block">
                       Activity
                     </span>
-                    <Badge className="bg-[#556043]/15 text-[#556043] dark:bg-[#556043]/25 dark:text-[#9ea98a] border-none text-xs font-semibold rounded-md">
+                    <Badge className="bg-white/20 text-white dark:bg-slate-800 dark:text-slate-200 border-none text-xs font-semibold rounded-lg">
                       {editingAssignment.activityName}
                     </Badge>
                   </div>
@@ -2062,11 +2006,11 @@ export default function CCAManagementPage() {
               {/* Editable Amount & Discount Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                    Base Charge Amount (₹) <span className="text-red-500">*</span>
-                  </label>
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
+                    Base Charge Amount (₹) <span className="text-red-500 ml-0.5">*</span>
+                  </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm">
                       ₹
                     </span>
                     <Input
@@ -2085,17 +2029,17 @@ export default function CCAManagementPage() {
                             : null
                         )
                       }
-                      className="pl-7 h-10 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]"
+                      className="pl-7 h-10 text-xs sm:text-sm font-medium rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
                     Discount Amount (₹)
-                  </label>
+                  </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm">
                       ₹
                     </span>
                     <Input
@@ -2114,7 +2058,7 @@ export default function CCAManagementPage() {
                             : null
                         )
                       }
-                      className="pl-7 h-10 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]"
+                      className="pl-7 h-10 text-xs sm:text-sm font-medium rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                     />
                   </div>
                 </div>
@@ -2123,9 +2067,9 @@ export default function CCAManagementPage() {
               {/* Form Fields: Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
+                    Start Date <span className="text-red-500 ml-0.5">*</span>
+                  </Label>
                   <Input
                     type="date"
                     value={editingAssignment.startDate}
@@ -2134,14 +2078,14 @@ export default function CCAManagementPage() {
                         prev ? { ...prev, startDate: e.target.value } : null
                       )
                     }
-                    className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                    className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block mb-1.5 font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
                     End Date (Optional)
-                  </label>
+                  </Label>
                   <Input
                     type="date"
                     value={editingAssignment.endDate}
@@ -2150,7 +2094,7 @@ export default function CCAManagementPage() {
                         prev ? { ...prev, endDate: e.target.value } : null
                       )
                     }
-                    className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 [color-scheme:light] dark:[color-scheme:dark]"
+                    className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -2167,17 +2111,17 @@ export default function CCAManagementPage() {
                     : 0;
                 const net = Math.max(0, base - disc);
                 return (
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#556043]/10 dark:bg-[#556043]/20 border border-[#556043]/20">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#6a7459]/50 dark:bg-[#556043]/20 border border-[#8b9478]/40">
                     <div>
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                      <span className="text-xs font-semibold text-white dark:text-slate-200 block">
                         Net Monthly Rate
                       </span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="text-[11px] text-slate-200 dark:text-slate-400">
                         Base: ₹{base.toLocaleString()}
                         {disc > 0 && ` − Discount: ₹${disc.toLocaleString()}`}
                       </span>
                     </div>
-                    <span className="text-base font-bold text-[#556043] dark:text-[#9ea98a]">
+                    <span className="text-base font-bold text-white dark:text-[#9ea98a]">
                       ₹{net.toLocaleString()} / mo
                     </span>
                   </div>
@@ -2186,22 +2130,22 @@ export default function CCAManagementPage() {
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0 shrink-0 mt-4">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-6 mt-0 shrink-0">
             <Button
               variant="outline"
               onClick={() => setEditingAssignment(null)}
-              className="h-10 text-xs sm:text-sm rounded-lg"
+              className="w-full sm:w-auto rounded-full border-[#8b9478] bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveEditAssignment}
               disabled={isSavingEditAssignment}
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs sm:text-sm font-medium h-10 px-4 rounded-lg"
+              className="w-full sm:w-auto rounded-full bg-white text-[#556043] hover:bg-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
             >
               {isSavingEditAssignment ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-white dark:text-slate-900" /> Saving...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-[#556043] dark:text-slate-900" /> Saving...
                 </>
               ) : (
                 "Update Assignment"
@@ -2213,21 +2157,32 @@ export default function CCAManagementPage() {
 
       {/* ── DROP CONFIRMATION DIALOG ───────────────────────────────────────── */}
       <AlertDialog open={!!assignmentToDrop} onOpenChange={(open) => !open && setAssignmentToDrop(null)}>
-        <AlertDialogContent className="w-[95vw] sm:max-w-md rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-4 sm:p-6">
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">Drop Student from CCA?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Are you sure you want to drop <strong>{assignmentToDrop?.studentName}</strong> from{" "}
-              <strong>{assignmentToDrop?.activityName}</strong>? The student's participation will be closed with end date set to today.
+              <strong>{assignmentToDrop?.activityName}</strong>? The student&apos;s participation will be closed with end date set to today.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="w-full sm:w-auto rounded-lg h-10 text-xs sm:text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDroppingAssignment} className="w-full sm:w-auto rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleExecuteDrop}
-              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white rounded-lg h-10 text-xs sm:text-sm"
+              disabled={isDroppingAssignment}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleExecuteDrop();
+              }}
+              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white rounded-full"
             >
-              {isDroppingAssignment ? "Dropping..." : "Confirm Drop"}
+              {isDroppingAssignment ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Dropping...
+                </>
+              ) : (
+                "Confirm Drop"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2235,21 +2190,32 @@ export default function CCAManagementPage() {
 
       {/* ── DELETE ASSIGNMENT DIALOG ───────────────────────────────────────── */}
       <AlertDialog open={!!assignmentToDelete} onOpenChange={(open) => !open && setAssignmentToDelete(null)}>
-        <AlertDialogContent className="w-[95vw] sm:max-w-md rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-4 sm:p-6">
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">Remove CCA Assignment?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Are you sure you want to completely remove <strong>{assignmentToDelete?.studentName}</strong>'s allocation for{" "}
+              Are you sure you want to completely remove <strong>{assignmentToDelete?.studentName}</strong>&apos;s allocation for{" "}
               <strong>{assignmentToDelete?.activityName}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="w-full sm:w-auto rounded-lg h-10 text-xs sm:text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingAssignment} className="w-full sm:w-auto rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleExecuteDelete}
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white rounded-lg h-10 text-xs sm:text-sm"
+              disabled={isDeletingAssignment}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleExecuteDelete();
+              }}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white rounded-full focus:ring-red-600"
             >
-              {isDeletingAssignment ? "Deleting..." : "Yes, Delete"}
+              {isDeletingAssignment ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Yes, Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2257,21 +2223,32 @@ export default function CCAManagementPage() {
 
       {/* ── DELETE ACTIVITY MASTER DIALOG ──────────────────────────────────── */}
       <AlertDialog open={!!activityToDelete} onOpenChange={(open) => !open && setActivityToDelete(null)}>
-        <AlertDialogContent className="w-[95vw] sm:max-w-md rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-4 sm:p-6">
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">Delete "{activityToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">Delete &ldquo;{activityToDelete?.name}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Are you sure you want to delete <strong>{activityToDelete?.name}</strong>? This activity will be removed
               from the master catalog.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="w-full sm:w-auto rounded-lg h-10 text-xs sm:text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingActivity} className="w-full sm:w-auto rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteActivity}
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white rounded-lg h-10 text-xs sm:text-sm"
+              disabled={isDeletingActivity}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteActivity();
+              }}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white rounded-full focus:ring-red-600"
             >
-              {isDeletingActivity ? "Deleting..." : "Yes, Delete Activity"}
+              {isDeletingActivity ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Yes, Delete Activity"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
