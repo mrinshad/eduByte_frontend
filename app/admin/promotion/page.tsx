@@ -347,7 +347,7 @@ export default function PromotionStepperPage() {
     // RENDER: STEP INDICATOR HEADER
     // ==========================================
     const renderStepperHeader = () => (
-        <div className="w-full bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="w-full bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-sm dark:bg-slate-900/60 dark:border-slate-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {STEPS.map((step) => {
                     const isCurrent = currentStep === step.num;
@@ -361,11 +361,11 @@ export default function PromotionStepperPage() {
                                 // Allow jumping back to earlier completed steps
                                 if (isCompleted) setCurrentStep(step.num);
                             }}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                                isCompleted ? "cursor-pointer hover:border-[#556043]/50 bg-slate-50/50 dark:bg-slate-950/40" : ""
+                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                                isCompleted ? "cursor-pointer hover:border-[#556043]/40 bg-slate-50/50 dark:bg-slate-900/40" : ""
                             } ${
                                 isCurrent 
-                                    ? "border-[#556043] bg-[#556043]/5 ring-1 ring-[#556043] dark:bg-[#556043]/15" 
+                                    ? "border-[#556043] bg-[#556043]/10 ring-1 ring-[#556043] dark:bg-[#556043]/20" 
                                     : isCompleted 
                                     ? "border-slate-200 dark:border-slate-800" 
                                     : "border-slate-100 bg-slate-50/30 opacity-60 dark:border-slate-800/40 dark:bg-slate-950/20"
@@ -381,12 +381,12 @@ export default function PromotionStepperPage() {
                                 {isCompleted ? <Check className="h-4 w-4 stroke-[2.5]" /> : step.num}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className={`text-xs font-semibold truncate ${
-                                    isCurrent ? "text-slate-950 dark:text-white" : isCompleted ? "text-slate-800 dark:text-slate-200" : "text-slate-500"
+                                <p className={`text-sm font-semibold truncate ${
+                                    isCurrent ? "text-[#556043] dark:text-[#9ea98a]" : isCompleted ? "text-slate-800 dark:text-slate-200" : "text-slate-500 dark:text-slate-400"
                                 }`}>
                                     {step.title}
                                 </p>
-                                <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
+                                <p className="text-xs text-slate-500 truncate dark:text-slate-400">
                                     {step.subtitle}
                                 </p>
                             </div>
@@ -402,29 +402,29 @@ export default function PromotionStepperPage() {
     // ==========================================
     const renderStep1 = () => (
         <div className="space-y-6">
-            <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-                <CardHeader className="border-b border-slate-100 dark:border-slate-800/60 pb-4">
-                    <div className="flex items-center gap-2">
-                        <GraduationCap className="h-5 w-5 text-[#556043]" />
+            <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/40">
+                    <div className="flex items-center gap-2.5">
+                        <GraduationCap className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
                         <div>
-                            <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                                 Source Class Selection
                             </CardTitle>
-                            <CardDescription className="text-xs text-slate-500 mt-0.5">
+                            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                 Select the academic year and class you wish to promote students from.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
 
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <div>
+                            <label className="block mb-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
                                 Source Academic Year <span className="text-red-500">*</span>
                             </label>
                             <Select value={sourceAcademicYear} onValueChange={setSourceAcademicYear}>
-                                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                     <SelectValue placeholder="Select Academic Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -437,12 +437,12 @@ export default function PromotionStepperPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <div>
+                            <label className="block mb-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
                                 Source Class <span className="text-red-500">*</span>
                             </label>
                             <Select value={sourceClass} onValueChange={setSourceClass}>
-                                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                     <SelectValue placeholder="Select Class" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -459,59 +459,59 @@ export default function PromotionStepperPage() {
                     {/* Progress Dashboard */}
                     {fetchingStudents ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-500">
-                            <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
+                            <Loader2 className="h-6 w-6 animate-spin text-[#556043]" />
                             <p className="text-xs font-medium">Fetching class enrollment progress...</p>
                         </div>
                     ) : summary ? (
                         <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     Class Enrollment Status Summary
                                 </h4>
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                     {sourceClassObj?.name} ({sourceYearObj?.name})
                                 </span>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40 text-center">
-                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                                <div className="p-4 rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900/60 shadow-sm text-center">
+                                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                                         {summary.total}
                                     </div>
-                                    <div className="text-xs font-medium text-slate-500 mt-0.5">Total Enrolled</div>
+                                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Total Enrolled</div>
                                 </div>
 
                                 <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20 text-center">
                                     <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                                         {summary.promoted}
                                     </div>
-                                    <div className="text-xs font-medium text-emerald-600 dark:text-emerald-500 mt-0.5">Promoted</div>
+                                    <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">Promoted</div>
                                 </div>
 
                                 <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/20 text-center">
                                     <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">
                                         {summary.withdrawn}
                                     </div>
-                                    <div className="text-xs font-medium text-rose-600 dark:text-rose-500 mt-0.5">Withdrawn</div>
+                                    <div className="text-xs font-medium text-rose-600 dark:text-rose-400 mt-0.5">Withdrawn</div>
                                 </div>
 
                                 <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20 text-center">
                                     <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                                         {summary.completed}
                                     </div>
-                                    <div className="text-xs font-medium text-blue-600 dark:text-blue-500 mt-0.5">Completed</div>
+                                    <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-0.5">Completed</div>
                                 </div>
 
                                 <div className="p-4 rounded-xl border-2 border-[#556043] bg-[#556043]/10 dark:bg-[#556043]/20 text-center relative overflow-hidden">
-                                    <div className="text-2xl font-bold text-[#556043] dark:text-[#8b9e6f]">
+                                    <div className="text-2xl font-bold text-[#556043] dark:text-[#9ea98a]">
                                         {summary.remaining}
                                     </div>
-                                    <div className="text-xs font-semibold text-[#556043] dark:text-[#8b9e6f] mt-0.5">Remaining Active</div>
+                                    <div className="text-xs font-semibold text-[#556043] dark:text-[#9ea98a] mt-0.5">Remaining Active</div>
                                 </div>
                             </div>
 
                             {summary.remaining === 0 && (
-                                <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300">
+                                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300 font-medium">
                                     <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                                     <span>All students in this class have already been promoted, completed, or withdrawn for this academic year.</span>
                                 </div>
@@ -525,7 +525,7 @@ export default function PromotionStepperPage() {
                 <Button
                     onClick={() => setCurrentStep(2)}
                     disabled={!sourceAcademicYear || !sourceClass || !summary || summary.remaining === 0}
-                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-10 px-6 gap-2"
+                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-medium text-xs sm:text-sm h-10 px-6 gap-2 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                 >
                     Proceed to Select Students
                     <ChevronRight className="h-4 w-4" />
@@ -540,20 +540,20 @@ export default function PromotionStepperPage() {
     const renderStep2 = () => (
         <div className="space-y-4">
             {/* Action & Filter Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm dark:bg-slate-900/60 dark:border-slate-800">
                 <div className="flex flex-col sm:flex-row items-center gap-3 flex-1">
                     <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Search by name or admission #..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="pl-9 h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                            className="pl-9 h-10 w-full text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#556043]"
                         />
                     </div>
 
                     <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                        <SelectTrigger className="h-9 w-full sm:w-44 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                        <SelectTrigger className="h-10 text-xs w-full sm:w-44 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                             <SelectValue placeholder="All Divisions" />
                         </SelectTrigger>
                         <SelectContent>
@@ -568,7 +568,7 @@ export default function PromotionStepperPage() {
                 </div>
 
                 <div className="flex items-center gap-2 justify-end">
-                    <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700 text-xs px-2.5 py-1 font-semibold dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <Badge variant="outline" className="border-none bg-[#556043]/15 text-[#556043] dark:bg-[#556043]/25 dark:text-[#9ea98a] text-xs px-3 py-1.5 font-semibold rounded-lg">
                         {selectedStudentIds.size} of {filteredStudents.length} selected
                     </Badge>
 
@@ -577,7 +577,7 @@ export default function PromotionStepperPage() {
                         size="sm"
                         onClick={() => setCompletingStudentIds(Array.from(selectedStudentIds))}
                         disabled={selectedStudentIds.size === 0 || loading}
-                        className="h-9 text-xs text-blue-700 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900 dark:hover:bg-blue-950"
+                        className="h-10 text-xs rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-950/40 font-medium"
                     >
                         Mark as Completed
                     </Button>
@@ -586,7 +586,7 @@ export default function PromotionStepperPage() {
                         size="sm"
                         onClick={() => setCurrentStep(3)}
                         disabled={selectedStudentIds.size === 0}
-                        className="h-9 text-xs font-semibold bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm gap-1.5"
+                        className="h-10 text-xs font-semibold rounded-xl bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm gap-1.5 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 px-4"
                     >
                         Configure Destination ({selectedStudentIds.size})
                         <ChevronRight className="h-4 w-4" />
@@ -595,30 +595,30 @@ export default function PromotionStepperPage() {
             </div>
 
             {/* Students Table */}
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+            <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#556043] hover:bg-[#556043] border-none text-white">
-                            <TableHead className="w-12 text-center text-white font-semibold">
+                        <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                            <TableHead className="w-12 px-6 h-12 text-center text-white dark:text-foreground font-semibold">
                                 <Checkbox
                                     checked={filteredStudents.length > 0 && selectedStudentIds.size === filteredStudents.length}
                                     onCheckedChange={handleToggleSelectAll}
                                     className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#556043]"
                                 />
                             </TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Admission #</TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Student Name</TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Division</TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Father Name</TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Transport</TableHead>
-                            <TableHead className="text-white font-semibold text-xs whitespace-nowrap text-right">Outstanding Dues</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Admission #</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Student Name</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Division</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Father Name</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Transport</TableHead>
+                            <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right text-xs">Outstanding Dues</TableHead>
                         </TableRow>
                     </TableHeader>
 
                     <TableBody>
                         {filteredStudents.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-12 text-slate-500 text-xs">
+                                <TableCell colSpan={7} className="h-40 text-center text-xs text-slate-500">
                                     No active students found matching your criteria.
                                 </TableCell>
                             </TableRow>
@@ -630,46 +630,46 @@ export default function PromotionStepperPage() {
                                 return (
                                     <TableRow 
                                         key={student.enrollmentId} 
-                                        className={`transition-colors cursor-pointer ${
-                                            isSelected ? "bg-[#556043]/5 dark:bg-[#556043]/15" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                        className={`border-slate-100 dark:border-slate-800 transition-colors cursor-pointer ${
+                                            isSelected ? "bg-[#556043]/10 dark:bg-[#556043]/20" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                                         }`}
                                         onClick={() => handleToggleStudent(student.enrollmentId, !isSelected)}
                                     >
-                                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={isSelected}
                                                 onCheckedChange={(checked) => handleToggleStudent(student.enrollmentId, !!checked)}
                                             />
                                         </TableCell>
-                                        <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                                        <TableCell className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                                             {student.admissionNumber}
                                         </TableCell>
-                                        <TableCell className="font-semibold text-xs text-slate-950 dark:text-white">
+                                        <TableCell className="px-6 py-4 text-xs font-semibold text-slate-950 dark:text-slate-100">
                                             {student.studentName}
                                         </TableCell>
-                                        <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                        <TableCell className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">
                                             {student.divisionName ? `Division ${student.divisionName}` : "—"}
                                         </TableCell>
-                                        <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                        <TableCell className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">
                                             {student.fatherName || "—"}
                                         </TableCell>
-                                        <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                        <TableCell className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">
                                             {student.vehicleAssignment ? (
                                                 <span className="inline-flex items-center gap-1 text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px] font-medium dark:bg-slate-800 dark:text-slate-300">
                                                     <Bus className="h-3 w-3 text-slate-500" />
                                                     {student.vehicleAssignment.vehicleName}
                                                 </span>
                                             ) : (
-                                                <span className="text-slate-400">—</span>
+                                                <span className="text-slate-400 dark:text-slate-500">—</span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-right text-xs">
+                                        <TableCell className="px-6 py-4 text-right text-xs">
                                             {hasDues ? (
-                                                <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700 font-semibold dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
+                                                <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700 font-semibold dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400 text-xs">
                                                     ₹{student.outstandingDues.toFixed(2)}
                                                 </Badge>
                                             ) : (
-                                                <span className="text-slate-400 text-xs font-medium">₹0.00</span>
+                                                <span className="text-slate-400 dark:text-slate-500 text-xs font-medium">₹0.00</span>
                                             )}
                                         </TableCell>
                                     </TableRow>
@@ -685,7 +685,7 @@ export default function PromotionStepperPage() {
                 <Button 
                     variant="ghost" 
                     onClick={() => setCurrentStep(1)} 
-                    className="text-slate-600 hover:text-slate-900 gap-1.5 text-xs font-medium"
+                    className="text-slate-600 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:text-[#9ea98a] dark:hover:bg-[#556043]/20 gap-1.5 font-medium text-xs rounded-xl"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Back to Source Class
@@ -694,7 +694,7 @@ export default function PromotionStepperPage() {
                 <Button
                     onClick={() => setCurrentStep(3)}
                     disabled={selectedStudentIds.size === 0}
-                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-10 px-6 gap-2"
+                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-10 px-6 gap-2 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs rounded-xl"
                 >
                     Proceed to Destination Settings
                     <ChevronRight className="h-4 w-4" />
@@ -709,29 +709,29 @@ export default function PromotionStepperPage() {
     const renderStep3 = () => (
         <div className="space-y-6">
             {/* Target Destination Card */}
-            <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-                <CardHeader className="border-b border-slate-100 dark:border-slate-800/60 pb-4">
-                    <div className="flex items-center gap-2">
-                        <GraduationCap className="h-5 w-5 text-[#556043]" />
+            <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/40">
+                    <div className="flex items-center gap-2.5">
+                        <GraduationCap className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
                         <div>
-                            <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                                 Destination Academic Setup
                             </CardTitle>
-                            <CardDescription className="text-xs text-slate-500 mt-0.5">
+                            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                 Specify where the selected {selectedStudents.length} students will be promoted to.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
 
-                <CardContent className="pt-6 space-y-4">
+                <CardContent className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                Target Academic Year <span className="text-red-500">*</span>
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                Target Academic Year <span className="text-red-500 ml-1">*</span>
                             </label>
                             <Select value={targetAcademicYear} onValueChange={setTargetAcademicYear}>
-                                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                     <SelectValue placeholder="Select Academic Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -745,11 +745,11 @@ export default function PromotionStepperPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                Target Class <span className="text-red-500">*</span>
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                Target Class <span className="text-red-500 ml-1">*</span>
                             </label>
                             <Select value={targetClass} onValueChange={setTargetClass}>
-                                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                     <SelectValue placeholder="Select Class" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -763,15 +763,15 @@ export default function PromotionStepperPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                Target Division <span className="text-red-500">*</span>
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                Target Division <span className="text-red-500 ml-1">*</span>
                             </label>
                             <Select 
                                 value={targetDivision} 
                                 onValueChange={setTargetDivision}
                                 disabled={!targetClass || loadingDivisions}
                             >
-                                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectTrigger className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                     <SelectValue placeholder={loadingDivisions ? "Loading divisions..." : "Select Division"} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -785,7 +785,7 @@ export default function PromotionStepperPage() {
                         </div>
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/40 text-blue-800 dark:text-blue-300 text-xs flex items-start gap-2.5">
+                    <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40 text-blue-800 dark:text-blue-300 text-xs flex items-start gap-2.5 font-medium">
                         <Sparkles className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
                         <div>
                             <span className="font-semibold">Automatic Roll Number Allocation:</span> Roll numbers will be automatically assigned in alphabetical order (1, 2, 3...) for all active students in the destination class & division upon completion.
@@ -796,12 +796,12 @@ export default function PromotionStepperPage() {
 
             {/* Outstanding Dues Configuration Section */}
             {studentsWithDues.length > 0 && (
-                <Card className="border-rose-200 shadow-sm dark:border-rose-950">
-                    <CardHeader className="bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30 pb-4">
-                        <div className="flex items-center gap-2">
-                            <CreditCard className="h-5 w-5 text-rose-600" />
+                <Card className="rounded-2xl border border-rose-200/80 bg-white shadow-sm dark:border-rose-950 dark:bg-slate-900/60 overflow-hidden">
+                    <CardHeader className="bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30 px-6 py-4">
+                        <div className="flex items-center gap-2.5">
+                            <CreditCard className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                             <div>
-                                <CardTitle className="text-base font-semibold text-rose-950 dark:text-rose-200">
+                                <CardTitle className="text-base font-semibold text-rose-900 dark:text-rose-200">
                                     Outstanding Dues Carry-Forward ({studentsWithDues.length} Students)
                                 </CardTitle>
                                 <CardDescription className="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
@@ -814,13 +814,13 @@ export default function PromotionStepperPage() {
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-slate-50 dark:bg-slate-900 text-xs">
-                                    <TableHead className="font-semibold text-xs">Admission #</TableHead>
-                                    <TableHead className="font-semibold text-xs">Student Name</TableHead>
-                                    <TableHead className="font-semibold text-xs text-right">Fee Due</TableHead>
-                                    <TableHead className="font-semibold text-xs text-right">Fine Due</TableHead>
-                                    <TableHead className="font-semibold text-xs text-right">Total Outstanding</TableHead>
-                                    <TableHead className="font-semibold text-xs text-center w-48">Carry Forward Dues</TableHead>
+                                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Admission #</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Student Name</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right text-xs">Fee Due</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right text-xs">Fine Due</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right text-xs">Total Outstanding</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-center w-48 text-xs">Carry Forward Dues</TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -829,18 +829,18 @@ export default function PromotionStepperPage() {
                                     const isCarryingForward = carryForwardDues[s.enrollmentId] !== false;
 
                                     return (
-                                        <TableRow key={s.enrollmentId} className={!isCarryingForward ? "bg-rose-50/60 dark:bg-rose-950/30" : ""}>
-                                            <TableCell className="font-medium text-xs">{s.admissionNumber}</TableCell>
-                                            <TableCell className="font-semibold text-xs text-slate-950 dark:text-white">{s.studentName}</TableCell>
-                                            <TableCell className="text-right text-xs text-slate-600 dark:text-slate-400">₹{s.feeDue.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right text-xs text-slate-600 dark:text-slate-400">₹{s.fineDue.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right text-xs font-bold text-rose-600 dark:text-rose-400">₹{s.outstandingDues.toFixed(2)}</TableCell>
+                                        <TableRow key={s.enrollmentId} className={`border-slate-100 dark:border-slate-800 transition-colors ${!isCarryingForward ? "bg-rose-50/60 dark:bg-rose-950/30" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}`}>
+                                            <TableCell className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">{s.admissionNumber}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs font-semibold text-slate-950 dark:text-slate-100">{s.studentName}</TableCell>
+                                            <TableCell className="px-6 py-4 text-right text-xs text-slate-600 dark:text-slate-400">₹{s.feeDue.toFixed(2)}</TableCell>
+                                            <TableCell className="px-6 py-4 text-right text-xs text-slate-600 dark:text-slate-400">₹{s.fineDue.toFixed(2)}</TableCell>
+                                            <TableCell className="px-6 py-4 text-right text-xs font-bold text-rose-600 dark:text-rose-400">₹{s.outstandingDues.toFixed(2)}</TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <Checkbox
                                                         checked={isCarryingForward}
                                                         onCheckedChange={checked => {
-                                                            setCarryForwardDues(prev => ({
+                                                             setCarryForwardDues(prev => ({
                                                                 ...prev,
                                                                 [s.enrollmentId]: !!checked
                                                             }));
@@ -859,7 +859,7 @@ export default function PromotionStepperPage() {
                     </div>
 
                     {blockedDuesStudents.length > 0 && (
-                        <div className="p-3.5 bg-rose-50 border-t border-rose-200 dark:bg-rose-950/40 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
+                        <div className="p-3.5 bg-rose-50/80 border-t border-rose-200 dark:bg-rose-950/40 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2 font-medium">
                             <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
                             <span>
                                 <strong>Action Required:</strong> {blockedDuesStudents.length} student(s) cannot be promoted because their dues are not selected to carry forward. Please check "Carry Forward" or clear their dues first.
@@ -871,15 +871,15 @@ export default function PromotionStepperPage() {
 
             {/* Vehicle Assignment Configuration Section */}
             {studentsWithVehicles.length > 0 && (
-                <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-                    <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/60 pb-4">
-                        <div className="flex items-center gap-2">
-                            <Bus className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+                <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2.5">
+                            <Bus className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
                             <div>
-                                <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                                     Transport Vehicle Assignments ({studentsWithVehicles.length} Students)
                                 </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 mt-0.5">
+                                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                     Choose whether to carry forward existing vehicle assignments to the new academic year.
                                 </CardDescription>
                             </div>
@@ -889,12 +889,12 @@ export default function PromotionStepperPage() {
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-slate-50 dark:bg-slate-900 text-xs">
-                                    <TableHead className="font-semibold text-xs">Admission #</TableHead>
-                                    <TableHead className="font-semibold text-xs">Student Name</TableHead>
-                                    <TableHead className="font-semibold text-xs">Current Vehicle</TableHead>
-                                    <TableHead className="font-semibold text-xs text-center w-40">Carry Forward Transport</TableHead>
-                                    <TableHead className="font-semibold text-xs w-64">Target Vehicle</TableHead>
+                                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Admission #</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Student Name</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Current Vehicle</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-center w-40 text-xs">Carry Forward Transport</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap w-64 text-xs">Target Vehicle</TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -904,10 +904,10 @@ export default function PromotionStepperPage() {
                                     const selectedVehicle = studentVehicles[s.enrollmentId] || s.vehicleAssignment?.vehicleId || "";
 
                                     return (
-                                        <TableRow key={s.enrollmentId}>
-                                            <TableCell className="font-medium text-xs">{s.admissionNumber}</TableCell>
-                                            <TableCell className="font-semibold text-xs text-slate-950 dark:text-white">{s.studentName}</TableCell>
-                                            <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                        <TableRow key={s.enrollmentId} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                                            <TableCell className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">{s.admissionNumber}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs font-semibold text-slate-950 dark:text-slate-100">{s.studentName}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">
                                                 {s.vehicleAssignment?.vehicleName} ({s.vehicleAssignment?.vehicleNumber})
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -937,7 +937,7 @@ export default function PromotionStepperPage() {
                                                     }}
                                                     disabled={!isCarryingVehicle}
                                                 >
-                                                    <SelectTrigger className="h-8 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                                    <SelectTrigger className="h-9 text-xs rounded-xl border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus-visible:ring-1 focus-visible:ring-[#556043]">
                                                         <SelectValue placeholder="Select Vehicle" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -963,7 +963,7 @@ export default function PromotionStepperPage() {
                 <Button 
                     variant="ghost" 
                     onClick={() => setCurrentStep(2)} 
-                    className="text-slate-600 hover:text-slate-900 gap-1.5 text-xs font-medium"
+                    className="text-slate-600 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:text-[#9ea98a] dark:hover:bg-[#556043]/20 gap-1.5 font-medium text-xs rounded-xl"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Back to Student Selection
@@ -972,7 +972,7 @@ export default function PromotionStepperPage() {
                 <Button
                     onClick={() => setCurrentStep(4)}
                     disabled={!isStep3Valid}
-                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-10 px-6 gap-2"
+                    className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-10 px-6 gap-2 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs rounded-xl"
                 >
                     Review & Confirm Promotion
                     <ChevronRight className="h-4 w-4" />
@@ -993,33 +993,33 @@ export default function PromotionStepperPage() {
         const carriedVehiclesCount = selectedStudents.filter(s => s.vehicleAssignment && carryForwardVehicles[s.enrollmentId] !== false).length;
 
         return (
-            <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="space-y-6">
                 {/* Executive Transition Overview */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-                        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/60 py-3">
-                            <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
+                        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800 px-6 py-3.5">
+                            <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 Source Class Origin
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-4 space-y-1">
-                            <div className="text-lg font-bold text-slate-950 dark:text-white">
+                        <CardContent className="p-6 space-y-1">
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">
                                 {sourceClassObj?.name}
                             </div>
-                            <div className="text-xs text-slate-500">
-                                Academic Year: <span className="font-semibold text-slate-800 dark:text-slate-200">{sourceYearObj?.name}</span>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                                Academic Year: <span className="font-semibold text-slate-900 dark:text-slate-100">{sourceYearObj?.name}</span>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-[#556043]/30 bg-[#556043]/5 shadow-sm dark:border-[#556043]/40 dark:bg-[#556043]/10">
-                        <CardHeader className="border-b border-[#556043]/20 py-3">
-                            <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#556043] dark:text-[#8b9e6f]">
+                    <Card className="rounded-2xl border-2 border-[#556043]/30 bg-[#556043]/5 shadow-sm dark:border-[#556043]/40 dark:bg-[#556043]/10 overflow-hidden">
+                        <CardHeader className="border-b border-[#556043]/20 px-6 py-3.5 bg-[#556043]/10 dark:bg-[#556043]/20">
+                            <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#556043] dark:text-[#9ea98a]">
                                 Target Destination
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-4 space-y-1">
-                            <div className="text-lg font-bold text-slate-950 dark:text-white">
+                        <CardContent className="p-6 space-y-1">
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">
                                 {targetClassObj?.name} — Division {targetDivisionObj?.name}
                             </div>
                             <div className="text-xs text-slate-600 dark:text-slate-400">
@@ -1031,38 +1031,38 @@ export default function PromotionStepperPage() {
 
                 {/* Key Summary Badges */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center">
-                        <div className="text-3xl font-extrabold text-[#556043] dark:text-[#8b9e6f]">
+                    <div className="p-4 rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 text-center">
+                        <div className="text-3xl font-extrabold text-[#556043] dark:text-[#9ea98a]">
                             {selectedStudents.length}
                         </div>
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-1">
                             Students to Promote
                         </div>
                     </div>
 
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center">
+                    <div className="p-4 rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 text-center">
                         <div className="text-3xl font-extrabold text-rose-600 dark:text-rose-400">
                             {carriedDuesCount}
                         </div>
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-1">
                             Carrying Dues (₹{totalDuesAmount.toFixed(2)})
                         </div>
                     </div>
 
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center">
+                    <div className="p-4 rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 text-center">
                         <div className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                             {carriedVehiclesCount}
                         </div>
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-1">
                             Carrying Transport
                         </div>
                     </div>
                 </div>
 
                 {/* Read-Only Student Roster Preview */}
-                <Card className="border-slate-200 shadow-sm dark:border-slate-800 overflow-hidden">
-                    <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/60 py-3">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 overflow-hidden">
+                    <CardHeader className="bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800 px-6 py-3.5">
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Student Roster for Promotion Execution ({selectedStudents.length})
                         </CardTitle>
                     </CardHeader>
@@ -1070,13 +1070,13 @@ export default function PromotionStepperPage() {
                     <div className="overflow-x-auto max-h-96">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-slate-50 dark:bg-slate-900 text-xs">
-                                    <TableHead className="w-12 text-center">#</TableHead>
-                                    <TableHead className="font-semibold text-xs">Admission #</TableHead>
-                                    <TableHead className="font-semibold text-xs">Student Name</TableHead>
-                                    <TableHead className="font-semibold text-xs">Source Div</TableHead>
-                                    <TableHead className="font-semibold text-xs">Dues Status</TableHead>
-                                    <TableHead className="font-semibold text-xs">Transport</TableHead>
+                                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                                    <TableHead className="w-12 px-6 h-12 text-center text-white dark:text-foreground font-semibold text-xs">#</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Admission #</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Student Name</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Source Div</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Dues Status</TableHead>
+                                    <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs">Transport</TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -1088,28 +1088,28 @@ export default function PromotionStepperPage() {
                                     const carryingVehicle = carryForwardVehicles[s.enrollmentId] !== false && s.vehicleAssignment;
 
                                     return (
-                                        <TableRow key={s.enrollmentId} className="text-xs">
-                                            <TableCell className="text-center text-slate-500">{idx + 1}</TableCell>
-                                            <TableCell className="font-medium">{s.admissionNumber}</TableCell>
-                                            <TableCell className="font-semibold text-slate-950 dark:text-white">{s.studentName}</TableCell>
-                                            <TableCell className="text-slate-600 dark:text-slate-300">Div {s.divisionName || "—"}</TableCell>
-                                            <TableCell>
+                                        <TableRow key={s.enrollmentId} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                                            <TableCell className="px-6 py-4 text-center text-xs text-slate-500 dark:text-slate-400">{idx + 1}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">{s.admissionNumber}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs font-semibold text-slate-950 dark:text-slate-100">{s.studentName}</TableCell>
+                                            <TableCell className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300">Div {s.divisionName || "—"}</TableCell>
+                                            <TableCell className="px-6 py-4">
                                                 {hasDues ? (
                                                     <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded font-semibold text-[11px] dark:bg-rose-950/30 dark:text-rose-400">
                                                         ₹{s.outstandingDues.toFixed(2)} Carried
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-400">Clear</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 text-xs">Clear</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="px-6 py-4">
                                                 {carryingVehicle && assignedVehicle ? (
                                                     <span className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-medium text-[11px] dark:bg-blue-950/30 dark:text-blue-400">
                                                         <Bus className="h-3 w-3" />
                                                         {assignedVehicle.vehicleName}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-400">—</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 text-xs">—</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -1126,7 +1126,7 @@ export default function PromotionStepperPage() {
                         variant="ghost" 
                         onClick={() => setCurrentStep(3)} 
                         disabled={loading}
-                        className="text-slate-600 hover:text-slate-900 gap-1.5 text-xs font-medium"
+                        className="text-slate-600 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:text-[#9ea98a] dark:hover:bg-[#556043]/20 gap-1.5 font-medium text-xs rounded-xl"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Back to Destination Configuration
@@ -1135,7 +1135,7 @@ export default function PromotionStepperPage() {
                     <Button
                         onClick={handleExecutePromotion}
                         disabled={loading}
-                        className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-md font-semibold h-11 px-8 gap-2 text-sm"
+                        className="bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm font-semibold h-11 px-8 gap-2 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 text-xs sm:text-sm rounded-xl"
                     >
                         {loading ? (
                             <>
@@ -1156,25 +1156,27 @@ export default function PromotionStepperPage() {
 
     return (
         <PermissionGate permission="students.listOnNavbar">
-            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 max-w-6xl mx-auto w-full">
-                {/* Page Top Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-3">
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm shrink-0 h-9 w-9 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300"
-                            onClick={() => router.back()}
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                                Student Promotion
-                            </h1>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                Batch promote active students into their next academic year and class.
-                            </p>
+            <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 dark:bg-slate-950 font-sans space-y-6 animate-in fade-in duration-300">
+                {/* Top Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
+                    <div>
+                        <div className="flex min-w-0 items-center gap-3">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => router.back()}
+                                className="h-9 w-9 shrink-0"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div className="min-w-0">
+                                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                                    Student Promotion
+                                </h1>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Batch promote active students into their next academic year and class.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1193,24 +1195,24 @@ export default function PromotionStepperPage() {
                     open={completingStudentIds !== null} 
                     onOpenChange={open => { if (!open) setCompletingStudentIds(null); }}
                 >
-                    <AlertDialogContent>
+                    <AlertDialogContent className="w-[95vw] sm:max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-4 sm:p-6">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>
+                            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">
                                 Mark {completingStudentIds?.length} Student(s) as Completed?
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs text-slate-600 dark:text-slate-400">
+                            <AlertDialogDescription className="text-sm text-slate-600 dark:text-slate-400">
                                 This will set the enrollment status to <strong>COMPLETED</strong> for final-year graduating students, deactivating their recurring fee templates and soft-deleting any unbilled pending charges. This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                        <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
+                            <AlertDialogCancel disabled={loading} className="w-full sm:w-auto rounded-xl">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={(e) => {
                                     e.preventDefault();
                                     handleExecuteComplete();
                                 }}
                                 disabled={loading}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
                             >
                                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Confirm Completion
