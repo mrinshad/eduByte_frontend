@@ -679,12 +679,11 @@ export default function CCAManagementPage() {
         <div>
           <div className="flex min-w-0 items-center gap-3">
             <Button
-              variant="outline"
               size="icon"
+              className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
               onClick={() => router.back()}
-              className="h-9 w-9 shrink-0 text-slate-700 dark:text-slate-200"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
@@ -713,7 +712,7 @@ export default function CCAManagementPage() {
                 <Button
                   onClick={handleOpenBulkAssign}
                   variant="outline"
-                  className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs font-medium text-xs sm:text-sm h-10 px-4 rounded-lg gap-1.5"
+                  className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200  dark:hover:bg-slate-700 shadow-xs font-medium text-xs sm:text-sm h-10 px-4 rounded-lg gap-1.5"
                 >
                   <Layers className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
                   Bulk Assign Class

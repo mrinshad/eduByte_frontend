@@ -260,20 +260,19 @@ export default function StudentRelievingPage() {
 
   return (
     <PermissionGate permission="students.listOnNavbar">
-      <div className="w-full min-h-screen bg-slate-50/50 dark:bg-slate-950/20 p-4 sm:p-6 lg:p-8 space-y-6">
+      <section className="w-full px-4 py-4 sm:px-6 space-y-6">
         {/* ── Page Header (Matching Student Promotion) ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button
-              variant="outline"
               size="icon"
-              className="h-9 w-9 shrink-0 border-slate-200 dark:border-slate-800"
+              className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
               onClick={() => router.back()}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
                 <GraduationCap className="h-6 w-6 text-[#556043] dark:text-[#9ea98a]" />
                 Student Relieving
               </h1>
@@ -764,7 +763,7 @@ export default function StudentRelievingPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
+      </section>
     </PermissionGate>
   );
 }

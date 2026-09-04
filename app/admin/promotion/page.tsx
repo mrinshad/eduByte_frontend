@@ -1161,12 +1161,11 @@ export default function PromotionStepperPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Button
-                            variant="outline"
                             size="icon"
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
                             onClick={() => router.back()}
-                            className="h-9 w-9 shrink-0 text-slate-700 dark:text-slate-200"
                         >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div>
                             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
