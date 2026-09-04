@@ -34,6 +34,7 @@ export const portalSections: PortalSection[] = [
   { slug: "students", label: "Student Directory", area: "admin", purpose: "Manage student master data", group: "Academic" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", group: "Academic" },
   { slug: "promotion", label: "Student Promotion", area: "admin", purpose: "Promote students to next class", group: "Academic" },
+  { slug: "relieving", label: "Student Relieving", area: "admin", purpose: "Relieve graduating or exiting students", group: "Academic" },
 
   { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
@@ -150,6 +151,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "students": "students.listOnNavbar",
     "admissions": "admissions.listOnNavbar",
     "promotion": "students.listOnNavbar",
+    "relieving": "students.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
     "fee-structures/bulk-assign": "feestructures.listOnNavbar",

@@ -303,7 +303,9 @@ export default function ViewAdmissionPage() {
           getEnrollmentById(id),
         ]);
         if (studentChargeData?.enrollmentId) {
-          await refreshLateFines(studentChargeData.enrollmentId);
+          await refreshLateFines(studentChargeData.enrollmentId).catch((err) => {
+            console.warn("Non-fatal: could not refresh late fines", err);
+          });
         }
 
         setEnrollment(studentChargeData);

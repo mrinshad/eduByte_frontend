@@ -19,6 +19,7 @@ import {
   IndianRupee,
   AlertCircle,
   Trophy,
+  LogOut,
 } from "lucide-react"
 
 import {
@@ -44,6 +45,7 @@ import {
   type CCAAssignmentItem,
   type StudentCcaCharge,
 } from "@/lib/services/cca"
+import { individualRelieveStudent } from "@/lib/services/studentRelieving"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -278,6 +280,9 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isRelieving, setIsRelieving] = useState(false)
+  const [showRelieveDialog, setShowRelieveDialog] = useState(false)
+  const [relievedDate, setRelievedDate] = useState<string>(() => new Date().toISOString().split("T")[0])
 
   useEffect(() => {
     async function loadStudent() {
@@ -323,7 +328,11 @@ export default function Page() {
         }
 
         if (response?.enrollmentId) {
-          await refreshLateFines(response.enrollmentId);
+          if (response.status === "ACTIVE") {
+            await refreshLateFines(response.enrollmentId).catch((err) => {
+              console.warn("Non-fatal: could not refresh late fines", err);
+            });
+          }
           fetchPromises.push(
             getStudentChargesByEnrollmentId(response.enrollmentId).catch(() => null)
           );
@@ -389,6 +398,24 @@ export default function Page() {
     }
   }
 
+  const handleRelieveStudent = async () => {
+    if (!student) return
+    try {
+      setIsRelieving(true)
+      const targetId = student.enrollmentId || student.id
+      await individualRelieveStudent(targetId, { relievedDate })
+      toast.success("Student relieved successfully as COMPLETED.")
+      setShowRelieveDialog(false)
+      const response = await getStudentById(student.id)
+      setStudent(response)
+    } catch (error: any) {
+      console.error(error)
+      toast.error(error?.response?.data?.message || error?.message || "Failed to relieve student")
+    } finally {
+      setIsRelieving(false)
+    }
+  }
+
   const admissionStatus = student.admissionStatus ?? "NOT_ADMITTED"
 
   return (
@@ -436,6 +463,17 @@ export default function Page() {
             <Pencil className="h-4 w-4" />
             Edit
           </Button>
+
+          {student.status === "ACTIVE" && (
+            <Button
+              variant="outline"
+              className="shrink-0 flex items-center gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950/30"
+              onClick={() => setShowRelieveDialog(true)}
+            >
+              <LogOut className="h-4 w-4 text-amber-600" />
+              Relieve
+            </Button>
+          )}
 
           <Button
             variant="destructive"
@@ -1054,6 +1092,61 @@ export default function Page() {
           </InfoSection>
         </div>
       </div>
+      {/* Relieve Student Confirmation Dialog */}
+      <AlertDialog open={showRelieveDialog} onOpenChange={setShowRelieveDialog}>
+        <AlertDialogContent className="max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+              <LogOut className="h-5 w-5 text-[#556043]" />
+              Relieve Student
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2 text-sm text-slate-600 dark:text-slate-300">
+                <p className="text-slate-700 dark:text-slate-300">
+                  Are you sure you want to relieve <strong className="text-slate-900 dark:text-slate-100">{student.studentName}</strong> ({student.admissionNumber})?
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Relieving Date:
+                  </label>
+                  <input
+                    type="date"
+                    value={relievedDate}
+                    onChange={(e) => setRelievedDate(e.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-1.5 text-sm dark:border-slate-700"
+                  />
+                </div>
+                <div className="rounded-lg bg-slate-100 p-3 text-xs dark:bg-slate-800/60 space-y-1">
+                  <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>
+                  <p>• Student master status will transition to <strong>WITHDRAWN</strong>.</p>
+                  <p>• Future recurring billing and transport assignments will be deactivated.</p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRelieving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRelieving}
+              onClick={(e) => {
+                e.preventDefault()
+                void handleRelieveStudent()
+              }}
+              className="bg-[#556043] text-white hover:bg-[#464f37]"
+            >
+              {isRelieving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Relieving...
+                </>
+              ) : (
+                "Confirm Relieve"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

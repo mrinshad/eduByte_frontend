@@ -203,7 +203,9 @@ export default function ViewStudentFinePage() {
     try {
       const data = await getStudentFineById(id)
       if (data?.enrollmentId) {
-        await refreshLateFines(data.enrollmentId);
+        await refreshLateFines(data.enrollmentId).catch((err) => {
+          console.warn("Non-fatal: could not refresh late fines", err);
+        });
       }
       setFine(data)
     } catch (err) {

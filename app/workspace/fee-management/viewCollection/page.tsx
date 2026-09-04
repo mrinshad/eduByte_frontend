@@ -309,7 +309,9 @@ export default function Page() {
       try {
         setChargesLoading(true)
         setChargesError(null)
-        await refreshLateFines(enrollmentId)
+        await refreshLateFines(enrollmentId).catch((err) => {
+          console.warn("Non-fatal: could not refresh late fines", err);
+        })
 
         const [chargesData, finesData, ccaData, paymentAccountsData] = await Promise.all([
           getStudentCharges(enrollmentId),

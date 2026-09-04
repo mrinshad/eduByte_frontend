@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ArrowUpAZ, ArrowDownAZ, X,
+  ArrowUpAZ, ArrowDownAZ, X, LogOut,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
 
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
+import { individualRelieveStudent } from "@/lib/services/studentRelieving";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -88,6 +89,9 @@ export default function Page() {
 
   const [studentToDelete, setStudentToDelete] = useState<StudentListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [studentToRelieve, setStudentToRelieve] = useState<StudentListItem | null>(null);
+  const [isRelieving, setIsRelieving] = useState(false);
+  const [relieveDate, setRelieveDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
 
   const loadStudents = async () => {
     try {
@@ -146,6 +150,24 @@ export default function Page() {
       toast.error(error instanceof Error ? error.message : "Failed to delete student");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRelieveStudent = async () => {
+    if (!studentToRelieve) return;
+
+    try {
+      setIsRelieving(true);
+      const targetId = studentToRelieve.enrollmentId || studentToRelieve.id;
+      await individualRelieveStudent(targetId, { relievedDate: relieveDate });
+      toast.success(`Successfully relieved ${studentToRelieve.studentName} as COMPLETED.`);
+      setStudentToRelieve(null);
+      await loadStudents();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || error?.message || "Failed to relieve student");
+    } finally {
+      setIsRelieving(false);
     }
   };
 
@@ -507,6 +529,17 @@ export default function Page() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </PermissionGate>
+                        {student.status === "ACTIVE" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            title="Relieve Student"
+                            onClick={() => setStudentToRelieve(student)}
+                          >
+                            <LogOut className="h-4 w-4" />
+                          </Button>
+                        )}
                         <PermissionGate permission="students.deleteStudentButton">
                           <Button
                             variant="ghost"
@@ -578,10 +611,68 @@ export default function Page() {
           </div>
         </div>
       </div>
+      
+      {/* Relieve Student Confirmation Dialog */}
+      <AlertDialog open={!!studentToRelieve} onOpenChange={(open) => !open && setStudentToRelieve(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-amber-600" />
+              Relieve Student
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2 text-sm text-slate-600 dark:text-slate-300">
+                <p>
+                  Are you sure you want to relieve <strong>{studentToRelieve?.studentName}</strong> ({studentToRelieve?.admissionNumber})?
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Relieving Date:
+                  </label>
+                  <input
+                    type="date"
+                    value={relieveDate}
+                    onChange={(e) => setRelieveDate(e.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-1.5 text-sm dark:border-slate-700"
+                  />
+                </div>
+                <div className="rounded-lg bg-slate-100 p-3 text-xs dark:bg-slate-800/60 space-y-1">
+                  <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>
+                  <p>• Student master status will transition to <strong>WITHDRAWN</strong>.</p>
+                  <p>• Recurring charge templates and vehicle assignments will be deactivated.</p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRelieving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRelieving}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRelieveStudent();
+              }}
+              className="bg-[#556043] text-white hover:bg-[#464f37]"
+            >
+              {isRelieving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Relieving...
+                </>
+              ) : (
+                "Confirm Relieve"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog
-        open={!!studentToDelete}
+        open={Boolean(studentToDelete)}
         onOpenChange={(open) => {
-          if (!open) setStudentToDelete(null);
+          if (!open) {
+            setStudentToDelete(null);
+          }
         }}
       >
         <AlertDialogContent>

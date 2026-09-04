@@ -162,7 +162,9 @@ export default function ViewAdmissionPage() {
         setLoading(true);
         const data = await getEnrollmentById(id);
         if (data?.enrollmentId) {
-          await refreshLateFines(data.enrollmentId);
+          await refreshLateFines(data.enrollmentId).catch((err) => {
+            console.warn("Non-fatal: could not refresh late fines", err);
+          });
         }
         setEnrollment(data);
       } catch (err) {
