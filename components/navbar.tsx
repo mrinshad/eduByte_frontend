@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getCurrentSession } from "@/lib/auth"
 import { canSwitchPortals, type PortalArea } from "@/lib/portal"
+import { NavbarSectionSearch } from "@/components/navbar-section-search"
 
 interface NavbarProps {
   area: PortalArea
@@ -78,15 +79,27 @@ export function Navbar({
               </span>
             </Link>
 
-            <div className="hidden h-4 w-[1px] bg-slate-200 dark:bg-slate-800 lg:block" />
+            {subtitle && (
+              <>
+                <div className="hidden h-4 w-[1px] bg-slate-200 dark:bg-slate-800 lg:block" />
+                <span className="hidden max-w-[16rem] xl:max-w-[20rem] truncate text-xs font-medium text-slate-400 dark:text-slate-500 lg:block">
+                  {subtitle}
+                </span>
+              </>
+            )}
+          </div>
 
-            <span className="hidden max-w-[22rem] truncate text-xs font-medium text-slate-400 dark:text-slate-500 lg:block">
-              {subtitle}
-            </span>
+          {/* Center Section: Search Bar with Autocomplete */}
+          <div className="flex flex-1 items-center justify-center px-1 sm:px-2 max-w-[28rem]">
+            <NavbarSectionSearch
+              area={area}
+              userPermissions={userPermissions}
+              userRole={userRole}
+            />
           </div>
 
           {/* Right Section: Badges & Interactions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {canSwitchPortals(userPermissions, userRole) && (
               <Button
                 type="button"
