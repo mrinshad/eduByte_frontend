@@ -124,8 +124,11 @@ export default function PromotionStepperPage() {
                 setVehicles(vehs);
 
                 // Set default academic year
-                if (globalAcademicYearId && globalAcademicYearId !== "Academic Year") {
-                    setSourceAcademicYear(globalAcademicYearId);
+                const matchedYear = years.find(
+                    y => y.id === globalAcademicYearId || y.name?.trim() === globalAcademicYearId?.trim()
+                );
+                if (matchedYear) {
+                    setSourceAcademicYear(matchedYear.id);
                 } else if (years.length > 0) {
                     const active = years.find(y => y.isActive);
                     setSourceAcademicYear(active ? active.id : years[0].id);
@@ -137,6 +140,18 @@ export default function PromotionStepperPage() {
         }
         fetchMasterData();
     }, [globalAcademicYearId]);
+
+    // Keep sourceAcademicYear synchronized whenever global academic year changes
+    useEffect(() => {
+        if (globalAcademicYearId && academicYears.length > 0) {
+            const matchedYear = academicYears.find(
+                y => y.id === globalAcademicYearId || y.name?.trim() === globalAcademicYearId?.trim()
+            );
+            if (matchedYear && matchedYear.id !== sourceAcademicYear) {
+                setSourceAcademicYear(matchedYear.id);
+            }
+        }
+    }, [globalAcademicYearId, academicYears, sourceAcademicYear]);
 
     // Load students whenever source academic year or class changes
     useEffect(() => {
@@ -424,7 +439,7 @@ export default function PromotionStepperPage() {
                                 Source Academic Year <span className="text-red-500">*</span>
                             </label>
                             <Select value={sourceAcademicYear} onValueChange={setSourceAcademicYear}>
-                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                     <SelectValue placeholder="Select Academic Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -442,7 +457,7 @@ export default function PromotionStepperPage() {
                                 Source Class <span className="text-red-500">*</span>
                             </label>
                             <Select value={sourceClass} onValueChange={setSourceClass}>
-                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                     <SelectValue placeholder="Select Class" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -553,7 +568,7 @@ export default function PromotionStepperPage() {
                     </div>
 
                     <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                        <SelectTrigger className="h-10 text-xs sm:text-sm w-full sm:w-44 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                        <SelectTrigger className="h-10 text-xs sm:text-sm w-full sm:w-44 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                             <SelectValue placeholder="All Divisions" />
                         </SelectTrigger>
                         <SelectContent>
@@ -731,7 +746,7 @@ export default function PromotionStepperPage() {
                                 Target Academic Year <span className="text-red-500 ml-1">*</span>
                             </label>
                             <Select value={targetAcademicYear} onValueChange={setTargetAcademicYear}>
-                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                     <SelectValue placeholder="Select Academic Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -749,7 +764,7 @@ export default function PromotionStepperPage() {
                                 Target Class <span className="text-red-500 ml-1">*</span>
                             </label>
                             <Select value={targetClass} onValueChange={setTargetClass}>
-                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                     <SelectValue placeholder="Select Class" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -771,7 +786,7 @@ export default function PromotionStepperPage() {
                                 onValueChange={setTargetDivision}
                                 disabled={!targetClass || loadingDivisions}
                             >
-                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                     <SelectValue placeholder={loadingDivisions ? "Loading divisions..." : "Select Division"} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -937,7 +952,7 @@ export default function PromotionStepperPage() {
                                                     }}
                                                     disabled={!isCarryingVehicle}
                                                 >
-                                                    <SelectTrigger className="h-9 text-xs sm:text-sm rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                                    <SelectTrigger className="h-9 text-xs sm:text-sm rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
                                                         <SelectValue placeholder="Select Vehicle" />
                                                     </SelectTrigger>
                                                     <SelectContent>
