@@ -136,23 +136,41 @@ function SidebarItem({
   )
 }
 
+function isLinkActive(linkHref: string, currentPathname: string, allHrefs: string[]) {
+  if (currentPathname === linkHref) {
+    return true
+  }
+  const isOverviewLink = linkHref.endsWith("/fee-management")
+  if (!isOverviewLink && currentPathname.startsWith(`${linkHref}/`)) {
+    // If another sidebar link matches currentPathname exactly or with a longer prefix,
+    // this parent link should not be marked active.
+    const hasMoreSpecificMatch = allHrefs.some(
+      (otherHref) =>
+        otherHref !== linkHref &&
+        (currentPathname === otherHref || currentPathname.startsWith(`${otherHref}/`)) &&
+        otherHref.length > linkHref.length
+    )
+    return !hasMoreSpecificMatch
+  }
+  return false
+}
+
 function SidebarSubgroup({
   subgroup,
   items,
   collapsed,
   pathname,
+  allHrefs,
   onNavigate,
 }: {
   subgroup: string
   items: PortalNavItem[]
   collapsed: boolean
   pathname: string
+  allHrefs: string[]
   onNavigate?: () => void
 }) {
-  const mountaineerActive = items.some((item) => {
-    const isOverviewLink = item.href.endsWith("/fee-management")
-    return pathname === item.href || (!isOverviewLink && pathname.startsWith(`${item.href}/`))
-  })
+  const mountaineerActive = items.some((item) => isLinkActive(item.href, pathname, allHrefs))
   const [isOpen, setIsOpen] = React.useState<boolean>(mountaineerActive || true)
   const SubgroupIcon = getSubgroupIcon(subgroup)
 
@@ -215,9 +233,7 @@ function SidebarSubgroup({
           <div className="overflow-hidden">
             <ul className="relative space-y-1 ml-4.5 border-l border-slate-200/60 pl-2.5 dark:border-slate-800/80 my-1">
               {items.map((link) => {
-                const isOverviewLink = link.href.endsWith("/fee-management")
-                const active =
-                  pathname === link.href || (!isOverviewLink && pathname.startsWith(`${link.href}/`))
+                const active = isLinkActive(link.href, pathname, allHrefs)
                 return (
                   <SidebarItem
                     key={link.href}
@@ -323,6 +339,10 @@ function SidebarBody({
     }
   })
 
+  const allHrefs = React.useMemo(() => {
+    return filteredLinks.flatMap((group) => group.items.map((item) => item.href))
+  }, [filteredLinks])
+
   return (
     <div className="flex h-full flex-col">
       {/* Header Panel */}
@@ -385,6 +405,7 @@ function SidebarBody({
                         items={subgroupItems}
                         collapsed={collapsed}
                         pathname={pathname}
+                        allHrefs={allHrefs}
                         onNavigate={onCloseMobile}
                       />
                     ))}
@@ -392,10 +413,7 @@ function SidebarBody({
                 ) : (
                   <ul className="space-y-0.5">
                     {group.items.map((link) => {
-                      const isOverviewLink = link.href.endsWith("/fee-management")
-                      const active =
-                        pathname === link.href ||
-                        (!isOverviewLink && pathname.startsWith(`${link.href}/`))
+                      const active = isLinkActive(link.href, pathname, allHrefs)
                       return (
                         <SidebarItem
                           key={link.href}
