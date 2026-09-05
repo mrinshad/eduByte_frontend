@@ -407,7 +407,7 @@ export default function PromotionStepperPage() {
                     <div className="flex items-center gap-2.5">
                         <GraduationCap className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
                         <div>
-                            <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                            <CardTitle className="text-lg font-bold text-slate-950 dark:text-white">
                                 Source Class Selection
                             </CardTitle>
                             <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

@@ -200,10 +200,10 @@ export default function Page() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
               <Button
                 variant="outline"
-                className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:w-auto"
+                className="w-full border-slate-300 text-slate-300  dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:w-auto"
                 onClick={() => router.push("/admin/fee-structures/bulk-assign")}
               >
-                <Receipt className="mr-2 h-4 w-4 text-slate-500" />
+                <Receipt className="mr-2 h-4 w-4 text-slate-300" />
                 Bulk Assign Fees
               </Button>
               <PermissionGate permission="feestructures.createFeeStructureButton">

@@ -592,7 +592,7 @@ export default function ViewAdmissionPage() {
             <AlertDialogTitle className="break-words">
               Permanently Delete Admission for "{student.studentName}"?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+            <AlertDialogDescription className="space-y-2 text-sm text-slate-300 dark:text-slate-400">
               <p>
                 This action is intended only for <strong>accidental draft entries</strong> (e.g. typos or wrong class selection).
               </p>

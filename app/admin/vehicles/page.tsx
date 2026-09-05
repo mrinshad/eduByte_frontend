@@ -426,7 +426,7 @@ export default function Page() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{vehicleToDelete?.vehicleName}"?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <span className="block text-slate-600 dark:text-slate-400">
+              <span className="block text-slate-200 dark:text-slate-400">
                 This will permanently delete this vehicle. This action cannot be undone.
               </span>
 
