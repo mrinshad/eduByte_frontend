@@ -46,6 +46,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "users", label: "Users", area: "admin", purpose: "User accounts", group: "User Management" },
   { slug: "roles", label: "Roles & Permissions", area: "admin", purpose: "Role management", group: "User Management" },
+  { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "Track system activities, data changes, and operator history", group: "User Management" },
 
   // --- STUDENT AREA ---
   { slug: "dashboard", label: "Dashboard", area: "student", purpose: "Student dashboard", group: "Student" },
@@ -160,6 +161,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
+    "audit-logs": "auditLogs.listOnNavbar",
     "permissions": "permissions.listOnNavbar",
     "permission": "permissions.listOnNavbar",
     "fee-management": "feecollection.listOnNavbar",
