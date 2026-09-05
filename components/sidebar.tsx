@@ -344,7 +344,7 @@ function SidebarBody({
   }, [filteredLinks])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Header Panel */}
       <div className="flex h-16 items-center justify-between border-b border-black/[0.04] px-4 dark:border-white/[0.06]">
         <div
@@ -383,7 +383,7 @@ function SidebarBody({
       </div>
 
       {/* Navigation Streams */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 scrollbar-none">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pt-4 pb-6 scrollbar-none">
         {links.length ? (
           <div className="space-y-5">
             {groupedLinks.map((group) => (
@@ -438,6 +438,9 @@ function SidebarBody({
             No workspace options for {area}.
           </div>
         )}
+
+        {/* Physical spacer to guarantee scrolling past bottom items in mobile viewports & simulator device frames */}
+        <div className="h-28 w-full shrink-0 pointer-events-none" aria-hidden="true" />
       </nav>
     </div>
   )
@@ -455,7 +458,7 @@ export function Sidebar(props: SidebarProps) {
           className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity"
           onClick={props.onCloseMobile}
         />
-        <aside className="relative z-10 h-full w-[17rem] bg-white shadow-2xl dark:bg-slate-950 border-r border-black/[0.04] dark:border-white/[0.06]">
+        <aside className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-[17rem] flex-col overflow-hidden bg-white shadow-2xl dark:bg-slate-950 border-r border-black/[0.04] dark:border-white/[0.06]">
           <SidebarBody {...props} />
         </aside>
       </div>

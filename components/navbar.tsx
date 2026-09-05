@@ -61,7 +61,7 @@ export function Navbar({
   const isDarkMode = resolvedTheme === "dark"
 
   return (
-    <div className="sticky top-0 z-40 w-full px-4 pt-3 sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-40 w-full shrink-0 px-4 pt-3 pb-2 sm:px-6 sm:pb-3 lg:px-8">
       <header className="mx-auto max-w-7xl rounded-2xl border border-black/[0.06] bg-white/70 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-slate-950/70 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
         <div className="flex h-14 items-center justify-between gap-4">
           
@@ -85,13 +85,13 @@ export function Navbar({
                   alt="Kids covE Logo"
                   width={32}
                   height={32}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full "
                   priority
                 />
               </div>
               <span
                 className={cn(
-                  "text-lg sm:text-xl font-medium tracking-tight text-[#CA6D03] dark:text-[#E07A08] transition-colors",
+                  "hidden md:inline text-lg sm:text-xl font-medium tracking-tight text-[#CA6D03] dark:text-[#E07A08] transition-colors",
                   fontMarcellus.className
                 )}
               >
@@ -125,7 +125,7 @@ export function Navbar({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="group relative flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="group relative hidden md:inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
                 onClick={() => onSwitchPortal?.(area === "admin" ? "workspace" : "admin")}
                 title={`Switch to ${area === "admin" ? "Operations Workspace" : "Administration Portal"}`}
               >
@@ -145,14 +145,24 @@ export function Navbar({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-xl text-slate-500 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-50"
+              className="hidden md:inline-flex h-9 w-9 rounded-xl text-slate-500 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-50"
               aria-label="Toggle theme"
               onClick={() => setTheme(isDarkMode ? "light" : "dark")}
             >
               {isDarkMode ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
             </Button>
 
-            {userLabel && <AccountMenu onLogout={onLogout} />}
+            {userLabel && (
+              <AccountMenu
+                onLogout={onLogout}
+                area={area}
+                userRole={userRole}
+                userPermissions={userPermissions}
+                onSwitchPortal={onSwitchPortal}
+                isDarkMode={isDarkMode}
+                setTheme={setTheme}
+              />
+            )}
           </div>
           
         </div>
@@ -161,7 +171,23 @@ export function Navbar({
   )
 }
 
-function AccountMenu({ onLogout }: { onLogout: () => void }) {
+function AccountMenu({
+  onLogout,
+  area,
+  userRole,
+  userPermissions,
+  onSwitchPortal,
+  isDarkMode,
+  setTheme,
+}: {
+  onLogout: () => void
+  area: PortalArea
+  userRole?: string | null
+  userPermissions?: string[]
+  onSwitchPortal?: (targetArea: PortalArea) => void
+  isDarkMode: boolean
+  setTheme: (theme: string) => void
+}) {
   const [user, setUser] = React.useState<UserSession | null>(null)
 
   React.useEffect(() => {
@@ -218,6 +244,41 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           </div>
         </DropdownMenuLabel>
         
+        {/* Mobile-only Portal Switcher */}
+        {canSwitchPortals(userPermissions, userRole) && (
+          <div className="md:hidden">
+            <DropdownMenuSeparator className="my-1 opacity-50" />
+            <DropdownMenuItem
+              onClick={() => onSwitchPortal?.(area === "admin" ? "workspace" : "admin")}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <Repeat className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Switch to {area === "admin" ? "Workspace" : "Admin Portal"}</span>
+            </DropdownMenuItem>
+          </div>
+        )}
+
+        {/* Mobile-only Theme Switcher */}
+        <div className="md:hidden">
+          <DropdownMenuSeparator className="my-1 opacity-50" />
+          <DropdownMenuItem
+            onClick={() => setTheme(isDarkMode ? "light" : "dark")}
+            className="flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              {isDarkMode ? (
+                <SunMedium className="h-3.5 w-3.5 text-amber-300" />
+              ) : (
+                <MoonStar className="h-3.5 w-3.5 text-slate-300" />
+              )}
+              <span>Theme</span>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 capitalize">
+              {isDarkMode ? "Dark" : "Light"}
+            </span>
+          </DropdownMenuItem>
+        </div>
+
         <DropdownMenuSeparator className="my-1 opacity-50" />
         
         <DropdownMenuItem 

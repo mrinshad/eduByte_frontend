@@ -75,7 +75,7 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
   }
 
   return (
-    <div className="flex h-svh flex-col bg-[linear-gradient(135deg,_#f7f1e7_0%,_#ffffff_48%,_#eef3f8_100%)] text-slate-950 dark:bg-[linear-gradient(135deg,_#0c1118_0%,_#111827_50%,_#1b2433_100%)] dark:text-slate-50">
+    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[linear-gradient(135deg,_#f7f1e7_0%,_#ffffff_48%,_#eef3f8_100%)] text-slate-950 dark:bg-[linear-gradient(135deg,_#0c1118_0%,_#111827_50%,_#1b2433_100%)] dark:text-slate-50">
 
       <Navbar
         area={area}
@@ -90,7 +90,7 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
         onSwitchPortal={handleSwitchPortal}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           area={area}
           links={links}
@@ -100,7 +100,11 @@ export function AppShell({ area, title, subtitle, children }: AppShellProps) {
           variant="desktop"
         />
 
-        <main className="min-w-0 flex-1 overflow-auto px-4 py-4 sm:px-6 lg:px-8 lg:py-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto overscroll-contain px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-32 lg:px-8 lg:py-6">
+          {children}
+          {/* Safe-area spacer for mobile viewports & device bezels */}
+          <div className="h-16 w-full shrink-0 lg:hidden pointer-events-none" aria-hidden="true" />
+        </main>
       </div>
 
       <Sidebar
