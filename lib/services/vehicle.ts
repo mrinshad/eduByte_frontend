@@ -13,6 +13,10 @@ export interface Vehicle {
   driverName: string;
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    assignments?: number;
+    expenses?: number;
+  };
 }
 
 type ApiSuccess<T> = {
