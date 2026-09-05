@@ -75,6 +75,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "fee-management", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", group: "Finance", subgroup: "Fee Management" },
   { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", group: "Finance", subgroup: "Accounting" },
+  { slug: "salary-slips", label: "Salary Slips", area: "workspace", purpose: "Manage staff salary slips, monthly payroll, and vouchers", group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Student Fines", area: "workspace", purpose: "Fine management", group: "Finance", subgroup: "Fee Management" },
 

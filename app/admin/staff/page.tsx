@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
-  ArrowLeft, Pencil, Trash2, Plus,
+  ArrowLeft, Pencil, Trash2, Plus, Eye,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
   ChevronDown, ChevronUp, ChevronsUpDown, X, Download,
   ArrowUp, ArrowDown, ArrowUpDown,
@@ -261,8 +261,9 @@ export default function Page() {
       if (success) {
         toast.success(`Exported ${staffList.length} staff records successfully.`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to export staff records");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to export staff records";
+      toast.error(msg);
     } finally {
       setExporting(false);
     }
@@ -436,12 +437,26 @@ export default function Page() {
                       {startEntry + index}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                      {formatText(member.employeeCode)}
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                        className="font-medium text-slate-700 dark:text-slate-300 hover:text-[#556043] hover:underline cursor-pointer transition-colors text-left"
+                        title="View Staff Profile & Pay Details"
+                      >
+                        {formatText(member.employeeCode)}
+                      </button>
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 max-w-[180px] truncate">
-                      {formatText(member.name)}
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold max-w-[180px] truncate">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                        className="text-slate-950 dark:text-slate-100 hover:text-[#556043] hover:underline cursor-pointer transition-colors text-left font-semibold truncate block"
+                        title="View Staff Profile & Pay Details"
+                      >
+                        {formatText(member.name)}
+                      </button>
                     </TableCell>
 
                     <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -471,6 +486,15 @@ export default function Page() {
 
                     <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                          title="View Staff Profile & Pay Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <PermissionGate permission="staff.editStaffButton">
                         <Button
                           variant="ghost"
@@ -562,9 +586,9 @@ export default function Page() {
       >
         <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{staffToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>Delete &ldquo;{staffToDelete?.name}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this staff record. This can't be undone.
+              This will permanently delete this staff record. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">

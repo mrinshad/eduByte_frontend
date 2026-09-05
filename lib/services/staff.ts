@@ -6,7 +6,22 @@ export interface StaffInput {
   phone: string;
   email: string;
   joiningDate: string; // ISO date-time string, e.g. "2026-07-01T00:00:00Z"
+  basicSalary?: number;
   status ?: "ACTIVE" | "INACTIVE";
+}
+
+export interface StaffSalarySlipItem {
+  id: string;
+  slipNumber: string;
+  salaryMonth: string;
+  totalEarnings: number;
+  totalDeductions: number;
+  netSalary: number;
+  paymentMethod: string;
+  paymentDate: string;
+  createdAt: string;
+  remarks?: string | null;
+  expenseNumber?: string | null;
 }
 
 export interface Staff {
@@ -16,9 +31,21 @@ export interface Staff {
   phone: string;
   email: string;
   joiningDate: string;
+  basicSalary?: number | null;
   status: "ACTIVE" | "INACTIVE";
   createdAt?: string;
   updatedAt?: string;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+    isActive: boolean;
+    roleId: string;
+    roleName: string;
+  } | null;
+  totalDisbursed?: number;
+  salarySlipsCount?: number;
+  salarySlips?: StaffSalarySlipItem[];
 }
 
 export interface StaffListItem {
@@ -28,6 +55,7 @@ export interface StaffListItem {
   phone: string;
   email: string;
   joiningDate: string;
+  basicSalary?: number | null;
   status: "ACTIVE" | "INACTIVE";
   createdAt?: string;
   updatedAt?: string;

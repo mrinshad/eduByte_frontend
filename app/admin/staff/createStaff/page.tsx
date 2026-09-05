@@ -19,6 +19,7 @@ import {
     CalendarDays,
     ToggleLeft,
     BadgeCheck,
+    IndianRupee,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,14 @@ const STAFF_DUPLICATE_MAP = {
   phone: { field: "phone", message: "This phone number is already registered" },
 };
 
-const StepSection = ({ stepNumber, title, description, children }: any) => (
+interface StepSectionProps {
+    stepNumber: number | string;
+    title: string;
+    description?: string;
+    children: React.ReactNode;
+}
+
+const StepSection = ({ stepNumber, title, description, children }: StepSectionProps) => (
     <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
         <div className="flex items-center gap-4 border-b border-slate-100 pb-5 dark:border-slate-800">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6D755F]/10 text-[#6D755F] font-bold">
@@ -185,6 +193,7 @@ export default function Page() {
     const [email, setEmail] = useState<string>("");
     const [phone, setPhone] = useState<string>("");
     const [joiningDate, setJoiningDate] = useState<Date | undefined>(undefined);
+    const [basicSalary, setBasicSalary] = useState<string | number>("");
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
@@ -218,6 +227,7 @@ export default function Page() {
                 setEmail(record.email ?? "");
                 setPhone(record.phone ?? "");
                 setJoiningDate(record.joiningDate ? new Date(record.joiningDate) : undefined);
+                setBasicSalary(record.basicSalary !== undefined && record.basicSalary !== null ? Number(record.basicSalary) : "");
                 setStatus(record.status ?? "ACTIVE");
             } else {
                 toast.error("Staff record not found");
@@ -258,6 +268,7 @@ export default function Page() {
             email: email.trim(),
             phone: phone.trim(),
             joiningDate: joiningDate ? joiningDate.toISOString() : "",
+            basicSalary: basicSalary === "" ? 0 : Number(basicSalary),
             status,
         };
 
@@ -533,9 +544,28 @@ export default function Page() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
+
+                            <div className="flex flex-col gap-2 md:col-span-2">
+                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Monthly Basic Salary (₹)
+                                </span>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min={0}
+                                    placeholder="e.g. 35000.00"
+                                    value={basicSalary}
+                                    onChange={(e) => setBasicSalary(e.target.value === "" ? "" : Number(e.target.value))}
+                                    disabled={submitting}
+                                    className={fieldClass}
+                                />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    Default basic pay automatically pre-filled when generating monthly salary slips for this employee.
+                                </p>
+                            </div>
                         </div>
 
-                        {(employeeCode || name || email || phone || joiningDate) && (
+                        {(employeeCode || name || email || phone || joiningDate || basicSalary) && (
                             <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                                 <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                                     <BadgeCheck className="h-4 w-4 text-[#6D755F]" /> Staff Record Preview
@@ -554,6 +584,7 @@ export default function Page() {
                                     <InfoItem label="Email Address" value={email} />
                                     <InfoItem label="Phone Number" value={phone} />
                                     <InfoItem label="Joining Date" value={joiningDate ? format(joiningDate, "PPP") : "-"} />
+                                    <InfoItem label="Basic Salary (₹)" value={basicSalary !== "" ? `₹ ${Number(basicSalary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "Not configured"} />
                                 </InfoGrid>
                             </div>
                         )}

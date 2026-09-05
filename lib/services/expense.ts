@@ -49,6 +49,7 @@ export interface StaffName {
   phone: string | null;
   email: string | null;
   joiningDate: string | null;
+  basicSalary?: number | null;
   status: StaffStatus;
 }
 
