@@ -925,7 +925,7 @@ export default function Page() {
                                 openClassDialog("edit", schoolClass)
                               }}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-4 w-4 text-slate-400" />
                             </Button>
                           </PermissionGate>
 
@@ -1068,7 +1068,7 @@ export default function Page() {
                                 openDivisionDialog("edit", division)
                               }}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-4 w-4 text-slate-400" />
                             </Button>
                           </PermissionGate>
 

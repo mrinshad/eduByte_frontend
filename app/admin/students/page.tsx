@@ -707,26 +707,26 @@ export default function Page() {
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <LogOut className="h-5 w-5 text-amber-600" />
+              <LogOut className="h-5 w-5 text-amber-100" />
               Relieve Student
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3 pt-2 text-sm text-slate-600 dark:text-slate-300">
+              <div className="space-y-3 pt-2 text-sm text-slate-300 dark:text-slate-300">
                 <p>
                   Are you sure you want to relieve <strong>{studentToRelieve?.studentName}</strong> ({studentToRelieve?.admissionNumber})?
                 </p>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  <label className="text-xs font-semibold text-slate-200 dark:text-slate-300">
                     Relieving Date:
                   </label>
                   <input
                     type="date"
                     value={relieveDate}
                     onChange={(e) => setRelieveDate(e.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-1.5 text-sm dark:border-slate-700"
+                    className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-1.5 text-slate-200 text-sm dark:border-slate-700"
                   />
                 </div>
-                <div className="rounded-lg bg-slate-100 p-3 text-xs dark:bg-slate-800/60 space-y-1">
+                <div className="rounded-lg bg-slate-100 p-3 text-slate-900 dark:text-slate-200 text-xs dark:bg-slate-800/60 space-y-1">
                   <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>
                   <p>• Student master status will transition to <strong>WITHDRAWN</strong>.</p>
                   <p>• Recurring charge templates and vehicle assignments will be deactivated.</p>
@@ -742,7 +742,7 @@ export default function Page() {
                 e.preventDefault();
                 void handleRelieveStudent();
               }}
-              className="bg-[#556043] text-white hover:bg-[#464f37]"
+              className="bg-[#556043] "
             >
               {isRelieving ? (
                 <>
