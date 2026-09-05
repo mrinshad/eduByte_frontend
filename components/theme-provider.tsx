@@ -16,6 +16,7 @@ function ThemeProvider({
       {...props}
     >
       <ThemeHotkey />
+      <NumberInputScrollBlocker />
       {children}
     </NextThemesProvider>
   )
@@ -64,6 +65,32 @@ function ThemeHotkey() {
       window.removeEventListener("keydown", onKeyDown)
     }
   }, [resolvedTheme, setTheme])
+
+  return null
+}
+
+function NumberInputScrollBlocker() {
+  React.useEffect(() => {
+    function onWheel(event: WheelEvent) {
+      // 1. If currently focused activeElement is a number input, blur it so wheel scroll never alters value
+      const active = document.activeElement
+      if (active instanceof HTMLInputElement && active.type === "number") {
+        active.blur()
+      }
+
+      // 2. If the hovered target is a number input, blur it as well
+      const target = event.target
+      if (target instanceof HTMLInputElement && target.type === "number") {
+        target.blur()
+      }
+    }
+
+    window.addEventListener("wheel", onWheel, { passive: true })
+
+    return () => {
+      window.removeEventListener("wheel", onWheel)
+    }
+  }, [])
 
   return null
 }

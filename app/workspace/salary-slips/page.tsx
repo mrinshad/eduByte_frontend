@@ -19,6 +19,7 @@ import {
     User,
     Calendar as CalendarIcon,
     Loader2,
+    X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -264,30 +265,48 @@ export default function SalarySlipsListPage() {
             {/* Filter & Search Bar */}
             <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
                 <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <Input
+                        id="salary-slips-search"
                         placeholder="Search employee name, code, slip #..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 h-10 border-slate-300 dark:border-slate-700"
+                        className="pl-9 h-10 border-slate-300 dark:border-slate-700 text-sm"
+                        title="Search salary slips by employee name, employee code, or slip number"
                     />
                 </form>
 
                 <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Month Picker */}
-                    <div className="w-40">
-                        <Input
+                    {/* Month Filter */}
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-10 shadow-2xs dark:border-slate-700 dark:bg-slate-900">
+                        <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Month:</span>
+                        <input
                             type="month"
+                            id="salary-month-filter"
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="h-10 border-slate-300 dark:border-slate-700 text-xs"
+                            placeholder="YYYY-MM"
+                            title="Filter salary slips by month (e.g. 2026-09)"
+                            className="bg-transparent text-xs outline-none text-slate-800 dark:text-slate-200 cursor-pointer w-28"
                         />
+                        {selectedMonth && (
+                            <button
+                                type="button"
+                                onClick={() => setSelectedMonth("")}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1"
+                                title="Clear month filter (show all months)"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Staff Select */}
                     <div className="w-48">
                         <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
                             <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 text-xs">
+                                <User className="h-3.5 w-3.5 mr-1 text-slate-400 shrink-0" />
                                 <SelectValue placeholder="All Employees" />
                             </SelectTrigger>
                             <SelectContent>
@@ -310,7 +329,7 @@ export default function SalarySlipsListPage() {
                                 setSelectedStaffId("all");
                                 setSelectedMonth("");
                             }}
-                            className="h-10 text-xs text-slate-500 hover:text-slate-900"
+                            className="h-10 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                         >
                             Clear
                         </Button>
