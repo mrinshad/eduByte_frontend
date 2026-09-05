@@ -17,7 +17,10 @@ import {
     Wallet,
     Landmark,
     X,
+    Download,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +50,7 @@ import { cn } from "@/lib/utils";
 import {
     getDailyReceiptsRegisterReport,
     type DailyReceiptsRegisterResponse,
+    type DailyReceiptRecord,
 } from "@/lib/services/incomeReports";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
@@ -119,6 +123,7 @@ export default function DailyReceiptsRegisterPage() {
     const [limit, setLimit] = useState(10);
     const [report, setReport] = useState<DailyReceiptsRegisterResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const isRangeInvalid = fromDate > toDate;
@@ -188,6 +193,65 @@ export default function DailyReceiptsRegisterPage() {
 
     const start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
     const end = pagination.total === 0 ? 0 : Math.min(pagination.page * pagination.limit, pagination.total);
+
+    const handleExportCsv = async () => {
+        if (!fromDate || !toDate || isRangeInvalid) return;
+        try {
+            setExporting(true);
+            const data = await getDailyReceiptsRegisterReport({
+                fromDate,
+                toDate,
+                page: 1,
+                limit: 10000,
+                search,
+                className: classNameFilter === "all" ? undefined : classNameFilter,
+                paymentMethod: paymentMethodFilter === "ALL" ? undefined : paymentMethodFilter,
+            });
+
+            const records = data?.receipts || [];
+            if (!records.length) {
+                toast.info("No receipts found to export.");
+                return;
+            }
+
+            const columns: CsvColumn<DailyReceiptRecord>[] = [
+                { header: "Receipt No", accessor: (r) => r.receiptNumber || r.transactionNumber || "" },
+                { header: "Date", accessor: (r) => formatDateTime(r.transactionDate) },
+                { header: "Student Name", accessor: (r) => r.studentName || "" },
+                { header: "Admission No", accessor: (r) => r.admissionNumber || "" },
+                { header: "Class", accessor: (r) => r.className || "-" },
+                {
+                    header: "Payment Mode",
+                    accessor: (r) =>
+                        r.paymentMethods && r.paymentMethods.length > 0
+                            ? r.paymentMethods.map((p) => p.method).join(", ")
+                            : r.paymentMethod || "-",
+                },
+                {
+                    header: "Fee Heads",
+                    accessor: (r) =>
+                        r.collections && r.collections.length > 0
+                            ? r.collections.map((c) => c.name).join("; ")
+                            : "-",
+                },
+                { header: "Amount (INR)", accessor: (r) => r.totalAmount || 0 },
+            ];
+
+            const success = exportToCsv({
+                filename: `daily_receipts_${fromDate}_to_${toDate}`,
+                columns,
+                data: records,
+            });
+
+            if (success) {
+                toast.success(`Exported ${records.length} receipt records successfully.`);
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Failed to export receipts");
+        } finally {
+            setExporting(false);
+        }
+    };
 
     const hasActiveFilters = useMemo(
         () => classNameFilter !== "all" || paymentMethodFilter !== "ALL" || search.length > 0,
@@ -295,6 +359,21 @@ export default function DailyReceiptsRegisterPage() {
                                 </PopoverContent>
                             </Popover>
                         </div>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExportCsv}
+                            disabled={exporting || isLoading || isRangeInvalid}
+                            className="h-10 gap-1.5 border-slate-300 bg-white text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                        >
+                            {exporting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Export CSV
+                        </Button>
 
                         <Button
                             size="icon"

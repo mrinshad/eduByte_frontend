@@ -59,6 +59,10 @@ export interface StudentListItem {
   religion?: string | null;
   community?: string | null;
   category?: string | null;
+  fatherName?: string | null;
+  fatherMobile?: string | null;
+  motherName?: string | null;
+  motherMobile?: string | null;
   whatsappNumber: string;
   address: string;
   place?: string | null;

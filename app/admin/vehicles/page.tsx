@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
 
-import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2, AlertCircle, Users } from "lucide-react"
+import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2, AlertCircle, Users, Download } from "lucide-react"
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -199,6 +200,36 @@ export default function Page() {
       setIsDeleting(false);
     }
   };
+
+  const handleExportCsv = () => {
+    if (!vehicles.length) {
+      toast.info("No vehicles to export.");
+      return;
+    }
+
+    const columns: CsvColumn<Vehicle>[] = [
+      { header: "Vehicle Name", accessor: (v) => v.vehicleName || "" },
+      { header: "Vehicle Number", accessor: (v) => v.vehicleNumber || "" },
+      { header: "Driver Name", accessor: (v) => v.driverName || "-" },
+      { header: "Assigned Students", accessor: (v) => v._count?.assignments ?? 0 },
+      { header: "Linked Expenses", accessor: (v) => v._count?.expenses ?? 0 },
+      {
+        header: "Created Date",
+        accessor: (v) => (v.createdAt ? new Date(v.createdAt).toLocaleDateString() : "-"),
+      },
+    ];
+
+    const success = exportToCsv({
+      filename: "transport_vehicles",
+      columns,
+      data: vehicles,
+    });
+
+    if (success) {
+      toast.success(`Exported ${vehicles.length} vehicles successfully.`);
+    }
+  };
+
   return (
     <section className="px-3 sm:px-6 py-4">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -211,31 +242,41 @@ export default function Page() {
             <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage transport vehicles, registration numbers, seating capacities, and drivers.</p>
           </div>
         </div>
-        <PermissionGate permission="vehicle.createVehicleButton">
-        <Button
-          onClick={() => {
-            setEditingId(null);
-            setVehicleName("");
-            setVehicleNumber("");
-            setDriverName("");
-            setOpen(true);   // <-- Add this line
-            console.log("Create Vehicle clicked");
-          }}
-          className="
-                          w-full sm:w-auto shrink-0
-                          bg-[#556043]
-                          text-white
-                          hover:bg-[#4a533b]
-                          dark:bg-slate-100
-                          dark:text-slate-900
-                          dark:hover:bg-slate-200
-                        "
-
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Vehicle
-        </Button>
-        </PermissionGate>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+            onClick={handleExportCsv}
+            disabled={vehicles.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <PermissionGate permission="vehicle.createVehicleButton">
+            <Button
+              onClick={() => {
+                setEditingId(null);
+                setVehicleName("");
+                setVehicleNumber("");
+                setDriverName("");
+                setOpen(true);   // <-- Add this line
+                console.log("Create Vehicle clicked");
+              }}
+              className="
+                              w-full sm:w-auto shrink-0
+                              bg-[#556043]
+                              text-white
+                              hover:bg-[#4a533b]
+                              dark:bg-slate-100
+                              dark:text-slate-900
+                              dark:hover:bg-slate-200
+                            "
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Vehicle
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       <div className="flex justify-end">

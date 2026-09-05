@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ArrowUpAZ, ArrowDownAZ, X, LogOut,
+  ArrowUpAZ, ArrowDownAZ, X, LogOut, Download,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,7 @@ export default function Page() {
 
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
@@ -239,6 +241,67 @@ export default function Page() {
     setCurrentPage(1);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const res = await getStudents({
+        page: 1,
+        limit: 10000,
+        search,
+        className: classFilter !== "all" ? classFilter : "",
+        admissionStatus: admissionFilter !== "all" ? admissionFilter : "",
+        status: statusFilter !== "all" ? statusFilter : "",
+        sortBy: sortByClass ? "className" : "admissionNumber",
+        order,
+      });
+
+      const studentList = res?.data || [];
+      if (!studentList.length) {
+        toast.info("No student records found to export.");
+        return;
+      }
+
+      const columns: CsvColumn<StudentListItem>[] = [
+        { header: "Admission No", accessor: (s) => s.admissionNumber || "" },
+        { header: "Student Name", accessor: (s) => s.studentName || "" },
+        { header: "Gender", accessor: (s) => s.gender || "" },
+        { header: "Class", accessor: (s) => s.className || "-" },
+        { header: "Division", accessor: (s) => s.divisionName || "-" },
+        {
+          header: "Admission Status",
+          accessor: (s) => (s.admissionStatus === "ADMITTED" ? "Admitted" : "Not Admitted"),
+        },
+        { header: "Student Status", accessor: (s) => s.status || "" },
+        {
+          header: "Date of Birth",
+          accessor: (s) => (s.dob ? new Date(s.dob).toLocaleDateString() : "-"),
+        },
+        { header: "Blood Group", accessor: (s) => s.bloodGroup || "-" },
+        { header: "Place", accessor: (s) => s.place || "-" },
+        { header: "Father Name", accessor: (s) => s.fatherName || "-" },
+        { header: "Father Mobile", accessor: (s) => s.fatherMobile || "-" },
+        { header: "Mother Name", accessor: (s) => s.motherName || "-" },
+        { header: "Mother Mobile", accessor: (s) => s.motherMobile || "-" },
+        { header: "WhatsApp Number", accessor: (s) => s.whatsappNumber || "-" },
+        { header: "Address", accessor: (s) => s.address || "-" },
+      ];
+
+      const success = exportToCsv({
+        filename: "students_roster",
+        columns,
+        data: studentList,
+      });
+
+      if (success) {
+        toast.success(`Exported ${studentList.length} student records successfully.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export student records");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6">
 
@@ -274,6 +337,20 @@ export default function Page() {
                 className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+              onClick={handleExportCsv}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
 
             <PermissionGate permission="students.createStudentButton">
               <Button
