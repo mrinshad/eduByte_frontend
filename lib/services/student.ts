@@ -16,6 +16,7 @@ export interface StudentInput {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
+  place?: string;
 }
 
 export interface Student {
@@ -35,6 +36,7 @@ export interface Student {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
+  place?: string | null;
   status: "ACTIVE" | "WITHDRAWN";
   enrollmentId?: string;
   enrollmentStatus?: string | null;
@@ -59,6 +61,7 @@ export interface StudentListItem {
   category?: string | null;
   whatsappNumber: string;
   address: string;
+  place?: string | null;
   status: string;
   enrollmentId?: string;
   enrollmentStatus?: string | null;

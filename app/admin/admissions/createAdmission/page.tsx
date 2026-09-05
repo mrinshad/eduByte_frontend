@@ -1033,8 +1033,9 @@ export default function Page() {
                                     <InfoItem label="Mother's Legal Name" value={fullStudentData.motherName} />
                                     <InfoItem label="Mother's Phone Contact" value={fullStudentData.motherMobile} />
                                     <InfoItem label="WhatsApp Identifier" value={fullStudentData.whatsappNumber} />
+                                    <InfoItem label="Place / Locality" value={fullStudentData.place || "—"} />
                                     <InfoItem
-                                        className="md:col-span-1 lg:col-span-3"
+                                        className="md:col-span-1 lg:col-span-2"
                                         label="Registered Residential Address"
                                         value={
                                             <div className="flex items-center gap-2 mt-1">
