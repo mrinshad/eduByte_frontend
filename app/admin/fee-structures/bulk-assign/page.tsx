@@ -99,8 +99,12 @@ export default function BulkFeeAssignPage() {
                 setAcademicYears(years);
                 setClasses(cls);
 
-                if (globalAcademicYearId && globalAcademicYearId !== "Academic Year") {
-                    setSelectedAcademicYear(globalAcademicYearId);
+                // Match global academic year by either ID or name so selectedAcademicYear always holds the valid year ID
+                const matchedYear = years.find(
+                    y => y.id === globalAcademicYearId || y.name?.trim() === globalAcademicYearId?.trim()
+                );
+                if (matchedYear) {
+                    setSelectedAcademicYear(matchedYear.id);
                 } else if (years.length > 0) {
                     const active = years.find(y => y.isActive);
                     setSelectedAcademicYear(active ? active.id : years[0].id);
@@ -112,6 +116,17 @@ export default function BulkFeeAssignPage() {
         }
         fetchInitialData();
     }, [globalAcademicYearId]);
+
+    // Keep selectedAcademicYear synchronized whenever global academic year changes
+    useEffect(() => {
+        if (!globalAcademicYearId || globalAcademicYearId === "Academic Year" || academicYears.length === 0) return;
+        const matchedYear = academicYears.find(
+            y => y.id === globalAcademicYearId || y.name?.trim() === globalAcademicYearId?.trim()
+        );
+        if (matchedYear && matchedYear.id !== selectedAcademicYear) {
+            setSelectedAcademicYear(matchedYear.id);
+        }
+    }, [globalAcademicYearId, academicYears, selectedAcademicYear]);
 
     // When Class changes: fetch Divisions and FeeStructures for that class
     useEffect(() => {
@@ -265,10 +280,10 @@ export default function BulkFeeAssignPage() {
                         <div className="flex items-center gap-2.5">
                             <Layers className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
                             <div>
-                                <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                                <CardTitle className="text-lg  font-bold text-slate-950 dark:text-white">
                                     Target Class & Academic Year
                                 </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
                                     Filter students by academic year, class, and division to assign fee structures.
                                 </CardDescription>
                             </div>
@@ -277,11 +292,11 @@ export default function BulkFeeAssignPage() {
                     <CardContent className="p-4 sm:p-6 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
                                     Academic Year <span className="text-red-500">*</span>
                                 </label>
                                 <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
-                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Select Academic Year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -295,11 +310,11 @@ export default function BulkFeeAssignPage() {
                             </div>
 
                             <div>
-                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
                                     Class <span className="text-red-500">*</span>
                                 </label>
                                 <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Select Class" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -313,11 +328,11 @@ export default function BulkFeeAssignPage() {
                             </div>
 
                             <div>
-                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
                                     Division
                                 </label>
                                 <Select value={selectedDivision} onValueChange={setSelectedDivision} disabled={!selectedClass}>
-                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="All Divisions" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -332,11 +347,11 @@ export default function BulkFeeAssignPage() {
                             </div>
 
                             <div>
-                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
                                     Display Mode
                                 </label>
                                 <Select value={viewMode} onValueChange={(val: "UNASSIGNED" | "ALL") => setViewMode(val)}>
-                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Display" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -515,10 +530,10 @@ export default function BulkFeeAssignPage() {
                 <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
                     <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
                         <AlertDialogHeader>
-                            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">
+                            <AlertDialogTitle className="text-lg font-semibold text-slate-100 dark:text-white">
                                 Assign Fee Structure to {selectedEnrollmentIds.size} Students?
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                            <AlertDialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400">
                                 This will assign <strong>{targetStructureObj?.name}</strong> to the <strong>{selectedEnrollmentIds.size}</strong> selected student(s) and generate the corresponding enrollment fee templates.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -530,7 +545,7 @@ export default function BulkFeeAssignPage() {
                                     handleExecuteAssignment();
                                 }}
                                 disabled={loading}
-                                className="w-full sm:w-auto bg-[#556043] hover:bg-[#4a533b] text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-full"
+                                className="w-full sm:w-auto bg-[#4a533b]  dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-full"
                             >
                                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Confirm Assignment
