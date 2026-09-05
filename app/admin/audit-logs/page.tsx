@@ -19,7 +19,7 @@ import {
   User,
   Copy,
   Check,
-  Calendar,
+  Calendar as CalendarIcon,
   Layers,
   ArrowRight,
   ArrowLeft,
@@ -31,6 +31,7 @@ import {
   Code2,
   Download,
 } from "lucide-react";
+import { format } from "date-fns";
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { cn } from "@/lib/utils";
@@ -60,6 +61,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import PageHeader from "@/components/common/pageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PermissionGate } from "@/components/auth/PermissionGate";
@@ -83,6 +90,23 @@ function formatDateTime(dateStr?: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+function parseISODate(dateStr: string) {
+  return new Date(`${dateStr}T00:00:00`);
+}
+
+function formatDisplayDate(date: string) {
+  if (!date) return "";
+  const datePart = date.slice(0, 10);
+  const d = new Date(`${datePart}T00:00:00`);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -403,10 +427,33 @@ export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState("ALL");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
+  const [toCalendarOpen, setToCalendarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [sortBy, setSortBy] = useState<"createdAt" | "module" | "action" | "description">("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
+
+  // Handlers for Shadcn Calendar selection
+  const handleFromDateSelect = (date: Date | undefined) => {
+    if (!date) {
+      setFromDate("");
+    } else {
+      setFromDate(format(date, "yyyy-MM-dd"));
+    }
+    setFromCalendarOpen(false);
+    setCurrentPage(1);
+  };
+
+  const handleToDateSelect = (date: Date | undefined) => {
+    if (!date) {
+      setToDate("");
+    } else {
+      setToDate(format(date, "yyyy-MM-dd"));
+    }
+    setToCalendarOpen(false);
+    setCurrentPage(1);
+  };
 
   // Metadata for filter options
   const [availableModules, setAvailableModules] = useState<string[]>([]);
@@ -489,6 +536,8 @@ export default function AuditLogsPage() {
     setActionFilter("ALL");
     setFromDate("");
     setToDate("");
+    setFromCalendarOpen(false);
+    setToCalendarOpen(false);
     setSortBy("createdAt");
     setOrder("desc");
     setCurrentPage(1);
@@ -728,30 +777,70 @@ export default function AuditLogsPage() {
           {/* Date Range & Filter Reset Row */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 text-xs">
                 <Clock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Date Range:
               </span>
-              <Input
-                type="date"
-                value={fromDate}
-                onChange={(e) => {
-                  setFromDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-9 w-36 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-[#556043] [color-scheme:light] dark:[color-scheme:dark]"
-                placeholder="From Date"
-              />
-              <span className="text-slate-500 dark:text-slate-400 font-medium">to</span>
-              <Input
-                type="date"
-                value={toDate}
-                onChange={(e) => {
-                  setToDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-9 w-36 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-[#556043] [color-scheme:light] dark:[color-scheme:dark]"
-                placeholder="To Date"
-              />
+              <div className="flex items-center gap-2">
+                {/* From Date Popover */}
+                <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        !fromDate && "text-slate-400 dark:text-slate-500"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 text-[#556043] dark:text-[#9ea98a]" />
+                      <span className="truncate">{fromDate ? formatDisplayDate(fromDate) : "From Date"}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto rounded-xl border border-slate-200 dark:border-slate-800 p-0 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                    align="start"
+                  >
+                    <CalendarComponent
+                      mode="single"
+                      selected={fromDate ? parseISODate(fromDate) : undefined}
+                      onSelect={handleFromDateSelect}
+                      defaultMonth={fromDate ? parseISODate(fromDate) : new Date()}
+                      disabled={(d) => (toDate ? d > parseISODate(toDate) : false)}
+                      className="text-slate-900 dark:text-slate-100"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <span className="text-slate-400 dark:text-slate-500 text-xs">to</span>
+
+                {/* To Date Popover */}
+                <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        !toDate && "text-slate-400 dark:text-slate-500"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 text-[#556043] dark:text-[#9ea98a]" />
+                      <span className="truncate">{toDate ? formatDisplayDate(toDate) : "To Date"}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto rounded-xl border border-slate-200 dark:border-slate-800 p-0 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                    align="start"
+                  >
+                    <CalendarComponent
+                      mode="single"
+                      selected={toDate ? parseISODate(toDate) : undefined}
+                      onSelect={handleToDateSelect}
+                      defaultMonth={toDate ? parseISODate(toDate) : new Date()}
+                      disabled={(d) => (fromDate ? d < parseISODate(fromDate) : false)}
+                      className="text-slate-900 dark:text-slate-100"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             {hasActiveFilters && (
