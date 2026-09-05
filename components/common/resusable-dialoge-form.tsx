@@ -40,7 +40,7 @@ export type FieldOption = { label: string; value: string }
 
 export type FormField =
   | {
-      type: "text" | "number"
+      type: "text" | "number" | "password"
       name: string
       label: string
       placeholder?: string
@@ -120,8 +120,8 @@ const FieldError = ({ children }: { children?: string }) => {
 }
 
 const vehicleInputClass = `
-  bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300
-  dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100
+  bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 [&_svg]:text-white/80
+  dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:[&_svg]:text-slate-300
 `
 
 /**
@@ -204,9 +204,9 @@ export function ReusableFormDialog({
                   </Label>
                 )}
 
-                {(field.type === "text" || field.type === "number") && (
+                {(field.type === "text" || field.type === "number" || field.type === "password") && (
                   <Input
-                    type={field.type === "number" ? "number" : "text"}
+                    type={field.type === "number" ? "number" : field.type === "password" ? "password" : "text"}
                     min={field.type === "number" ? 0 : undefined}
                     step={field.type === "number" ? "0.01" : undefined}
                     onWheel={field.type === "number" ? (e) => e.currentTarget.blur() : undefined}

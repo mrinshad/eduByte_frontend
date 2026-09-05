@@ -565,6 +565,7 @@ function UserViewContent() {
       <ReusableFormDialog
         open={dialogOpen}
         onOpenChange={(open) => !open && closeDialog()}
+        theme="vehicle"
         title="Edit User"
         description="Update the user account details."
         fields={editFields}
@@ -580,7 +581,7 @@ function UserViewContent() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={(open) => !open && setDeleteOpen(false)}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg">Delete User?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed">
@@ -617,15 +618,15 @@ function UserViewContent() {
             </label>
           </div>
 
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel disabled={deleting} onClick={() => setDeleteConfirmed(false)} className="rounded-xl h-10">
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel disabled={deleting} onClick={() => setDeleteConfirmed(false)} className="w-full sm:w-auto rounded-full">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting || !deleteConfirmed}
               className={cn(
-                "rounded-xl h-10 bg-red-600 hover:bg-red-700 focus:ring-red-500",
+                "w-full sm:w-auto rounded-full bg-red-600 hover:bg-red-700 text-white shadow-sm font-medium",
                 !deleteConfirmed && "opacity-50 cursor-not-allowed"
               )}
             >

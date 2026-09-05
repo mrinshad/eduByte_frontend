@@ -336,7 +336,7 @@ export default function UsersPage() {
 
     if (dialogMode === "add") {
       base.splice(3, 0, {
-        type: "text",
+        type: "password",
         name: "password",
         label: "Password",
         placeholder: "••••••••",
@@ -864,6 +864,7 @@ export default function UsersPage() {
       <ReusableFormDialog
         open={dialogOpen}
         onOpenChange={(open) => !open && closeDialog()}
+        theme="vehicle"
         title={dialogMode === "add" ? "Add User" : "Edit User"}
         description={
           dialogMode === "add"
@@ -885,7 +886,7 @@ export default function UsersPage() {
       {/* Delete Confirmation Dialog                                     */}
       {/* ------------------------------------------------------------- */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && closeDeleteDialog()}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {deleteTarget?.type === "batch" ? "Delete Users?" : "Delete User?"}
@@ -934,13 +935,13 @@ export default function UsersPage() {
             </label>
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel disabled={deleting} className="w-full sm:w-auto rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               disabled={deleting || !deleteConfirmed}
               className={cn(
-                "bg-red-600 hover:bg-red-700 focus:ring-red-500",
+                "w-full sm:w-auto rounded-full bg-red-600 hover:bg-red-700 text-white shadow-sm font-medium",
                 !deleteConfirmed && "opacity-50 cursor-not-allowed"
               )}
             >

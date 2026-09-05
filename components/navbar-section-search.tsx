@@ -6,19 +6,6 @@ import {
   Search,
   X,
   CornerDownLeft,
-  GraduationCap,
-  CircleDollarSign,
-  FileText,
-  Users,
-  Settings,
-  Home,
-  BookOpen,
-  Receipt,
-  Bus,
-  ShieldCheck,
-  Building2,
-  Sparkles,
-  type LucideIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -32,23 +19,6 @@ interface NavbarSectionSearchProps {
   area: PortalArea
   userPermissions?: string[]
   userRole?: string | null
-}
-
-function getSectionIcon(slug: string, area: string): LucideIcon {
-  const s = slug.toLowerCase()
-  if (s.includes("dashboard")) return Home
-  if (s.includes("relieving") || s.includes("promotion") || s.includes("student") || s.includes("admission"))
-    return GraduationCap
-  if (s.includes("academic") || s.includes("class") || s.includes("division")) return BookOpen
-  if (s.includes("staff") || s.includes("user")) return Users
-  if (s.includes("role") || s.includes("permission")) return ShieldCheck
-  if (s.includes("vehicle") || s.includes("transport")) return Bus
-  if (s.includes("report") || s.includes("daybook") || s.includes("demographic") || s.includes("census"))
-    return FileText
-  if (s.includes("fee") || s.includes("charge") || s.includes("fine") || s.includes("cca"))
-    return CircleDollarSign
-  if (s.includes("expense") || s.includes("salary") || s.includes("account")) return Receipt
-  return Building2
 }
 
 export function NavbarSectionSearch({
@@ -243,14 +213,7 @@ export function NavbarSectionSearch({
       {/* Autocomplete / Autosuggestions Dropdown */}
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-2 max-h-[22rem] w-full min-w-[18rem] overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 z-50 animate-in fade-in-0 zoom-in-95 duration-100">
-          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
-            <span>{query ? "Matching Sections" : "Quick Sections"}</span>
-            <span className="text-[9px] font-normal normal-case text-slate-400">
-              {filteredSections.length} available
-            </span>
-          </div>
-
-          <div className="mt-1 space-y-1 overflow-y-auto max-h-[18rem] scroll-py-1 pr-0.5">
+          <div className="space-y-1 overflow-y-auto max-h-[18rem] scroll-py-1 pr-0.5">
             {filteredSections.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
                 <p className="font-medium">No sections found</p>
@@ -261,7 +224,6 @@ export function NavbarSectionSearch({
             ) : (
               filteredSections.map((item, index) => {
                 const isSelected = index === selectedIndex
-                const Icon = getSectionIcon(item.slug, item.area)
                 const isAdmin = item.area === "admin"
 
                 return (
@@ -287,27 +249,15 @@ export function NavbarSectionSearch({
                         : "hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-700 dark:text-slate-300"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          isAdmin
-                            ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400"
-                            : "bg-blue-500/10 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400"
-                        }`}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold truncate">
+                          {item.label}
+                        </span>
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold truncate">
-                            {item.label}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                          {item.purpose}
-                        </p>
-                      </div>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                        {item.purpose}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -332,22 +282,6 @@ export function NavbarSectionSearch({
                 )
               })
             )}
-          </div>
-
-          <div className="mt-1.5 border-t border-slate-100 dark:border-slate-800/80 px-2 pt-1.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-0.5">
-                <kbd className="rounded border bg-slate-50 px-1 py-0.2 text-[9px] dark:bg-slate-900 dark:border-slate-800">↑</kbd>
-                <kbd className="rounded border bg-slate-50 px-1 py-0.2 text-[9px] dark:bg-slate-900 dark:border-slate-800">↓</kbd> navigate
-              </span>
-              <span className="flex items-center gap-0.5">
-                <kbd className="rounded border bg-slate-50 px-1 py-0.2 text-[9px] dark:bg-slate-900 dark:border-slate-800">↵</kbd> select
-              </span>
-              <span className="flex items-center gap-0.5">
-                <kbd className="rounded border bg-slate-50 px-1 py-0.2 text-[9px] dark:bg-slate-900 dark:border-slate-800">esc</kbd> close
-              </span>
-            </div>
-            <span className="text-slate-400">Portal Sections</span>
           </div>
         </div>
       )}
