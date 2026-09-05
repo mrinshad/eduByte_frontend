@@ -259,7 +259,7 @@ export default function StudentRelievingPage() {
   const selectedClassObj = classes.find((c) => c.id === selectedClass);
 
   return (
-    <PermissionGate permission="students.listOnNavbar">
+    <PermissionGate permission="relieving.listOnNavbar">
       <section className="w-full px-4 py-4 sm:px-6 space-y-6">
         {/* ── Page Header (Matching Student Promotion) ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -251,7 +251,7 @@ export default function BulkFeeAssignPage() {
     const targetStructureObj = feeStructures.find(fs => fs.id === targetFeeStructureId);
 
     return (
-        <PermissionGate permission="feestructures.listOnNavbar">
+        <PermissionGate permission="feestructures.bulkAssignButton">
             <section className="w-full px-4 py-4 sm:px-6 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
