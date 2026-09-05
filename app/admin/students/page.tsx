@@ -417,7 +417,7 @@ export default function Page() {
                   WhatsApp Number
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Address
+                  Place & Address
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Class | Division
@@ -471,8 +471,21 @@ export default function Page() {
                       {student.whatsappNumber}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {student.address}
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[200px]">
+                      {student.place ? (
+                        <div>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{student.place}</span>
+                          {student.address && (
+                            <p className="text-xs text-slate-400 dark:text-slate-500 truncate" title={student.address}>
+                              {student.address}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="truncate block" title={student.address || "—"}>
+                          {student.address || "—"}
+                        </span>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">

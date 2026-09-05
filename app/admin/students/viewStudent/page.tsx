@@ -555,6 +555,7 @@ export default function Page() {
                 <InfoItem label="WhatsApp" value={student.whatsappNumber || "—"} />
                 <InfoItem label="Father mobile" value={student.fatherMobile || "—"} />
                 <InfoItem label="Mother mobile" value={student.motherMobile || "—"} />
+                <InfoItem label="Place / Locality" value={student.place || "—"} />
                 <div className="sm:col-span-2 xl:col-span-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
                   <div className="flex items-start gap-3">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />

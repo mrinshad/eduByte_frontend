@@ -345,6 +345,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Mother mobile" value={student.motherMobile} />
             <InfoItem label="WhatsApp" value={student.whatsappNumber} />
             <InfoItem label="Address" value={student.address} />
+            <InfoItem label="Place" value={student.place} />
           </InfoGrid>
         </InfoSection>
 

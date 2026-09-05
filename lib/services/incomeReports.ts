@@ -24,6 +24,7 @@ export interface AdmissionMasterItem {
     motherMobile: string;
     whatsappNumber: string;
     address: string;
+    place?: string;
     studentStatus: string;
     enrollmentStatus: string;
     rollNumber: string;

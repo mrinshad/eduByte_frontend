@@ -703,6 +703,7 @@ export default function Page() {
               <InfoItem label="Admission No" value={student.admissionNumber || "-"} />
               <InfoItem label="WhatsApp Number" value={student.whatsappNumber || "-"} />
               <InfoItem label="Address" value={student.address || "-"} />
+              <InfoItem label="Place" value={student.place || "-"} />
               <InfoItem
                 label="Class & Div"
                 value={`${enrollmentDetails.classId} - ${enrollmentDetails.division}`}

@@ -33,6 +33,7 @@ export interface BackendAdmission {
   feeStructureName?: string;
   vehicleName?: string | null;
   vehicleNumber?: string | null;
+  place?: string | null;
 }
  
 export interface ChargeOverride {
@@ -161,6 +162,7 @@ export interface CompleteEnrollmentRecord {
     motherMobile: string;
     whatsappNumber: string;
     address: string;
+    place?: string;
   };
   charges: {
     id: string;
