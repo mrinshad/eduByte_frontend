@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/dialog";
 import PageHeader from "@/components/common/pageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 import {
   getAuditLogs,
@@ -243,7 +244,8 @@ export default function AuditLogsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <PermissionGate permission="auditLogs.listOnNavbar">
+      <div className="space-y-6 pb-12">
       {/* Header */}
       <PageHeader
         title="Audit Logs"
@@ -580,15 +582,17 @@ export default function AuditLogsPage() {
 
                   {/* Diff Details Button */}
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedLog(log)}
-                      title="Inspect changes"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
+                    <PermissionGate permission="auditLogs.viewButton">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedLog(log)}
+                        title="Inspect changes"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </PermissionGate>
                   </TableCell>
                 </TableRow>
               ))
@@ -787,5 +791,6 @@ export default function AuditLogsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PermissionGate>
   );
 }

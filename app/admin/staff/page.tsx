@@ -253,7 +253,7 @@ export default function Page() {
               />
             </div>
 
-            <PermissionGate permission="staff.creaStaffButton">
+            <PermissionGate permission="staff.createStaffButton">
               <Button
                 className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                 onClick={() => router.push("/admin/staff/createStaff")}
