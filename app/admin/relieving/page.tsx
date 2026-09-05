@@ -675,13 +675,13 @@ export default function StudentRelievingPage() {
         <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
           <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-                <LogOut className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
+              <AlertDialogTitle className="text-lg font-semibold text-slate-200 dark:text-white flex items-center gap-2">
+                <LogOut className="h-5 w-5 text-slate-200 dark:text-slate-400" />
                 Relieve {selectedStudentsInfo.count} Selected Student{selectedStudentsInfo.count === 1 ? "" : "s"}?
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <AlertDialogDescription className="text-xs sm:text-sm text-slate-300 dark:text-slate-400">
                 You are about to relieve{" "}
-                <strong className="text-slate-900 dark:text-slate-100 font-semibold">
+                <strong className="text-slate-100 dark:text-slate-100 font-semibold">
                   {selectedStudentsInfo.count} student{selectedStudentsInfo.count === 1 ? "" : "s"}
                 </strong>{" "}
                 from active enrollment.
@@ -690,7 +690,7 @@ export default function StudentRelievingPage() {
 
             <div className="space-y-3.5 py-1">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <label className="text-xs font-semibold text-slate-100 dark:text-slate-200">
                   Relieving Date <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -750,7 +750,7 @@ export default function StudentRelievingPage() {
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                className="w-full sm:w-auto bg-[#4a533b] hover:bg-[#3d4430] text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-full font-medium"
+                className="w-full sm:w-auto bg-[#3d4430]  dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-full font-medium"
                 disabled={isSubmitting}
                 onClick={(e) => {
                   e.preventDefault();
