@@ -21,11 +21,15 @@ import {
   Check,
   Zap,
   Trophy,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
+import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import {
   Dialog,
   DialogContent,
@@ -86,6 +90,36 @@ export default function FeeGenerationPage() {
   const [isLoadingCcaPreview, setIsLoadingCcaPreview] = useState(false);
   const [isGeneratingCca, setIsGeneratingCca] = useState(false);
   const [ccaConfirmOpen, setCcaConfirmOpen] = useState(false);
+
+  // Single Student Generation State
+  const [activeTab, setActiveTab] = useState<"batch" | "individual">("batch");
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<BackendAdmission[]>([]);
+  const [isSearchingStudents, setIsSearchingStudents] = useState(false);
+  const [selectedStudentEnrollmentId, setSelectedStudentEnrollmentId] = useState<string | null>(null);
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "individual") return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingStudents(true);
+        const res = await getStudentAdmissions({
+          search: studentSearchQuery.trim() || undefined,
+          limit: 15,
+          academicYearId: activeAcademicYearId || undefined,
+        });
+        setSearchResults(res?.items || []);
+      } catch (err) {
+        console.warn("Error searching admissions for fee generation:", err);
+      } finally {
+        setIsSearchingStudents(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, studentSearchQuery, activeAcademicYearId]);
 
   const generateLockRef = useRef(false);
 
@@ -414,7 +448,119 @@ export default function FeeGenerationPage() {
         </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* ── Tab Switcher ── */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+        <button
+          type="button"
+          onClick={() => setActiveTab("batch")}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+            activeTab === "batch"
+              ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+          }`}
+        >
+          <Calendar className="h-4 w-4" />
+          School Batch Generation
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("individual")}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+            activeTab === "individual"
+              ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+          }`}
+        >
+          <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          Single Student Generation
+        </button>
+      </div>
+
+      {activeTab === "individual" ? (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+            <div className="max-w-xl space-y-2">
+              <label className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Search className="h-4 w-4 text-slate-500" />
+                Find Student by Name or Admission Number
+              </label>
+              <div className="relative">
+                <Input
+                  placeholder="Type student name or admission number..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+                {isSearchingStudents && (
+                  <div className="absolute right-3 top-2.5">
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Search any active student to view their fee schedule, check ungenerated charges, and generate dues manually.
+              </p>
+            </div>
+
+            <div className="mt-6 border-t border-slate-100 dark:border-slate-800/80 pt-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                {studentSearchQuery.trim() ? "Search Results" : "Active Students"}
+              </h3>
+
+              {searchResults.length === 0 ? (
+                <div className="text-center py-10 text-sm text-slate-500 dark:text-slate-400">
+                  {isSearchingStudents ? "Searching students..." : "No matching active students found."}
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900/40">
+                  {searchResults.map((std) => (
+                    <div
+                      key={std.id}
+                      className="flex items-center justify-between p-3.5 sm:px-5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {std.studentName}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                          <span>{std.admissionNumber}</span>
+                          <span>•</span>
+                          <span>
+                            {std.class} - {std.division}
+                          </span>
+                          {std.feeStructureName && (
+                            <>
+                              <span>•</span>
+                              <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                {std.feeStructureName}
+                              </Badge>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium gap-1.5 shadow-xs"
+                        onClick={() => {
+                          setSelectedStudentEnrollmentId(std.id);
+                          setIsStudentModalOpen(true);
+                        }}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Generate Fees
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Loading Skeleton */}
       {isLoadingPreview && !preview ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-12 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50">
           <div className="flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
@@ -921,6 +1067,8 @@ export default function FeeGenerationPage() {
           </div>
         </>
       ) : null}
+    </>
+  )}
 
       {/* Confirmation Modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -1055,6 +1203,20 @@ export default function FeeGenerationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {selectedStudentEnrollmentId && (
+        <ManualFeeGenerationModal
+          enrollmentId={selectedStudentEnrollmentId}
+          isOpen={isStudentModalOpen}
+          onClose={() => {
+            setIsStudentModalOpen(false);
+            setSelectedStudentEnrollmentId(null);
+          }}
+          onSuccess={() => {
+            handleRefreshPreview();
+          }}
+        />
+      )}
     </section>
   );
 }

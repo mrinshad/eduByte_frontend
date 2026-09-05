@@ -311,3 +311,91 @@ export async function generateCatchUpFeeCharges(academicYearId: string) {
 
   return payload.data ?? null;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Single Student Manual Fee Generation                              */
+/* ------------------------------------------------------------------ */
+
+export interface SingleStudentChargeItem {
+  id: string | null;
+  key: string;
+  enrollmentChargeId: string;
+  chargeTypeId: string;
+  chargeTypeName: string;
+  chargeCategory: string;
+  frequency: string;
+  academicMonth: number;
+  periodMonth: number;
+  periodYear: number;
+  periodLabel: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  dueDate: string;
+  dueDay: number | null;
+  status: string;
+  isGenerated: boolean;
+  isAllowedWindow: boolean;
+  templateFinalAmount: number;
+  canSyncAmount: boolean;
+}
+
+export interface SingleStudentGenerationPlan {
+  student: {
+    id: string;
+    studentName: string;
+    admissionNumber: string;
+  };
+  enrollment: {
+    id: string;
+    rollNumber: string | null;
+    className: string;
+    divisionName: string;
+    academicYearId: string;
+    academicYearName: string;
+    totalAcademicMonths: number;
+    lastGeneratedAcademicMonth: number | null;
+  };
+  summary: {
+    totalChargesCount: number;
+    alreadyGeneratedCount: number;
+    ungeneratedCount: number;
+    ungeneratedDueCount: number;
+    totalDueToGenerate: number;
+    totalAllUngenerated: number;
+  };
+  items: SingleStudentChargeItem[];
+}
+
+export interface SingleStudentGenerationResult {
+  createdCount: number;
+  updatedCount: number;
+  totalProcessed: number;
+}
+
+export async function getStudentFeeGenerationPreview(enrollmentId: string) {
+  const payload = (await apiFetch(
+    `/api/stdcharge/student/${enrollmentId}/generation-preview`
+  )) as ApiSuccess<SingleStudentGenerationPlan>;
+
+  return payload.data ?? null;
+}
+
+export async function generateStudentFeesManual(
+  enrollmentId: string,
+  options?: {
+    chargeKeys?: string[];
+    targetAcademicMonths?: number[];
+    allDue?: boolean;
+    syncPendingAmounts?: boolean;
+  }
+) {
+  const payload = await postStudentChargeAction<SingleStudentGenerationResult>(
+    `/api/stdcharge/student/${enrollmentId}/generate`,
+    options ?? { allDue: true }
+  );
+
+  return payload.data ?? null;
+}

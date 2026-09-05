@@ -18,7 +18,8 @@ import {
     GitBranch,
     Binary,
     Activity,
-    Plus
+    Plus,
+    Sparkles
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getCCAActivities, assignStudentToCCAActivities, type CCAActivity } from "@/lib/services/cca";
+import { generateStudentFeesManual } from "@/lib/services/studentCharges";
 
 import { useSearchParams } from "next/navigation";
 
@@ -230,6 +232,7 @@ export default function Page() {
     const [selectedNewCCAIds, setSelectedNewCCAIds] = useState<string[]>([]);
     const [isClearFieldsDialogOpen, setIsClearFieldsDialogOpen] = useState(false);
     const [loadingChargeTypes, setLoadingChargeTypes] = useState(false);
+    const [autoGenerateFees, setAutoGenerateFees] = useState(true);
 
     const [submitting, setSubmitting] = useState(false);
     const [loadingStudent, setLoadingStudent] = useState(false);
@@ -819,6 +822,22 @@ export default function Page() {
                         }
                     }
                 }
+
+                const targetEnrollmentId = isEditMode ? enrollmentId : result?.data?.id;
+                if (autoGenerateFees && targetEnrollmentId) {
+                    try {
+                        const genResult = await generateStudentFeesManual(targetEnrollmentId, {
+                            allDue: true,
+                            syncPendingAmounts: true,
+                        });
+                        if (genResult && genResult.createdCount > 0) {
+                            toast.success(`Generated ${genResult.createdCount} fee charges for student`);
+                        }
+                    } catch (genErr: any) {
+                        console.warn("Auto fee generation notice:", genErr);
+                    }
+                }
+
                 router.back();
             } else {
                 toast.error(result?.message || "An error occurred during submission.");
@@ -848,7 +867,22 @@ export default function Page() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 mr-1">
+                        <Checkbox
+                            id="autoGenerateFees"
+                            checked={autoGenerateFees}
+                            onCheckedChange={(c) => setAutoGenerateFees(Boolean(c))}
+                        />
+                        <label
+                            htmlFor="autoGenerateFees"
+                            className="text-xs font-medium text-slate-700 dark:text-slate-300 select-none cursor-pointer flex items-center gap-1.5"
+                        >
+                            <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            Generate fees immediately
+                        </label>
+                    </div>
+
                     <Button
                         variant="outline"
                         onClick={() => router.back()}
