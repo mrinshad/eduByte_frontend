@@ -148,6 +148,8 @@ export default function CreateSalarySlipPage() {
                         setSelectedStaffId(paramStaffId);
                         if (matched.basicSalary !== undefined && matched.basicSalary !== null && Number(matched.basicSalary) > 0) {
                             setBasicSalary(Number(matched.basicSalary));
+                        } else {
+                            setBasicSalary("");
                         }
                     }
                 }
@@ -357,6 +359,8 @@ export default function CreateSalarySlipPage() {
                                                             setSelectedStaffId(toId(staff.id));
                                                             if (staff.basicSalary !== undefined && staff.basicSalary !== null && Number(staff.basicSalary) > 0) {
                                                                 setBasicSalary(Number(staff.basicSalary));
+                                                            } else {
+                                                                setBasicSalary("");
                                                             }
                                                             setStaffPopoverOpen(false);
                                                             if (errors.staff) setErrors((prev) => ({ ...prev, staff: undefined }));
