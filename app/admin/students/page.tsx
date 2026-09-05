@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ArrowUpAZ, ArrowDownAZ, X, LogOut, Download,
+  ArrowUpAZ, ArrowDownAZ, X, LogOut, Download, CalendarIcon,
 } from "lucide-react";
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
@@ -34,6 +34,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
@@ -719,12 +727,34 @@ export default function Page() {
                   <label className="text-xs font-semibold text-slate-200 dark:text-slate-300">
                     Relieving Date:
                   </label>
-                  <input
-                    type="date"
-                    value={relieveDate}
-                    onChange={(e) => setRelieveDate(e.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-1.5 text-slate-200 text-sm dark:border-slate-700"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full h-10 justify-start text-left font-normal text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 px-3",
+                          !relieveDate && "text-slate-400"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {relieveDate ? format(new Date(`${relieveDate}T00:00:00`), "dd MMM yyyy") : "Pick relieving date"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={relieveDate ? new Date(`${relieveDate}T00:00:00`) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setRelieveDate(format(date, "yyyy-MM-dd"));
+                          }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="rounded-lg bg-slate-100 p-3 text-slate-900 dark:text-slate-200 text-xs dark:bg-slate-800/60 space-y-1">
                   <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>

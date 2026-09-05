@@ -12,6 +12,7 @@ import {
   Search,
   Users,
   Calendar,
+  CalendarIcon,
   Check,
   ChevronsUpDown,
   Loader2,
@@ -76,6 +77,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import {
   Command,
   CommandEmpty,
@@ -1494,25 +1497,62 @@ export default function CCAManagementPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Start Date *</Label>
-                            <Input
-                              type="date"
-                              value={item.startDate}
-                              onChange={(e) =>
-                                handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
-                              }
-                              className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                            />
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn(
+                                    "h-8 w-full justify-start text-left font-normal text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-2.5",
+                                    !item.startDate && "text-slate-300"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-1.5 h-3 w-3 text-slate-300 shrink-0" />
+                                  <span className="truncate">
+                                    {item.startDate ? format(new Date(`${item.startDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                  </span>
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={item.startDate ? new Date(`${item.startDate}T00:00:00`) : undefined}
+                                  onSelect={(date) => {
+                                    handleUpdateAssignItem(item.activityId, "startDate", date ? format(date, "yyyy-MM-dd") : "");
+                                  }}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                           <div>
                             <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">End Date</Label>
-                            <Input
-                              type="date"
-                              value={item.endDate}
-                              onChange={(e) =>
-                                handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
-                              }
-                              className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                            />
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn(
+                                    "h-8 w-full justify-start text-left font-normal text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-2.5",
+                                    !item.endDate && "text-slate-300"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-1.5 h-3 w-3 text-slate-300 shrink-0" />
+                                  <span className="truncate">
+                                    {item.endDate ? format(new Date(`${item.endDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                  </span>
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={item.endDate ? new Date(`${item.endDate}T00:00:00`) : undefined}
+                                  onSelect={(date) => {
+                                    handleUpdateAssignItem(item.activityId, "endDate", date ? format(date, "yyyy-MM-dd") : "");
+                                  }}
+                                  disabled={item.startDate ? (date) => date < new Date(`${item.startDate}T00:00:00`) : undefined}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </div>
 
@@ -1584,24 +1624,61 @@ export default function CCAManagementPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Input
-                                type="date"
-                                value={item.startDate}
-                                onChange={(e) =>
-                                  handleUpdateAssignItem(item.activityId, "startDate", e.target.value)
-                                }
-                                className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                              />
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={cn(
+                                      "h-8 w-full justify-start text-left font-normal text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-2.5",
+                                      !item.startDate && "text-slate-300"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-1.5 h-3 w-3 text-slate-300 shrink-0" />
+                                    <span className="truncate">
+                                      {item.startDate ? format(new Date(`${item.startDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                    </span>
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <CalendarComponent
+                                    mode="single"
+                                    selected={item.startDate ? new Date(`${item.startDate}T00:00:00`) : undefined}
+                                    onSelect={(date) => {
+                                      handleUpdateAssignItem(item.activityId, "startDate", date ? format(date, "yyyy-MM-dd") : "");
+                                    }}
+                                  />
+                                </PopoverContent>
+                              </Popover>
                             </TableCell>
                             <TableCell>
-                              <Input
-                                type="date"
-                                value={item.endDate}
-                                onChange={(e) =>
-                                  handleUpdateAssignItem(item.activityId, "endDate", e.target.value)
-                                }
-                                className="h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                              />
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={cn(
+                                      "h-8 w-full justify-start text-left font-normal text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-2.5",
+                                      !item.endDate && "text-slate-300"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-1.5 h-3 w-3 text-slate-300 shrink-0" />
+                                    <span className="truncate">
+                                      {item.endDate ? format(new Date(`${item.endDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                    </span>
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <CalendarComponent
+                                    mode="single"
+                                    selected={item.endDate ? new Date(`${item.endDate}T00:00:00`) : undefined}
+                                    onSelect={(date) => {
+                                      handleUpdateAssignItem(item.activityId, "endDate", date ? format(date, "yyyy-MM-dd") : "");
+                                    }}
+                                    disabled={item.startDate ? (date) => date < new Date(`${item.startDate}T00:00:00`) : undefined}
+                                  />
+                                </PopoverContent>
+                              </Popover>
                             </TableCell>
                             <TableCell>
                               <div className="relative">
@@ -1780,12 +1857,32 @@ export default function CCAManagementPage() {
                 <Label className="text-sm font-medium text-white dark:text-slate-200">
                   Start Date <span className="text-red-500 ml-0.5">*</span>
                 </Label>
-                <Input
-                  type="date"
-                  value={bulkStartDate}
-                  onChange={(e) => setBulkStartDate(e.target.value)}
-                  className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "h-10 w-full justify-start text-left font-normal text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-3",
+                        !bulkStartDate && "text-slate-300"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-slate-300 shrink-0" />
+                      <span className="truncate">
+                        {bulkStartDate ? format(new Date(`${bulkStartDate}T00:00:00`), "dd MMM yyyy") : "Pick start date"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={bulkStartDate ? new Date(`${bulkStartDate}T00:00:00`) : undefined}
+                      onSelect={(date) => {
+                        setBulkStartDate(date ? format(date, "yyyy-MM-dd") : "");
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-1.5">
@@ -2070,32 +2167,77 @@ export default function CCAManagementPage() {
                   <Label className="text-sm font-medium text-white dark:text-slate-200">
                     Start Date <span className="text-red-500 ml-0.5">*</span>
                   </Label>
-                  <Input
-                    type="date"
-                    value={editingAssignment.startDate}
-                    onChange={(e) =>
-                      setEditingAssignment((prev) =>
-                        prev ? { ...prev, startDate: e.target.value } : null
-                      )
-                    }
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "h-10 w-full justify-start text-left font-normal text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-3",
+                          !editingAssignment.startDate && "text-slate-300"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-300 shrink-0" />
+                        <span className="truncate">
+                          {editingAssignment.startDate
+                            ? format(new Date(`${editingAssignment.startDate}T00:00:00`), "dd MMM yyyy")
+                            : "Pick start date"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={editingAssignment.startDate ? new Date(`${editingAssignment.startDate}T00:00:00`) : undefined}
+                        onSelect={(date) => {
+                          setEditingAssignment((prev) =>
+                            prev ? { ...prev, startDate: date ? format(date, "yyyy-MM-dd") : "" } : null
+                          );
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-white dark:text-slate-200">
                     End Date (Optional)
                   </Label>
-                  <Input
-                    type="date"
-                    value={editingAssignment.endDate}
-                    onChange={(e) =>
-                      setEditingAssignment((prev) =>
-                        prev ? { ...prev, endDate: e.target.value } : null
-                      )
-                    }
-                    className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 [color-scheme:dark]"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "h-10 w-full justify-start text-left font-normal text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#5c664d] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 px-3",
+                          !editingAssignment.endDate && "text-slate-300"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-300 shrink-0" />
+                        <span className="truncate">
+                          {editingAssignment.endDate
+                            ? format(new Date(`${editingAssignment.endDate}T00:00:00`), "dd MMM yyyy")
+                            : "Pick end date"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={editingAssignment.endDate ? new Date(`${editingAssignment.endDate}T00:00:00`) : undefined}
+                        onSelect={(date) => {
+                          setEditingAssignment((prev) =>
+                            prev ? { ...prev, endDate: date ? format(date, "yyyy-MM-dd") : "" } : null
+                          );
+                        }}
+                        disabled={
+                          editingAssignment.startDate
+                            ? (date) => date < new Date(`${editingAssignment.startDate}T00:00:00`)
+                            : undefined
+                        }
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 

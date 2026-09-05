@@ -19,7 +19,8 @@ import {
     Binary,
     Activity,
     Plus,
-    Sparkles
+    Sparkles,
+    CalendarIcon
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import {
     Command,
     CommandEmpty,
@@ -1594,24 +1597,69 @@ export default function Page() {
                                                                 ₹{item.fee.toLocaleString()} / {item.frequency || "Month"}
                                                             </TableCell>
                                                             <TableCell>
-                                                                <Input
-                                                                    type="date"
-                                                                    value={item.startDate}
-                                                                    onChange={(e) =>
-                                                                        handleUpdateCCAItem(item.activityId, "startDate", e.target.value)
-                                                                    }
-                                                                    className="h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
-                                                                />
+                                                                <Popover>
+                                                                    <PopoverTrigger asChild>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                "h-9 w-full justify-start text-left font-normal text-xs rounded-lg bg-white dark:bg-slate-950 border-input px-2.5",
+                                                                                !item.startDate && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                                                            <span className="truncate">
+                                                                                {item.startDate ? format(new Date(`${item.startDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                                                            </span>
+                                                                        </Button>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                                        <Calendar
+                                                                            mode="single"
+                                                                            selected={item.startDate ? new Date(`${item.startDate}T00:00:00`) : undefined}
+                                                                            onSelect={(date) => {
+                                                                                handleUpdateCCAItem(
+                                                                                    item.activityId,
+                                                                                    "startDate",
+                                                                                    date ? format(date, "yyyy-MM-dd") : ""
+                                                                                );
+                                                                            }}
+                                                                        />
+                                                                    </PopoverContent>
+                                                                </Popover>
                                                             </TableCell>
                                                             <TableCell>
-                                                                <Input
-                                                                    type="date"
-                                                                    value={item.endDate}
-                                                                    onChange={(e) =>
-                                                                        handleUpdateCCAItem(item.activityId, "endDate", e.target.value)
-                                                                    }
-                                                                    className="h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
-                                                                />
+                                                                <Popover>
+                                                                    <PopoverTrigger asChild>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                "h-9 w-full justify-start text-left font-normal text-xs rounded-lg bg-white dark:bg-slate-950 border-input px-2.5",
+                                                                                !item.endDate && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                                                            <span className="truncate">
+                                                                                {item.endDate ? format(new Date(`${item.endDate}T00:00:00`), "dd MMM yyyy") : "Pick date"}
+                                                                            </span>
+                                                                        </Button>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                                        <Calendar
+                                                                            mode="single"
+                                                                            selected={item.endDate ? new Date(`${item.endDate}T00:00:00`) : undefined}
+                                                                            onSelect={(date) => {
+                                                                                handleUpdateCCAItem(
+                                                                                    item.activityId,
+                                                                                    "endDate",
+                                                                                    date ? format(date, "yyyy-MM-dd") : ""
+                                                                                );
+                                                                            }}
+                                                                            disabled={item.startDate ? (date) => date < new Date(`${item.startDate}T00:00:00`) : undefined}
+                                                                        />
+                                                                    </PopoverContent>
+                                                                </Popover>
                                                             </TableCell>
                                                             <TableCell>
                                                                 <div className="relative">
