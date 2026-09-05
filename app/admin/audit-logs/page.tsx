@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useEffect, useState, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Search,
@@ -21,6 +22,7 @@ import {
   Calendar,
   Layers,
   ArrowRight,
+  ArrowLeft,
   PlusCircle,
   Trash2,
   Edit3,
@@ -56,6 +58,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import PageHeader from "@/components/common/pageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -203,20 +206,37 @@ function formatFieldLabel(key: string): string {
     .trim();
 }
 
-function renderFormattedValue(value: any, fieldKey?: string): React.ReactNode {
+function renderFormattedValue(
+  value: any,
+  fieldKey?: string,
+  colorContext: "rose" | "emerald" | "default" = "default"
+): React.ReactNode {
   if (value === null || value === undefined || value === "") {
-    return <span className="text-muted-foreground/60 italic">—</span>;
+    if (colorContext === "rose") {
+      return <span className="text-rose-600/80 dark:text-rose-400/80 italic font-normal">—</span>;
+    }
+    if (colorContext === "emerald") {
+      return <span className="text-emerald-700/80 dark:text-emerald-400/80 italic font-normal">—</span>;
+    }
+    return <span className="text-slate-400 dark:text-slate-500 italic font-normal">—</span>;
   }
+
+  const textColor =
+    colorContext === "rose"
+      ? "text-rose-700 dark:text-rose-300 font-medium"
+      : colorContext === "emerald"
+      ? "text-emerald-800 dark:text-emerald-300 font-semibold"
+      : "text-slate-900 dark:text-slate-100";
 
   if (typeof value === "boolean") {
     return (
       <Badge
         variant="outline"
         className={cn(
-          "text-[10px] font-medium px-2 py-0.5",
+          "text-[10px] font-medium px-2 py-0.5 border",
           value
-            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-            : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30"
+            ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30"
+            : "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30"
         )}
       >
         {value ? "Active / Yes" : "Inactive / No"}
@@ -227,9 +247,17 @@ function renderFormattedValue(value: any, fieldKey?: string): React.ReactNode {
   if (typeof value === "number") {
     const isCurrency = fieldKey && /(amount|fee|fine|balance|total|cost|price|discount)/i.test(fieldKey);
     if (isCurrency) {
-      return <span className="font-semibold text-foreground tabular-nums">₹{value.toLocaleString("en-IN")}</span>;
+      return (
+        <span className={cn("tabular-nums", textColor, colorContext === "default" && "font-semibold")}>
+          ₹{value.toLocaleString("en-IN")}
+        </span>
+      );
     }
-    return <span className="font-medium text-foreground tabular-nums">{value.toLocaleString()}</span>;
+    return (
+      <span className={cn("tabular-nums font-medium", textColor)}>
+        {value.toLocaleString()}
+      </span>
+    );
   }
 
   if (typeof value === "string") {
@@ -238,7 +266,7 @@ function renderFormattedValue(value: any, fieldKey?: string): React.ReactNode {
       const d = new Date(value);
       if (!isNaN(d.getTime())) {
         return (
-          <span className="text-foreground tabular-nums">
+          <span className={cn("tabular-nums font-medium", textColor)}>
             {d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </span>
         );
@@ -247,29 +275,32 @@ function renderFormattedValue(value: any, fieldKey?: string): React.ReactNode {
     // Check common enum statuses
     if (/^(ACTIVE|PROMOTED|COMPLETED|RELIEVED|CANCELLED|PAID|PARTIAL|PENDING|OVERDUE)$/i.test(value)) {
       return (
-        <Badge variant="outline" className="text-[10px] font-semibold tracking-wide uppercase">
+        <Badge
+          variant="outline"
+          className="text-[10px] font-semibold tracking-wide uppercase bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
+        >
           {value}
         </Badge>
       );
     }
-    return <span className="text-foreground">{value}</span>;
+    return <span className={textColor}>{value}</span>;
   }
 
   if (Array.isArray(value)) {
-    if (value.length === 0) return <span className="text-muted-foreground/60 italic">None</span>;
+    if (value.length === 0) return <span className="text-slate-400 dark:text-slate-500 italic">None</span>;
     if (typeof value[0] === "string" || typeof value[0] === "number") {
-      return <span className="text-foreground">{value.join(", ")}</span>;
+      return <span className={textColor}>{value.join(", ")}</span>;
     }
-    return <span className="text-foreground font-medium">{value.length} record(s)</span>;
+    return <span className={cn(textColor, "font-medium")}>{value.length} record(s)</span>;
   }
 
   if (typeof value === "object") {
-    if (value.name) return <span className="text-foreground font-medium">{value.name}</span>;
-    if (value.title) return <span className="text-foreground font-medium">{value.title}</span>;
-    return <span className="text-foreground text-xs">{JSON.stringify(value)}</span>;
+    if (value.name) return <span className={cn(textColor, "font-medium")}>{value.name}</span>;
+    if (value.title) return <span className={cn(textColor, "font-medium")}>{value.title}</span>;
+    return <span className={cn(textColor, "text-xs font-mono")}>{JSON.stringify(value)}</span>;
   }
 
-  return String(value);
+  return <span className={textColor}>{String(value)}</span>;
 }
 
 interface DiffResult {
@@ -349,6 +380,7 @@ function calculateDiff(oldData: any, newData: any): DiffResult {
 // Component
 // ---------------------------------------------------------------------------
 export default function AuditLogsPage() {
+  const router = useRouter();
   const [, startTransition] = useTransition();
 
   // State
@@ -542,131 +574,162 @@ export default function AuditLogsPage() {
 
   return (
     <PermissionGate permission="auditLogs.listOnNavbar">
-      <div className="space-y-6 pb-12">
-        {/* Header */}
-        <PageHeader
-          title="Audit Logs"
-          description="Chronological record of actions, modifications, and operators across all modules"
-          showBackButton={false}
-          actions={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCsv}
-                disabled={exporting || loading}
-                className="gap-2 shadow-xs"
-              >
-                {exporting ? (
-                  <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-                Export CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadLogs}
-                disabled={loading}
-                className="gap-2 shadow-xs"
-              >
-                <RotateCcw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-                Refresh
-              </Button>
+      <section className="w-full px-4 py-4 sm:px-6 space-y-6">
+        {/* ── Page Header (Matching Admin Standard) ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Button
+              className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+              size="icon"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
+                <ShieldAlert className="h-6 w-6 text-[#556043] dark:text-[#9ea98a]" />
+                Audit Logs
+              </h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Chronological record of actions, modifications, and operators across all modules
+              </p>
             </div>
-          }
-        />
+          </div>
 
-        {/* Filter & Search Toolbar */}
-        <div className="rounded-xl border bg-card p-4 shadow-xs space-y-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
-            {/* Keyword Search */}
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search description or reference..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9 pr-8"
-              />
-              {searchInput && (
-                <button
-                  onClick={() => setSearchInput("")}
-                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+            <Button
+              onClick={handleExportCsv}
+              disabled={exporting || loading}
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm h-10 px-4 text-xs sm:text-sm font-semibold rounded-lg gap-2"
+            >
+              {exporting ? (
+                <RotateCcw className="h-3.5 w-3.5 animate-spin text-white dark:text-slate-900" />
+              ) : (
+                <Download className="h-4 w-4 text-white dark:text-slate-900" />
               )}
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={loadLogs}
+              disabled={loading}
+              className="w-full sm:w-auto border-slate-300 text-slate-700  dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 shadow-sm h-10 px-3.5 text-xs sm:text-sm font-medium rounded-lg gap-2 bg-white dark:bg-slate-950"
+            >
+              <RotateCcw className={cn("h-4 w-4 text-slate-600 dark:text-slate-400", loading && "animate-spin")} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {/* ── Filter & Search Toolbar ── */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {/* Keyword Search */}
+            <div className="relative lg:col-span-2 space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 z-10" />
+                <Input
+                  placeholder="Search description, reference, operator..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-10 pr-8 h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-[#556043]"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Module Filter */}
-            <Select
-              value={moduleFilter}
-              onValueChange={(val) => {
-                setModuleFilter(val);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All Sections" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Sections</SelectItem>
-                {availableModules.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {formatModuleLabel(m)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Section
+              </label>
+              <Select
+                value={moduleFilter}
+                onValueChange={(val) => {
+                  setModuleFilter(val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
+                  <SelectValue placeholder="All Sections" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-lg">
+                  <SelectItem value="ALL" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">All Sections</SelectItem>
+                  {availableModules.map((m) => (
+                    <SelectItem key={m} value={m} className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">
+                      {formatModuleLabel(m)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Action Filter */}
-            <Select
-              value={actionFilter}
-              onValueChange={(val) => {
-                setActionFilter(val);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All Actions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Actions</SelectItem>
-                {availableActions.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Action
+              </label>
+              <Select
+                value={actionFilter}
+                onValueChange={(val) => {
+                  setActionFilter(val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
+                  <SelectValue placeholder="All Actions" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-lg">
+                  <SelectItem value="ALL" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">All Actions</SelectItem>
+                  {availableActions.map((a) => (
+                    <SelectItem key={a} value={a} className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">
+                      {a}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Rows Per Page */}
-            <Select
-              value={String(limit)}
-              onValueChange={(val) => {
-                setLimit(Number(val));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Page Size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 per page</SelectItem>
-                <SelectItem value="20">20 per page</SelectItem>
-                <SelectItem value="50">50 per page</SelectItem>
-                <SelectItem value="100">100 per page</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Page Size
+              </label>
+              <Select
+                value={String(limit)}
+                onValueChange={(val) => {
+                  setLimit(Number(val));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043] data-placeholder:text-slate-400 dark:data-placeholder:text-slate-500">
+                  <SelectValue placeholder="Page Size" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-lg">
+                  <SelectItem value="10" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">10 per page</SelectItem>
+                  <SelectItem value="20" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">20 per page</SelectItem>
+                  <SelectItem value="50" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">50 per page</SelectItem>
+                  <SelectItem value="100" className="text-slate-900 dark:text-slate-100 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">100 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Date Range & Filter Reset Row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground font-medium flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" /> Date Range:
+              <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Date Range:
               </span>
               <Input
                 type="date"
@@ -675,10 +738,10 @@ export default function AuditLogsPage() {
                   setFromDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-8 w-36 text-xs"
+                className="h-9 w-36 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-[#556043] [color-scheme:light] dark:[color-scheme:dark]"
                 placeholder="From Date"
               />
-              <span className="text-muted-foreground">to</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium">to</span>
               <Input
                 type="date"
                 value={toDate}
@@ -686,7 +749,7 @@ export default function AuditLogsPage() {
                   setToDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-8 w-36 text-xs"
+                className="h-9 w-36 text-xs rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-[#556043] [color-scheme:light] dark:[color-scheme:dark]"
                 placeholder="To Date"
               />
             </div>
@@ -696,7 +759,7 @@ export default function AuditLogsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={resetFilters}
-                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                className="h-8 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg gap-1.5"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Clear Filters
               </Button>
@@ -704,94 +767,94 @@ export default function AuditLogsPage() {
           </div>
         </div>
 
-        {/* Audit Logs Table */}
-        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+        {/* ── Table (Matching Admin Standard #556043 Header) ── */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
           <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow className="hover:bg-transparent">
+            <TableHeader>
+              <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
                 {/* When */}
                 <TableHead
-                  className="w-[180px] cursor-pointer select-none font-semibold text-foreground"
+                  className="w-[180px] px-4 sm:px-6 h-12 cursor-pointer select-none font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap"
                   onClick={() => handleSort("createdAt")}
                 >
                   <div className="flex items-center gap-1.5">
                     Date & Time
                     {sortBy === "createdAt" ? (
                       order === "asc" ? (
-                        <ArrowUp className="h-3.5 w-3.5 text-primary" />
+                        <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       ) : (
-                        <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                        <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60" />
                     )}
                   </div>
                 </TableHead>
 
                 {/* Who */}
-                <TableHead className="w-[190px] font-semibold text-foreground">
+                <TableHead className="w-[190px] px-4 sm:px-6 h-12 font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap">
                   Operator
                 </TableHead>
 
                 {/* Where (Section) */}
                 <TableHead
-                  className="w-[160px] cursor-pointer select-none font-semibold text-foreground"
+                  className="w-[160px] px-4 sm:px-6 h-12 cursor-pointer select-none font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap"
                   onClick={() => handleSort("module")}
                 >
                   <div className="flex items-center gap-1.5">
                     Section
                     {sortBy === "module" ? (
                       order === "asc" ? (
-                        <ArrowUp className="h-3.5 w-3.5 text-primary" />
+                        <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       ) : (
-                        <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                        <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60" />
                     )}
                   </div>
                 </TableHead>
 
                 {/* What (Action) */}
                 <TableHead
-                  className="w-[140px] cursor-pointer select-none font-semibold text-foreground"
+                  className="w-[140px] px-4 sm:px-6 h-12 cursor-pointer select-none font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap"
                   onClick={() => handleSort("action")}
                 >
                   <div className="flex items-center gap-1.5">
                     Action
                     {sortBy === "action" ? (
                       order === "asc" ? (
-                        <ArrowUp className="h-3.5 w-3.5 text-primary" />
+                        <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       ) : (
-                        <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                        <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60" />
                     )}
                   </div>
                 </TableHead>
 
                 {/* Description */}
                 <TableHead
-                  className="cursor-pointer select-none font-semibold text-foreground"
+                  className="px-4 sm:px-6 h-12 cursor-pointer select-none font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap"
                   onClick={() => handleSort("description")}
                 >
                   <div className="flex items-center gap-1.5">
                     Description
                     {sortBy === "description" ? (
                       order === "asc" ? (
-                        <ArrowUp className="h-3.5 w-3.5 text-primary" />
+                        <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       ) : (
-                        <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                        <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60" />
                     )}
                   </div>
                 </TableHead>
 
                 {/* Inspect Action */}
-                <TableHead className="w-[110px] text-right font-semibold text-foreground">
+                <TableHead className="w-[110px] px-4 sm:px-6 h-12 text-right font-semibold text-white dark:text-foreground text-xs sm:text-sm tracking-tight whitespace-nowrap">
                   Changes
                 </TableHead>
               </TableRow>
@@ -801,21 +864,21 @@ export default function AuditLogsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20 rounded-md" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-64" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto rounded-md" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4"><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4"><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4"><Skeleton className="h-5 w-20 rounded-md" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4"><Skeleton className="h-4 w-64" /></TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4 text-right"><Skeleton className="h-8 w-16 ml-auto rounded-md" /></TableCell>
                   </TableRow>
                 ))
               ) : logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-48 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <ShieldAlert className="h-8 w-8 opacity-40" />
-                      <p className="font-medium text-sm">No audit logs found</p>
-                      <p className="text-xs text-muted-foreground/70">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
+                      <ShieldAlert className="h-8 w-8 text-[#556043] dark:text-[#9ea98a] stroke-1 opacity-70" />
+                      <p className="font-medium text-sm text-slate-800 dark:text-slate-200">No audit logs found</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         Try adjusting your search filters or selected date range.
                       </p>
                     </div>
@@ -823,26 +886,26 @@ export default function AuditLogsPage() {
                 </TableRow>
               ) : (
                 logs.map((log) => (
-                  <TableRow key={log.id} className="hover:bg-muted/30">
+                  <TableRow key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                     {/* Timestamp */}
-                    <TableCell className="font-mono text-xs text-muted-foreground">
+                    <TableCell className="px-4 sm:px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">
                       {formatDateTime(log.createdAt)}
                     </TableCell>
 
                     {/* Operator */}
-                    <TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4">
                       {log.user ? (
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-xs text-foreground flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="font-medium text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                             {log.user.name}
                           </span>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-600 dark:text-slate-400">
                             <span>@{log.user.username}</span>
                             {log.user.role?.name && (
                               <Badge
                                 variant="outline"
-                                className="px-1.5 py-0 text-[9px] font-semibold uppercase"
+                                className="px-1.5 py-0 text-[9px] font-semibold text-slate-700 dark:text-slate-300 uppercase border-slate-300 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800/80"
                               >
                                 {log.user.role.name}
                               </Badge>
@@ -850,12 +913,12 @@ export default function AuditLogsPage() {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-xs italic text-muted-foreground">System Engine</span>
+                        <span className="text-xs italic text-slate-400 dark:text-slate-500">System Engine</span>
                       )}
                     </TableCell>
 
                     {/* Section */}
-                    <TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4">
                       <Badge
                         variant="outline"
                         className={cn("text-[10px] font-semibold px-2 py-0.5 border", getModuleBadgeStyle(log.module))}
@@ -865,7 +928,7 @@ export default function AuditLogsPage() {
                     </TableCell>
 
                     {/* Action */}
-                    <TableCell>
+                    <TableCell className="px-4 sm:px-6 py-4">
                       <Badge
                         variant="outline"
                         className={cn("text-[10px] font-bold tracking-wider uppercase border", getActionBadgeStyle(log.action))}
@@ -875,18 +938,18 @@ export default function AuditLogsPage() {
                     </TableCell>
 
                     {/* Description */}
-                    <TableCell className="text-xs text-foreground max-w-[360px] truncate" title={log.description || ""}>
+                    <TableCell className="px-4 sm:px-6 py-4 text-xs text-slate-800 dark:text-slate-200 max-w-[360px] truncate" title={log.description || ""}>
                       {log.description || "—"}
                     </TableCell>
 
                     {/* View Changes Action */}
-                    <TableCell className="text-right">
+                    <TableCell className="px-4 sm:px-6 py-4 text-right">
                       <PermissionGate permission="auditLogs.viewButton">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => setSelectedLog(log)}
-                          className="h-7 px-2.5 text-xs gap-1.5 font-medium hover:bg-primary/5 hover:text-primary"
+                          className="h-8 px-2.5 rounded-lg text-slate-600 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:text-[#9ea98a] dark:hover:bg-[#556043]/20 gap-1.5 text-xs font-medium"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           View
@@ -899,43 +962,43 @@ export default function AuditLogsPage() {
             </TableBody>
           </Table>
 
-          {/* Pagination Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t bg-muted/20 gap-3 text-xs text-muted-foreground">
+          {/* ── Pagination Footer (Matching Admin Standard) ── */}
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/40 gap-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             <div>
               Showing{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 {logs.length > 0 ? (pagination.currentPage - 1) * pagination.limit + 1 : 0}
               </span>{" "}
               to{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 {Math.min(pagination.currentPage * pagination.limit, pagination.totalRecords)}
               </span>{" "}
-              of <span className="font-medium text-foreground">{pagination.totalRecords}</span> entries
+              of <span className="font-semibold text-slate-900 dark:text-white">{pagination.totalRecords}</span> entries
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-4">
               <Button
-                variant="outline"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={!pagination.hasPrevPage || loading}
-                className="h-8 px-2.5 gap-1 text-xs"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                <ChevronLeft className="h-4 w-4 text-white dark:text-foreground" />
+                Prev
               </Button>
 
-              <span className="px-2 text-xs font-medium text-foreground">
+              <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[4rem] text-center">
                 Page {pagination.currentPage} of {pagination.totalPages}
-              </span>
+              </div>
 
               <Button
-                variant="outline"
+                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-background dark:text-foreground dark:hover:bg-background/80 shadow-sm gap-1 pl-2.5 h-9 disabled:opacity-40"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
                 disabled={!pagination.hasNextPage || loading}
-                className="h-8 px-2.5 gap-1 text-xs"
               >
-                Next <ChevronRight className="h-3.5 w-3.5" />
+                Next
+                <ChevronRight className="h-4 w-4 text-white dark:text-foreground" />
               </Button>
             </div>
           </div>
@@ -943,73 +1006,76 @@ export default function AuditLogsPage() {
 
         {/* Human-Friendly Audit Details Modal */}
         <Dialog open={Boolean(selectedLog)} onOpenChange={(open) => !open && setSelectedLog(null)}>
-          <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] flex flex-col p-6 overflow-hidden">
-            <DialogHeader className="pb-3 border-b">
-              <div className="flex items-center gap-2 mb-1.5">
-                {selectedLog && (
-                  <>
-                    <Badge
-                      variant="outline"
-                      className={cn("text-[10px] font-semibold px-2 py-0.5 uppercase border", getModuleBadgeStyle(selectedLog.module))}
-                    >
-                      {formatModuleLabel(selectedLog.module)}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={cn("text-[10px] font-bold uppercase border", getActionBadgeStyle(selectedLog.action))}
-                    >
-                      {selectedLog.action}
-                    </Badge>
-                  </>
-                )}
-                <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {selectedLog ? formatDateTime(selectedLog.createdAt) : ""}
-                </span>
+          <DialogContent className="sm:max-w-3xl w-[95vw] max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900">
+            <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-900/60 flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#556043]/10 dark:bg-[#556043]/20 flex items-center justify-center shrink-0 text-[#556043] dark:text-[#9ea98a]">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                      Activity Details
+                    </DialogTitle>
+                    {selectedLog && (
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[10px] font-semibold px-2 py-0.5 uppercase border", getModuleBadgeStyle(selectedLog.module))}
+                        >
+                          {formatModuleLabel(selectedLog.module)}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[10px] font-bold uppercase border", getActionBadgeStyle(selectedLog.action))}
+                        >
+                          {selectedLog.action}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                    {selectedLog?.description || "Summary of activity performed"}
+                  </DialogDescription>
+                </div>
               </div>
-              <DialogTitle className="text-lg font-semibold text-foreground">
-                Activity Details
-              </DialogTitle>
-              <DialogDescription className="text-xs text-foreground/80 font-medium">
-                {selectedLog?.description || "Summary of activity performed"}
-              </DialogDescription>
             </DialogHeader>
 
             {selectedLog && diff && (
-              <div className="space-y-4 overflow-y-auto pr-1 flex-1 text-xs pt-1">
+              <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 text-xs">
                 {/* Clean Context Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-muted/40 border">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Performed By
                     </span>
-                    <span className="font-medium text-foreground text-xs flex items-center gap-1.5 mt-0.5">
-                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <User className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
                       {selectedLog.user ? selectedLog.user.name : "System Engine"}
                     </span>
                     {selectedLog.user?.role?.name && (
-                      <span className="block text-[10px] text-muted-foreground pl-5">
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 pl-5">
                         Role: {selectedLog.user.role.name}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Section / Module
                     </span>
-                    <span className="font-medium text-foreground text-xs flex items-center gap-1.5 mt-0.5">
-                      <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <Layers className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
                       {formatModuleLabel(selectedLog.module)}
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Timestamp
                     </span>
-                    <span className="font-medium text-foreground text-xs flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
                       {formatDateTime(selectedLog.createdAt)}
                     </span>
                   </div>
@@ -1021,7 +1087,7 @@ export default function AuditLogsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Edit3 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <span className="font-semibold text-sm text-foreground">
+                        <span className="font-semibold text-sm text-slate-900 dark:text-white">
                           Modified Information ({diff.changed.length} changed)
                         </span>
                       </div>
@@ -1030,7 +1096,7 @@ export default function AuditLogsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowUnchanged(!showUnchanged)}
-                          className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1"
+                          className="h-7 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white gap-1"
                         >
                           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showUnchanged && "rotate-180")} />
                           {showUnchanged ? "Hide" : "Show"} unchanged ({diff.unchanged.length})
@@ -1039,37 +1105,37 @@ export default function AuditLogsPage() {
                     </div>
 
                     {diff.changed.length === 0 ? (
-                      <div className="p-4 rounded-lg border bg-muted/20 text-center text-muted-foreground text-xs">
+                      <div className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40 text-center text-slate-500 text-xs">
                         No direct value modifications detected (record touched or refreshed without field changes).
                       </div>
                     ) : (
-                      <div className="rounded-lg border overflow-hidden">
+                      <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
                         <Table>
-                          <TableHeader className="bg-muted/40">
-                            <TableRow>
-                              <TableHead className="w-[180px] font-semibold text-foreground text-xs">Field</TableHead>
-                              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-xs">Previous Value</TableHead>
-                              <TableHead className="w-[24px] text-center"></TableHead>
-                              <TableHead className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs">Updated Value</TableHead>
+                          <TableHeader>
+                            <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                              <TableHead className="w-[180px] font-semibold text-white dark:text-foreground text-xs">Field</TableHead>
+                              <TableHead className="font-semibold text-white dark:text-foreground text-xs">Previous Value</TableHead>
+                              <TableHead className="w-[28px] text-center"></TableHead>
+                              <TableHead className="font-semibold text-white dark:text-foreground text-xs">Updated Value</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {diff.changed.map((row) => (
-                              <TableRow key={row.key} className="hover:bg-muted/30">
-                                <TableCell className="font-medium text-xs text-foreground">
+                              <TableRow key={row.key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                <TableCell className="font-medium text-xs text-slate-900 dark:text-slate-100">
                                   {row.label}
                                 </TableCell>
                                 <TableCell className="text-xs">
-                                  <div className="p-1.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 inline-block max-w-full break-words">
-                                    {renderFormattedValue(row.oldVal, row.key)}
+                                  <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 inline-block max-w-full break-words">
+                                    {renderFormattedValue(row.oldVal, row.key, "rose")}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-center text-muted-foreground">
-                                  <ArrowRight className="h-3.5 w-3.5 mx-auto opacity-70" />
+                                <TableCell className="text-center text-slate-400 dark:text-slate-500">
+                                  <ArrowRight className="h-3.5 w-3.5 mx-auto text-[#556043] dark:text-[#9ea98a]" />
                                 </TableCell>
                                 <TableCell className="text-xs">
-                                  <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 inline-block max-w-full break-words font-medium">
-                                    {renderFormattedValue(row.newVal, row.key)}
+                                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 inline-block max-w-full break-words font-semibold">
+                                    {renderFormattedValue(row.newVal, row.key, "emerald")}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -1081,15 +1147,15 @@ export default function AuditLogsPage() {
 
                     {/* Optional Unchanged Fields */}
                     {showUnchanged && diff.unchanged.length > 0 && (
-                      <div className="p-3.5 rounded-lg border bg-muted/20 space-y-2">
-                        <span className="font-semibold text-xs text-muted-foreground block">
+                      <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40 space-y-2">
+                        <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 block">
                           Unchanged Fields
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           {diff.unchanged.map((item) => (
-                            <div key={item.key} className="flex items-center justify-between p-2 rounded bg-background border">
-                              <span className="text-muted-foreground font-medium">{item.label}</span>
-                              <span className="font-medium">{renderFormattedValue(item.val, item.key)}</span>
+                            <div key={item.key} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 font-medium">{item.label}</span>
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{renderFormattedValue(item.val, item.key, "default")}</span>
                             </div>
                           ))}
                         </div>
@@ -1103,25 +1169,25 @@ export default function AuditLogsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <PlusCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-semibold text-sm text-foreground">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-white">
                         Created Record Information
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border bg-card p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-3">
                       {diff.added.length > 0
                         ? diff.added.map((item) => (
-                            <div key={item.key} className="p-2.5 rounded-md bg-muted/30 border flex flex-col gap-1">
-                              <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+                            <div key={item.key} className="p-2.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-1">
+                              <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400">
                                 {item.label}
                               </span>
-                              <div className="font-medium text-xs text-foreground">
-                                {renderFormattedValue(item.val, item.key)}
+                              <div className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                                {renderFormattedValue(item.val, item.key, "default")}
                               </div>
                             </div>
                           ))
                         : (
-                          <span className="text-muted-foreground italic col-span-2 text-center py-4">
+                          <span className="text-slate-400 italic col-span-2 text-center py-4">
                             No field data provided for creation.
                           </span>
                         )}
@@ -1134,25 +1200,25 @@ export default function AuditLogsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                      <span className="font-semibold text-sm text-foreground">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-white">
                         Removed / Relieved Record Information
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border bg-card p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-3">
                       {diff.removed.length > 0
                         ? diff.removed.map((item) => (
-                            <div key={item.key} className="p-2.5 rounded-md bg-rose-500/5 border border-rose-500/10 flex flex-col gap-1">
-                              <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+                            <div key={item.key} className="p-2.5 rounded-lg bg-rose-500/5 border border-rose-500/10 flex flex-col gap-1">
+                              <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400">
                                 {item.label}
                               </span>
-                              <div className="font-medium text-xs text-foreground">
-                                {renderFormattedValue(item.val, item.key)}
+                              <div className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                                {renderFormattedValue(item.val, item.key, "default")}
                               </div>
                             </div>
                           ))
                         : (
-                          <span className="text-muted-foreground italic col-span-2 text-center py-4">
+                          <span className="text-slate-400 italic col-span-2 text-center py-4">
                             No prior field snapshot available.
                           </span>
                         )}
@@ -1161,12 +1227,12 @@ export default function AuditLogsPage() {
                 )}
 
                 {/* Secondary: Discrete Raw JSON Accordion for Technical Reference */}
-                <details className="pt-2 border-t text-xs text-muted-foreground">
-                  <summary className="cursor-pointer hover:text-foreground font-medium py-1 inline-flex items-center gap-1.5 select-none">
-                    <Code2 className="h-3.5 w-3.5" /> Technical / Raw Payload
+                <details className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                  <summary className="cursor-pointer hover:text-slate-900 dark:hover:text-white font-medium py-1 inline-flex items-center gap-1.5 select-none">
+                    <Code2 className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" /> Technical / Raw Payload
                   </summary>
-                  <div className="mt-2 p-3 rounded-lg bg-muted/40 border space-y-2 font-mono text-[11px]">
-                    <div className="flex justify-between items-center pb-1 border-b">
+                  <div className="mt-2 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2 font-mono text-[11px]">
+                    <div className="flex justify-between items-center pb-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span>Full Audit Payload</span>
                       <Button
                         variant="ghost"
@@ -1178,7 +1244,7 @@ export default function AuditLogsPage() {
                         {copiedRaw ? "Copied" : "Copy JSON"}
                       </Button>
                     </div>
-                    <pre className="whitespace-pre-wrap break-all max-h-[160px] overflow-auto text-[10px] text-foreground/80">
+                    <pre className="whitespace-pre-wrap break-all max-h-[160px] overflow-auto text-[10px] text-slate-800 dark:text-slate-200">
                       {JSON.stringify(
                         {
                           previousData: selectedLog.oldData,
@@ -1192,9 +1258,30 @@ export default function AuditLogsPage() {
                 </details>
               </div>
             )}
+
+            <DialogFooter className="m-0 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-900/60 flex items-center justify-between sm:justify-between">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {selectedLog?.referenceId ? (
+                  <span className="font-mono text-[11px]">
+                    Reference ID: <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedLog.referenceId}</span>
+                  </span>
+                ) : (
+                  <span>Audit Reference Log</span>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedLog(null)}
+                className="rounded-full px-5 h-9 text-xs sm:text-sm font-medium border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Close
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </section>
     </PermissionGate>
   );
 }
