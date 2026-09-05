@@ -787,7 +787,7 @@ export default function AuditLogsPage() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
                         !fromDate && "text-slate-400 dark:text-slate-500"
                       )}
                     >
@@ -818,7 +818,7 @@ export default function AuditLogsPage() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
                         !toDate && "text-slate-400 dark:text-slate-500"
                       )}
                     >
