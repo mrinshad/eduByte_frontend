@@ -577,7 +577,7 @@ export default function PromotionStepperPage() {
                         size="sm"
                         onClick={() => setCompletingStudentIds(Array.from(selectedStudentIds))}
                         disabled={selectedStudentIds.size === 0 || loading}
-                        className="h-10 text-xs sm:text-sm rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-950/40 font-medium"
+                        className="h-10 text-xs sm:text-sm rounded-lg border-blue-200 text-slate-100  dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-950/40 font-medium"
                     >
                         Mark as Completed
                     </Button>

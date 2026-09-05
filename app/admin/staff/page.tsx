@@ -8,6 +8,7 @@ import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
   ChevronDown, ChevronUp, ChevronsUpDown, X, Download,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from "lucide-react";
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
@@ -34,12 +35,14 @@ function SortableHeader({
   sortBy,
   order,
   onSort,
+  className,
 }: {
   label: string;
   field: string;
   sortBy: string;
   order: "asc" | "desc";
   onSort: (field: string) => void;
+  className?: string;
 }) {
   const isActive = sortBy === field;
 
@@ -47,23 +50,23 @@ function SortableHeader({
     <TableHead
       onClick={() => onSort(field)}
       className={cn(
-        "px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
-        "cursor-pointer select-none transition-colors hover:bg-white/10 dark:hover:bg-white/5"
+        "px-4 sm:px-6 h-12 bg-[#556043] hover:bg-[#4a533b] dark:bg-background dark:hover:bg-slate-800 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none transition-colors",
+        className
       )}
       title={`Sort by ${label}`}
     >
-      <span className="inline-flex items-center gap-1.5">
-        {label}
+      <div className="flex items-center gap-1.5">
+        <span>{label}</span>
         {isActive ? (
           order === "asc" ? (
-            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+            <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground shrink-0" />
           ) : (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground shrink-0" />
           )
         ) : (
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60 shrink-0" />
         )}
-      </span>
+      </div>
     </TableHead>
   );
 }
@@ -381,24 +384,24 @@ export default function Page() {
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+        <div className="overflow-x-auto">
           <Table className="w-full min-w-[900px]">
-            <TableHeader>
+            <TableHeader className="bg-[#556043] dark:bg-background">
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
                 <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
                 <SortableHeader label="Joining Date" field="joiningDate" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Status" field="status" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
