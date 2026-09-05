@@ -31,8 +31,12 @@ import {
     Phone,
     ChevronLeft,
     ChevronRight,
-    X
+    X,
+    Download,
+    Loader2,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
+import { toast } from "sonner";
 import { usePermission } from "@/hooks/usePermission";
 
 function FilterChip({
@@ -68,6 +72,7 @@ export default function TransportRosterReportPage() {
     const [search, setSearch] = useState<string>("");
     const [page, setPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
+    const [exporting, setExporting] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<VehicleRouteRosterResponse | null>(null);
 
@@ -146,6 +151,55 @@ export default function TransportRosterReportPage() {
         setPage(1);
     };
 
+    const handleExportCsv = async () => {
+        if (!selectedYearId) return;
+        try {
+            setExporting(true);
+            const res = await getVehicleRouteRosterReport({
+                academicYearId: selectedYearId,
+                vehicleId: selectedVehicleId === "ALL" ? undefined : selectedVehicleId,
+                search: search.trim() || undefined,
+                page: 1,
+                limit: 10000,
+            });
+
+            const passengersList = res?.passengers || [];
+            if (!passengersList.length) {
+                toast.info("No passengers found in transport roster to export.");
+                return;
+            }
+
+            const columns: CsvColumn<PassengerRosterItem>[] = [
+                { header: "Vehicle Name", accessor: (p) => p.vehicleName || "" },
+                { header: "Vehicle Number", accessor: (p) => p.vehicleNumber || "" },
+                { header: "Driver Name", accessor: (p) => p.driverName || "-" },
+                { header: "Student Name", accessor: (p) => p.studentName || "" },
+                { header: "Admission No", accessor: (p) => p.admissionNumber || "" },
+                { header: "Class", accessor: (p) => p.className || "-" },
+                { header: "Division", accessor: (p) => p.divisionName || "-" },
+                { header: "Roll No", accessor: (p) => p.rollNumber || "-" },
+                { header: "Parent Name", accessor: (p) => p.parentName || "-" },
+                { header: "Parent Contact", accessor: (p) => p.parentPhone || "-" },
+                { header: "WhatsApp Number", accessor: (p) => p.whatsappNumber || "-" },
+                { header: "Address", accessor: (p) => p.address || "-" },
+            ];
+
+            const success = exportToCsv({
+                filename: "transport_route_roster",
+                columns,
+                data: passengersList,
+            });
+
+            if (success) {
+                toast.success(`Exported ${passengersList.length} passenger records successfully.`);
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Failed to export transport roster");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     if (!canView) {
         return (
             <div className="flex h-96 items-center justify-center p-8 text-center font-sans">
@@ -199,6 +253,21 @@ export default function TransportRosterReportPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExportCsv}
+                            disabled={exporting || loading}
+                            className="h-9 gap-1.5 border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                        >
+                            {exporting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Export CSV
+                        </Button>
 
                         <Button
                             variant="outline"

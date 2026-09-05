@@ -7,8 +7,9 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ChevronDown, ChevronUp, ChevronsUpDown, X,
+  ChevronDown, ChevronUp, ChevronsUpDown, X, Download,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +89,7 @@ export default function Page() {
 
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -217,6 +219,52 @@ export default function Page() {
     setCurrentPage(1);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const res = await getStaff({
+        page: 1,
+        limit: 5000,
+        search,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        sortBy,
+        order,
+      });
+
+      const staffList = res?.data?.items || [];
+      if (!staffList.length) {
+        toast.info("No staff records found to export.");
+        return;
+      }
+
+      const columns: CsvColumn<StaffListItem>[] = [
+        { header: "Staff ID", accessor: (s) => s.employeeCode || "" },
+        { header: "Staff Name", accessor: (s) => s.name || "" },
+        { header: "Phone Number", accessor: (s) => s.phone || "-" },
+        { header: "Email Address", accessor: (s) => s.email || "-" },
+        { header: "Joining Date", accessor: (s) => formatDate(s.joiningDate) },
+        {
+          header: "Status",
+          accessor: (s) => (s.status === "ACTIVE" ? "Active" : "Inactive"),
+        },
+      ];
+
+      const success = exportToCsv({
+        filename: "staff_directory",
+        columns,
+        data: staffList,
+      });
+
+      if (success) {
+        toast.success(`Exported ${staffList.length} staff records successfully.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export staff records");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
@@ -252,6 +300,20 @@ export default function Page() {
                 className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+              onClick={handleExportCsv}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
 
             <PermissionGate permission="staff.createStaffButton">
               <Button

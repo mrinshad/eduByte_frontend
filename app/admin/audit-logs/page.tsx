@@ -27,7 +27,9 @@ import {
   ChevronDown,
   FileText,
   Code2,
+  Download,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -352,6 +354,7 @@ export default function AuditLogsPage() {
   // State
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [pagination, setPagination] = useState<AuditPagination>({
     totalRecords: 0,
     totalPages: 1,
@@ -489,6 +492,54 @@ export default function AuditLogsPage() {
 
   const diff = selectedLog ? calculateDiff(selectedLog.oldData, selectedLog.newData) : null;
 
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const res = await getAuditLogs({
+        page: 1,
+        limit: 5000,
+        q: search || undefined,
+        module: moduleFilter !== "ALL" ? moduleFilter : undefined,
+        action: actionFilter !== "ALL" ? actionFilter : undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+        sortBy,
+        order,
+      });
+
+      const logsList = res?.logs || [];
+      if (!logsList.length) {
+        toast.info("No audit logs found to export.");
+        return;
+      }
+
+      const columns: CsvColumn<AuditLog>[] = [
+        { header: "Date & Time", accessor: (l) => formatDateTime(l.createdAt) },
+        { header: "Operator", accessor: (l) => l.user?.name || l.user?.username || "System" },
+        { header: "Username", accessor: (l) => l.user?.username || "-" },
+        { header: "Role", accessor: (l) => l.user?.role?.name || "-" },
+        { header: "Section", accessor: (l) => formatModuleLabel(l.module) },
+        { header: "Action", accessor: (l) => l.action || "" },
+        { header: "Description", accessor: (l) => l.description || "-" },
+        { header: "Reference ID", accessor: (l) => l.referenceId || "-" },
+      ];
+
+      const success = exportToCsv({
+        filename: "audit_logs",
+        columns,
+        data: logsList,
+      });
+
+      if (success) {
+        toast.success(`Exported ${logsList.length} audit log records successfully.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export audit logs");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <PermissionGate permission="auditLogs.listOnNavbar">
       <div className="space-y-6 pb-12">
@@ -498,16 +549,32 @@ export default function AuditLogsPage() {
           description="Chronological record of actions, modifications, and operators across all modules"
           showBackButton={false}
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadLogs}
-              disabled={loading}
-              className="gap-2 shadow-xs"
-            >
-              <RotateCcw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                disabled={exporting || loading}
+                className="gap-2 shadow-xs"
+              >
+                {exporting ? (
+                  <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadLogs}
+                disabled={loading}
+                className="gap-2 shadow-xs"
+              >
+                <RotateCcw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
           }
         />
 
