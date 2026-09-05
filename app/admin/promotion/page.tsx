@@ -603,7 +603,7 @@ export default function PromotionStepperPage() {
                                 <Checkbox
                                     checked={filteredStudents.length > 0 && selectedStudentIds.size === filteredStudents.length}
                                     onCheckedChange={handleToggleSelectAll}
-                                    className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#556043]"
+                                    className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#556043] dark:border-slate-500 dark:data-[state=checked]:bg-slate-100 dark:data-[state=checked]:text-slate-900"
                                 />
                             </TableHead>
                             <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-xs sm:text-sm">Admission #</TableHead>

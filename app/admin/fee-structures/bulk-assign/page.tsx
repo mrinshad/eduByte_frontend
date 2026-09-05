@@ -237,23 +237,22 @@ export default function BulkFeeAssignPage() {
 
     return (
         <PermissionGate permission="feestructures.listOnNavbar">
-            <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 max-w-6xl mx-auto w-full">
+            <section className="w-full px-4 py-4 sm:px-6 space-y-6">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Button
                             size="icon"
-                            variant="ghost"
-                            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm shrink-0 h-9 w-9 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300"
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
                             onClick={() => router.push("/admin/fee-structures")}
                         >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                                 Bulk Fee Structure Assignment
                             </h1>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                                 Assign fee templates in bulk to promoted or newly admitted students.
                             </p>
                         </div>
@@ -261,23 +260,28 @@ export default function BulkFeeAssignPage() {
                 </div>
 
                 {/* Filter Card */}
-                <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-                    <CardHeader className="border-b border-slate-100 dark:border-slate-800/60 pb-4">
-                        <div className="flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-[#556043]" />
-                            <CardTitle className="text-sm font-semibold text-slate-950 dark:text-white">
-                                Target Class & Academic Year
-                            </CardTitle>
+                <Card className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800/60 px-4 sm:px-6 py-4 bg-white dark:bg-slate-900/50">
+                        <div className="flex items-center gap-2.5">
+                            <Layers className="h-5 w-5 text-[#556043] dark:text-[#9ea98a]" />
+                            <div>
+                                <CardTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                                    Target Class & Academic Year
+                                </CardTitle>
+                                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Filter students by academic year, class, and division to assign fee structures.
+                                </CardDescription>
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="pt-5 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <CardContent className="p-4 sm:p-6 space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Academic Year <span className="text-red-500">*</span>
                                 </label>
                                 <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
-                                    <SelectTrigger className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Select Academic Year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -290,12 +294,12 @@ export default function BulkFeeAssignPage() {
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <div>
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Class <span className="text-red-500">*</span>
                                 </label>
                                 <Select value={selectedClass} onValueChange={setSelectedClass}>
-                                    <SelectTrigger className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Select Class" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -308,12 +312,12 @@ export default function BulkFeeAssignPage() {
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <div>
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Division
                                 </label>
                                 <Select value={selectedDivision} onValueChange={setSelectedDivision} disabled={!selectedClass}>
-                                    <SelectTrigger className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="All Divisions" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -327,12 +331,12 @@ export default function BulkFeeAssignPage() {
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <div>
+                                <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Display Mode
                                 </label>
                                 <Select value={viewMode} onValueChange={(val: "UNASSIGNED" | "ALL") => setViewMode(val)}>
-                                    <SelectTrigger className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder="Display" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -345,18 +349,18 @@ export default function BulkFeeAssignPage() {
 
                         {/* Summary Metrics */}
                         {summary && (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40 text-center">
-                                    <div className="text-xl font-bold text-slate-900 dark:text-white">{summary.total}</div>
-                                    <div className="text-[11px] font-medium text-slate-500">Total Enrolled in Class</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                                <div className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/40 text-center">
+                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{summary.total}</div>
+                                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Total Enrolled in Class</div>
                                 </div>
-                                <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-950/30 dark:bg-emerald-950/20 text-center">
-                                    <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{summary.assigned}</div>
-                                    <div className="text-[11px] font-medium text-emerald-600 dark:text-emerald-500">Fee Structure Assigned</div>
+                                <div className="p-4 rounded-xl border border-emerald-200/80 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/20 text-center">
+                                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{summary.assigned}</div>
+                                    <div className="text-xs font-medium text-emerald-600 dark:text-emerald-500 mt-0.5">Fee Structure Assigned</div>
                                 </div>
-                                <div className="p-3 rounded-lg border-2 border-amber-300 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 text-center">
-                                    <div className="text-xl font-bold text-amber-700 dark:text-amber-400">{summary.unassigned}</div>
-                                    <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">Missing Fee Structure</div>
+                                <div className="p-4 rounded-xl border border-amber-200/80 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20 text-center">
+                                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{summary.unassigned}</div>
+                                    <div className="text-xs font-medium text-amber-700 dark:text-amber-400 mt-0.5">Missing Fee Structure</div>
                                 </div>
                             </div>
                         )}
@@ -365,15 +369,15 @@ export default function BulkFeeAssignPage() {
 
                 {/* Bulk Assignment Action Card */}
                 {selectedClass && (
-                    <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-900/50 dark:border-slate-800/50">
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-                            <div className="relative w-full sm:w-64">
+                            <div className="relative w-full sm:w-72">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
                                     placeholder="Search student..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="pl-9 h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                                    className="pl-9 h-10 text-xs sm:text-sm rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#556043]"
                                 />
                             </div>
 
@@ -382,7 +386,7 @@ export default function BulkFeeAssignPage() {
                                     Assign Fee:
                                 </span>
                                 <Select value={targetFeeStructureId} onValueChange={setTargetFeeStructureId}>
-                                    <SelectTrigger className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]">
                                         <SelectValue placeholder={feeStructures.length === 0 ? "No fee structures found" : "Select Fee Structure"} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -396,16 +400,15 @@ export default function BulkFeeAssignPage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 justify-end">
-                            <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700 text-xs px-2.5 py-1 font-semibold dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <div className="flex items-center gap-3 justify-end">
+                            <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs px-3 py-1.5 font-medium rounded-lg">
                                 {selectedEnrollmentIds.size} selected
                             </Badge>
 
                             <Button
-                                size="sm"
                                 onClick={() => setShowConfirmDialog(true)}
                                 disabled={selectedEnrollmentIds.size === 0 || !targetFeeStructureId || loading}
-                                className="h-9 text-xs font-semibold bg-[#556043] hover:bg-[#4a533b] text-white shadow-sm gap-1.5"
+                                className="h-10 px-4 text-xs sm:text-sm font-medium rounded-lg bg-[#556043] hover:bg-[#4a533b] text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm gap-2"
                             >
                                 <Receipt className="h-4 w-4" />
                                 Assign to {selectedEnrollmentIds.size} Students
@@ -416,22 +419,22 @@ export default function BulkFeeAssignPage() {
 
                 {/* Table */}
                 {selectedClass && (
-                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-[#556043] hover:bg-[#556043] border-none text-white">
-                                    <TableHead className="w-12 text-center text-white font-semibold">
+                                <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
+                                    <TableHead className="w-12 text-center text-white dark:text-foreground font-semibold px-4 sm:px-6 h-12">
                                         <Checkbox
                                             checked={filteredStudents.length > 0 && selectedEnrollmentIds.size === filteredStudents.length}
                                             onCheckedChange={handleToggleSelectAll}
-                                            className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#556043]"
+                                            className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#556043] dark:border-slate-500 dark:data-[state=checked]:bg-slate-100 dark:data-[state=checked]:text-slate-900"
                                         />
                                     </TableHead>
-                                    <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Admission #</TableHead>
-                                    <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Student Name</TableHead>
-                                    <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Division</TableHead>
-                                    <TableHead className="text-white font-semibold text-xs whitespace-nowrap">Father Name</TableHead>
-                                    <TableHead className="text-white font-semibold text-xs whitespace-nowrap text-right">Fee Structure Status</TableHead>
+                                    <TableHead className="text-white dark:text-foreground font-semibold text-xs whitespace-nowrap px-4 sm:px-6 h-12">Admission #</TableHead>
+                                    <TableHead className="text-white dark:text-foreground font-semibold text-xs whitespace-nowrap px-4 sm:px-6 h-12">Student Name</TableHead>
+                                    <TableHead className="text-white dark:text-foreground font-semibold text-xs whitespace-nowrap px-4 sm:px-6 h-12">Division</TableHead>
+                                    <TableHead className="text-white dark:text-foreground font-semibold text-xs whitespace-nowrap px-4 sm:px-6 h-12">Father Name</TableHead>
+                                    <TableHead className="text-white dark:text-foreground font-semibold text-xs whitespace-nowrap text-right px-4 sm:px-6 h-12">Fee Structure Status</TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -465,36 +468,36 @@ export default function BulkFeeAssignPage() {
                                         return (
                                             <TableRow 
                                                 key={student.enrollmentId}
-                                                className={`transition-colors cursor-pointer ${
-                                                    isSelected ? "bg-[#556043]/5 dark:bg-[#556043]/15" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                                className={`transition-colors cursor-pointer border-slate-100 dark:border-slate-800/50 ${
+                                                    isSelected ? "bg-[#556043]/5 dark:bg-[#556043]/15" : "hover:bg-slate-50/50 dark:hover:bg-slate-900/40"
                                                 }`}
                                                 onClick={() => handleToggleStudent(student.enrollmentId, !isSelected)}
                                             >
-                                                <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                                                <TableCell className="text-center px-4 sm:px-6 py-4" onClick={e => e.stopPropagation()}>
                                                     <Checkbox
                                                         checked={isSelected}
                                                         onCheckedChange={checked => handleToggleStudent(student.enrollmentId, !!checked)}
                                                     />
                                                 </TableCell>
-                                                <TableCell className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                                                <TableCell className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 px-4 sm:px-6 py-4">
                                                     {student.admissionNumber}
                                                 </TableCell>
-                                                <TableCell className="font-semibold text-xs text-slate-950 dark:text-white">
+                                                <TableCell className="font-semibold text-xs sm:text-sm text-slate-950 dark:text-white px-4 sm:px-6 py-4">
                                                     {student.studentName}
                                                 </TableCell>
-                                                <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                                <TableCell className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 px-4 sm:px-6 py-4">
                                                     Division {student.divisionName}
                                                 </TableCell>
-                                                <TableCell className="text-xs text-slate-600 dark:text-slate-300">
+                                                <TableCell className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 px-4 sm:px-6 py-4">
                                                     {student.fatherName || "—"}
                                                 </TableCell>
-                                                <TableCell className="text-right text-xs">
+                                                <TableCell className="text-right text-xs px-4 sm:px-6 py-4">
                                                     {student.isAssigned ? (
-                                                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-400">
+                                                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 font-medium dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-md">
                                                             {student.feeStructureName}
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 font-semibold dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400">
+                                                        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 font-medium dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 rounded-md">
                                                             Unassigned
                                                         </Badge>
                                                     )}
@@ -510,26 +513,24 @@ export default function BulkFeeAssignPage() {
 
                 {/* Confirmation Dialog */}
                 <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>
+                            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">
                                 Assign Fee Structure to {selectedEnrollmentIds.size} Students?
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
-                                <p>
-                                    This will assign <strong>{targetStructureObj?.name}</strong> to the <strong>{selectedEnrollmentIds.size}</strong> selected student(s) and generate the corresponding enrollment fee templates.
-                                </p>
+                            <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                                This will assign <strong>{targetStructureObj?.name}</strong> to the <strong>{selectedEnrollmentIds.size}</strong> selected student(s) and generate the corresponding enrollment fee templates.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                        <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
+                            <AlertDialogCancel disabled={loading} className="w-full sm:w-auto rounded-full">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={e => {
                                     e.preventDefault();
                                     handleExecuteAssignment();
                                 }}
                                 disabled={loading}
-                                className="bg-[#556043] hover:bg-[#4a533b] text-white"
+                                className="w-full sm:w-auto bg-[#556043] hover:bg-[#4a533b] text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-full"
                             >
                                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Confirm Assignment
@@ -537,7 +538,7 @@ export default function BulkFeeAssignPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </div>
+            </section>
         </PermissionGate>
     );
 }
