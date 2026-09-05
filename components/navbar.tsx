@@ -3,7 +3,14 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { Marcellus } from "next/font/google"
 import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
+
+const fontMarcellus = Marcellus({
+  weight: "400",
+  subsets: ["latin"],
+})
 import { Menu, MoonStar, LogOut, SunMedium, ChevronDown, Sparkles, Repeat } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -72,18 +79,23 @@ export function Navbar({
             </Button>
 
             <Link href="/" className="group flex min-w-0 items-center gap-2.5">
-              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#556043] shadow-sm transition-transform group-hover:scale-105">
+              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#556043] shadow-sm transition-transform group-hover:scale-105">
                 <Image
                   src="/selogo.png"
-                  alt="KidsCove Logo"
+                  alt="Kids covE Logo"
                   width={32}
                   height={32}
-                  className="h-full w-full  "
+                  className="h-full w-full object-cover"
                   priority
                 />
               </div>
-              <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-base font-bold tracking-tight text-transparent dark:from-white dark:to-slate-300 sm:text-lg">
-                kidscove
+              <span
+                className={cn(
+                  "text-lg sm:text-xl font-medium tracking-tight text-[#CA6D03] dark:text-[#E07A08] transition-colors",
+                  fontMarcellus.className
+                )}
+              >
+                Kids covE
               </span>
             </Link>
 
