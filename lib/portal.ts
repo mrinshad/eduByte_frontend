@@ -157,6 +157,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
     "fee-structures/bulk-assign": "feestructures.bulkAssignButton",
+    "salary-slips": "salaryslips.listOnNavbar",
     "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
