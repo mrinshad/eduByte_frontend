@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
-  ArrowLeft, Pencil, Trash2, Plus,
+  ArrowLeft, Pencil, Trash2, Plus, Eye,
   ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ChevronDown, ChevronUp, ChevronsUpDown, X,
+  ChevronDown, ChevronUp, ChevronsUpDown, X, Download,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,12 +35,14 @@ function SortableHeader({
   sortBy,
   order,
   onSort,
+  className,
 }: {
   label: string;
   field: string;
   sortBy: string;
   order: "asc" | "desc";
   onSort: (field: string) => void;
+  className?: string;
 }) {
   const isActive = sortBy === field;
 
@@ -46,23 +50,23 @@ function SortableHeader({
     <TableHead
       onClick={() => onSort(field)}
       className={cn(
-        "px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap",
-        "cursor-pointer select-none transition-colors hover:bg-white/10 dark:hover:bg-white/5"
+        "px-4 sm:px-6 h-12 bg-[#556043] hover:bg-[#4a533b] dark:bg-background dark:hover:bg-slate-800 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap cursor-pointer select-none transition-colors",
+        className
       )}
       title={`Sort by ${label}`}
     >
-      <span className="inline-flex items-center gap-1.5">
-        {label}
+      <div className="flex items-center gap-1.5">
+        <span>{label}</span>
         {isActive ? (
           order === "asc" ? (
-            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+            <ArrowUp className="h-3.5 w-3.5 text-white dark:text-foreground shrink-0" />
           ) : (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            <ArrowDown className="h-3.5 w-3.5 text-white dark:text-foreground shrink-0" />
           )
         ) : (
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          <ArrowUpDown className="h-3.5 w-3.5 text-white/60 dark:text-muted-foreground/60 shrink-0" />
         )}
-      </span>
+      </div>
     </TableHead>
   );
 }
@@ -88,6 +92,7 @@ export default function Page() {
 
   const [staff, setStaff] = useState<StaffListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -217,6 +222,53 @@ export default function Page() {
     setCurrentPage(1);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const res = await getStaff({
+        page: 1,
+        limit: 5000,
+        search,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        sortBy,
+        order,
+      });
+
+      const staffList = res?.data?.items || [];
+      if (!staffList.length) {
+        toast.info("No staff records found to export.");
+        return;
+      }
+
+      const columns: CsvColumn<StaffListItem>[] = [
+        { header: "Staff ID", accessor: (s) => s.employeeCode || "" },
+        { header: "Staff Name", accessor: (s) => s.name || "" },
+        { header: "Phone Number", accessor: (s) => s.phone || "-" },
+        { header: "Email Address", accessor: (s) => s.email || "-" },
+        { header: "Joining Date", accessor: (s) => formatDate(s.joiningDate) },
+        {
+          header: "Status",
+          accessor: (s) => (s.status === "ACTIVE" ? "Active" : "Inactive"),
+        },
+      ];
+
+      const success = exportToCsv({
+        filename: "staff_directory",
+        columns,
+        data: staffList,
+      });
+
+      if (success) {
+        toast.success(`Exported ${staffList.length} staff records successfully.`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to export staff records";
+      toast.error(msg);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="w-full px-3 sm:px-6 py-4 space-y-6">
 
@@ -253,7 +305,21 @@ export default function Page() {
               />
             </div>
 
-            <PermissionGate permission="staff.creaStaffButton">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+              onClick={handleExportCsv}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
+
+            <PermissionGate permission="staff.createStaffButton">
               <Button
                 className="w-full sm:w-auto shrink-0 bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                 onClick={() => router.push("/admin/staff/createStaff")}
@@ -319,24 +385,24 @@ export default function Page() {
 
       {/* ── Data Table Container ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50 overflow-hidden">
-        <div className="w-full overflow-x-auto [scroll-behavior:smooth] [-webkit-overflow-scrolling:touch]">
+        <div className="overflow-x-auto">
           <Table className="w-full min-w-[900px]">
-            <TableHeader>
+            <TableHeader className="bg-[#556043] dark:bg-background">
               <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   ID
                 </TableHead>
                 <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Email
                 </TableHead>
                 <SortableHeader label="Joining Date" field="joiningDate" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Status" field="status" sortBy={sortBy} order={order} onSort={toggleSort} />
-                <TableHead className="px-4 sm:px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
+                <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -371,12 +437,26 @@ export default function Page() {
                       {startEntry + index}
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                      {formatText(member.employeeCode)}
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                        className="font-medium text-slate-700 dark:text-slate-300 hover:text-[#556043] hover:underline cursor-pointer transition-colors text-left"
+                        title="View Staff Profile & Pay Details"
+                      >
+                        {formatText(member.employeeCode)}
+                      </button>
                     </TableCell>
 
-                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold text-slate-950 dark:text-slate-100 max-w-[180px] truncate">
-                      {formatText(member.name)}
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm font-semibold max-w-[180px] truncate">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                        className="text-slate-950 dark:text-slate-100 hover:text-[#556043] hover:underline cursor-pointer transition-colors text-left font-semibold truncate block"
+                        title="View Staff Profile & Pay Details"
+                      >
+                        {formatText(member.name)}
+                      </button>
                     </TableCell>
 
                     <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -406,6 +486,15 @@ export default function Page() {
 
                     <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#556043] hover:bg-[#556043]/10 dark:text-slate-400"
+                          onClick={() => router.push(`/admin/staff/viewStaff?id=${member.id}`)}
+                          title="View Staff Profile & Pay Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <PermissionGate permission="staff.editStaffButton">
                         <Button
                           variant="ghost"
@@ -497,9 +586,9 @@ export default function Page() {
       >
         <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{staffToDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>Delete &ldquo;{staffToDelete?.name}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this staff record. This can't be undone.
+              This will permanently delete this staff record. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">

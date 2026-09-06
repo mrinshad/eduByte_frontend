@@ -33,9 +33,12 @@ export const portalSections: PortalSection[] = [
 
   { slug: "students", label: "Student Directory", area: "admin", purpose: "Manage student master data", group: "Academic" },
   { slug: "admissions", label: "Admissions", area: "admin", purpose: "Handle admissions", group: "Academic" },
+  { slug: "promotion", label: "Student Promotion", area: "admin", purpose: "Promote students to next class", group: "Academic" },
+  { slug: "relieving", label: "Student Relieving", area: "admin", purpose: "Relieve graduating or exiting students", group: "Academic" },
 
   { slug: "charge-types", label: "Fee Types", area: "admin", purpose: "Define fee types", group: "Fee Configuration" },
   { slug: "fee-structures", label: "Fee Structures", area: "admin", purpose: "Define fee structures", group: "Fee Configuration" },
+  { slug: "fee-structures/bulk-assign", label: "Bulk Assign Fees", area: "admin", purpose: "Bulk assign fee structures to students", group: "Fee Configuration" },
   { slug: "cca", label: "Co-Curricular (CCA)", area: "admin", purpose: "Manage CCA activities and student allocations", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
 
@@ -43,6 +46,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "users", label: "Users", area: "admin", purpose: "User accounts", group: "User Management" },
   { slug: "roles", label: "Roles & Permissions", area: "admin", purpose: "Role management", group: "User Management" },
+  { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "Track system activities, data changes, and operator history", group: "User Management" },
 
   // --- STUDENT AREA ---
   { slug: "dashboard", label: "Dashboard", area: "student", purpose: "Student dashboard", group: "Student" },
@@ -71,6 +75,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "fee-management", label: "Fee Collection", area: "workspace", purpose: "Collect student payments", group: "Finance", subgroup: "Fee Management" },
   { slug: "expense-management", label: "Expenses", area: "workspace", purpose: "Record expenses", group: "Finance", subgroup: "Accounting" },
+  { slug: "salary-slips", label: "Salary Slips", area: "workspace", purpose: "Manage staff salary slips, monthly payroll, and vouchers", group: "Finance", subgroup: "Accounting" },
 
   { slug: "fine-management/student-fines", label: "Student Fines", area: "workspace", purpose: "Fine management", group: "Finance", subgroup: "Fee Management" },
 
@@ -101,6 +106,7 @@ export const portalSections: PortalSection[] = [
   { slug: "reports/transport-profitability", label: "Vehicle Profitability (P&L)", area: "workspace", purpose: "Transport fee collections vs operating costs per vehicle", group: "Report", subgroup: "Transportation" },
 
   // E. Admissions & Academics
+
   { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Standard class and division census with gender parity ratio", group: "Report", subgroup: "Admissions & Academics" },
   { slug: "reports/student-progression", label: "Student Progression & TC", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Admissions & Academics" },
 
@@ -122,7 +128,7 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   },
   admin: {
     title: "Administration",
-    subtitle: "Governance, structure, and system oversight.",
+    subtitle: "",
   },
   student: {
     title: "Student Portal",
@@ -146,13 +152,17 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "staff": "staff.listOnNavbar",
     "students": "students.listOnNavbar",
     "admissions": "admissions.listOnNavbar",
+    "promotion": "promotion.listOnNavbar",
+    "relieving": "relieving.listOnNavbar",
     "charge-types": "chargetypes.listOnNavbar",
     "fee-structures": "feestructures.listOnNavbar",
+    "fee-structures/bulk-assign": "feestructures.bulkAssignButton",
     "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
+    "audit-logs": "auditLogs.listOnNavbar",
     "permissions": "permissions.listOnNavbar",
     "permission": "permissions.listOnNavbar",
     "fee-management": "feecollection.listOnNavbar",
@@ -505,4 +515,93 @@ export function getPortalSection(slug: string) {
     area: "workspace" as PortalArea,
     purpose: "Section placeholder",
   }
+}
+
+export type SearchableSection = {
+  id: string
+  slug: string
+  href: string
+  label: string
+  purpose: string
+  area: "admin" | "workspace"
+  group: string
+  subgroup?: string
+  keywords: string[]
+}
+
+const SECTION_KEYWORDS: Record<string, string[]> = {
+  "dashboard": ["overview", "metrics", "stats", "home"],
+  "academic-profile": ["academic", "classes", "divisions", "setup", "school", "years"],
+  "staff": ["teachers", "employees", "faculty", "staff directory"],
+  "students": ["student directory", "roster", "pupils", "learners"],
+  "admissions": ["admission", "enroll", "applicant", "new admission", "intake"],
+  "promotion": ["promote", "next class", "academic year change", "carry forward", "bulk promotion"],
+  "relieving": ["relieve", "relieving", "withdraw", "exit", "leaving", "tc", "transfer certificate", "completed", "alumni"],
+  "charge-types": ["fee types", "fee heads", "charge types", "fines"],
+  "fee-structures": ["fee structures", "tuition fees", "packages", "annual fees"],
+  "fee-structures/bulk-assign": ["bulk assign fees", "assign fee structure", "allocate fees"],
+  "cca": ["cca", "co-curricular", "activities", "clubs", "sports"],
+  "accounts": ["accounts", "bank", "ledger accounts", "cash"],
+  "vehicles": ["transport", "vehicles", "buses", "routes", "drivers"],
+  "users": ["users", "accounts", "admin users", "staff login"],
+  "roles": ["roles", "permissions", "rbac", "access control"],
+  "fee-management": ["fee collection", "collect fees", "counter", "payments", "receipts", "cash collection"],
+  "expense-management": ["expenses", "payments", "vouchers", "bills", "costs", "spending"],
+  "fine-management/student-fines": ["student fines", "penalties", "late fee", "waive fine"],
+  "student-charges/student-charges": ["fee ledgers", "student dues", "outstanding balances"],
+  "student-charges/generate-charges": ["generate fees", "recurring charges", "monthly fees", "quarterly fees"],
+  "reports/academic-year-summary": ["academic year summary", "operational overview", "kpis"],
+  "reports/daybook": ["daybook", "daily cashbook", "transactions", "daily register", "cash and bank"],
+  "reports/admissions-master": ["admissions master", "student roster report", "intake report"],
+  "reports/cca-report": ["cca report", "co-curricular report", "activity roster"],
+  "reports/cca-activity-profit": ["cca profit", "p&l", "activity financial breakdown"],
+  "reports/daily-receipts": ["daily receipts", "collections register", "income"],
+  "reports/fee-defaulters": ["fee defaulters", "unpaid dues", "aging report", "pending fees", "arrears"],
+  "reports/fines-register": ["fines register", "penalties report", "waived fines audit"],
+  "reports/salary": ["salary report", "payroll", "staff compensation", "wages"],
+  "reports/transport-expenses": ["transport expenses", "fuel", "vehicle maintenance", "repairs"],
+  "reports/category-expenses": ["category expenses", "expense breakdown", "spending by category"],
+  "reports/daily-expenses": ["daily expenses", "outgoing register", "disbursements"],
+  "reports/transport-roster": ["route roster", "bus passengers", "manifest", "seating capacity"],
+  "reports/transport-profitability": ["transport profit", "vehicle p&l", "fleet profitability"],
+  "reports/class-demographics": ["class demographics", "census", "gender ratio", "strength"],
+  "reports/student-progression": ["student progression", "annual promotion report", "tc report", "retention"],
+}
+
+export function getSearchableSections(
+  permissions: string[] = [],
+  role?: string | null,
+  currentArea?: PortalArea
+): SearchableSection[] {
+  // STRICT REQUIREMENT: Only include sections inside portal(admin and workspace).
+  // Exclude 'student' portal sections and non-portal paths.
+  const allowedAreas: PortalArea[] = ["admin", "workspace"]
+
+  return portalSections
+    .filter((s): s is PortalSection & { area: "admin" | "workspace" } => allowedAreas.includes(s.area))
+    .filter((s) => {
+      // Check if user has permission to access this section
+      const permKey = permissionForSlug(s.slug, s.area)
+      return checkPermission(permissions, permKey)
+    })
+    .map((s) => {
+      const customKeywords = SECTION_KEYWORDS[s.slug] || []
+      return {
+        id: `${s.area}-${s.slug}`,
+        slug: s.slug,
+        href: s.slug === "dashboard" ? `/${s.area}/dashboard` : `/${s.area}/${s.slug}`,
+        label: s.label,
+        purpose: s.purpose,
+        area: s.area,
+        group: s.group,
+        subgroup: s.subgroup,
+        keywords: [
+          s.label.toLowerCase(),
+          s.group.toLowerCase(),
+          s.purpose.toLowerCase(),
+          ...(s.subgroup ? [s.subgroup.toLowerCase()] : []),
+          ...customKeywords,
+        ],
+      }
+    })
 }

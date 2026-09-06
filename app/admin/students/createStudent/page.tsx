@@ -127,6 +127,7 @@ export default function Page() {
         motherMobile: "",
         whatsappNumber: "",
         address: "",
+        place: "",
     });
 
     // Field-level validation errors, keyed by field name
@@ -154,6 +155,7 @@ export default function Page() {
                         motherMobile: student.motherMobile ?? "",
                         whatsappNumber: student.whatsappNumber ?? "",
                         address: student.address ?? "",
+                        place: student.place ?? "",
                     });
                     setDate(student.dob ? new Date(student.dob) : undefined);
                 }
@@ -669,26 +671,42 @@ export default function Page() {
                         </div>
                     </StepSection>
 
-                    {/* Step 3: Address */}
+                    {/* Step 3: Address & Location */}
                     <StepSection
                         stepNumber="3"
                         icon={MapPin}
-                        title="Residential Address"
-                        description="Primary physical location and mailing address."
+                        title="Residential Address & Location"
+                        description="Primary physical location, place, and mailing address."
                     >
-                        <div className="space-y-2">
-                            <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">
-                                Complete Address<RequiredMark />
-                            </Label>
-                            <Textarea
-                                id="address"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                placeholder="House/Flat No., Street, City, State, ZIP Code"
-                                className={cn("min-h-[120px] resize-y", fieldClass, "h-auto py-3 items-start", fieldErrors.address && fieldErrorClass)}
-                            />
-                            <FieldError message={fieldErrors.address} />
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="place" className="text-slate-700 dark:text-slate-300">
+                                    Place / Locality
+                                </Label>
+                                <Input
+                                    id="place"
+                                    name="place"
+                                    value={formData.place}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Indiranagar, Whitefield, Kochi"
+                                    className={fieldClass}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">
+                                    Complete Address<RequiredMark />
+                                </Label>
+                                <Textarea
+                                    id="address"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    placeholder="House/Flat No., Street, City, State, ZIP Code"
+                                    className={cn("min-h-[120px] resize-y", fieldClass, "h-auto py-3 items-start", fieldErrors.address && fieldErrorClass)}
+                                />
+                                <FieldError message={fieldErrors.address} />
+                            </div>
                         </div>
                     </StepSection>
 

@@ -14,11 +14,13 @@ import {
   AlertCircle,
   Loader2,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { refreshLateFines } from "@/lib/services/lateFine";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +154,7 @@ export default function ViewAdmissionPage() {
   // Dialog states
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showManualFeeModal, setShowManualFeeModal] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -161,8 +164,13 @@ export default function ViewAdmissionPage() {
       try {
         setLoading(true);
         const data = await getEnrollmentById(id);
-        if (data?.enrollmentId) {
-          await refreshLateFines(data.enrollmentId);
+        const hasRecurringCharges = data?.charges?.some(
+          (c) => c.frequency === "MONTHLY" || c.frequency === "QUARTERLY"
+        );
+        if (data?.enrollmentId && data?.student?.status === "ACTIVE" && hasRecurringCharges) {
+          await refreshLateFines(data.enrollmentId).catch((err) => {
+            console.warn("Non-fatal: could not refresh late fines", err);
+          });
         }
         setEnrollment(data);
       } catch (err) {
@@ -265,6 +273,20 @@ export default function ViewAdmissionPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="shrink-0 flex items-center gap-1.5 border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/40 shadow-sm"
+                onClick={() => setShowManualFeeModal(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Generate Fees
+              </Button>
+            </PermissionGate>
+          )}
+
+          {student.status === "ACTIVE" && (
+            <PermissionGate permission="admissions.editAdmissionButton">
+              <Button
+                variant="outline"
+                size="sm"
                 className="shrink-0 flex items-center gap-1.5 border-amber-200 bg-amber-50/50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/40 shadow-sm"
                 onClick={() => setShowWithdrawDialog(true)}
               >
@@ -323,6 +345,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Mother mobile" value={student.motherMobile} />
             <InfoItem label="WhatsApp" value={student.whatsappNumber} />
             <InfoItem label="Address" value={student.address} />
+            <InfoItem label="Place" value={student.place} />
           </InfoGrid>
         </InfoSection>
 
@@ -569,7 +592,7 @@ export default function ViewAdmissionPage() {
             <AlertDialogTitle className="break-words">
               Permanently Delete Admission for "{student.studentName}"?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+            <AlertDialogDescription className="space-y-2 text-sm text-slate-300 dark:text-slate-400">
               <p>
                 This action is intended only for <strong>accidental draft entries</strong> (e.g. typos or wrong class selection).
               </p>
@@ -605,6 +628,18 @@ export default function ViewAdmissionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {id && (
+        <ManualFeeGenerationModal
+          enrollmentId={id}
+          isOpen={showManualFeeModal}
+          onClose={() => setShowManualFeeModal(false)}
+          onSuccess={async () => {
+            const updatedData = await getEnrollmentById(id);
+            setEnrollment(updatedData);
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -40,8 +40,11 @@ import {
     Coins,
     Banknote,
     Lock,
-    X
+    X,
+    Download,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
+import { toast } from "sonner";
 import { usePermission } from "@/hooks/usePermission";
 
 function formatCurrency(amount?: number) {
@@ -181,6 +184,46 @@ export default function DaybookReportPage() {
         setPaymentMethod("ALL");
     };
 
+    const handleExportCsv = () => {
+        if (!filteredEntries || filteredEntries.length === 0) {
+            toast.info("No daybook entries to export.");
+            return;
+        }
+
+        const columns: CsvColumn<DaybookEntry>[] = [
+            {
+                header: "Date & Time",
+                accessor: (e) => new Date(e.timestamp).toLocaleString("en-IN"),
+            },
+            { header: "Voucher No", accessor: (e) => e.voucherNumber || "" },
+            { header: "Type", accessor: (e) => e.entryType || "" },
+            { header: "Entity Name", accessor: (e) => e.entityName || "" },
+            { header: "Entity Detail", accessor: (e) => e.entityDetail || "-" },
+            { header: "Category", accessor: (e) => e.category || "-" },
+            { header: "Payment Mode", accessor: (e) => e.paymentMethod || "-" },
+            {
+                header: "Inflow (INR)",
+                accessor: (e) => (e.inflowAmount > 0 ? e.inflowAmount : 0),
+            },
+            {
+                header: "Outflow (INR)",
+                accessor: (e) => (e.outflowAmount > 0 ? e.outflowAmount : 0),
+            },
+            { header: "Running Balance (INR)", accessor: (e) => e.runningBalance ?? 0 },
+            { header: "Notes", accessor: (e) => e.notes || "-" },
+        ];
+
+        const success = exportToCsv({
+            filename: `daybook_${date}`,
+            columns,
+            data: filteredEntries,
+        });
+
+        if (success) {
+            toast.success(`Exported ${filteredEntries.length} daybook records successfully.`);
+        }
+    };
+
     if (!canView) {
         return (
             <div className="flex h-96 items-center justify-center p-8 text-center font-sans">
@@ -237,6 +280,17 @@ export default function DaybookReportPage() {
                                 />
                             </PopoverContent>
                         </Popover>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExportCsv}
+                            disabled={loading || !filteredEntries.length}
+                            className="h-10 gap-1.5 border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 shadow-sm"
+                        >
+                            <Download className="h-4 w-4" />
+                            Export CSV
+                        </Button>
 
                         <Button
                             variant="outline"

@@ -62,6 +62,7 @@ export interface Student {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
+  place?: string | null;
 }
 
 export interface EnrollmentCharge {

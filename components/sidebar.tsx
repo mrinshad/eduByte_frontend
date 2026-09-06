@@ -136,23 +136,41 @@ function SidebarItem({
   )
 }
 
+function isLinkActive(linkHref: string, currentPathname: string, allHrefs: string[]) {
+  if (currentPathname === linkHref) {
+    return true
+  }
+  const isOverviewLink = linkHref.endsWith("/fee-management")
+  if (!isOverviewLink && currentPathname.startsWith(`${linkHref}/`)) {
+    // If another sidebar link matches currentPathname exactly or with a longer prefix,
+    // this parent link should not be marked active.
+    const hasMoreSpecificMatch = allHrefs.some(
+      (otherHref) =>
+        otherHref !== linkHref &&
+        (currentPathname === otherHref || currentPathname.startsWith(`${otherHref}/`)) &&
+        otherHref.length > linkHref.length
+    )
+    return !hasMoreSpecificMatch
+  }
+  return false
+}
+
 function SidebarSubgroup({
   subgroup,
   items,
   collapsed,
   pathname,
+  allHrefs,
   onNavigate,
 }: {
   subgroup: string
   items: PortalNavItem[]
   collapsed: boolean
   pathname: string
+  allHrefs: string[]
   onNavigate?: () => void
 }) {
-  const mountaineerActive = items.some((item) => {
-    const isOverviewLink = item.href.endsWith("/fee-management")
-    return pathname === item.href || (!isOverviewLink && pathname.startsWith(`${item.href}/`))
-  })
+  const mountaineerActive = items.some((item) => isLinkActive(item.href, pathname, allHrefs))
   const [isOpen, setIsOpen] = React.useState<boolean>(mountaineerActive || true)
   const SubgroupIcon = getSubgroupIcon(subgroup)
 
@@ -215,9 +233,7 @@ function SidebarSubgroup({
           <div className="overflow-hidden">
             <ul className="relative space-y-1 ml-4.5 border-l border-slate-200/60 pl-2.5 dark:border-slate-800/80 my-1">
               {items.map((link) => {
-                const isOverviewLink = link.href.endsWith("/fee-management")
-                const active =
-                  pathname === link.href || (!isOverviewLink && pathname.startsWith(`${link.href}/`))
+                const active = isLinkActive(link.href, pathname, allHrefs)
                 return (
                   <SidebarItem
                     key={link.href}
@@ -323,8 +339,12 @@ function SidebarBody({
     }
   })
 
+  const allHrefs = React.useMemo(() => {
+    return filteredLinks.flatMap((group) => group.items.map((item) => item.href))
+  }, [filteredLinks])
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Header Panel */}
       <div className="flex h-16 items-center justify-between border-b border-black/[0.04] px-4 dark:border-white/[0.06]">
         <div
@@ -363,7 +383,7 @@ function SidebarBody({
       </div>
 
       {/* Navigation Streams */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 scrollbar-none">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pt-4 pb-6 scrollbar-none">
         {links.length ? (
           <div className="space-y-5">
             {groupedLinks.map((group) => (
@@ -385,6 +405,7 @@ function SidebarBody({
                         items={subgroupItems}
                         collapsed={collapsed}
                         pathname={pathname}
+                        allHrefs={allHrefs}
                         onNavigate={onCloseMobile}
                       />
                     ))}
@@ -392,10 +413,7 @@ function SidebarBody({
                 ) : (
                   <ul className="space-y-0.5">
                     {group.items.map((link) => {
-                      const isOverviewLink = link.href.endsWith("/fee-management")
-                      const active =
-                        pathname === link.href ||
-                        (!isOverviewLink && pathname.startsWith(`${link.href}/`))
+                      const active = isLinkActive(link.href, pathname, allHrefs)
                       return (
                         <SidebarItem
                           key={link.href}
@@ -420,6 +438,9 @@ function SidebarBody({
             No workspace options for {area}.
           </div>
         )}
+
+        {/* Physical spacer to guarantee scrolling past bottom items in mobile viewports & simulator device frames */}
+        <div className="h-28 w-full shrink-0 pointer-events-none" aria-hidden="true" />
       </nav>
     </div>
   )
@@ -437,7 +458,7 @@ export function Sidebar(props: SidebarProps) {
           className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity"
           onClick={props.onCloseMobile}
         />
-        <aside className="relative z-10 h-full w-[17rem] bg-white shadow-2xl dark:bg-slate-950 border-r border-black/[0.04] dark:border-white/[0.06]">
+        <aside className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-[17rem] flex-col overflow-hidden bg-white shadow-2xl dark:bg-slate-950 border-r border-black/[0.04] dark:border-white/[0.06]">
           <SidebarBody {...props} />
         </aside>
       </div>

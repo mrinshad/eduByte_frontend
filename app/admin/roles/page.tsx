@@ -720,7 +720,7 @@ export default function Page() {
                               openRoleDialog("edit", role)
                             }}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-4 w-4 text-slate-400" />
                           </Button>
                         </PermissionGate>
                         <PermissionGate permission="roles.deleteRoleButton">
@@ -889,7 +889,7 @@ export default function Page() {
                 </div>
               ) : rolePermissions.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 p-6 text-center">
-                  <p className="text-sm font-semibold text-slate-950 dark:text-white">
+                  <p className="text-sm font-semibold text-slate-100 dark:text-white">
                     No permissions assigned to {selectedRole.name} yet.
                   </p>
                   <PermissionGate permission="roles.assignPermissionButton">

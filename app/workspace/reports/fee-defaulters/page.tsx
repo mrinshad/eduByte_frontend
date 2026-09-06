@@ -33,8 +33,11 @@ import {
     UserX,
     ChevronLeft,
     ChevronRight,
-    X
+    X,
+    Download,
+    Loader2,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 import { usePermission } from "@/hooks/usePermission";
 import { toast } from "sonner";
 
@@ -81,6 +84,7 @@ export default function FeeDefaultersReportPage() {
     const [search, setSearch] = useState<string>("");
     const [page, setPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
+    const [exporting, setExporting] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<FeeDefaultersReportResponse | null>(null);
 
@@ -166,6 +170,61 @@ export default function FeeDefaultersReportPage() {
         setPage(1);
     };
 
+    const handleExportCsv = async () => {
+        if (!selectedYearId) return;
+        try {
+            setExporting(true);
+            const res = await getFeeDefaultersReport({
+                academicYearId: selectedYearId,
+                classId: selectedClassId === "ALL" ? undefined : selectedClassId,
+                agingBracket: agingBracket === "ALL" ? undefined : agingBracket,
+                search: search.trim() || undefined,
+                page: 1,
+                limit: 10000,
+            });
+
+            const defaultersList = res?.defaulters || [];
+            if (!defaultersList.length) {
+                toast.info("No fee defaulter records found to export.");
+                return;
+            }
+
+            const columns: CsvColumn<FeeDefaulterItem>[] = [
+                { header: "Admission No", accessor: (d) => d.admissionNumber || "" },
+                { header: "Student Name", accessor: (d) => d.studentName || "" },
+                { header: "Class", accessor: (d) => d.className || "-" },
+                { header: "Father Name", accessor: (d) => d.fatherName || "-" },
+                { header: "Father Mobile", accessor: (d) => d.fatherMobile || "-" },
+                { header: "Mother Name", accessor: (d) => d.motherName || "-" },
+                { header: "Mother Mobile", accessor: (d) => d.motherMobile || "-" },
+                { header: "WhatsApp Number", accessor: (d) => d.whatsappNumber || "-" },
+                { header: "Fee Dues (INR)", accessor: (d) => d.feeDues || 0 },
+                { header: "Fine Dues (INR)", accessor: (d) => d.fineDues || 0 },
+                { header: "Total Outstanding (INR)", accessor: (d) => d.totalOutstanding || 0 },
+                { header: "0-30 Days (INR)", accessor: (d) => d.bucket0_30 || 0 },
+                { header: "31-60 Days (INR)", accessor: (d) => d.bucket31_60 || 0 },
+                { header: "61-90 Days (INR)", accessor: (d) => d.bucket61_90 || 0 },
+                { header: "90+ Days (INR)", accessor: (d) => d.bucket90Plus || 0 },
+                { header: "Max Days Overdue", accessor: (d) => d.maxDaysOverdue || 0 },
+                { header: "Risk Level", accessor: (d) => d.riskLevel || "LOW" },
+            ];
+
+            const success = exportToCsv({
+                filename: "fee_defaulters_aging_report",
+                columns,
+                data: defaultersList,
+            });
+
+            if (success) {
+                toast.success(`Exported ${defaultersList.length} fee defaulter records successfully.`);
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Failed to export fee defaulters");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     if (!canView) {
         return (
             <div className="flex h-96 items-center justify-center p-8 text-center font-sans">
@@ -219,6 +278,21 @@ export default function FeeDefaultersReportPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExportCsv}
+                            disabled={exporting || loading}
+                            className="h-9 gap-1.5 border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                        >
+                            {exporting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Export CSV
+                        </Button>
 
                         <Button
                             variant="outline"

@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Pencil, Trash2, Plus,
   Eye, ChevronLeft, ChevronRight, Search, Loader2, Users,
-  ArrowUpAZ, ArrowDownAZ, X,
+  ArrowUpAZ, ArrowDownAZ, X, LogOut, Download, CalendarIcon,
 } from "lucide-react";
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +34,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 import { getStudents, deleteStudent, type StudentListItem } from "@/lib/services/student";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
+import { individualRelieveStudent } from "@/lib/services/studentRelieving";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -56,8 +66,7 @@ const ADMISSION_STATUS_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
-  { value: "WITHDRAWN", label: "Withdrawn" },
-  { value: "ALUMNI", label: "Alumni" },
+  { value: "WITHDRAWN", label: "Withdrawn" }
 ];
 
 export default function Page() {
@@ -65,11 +74,12 @@ export default function Page() {
 
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [admissionFilter, setAdmissionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortByClass, setSortByClass] = useState(false); // ← off by default
@@ -89,6 +99,9 @@ export default function Page() {
 
   const [studentToDelete, setStudentToDelete] = useState<StudentListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [studentToRelieve, setStudentToRelieve] = useState<StudentListItem | null>(null);
+  const [isRelieving, setIsRelieving] = useState(false);
+  const [relieveDate, setRelieveDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
 
   const loadStudents = async () => {
     try {
@@ -147,6 +160,24 @@ export default function Page() {
       toast.error(error instanceof Error ? error.message : "Failed to delete student");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRelieveStudent = async () => {
+    if (!studentToRelieve) return;
+
+    try {
+      setIsRelieving(true);
+      const targetId = studentToRelieve.enrollmentId || studentToRelieve.id;
+      await individualRelieveStudent(targetId, { relievedDate: relieveDate });
+      toast.success(`Successfully relieved ${studentToRelieve.studentName} as COMPLETED.`);
+      setStudentToRelieve(null);
+      await loadStudents();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || error?.message || "Failed to relieve student");
+    } finally {
+      setIsRelieving(false);
     }
   };
 
@@ -218,6 +249,67 @@ export default function Page() {
     setCurrentPage(1);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const res = await getStudents({
+        page: 1,
+        limit: 10000,
+        search,
+        className: classFilter !== "all" ? classFilter : "",
+        admissionStatus: admissionFilter !== "all" ? admissionFilter : "",
+        status: statusFilter !== "all" ? statusFilter : "",
+        sortBy: sortByClass ? "className" : "admissionNumber",
+        order,
+      });
+
+      const studentList = res?.data || [];
+      if (!studentList.length) {
+        toast.info("No student records found to export.");
+        return;
+      }
+
+      const columns: CsvColumn<StudentListItem>[] = [
+        { header: "Admission No", accessor: (s) => s.admissionNumber || "" },
+        { header: "Student Name", accessor: (s) => s.studentName || "" },
+        { header: "Gender", accessor: (s) => s.gender || "" },
+        { header: "Class", accessor: (s) => s.className || "-" },
+        { header: "Division", accessor: (s) => s.divisionName || "-" },
+        {
+          header: "Admission Status",
+          accessor: (s) => (s.admissionStatus === "ADMITTED" ? "Admitted" : "Not Admitted"),
+        },
+        { header: "Student Status", accessor: (s) => s.status || "" },
+        {
+          header: "Date of Birth",
+          accessor: (s) => (s.dob ? new Date(s.dob).toLocaleDateString() : "-"),
+        },
+        { header: "Blood Group", accessor: (s) => s.bloodGroup || "-" },
+        { header: "Place", accessor: (s) => s.place || "-" },
+        { header: "Father Name", accessor: (s) => s.fatherName || "-" },
+        { header: "Father Mobile", accessor: (s) => s.fatherMobile || "-" },
+        { header: "Mother Name", accessor: (s) => s.motherName || "-" },
+        { header: "Mother Mobile", accessor: (s) => s.motherMobile || "-" },
+        { header: "WhatsApp Number", accessor: (s) => s.whatsappNumber || "-" },
+        { header: "Address", accessor: (s) => s.address || "-" },
+      ];
+
+      const success = exportToCsv({
+        filename: "students_roster",
+        columns,
+        data: studentList,
+      });
+
+      if (success) {
+        toast.success(`Exported ${studentList.length} student records successfully.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export student records");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="w-full px-4 sm:px-6 py-4 space-y-6">
 
@@ -253,6 +345,20 @@ export default function Page() {
                 className="pl-10 w-full rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+              onClick={handleExportCsv}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
 
             <PermissionGate permission="students.createStudentButton">
               <Button
@@ -367,7 +473,7 @@ export default function Page() {
           )}
           {statusFilter !== "all" && (
             <FilterChip
-              label={`Status: ${statusFilter}`}
+              label={`Status: ${statusFilter === "ACTIVE" ? "Active" : statusFilter === "WITHDRAWN" ? "Withdrawn" : statusFilter}`}
               onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
             />
           )}
@@ -396,7 +502,7 @@ export default function Page() {
                   WhatsApp Number
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
-                  Address
+                  Place & Address
                 </TableHead>
                 <TableHead className="px-6 h-12 text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Class | Division
@@ -450,8 +556,21 @@ export default function Page() {
                       {student.whatsappNumber}
                     </TableCell>
 
-                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {student.address}
+                    <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[200px]">
+                      {student.place ? (
+                        <div>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{student.place}</span>
+                          {student.address && (
+                            <p className="text-xs text-slate-400 dark:text-slate-500 truncate" title={student.address}>
+                              {student.address}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="truncate block" title={student.address || "—"}>
+                          {student.address || "—"}
+                        </span>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
@@ -508,6 +627,17 @@ export default function Page() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </PermissionGate>
+                        {student.status === "ACTIVE" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            title="Relieve Student"
+                            onClick={() => setStudentToRelieve(student)}
+                          >
+                            <LogOut className="h-4 w-4" />
+                          </Button>
+                        )}
                         <PermissionGate permission="students.deleteStudentButton">
                           <Button
                             variant="ghost"
@@ -579,10 +709,90 @@ export default function Page() {
           </div>
         </div>
       </div>
+      
+      {/* Relieve Student Confirmation Dialog */}
+      <AlertDialog open={!!studentToRelieve} onOpenChange={(open) => !open && setStudentToRelieve(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-amber-100" />
+              Relieve Student
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2 text-sm text-slate-300 dark:text-slate-300">
+                <p>
+                  Are you sure you want to relieve <strong>{studentToRelieve?.studentName}</strong> ({studentToRelieve?.admissionNumber})?
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-200 dark:text-slate-300">
+                    Relieving Date:
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full h-10 justify-start text-left font-normal text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 px-3",
+                          !relieveDate && "text-slate-400"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {relieveDate ? format(new Date(`${relieveDate}T00:00:00`), "dd MMM yyyy") : "Pick relieving date"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={relieveDate ? new Date(`${relieveDate}T00:00:00`) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setRelieveDate(format(date, "yyyy-MM-dd"));
+                          }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="rounded-lg bg-slate-100 p-3 text-slate-900 dark:text-slate-200 text-xs dark:bg-slate-800/60 space-y-1">
+                  <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>
+                  <p>• Student master status will transition to <strong>WITHDRAWN</strong>.</p>
+                  <p>• Recurring charge templates and vehicle assignments will be deactivated.</p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRelieving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRelieving}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRelieveStudent();
+              }}
+              className="bg-[#556043] "
+            >
+              {isRelieving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Relieving...
+                </>
+              ) : (
+                "Confirm Relieve"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog
-        open={!!studentToDelete}
+        open={Boolean(studentToDelete)}
         onOpenChange={(open) => {
-          if (!open) setStudentToDelete(null);
+          if (!open) {
+            setStudentToDelete(null);
+          }
         }}
       >
         <AlertDialogContent>

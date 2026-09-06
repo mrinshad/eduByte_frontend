@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
 
-import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2, AlertCircle, Users, Download } from "lucide-react"
+import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -133,12 +134,13 @@ export default function Page() {
       loadVehicles();
     } catch (error) {
       console.error(error);
-
-      toast.error(
-        editingId
+      const message =
+        error instanceof Error
+          ? error.message
+          : editingId
           ? "Failed to update vehicle"
-          : "Failed to create vehicle"
-      );
+          : "Failed to create vehicle";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -191,11 +193,43 @@ export default function Page() {
       loadVehicles();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete vehicle");
+      const message =
+        error instanceof Error ? error.message : "Failed to delete vehicle";
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const handleExportCsv = () => {
+    if (!vehicles.length) {
+      toast.info("No vehicles to export.");
+      return;
+    }
+
+    const columns: CsvColumn<Vehicle>[] = [
+      { header: "Vehicle Name", accessor: (v) => v.vehicleName || "" },
+      { header: "Vehicle Number", accessor: (v) => v.vehicleNumber || "" },
+      { header: "Driver Name", accessor: (v) => v.driverName || "-" },
+      { header: "Assigned Students", accessor: (v) => v._count?.assignments ?? 0 },
+      { header: "Linked Expenses", accessor: (v) => v._count?.expenses ?? 0 },
+      {
+        header: "Created Date",
+        accessor: (v) => (v.createdAt ? new Date(v.createdAt).toLocaleDateString() : "-"),
+      },
+    ];
+
+    const success = exportToCsv({
+      filename: "transport_vehicles",
+      columns,
+      data: vehicles,
+    });
+
+    if (success) {
+      toast.success(`Exported ${vehicles.length} vehicles successfully.`);
+    }
+  };
+
   return (
     <section className="px-3 sm:px-6 py-4">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -208,31 +242,41 @@ export default function Page() {
             <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage transport vehicles, registration numbers, seating capacities, and drivers.</p>
           </div>
         </div>
-        <PermissionGate permission="vehicle.createVehicleButton">
-        <Button
-          onClick={() => {
-            setEditingId(null);
-            setVehicleName("");
-            setVehicleNumber("");
-            setDriverName("");
-            setOpen(true);   // <-- Add this line
-            console.log("Create Vehicle clicked");
-          }}
-          className="
-                          w-full sm:w-auto shrink-0
-                          bg-[#556043]
-                          text-white
-                          hover:bg-[#4a533b]
-                          dark:bg-slate-100
-                          dark:text-slate-900
-                          dark:hover:bg-slate-200
-                        "
-
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Vehicle
-        </Button>
-        </PermissionGate>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+            onClick={handleExportCsv}
+            disabled={vehicles.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <PermissionGate permission="vehicle.createVehicleButton">
+            <Button
+              onClick={() => {
+                setEditingId(null);
+                setVehicleName("");
+                setVehicleNumber("");
+                setDriverName("");
+                setOpen(true);   // <-- Add this line
+                console.log("Create Vehicle clicked");
+              }}
+              className="
+                              w-full sm:w-auto shrink-0
+                              bg-[#556043]
+                              text-white
+                              hover:bg-[#4a533b]
+                              dark:bg-slate-100
+                              dark:text-slate-900
+                              dark:hover:bg-slate-200
+                            "
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Vehicle
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       <div className="flex justify-end">
@@ -377,16 +421,35 @@ export default function Page() {
                 {/* Divider */}
                 <div className="h-px bg-slate-100 dark:bg-slate-800/60" />
 
-                {/* Compact Driver Info */}
-                <div className="flex items-center gap-2 rounded-lg bg-slate-50/50 p-2 dark:bg-slate-800/40">
-                  <User className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-                  <div className="min-w-0 flex items-center gap-1.5">
-                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
-                      Driver:
+                {/* Compact Driver & Assignment Info */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 rounded-lg bg-slate-50/50 p-2 dark:bg-slate-800/40">
+                    <User className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                    <div className="min-w-0 flex items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
+                        Driver:
+                      </span>
+                      <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {vehicle.driverName}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Student Assignment Count */}
+                  <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+                    <span className="text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      Enrollments:
                     </span>
-                    <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {vehicle.driverName}
-                    </span>
+                    {(vehicle._count?.assignments ?? 0) > 0 ? (
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        {vehicle._count?.assignments} assigned
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500 font-medium">
+                        0 assigned
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -403,20 +466,45 @@ export default function Page() {
         <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{vehicleToDelete?.vehicleName}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this vehicle. This can't be undone, and it will fail
-              if students are currently assigned to it.
+            <AlertDialogDescription className="space-y-3">
+              <span className="block text-slate-200 dark:text-slate-400">
+                This will permanently delete this vehicle. This action cannot be undone.
+              </span>
+
+              {Boolean((vehicleToDelete?._count?.assignments ?? 0) > 0) && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 text-left">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block mb-0.5">Cannot Delete: Student Enrollments Exist</span>
+                    <span>
+                      {vehicleToDelete?._count?.assignments} student enrollment{vehicleToDelete?._count?.assignments! > 1 ? "s are" : " is"} currently assigned to this vehicle. Please unassign or reassign these students before deleting.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {Boolean((vehicleToDelete?._count?.expenses ?? 0) > 0) && !(Boolean((vehicleToDelete?._count?.assignments ?? 0) > 0)) && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 text-left">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block mb-0.5">Cannot Delete: Expense Records Exist</span>
+                    <span>
+                      {vehicleToDelete?._count?.expenses} expense record(s) are associated with this vehicle.
+                    </span>
+                  </div>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
             <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isDeleting}
+              disabled={isDeleting || Boolean((vehicleToDelete?._count?.assignments ?? 0) > 0) || Boolean((vehicleToDelete?._count?.expenses ?? 0) > 0)}
               onClick={(event) => {
                 event.preventDefault();
                 void handleDeleteVehicle();
               }}
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isDeleting ? (
                 <>

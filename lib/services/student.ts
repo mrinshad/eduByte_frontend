@@ -16,6 +16,7 @@ export interface StudentInput {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
+  place?: string;
 }
 
 export interface Student {
@@ -35,8 +36,10 @@ export interface Student {
   motherMobile: string;
   whatsappNumber: string;
   address: string;
-  status: "ACTIVE" | "WITHDRAWN" | "ALUMNI";
+  place?: string | null;
+  status: "ACTIVE" | "WITHDRAWN";
   enrollmentId?: string;
+  enrollmentStatus?: string | null;
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
@@ -56,9 +59,16 @@ export interface StudentListItem {
   religion?: string | null;
   community?: string | null;
   category?: string | null;
+  fatherName?: string | null;
+  fatherMobile?: string | null;
+  motherName?: string | null;
+  motherMobile?: string | null;
   whatsappNumber: string;
   address: string;
+  place?: string | null;
   status: string;
+  enrollmentId?: string;
+  enrollmentStatus?: string | null;
   className?: string | null;
   divisionName?: string | null;
   admissionStatus?: "ADMITTED" | "NOT_ADMITTED";
@@ -90,7 +100,7 @@ export interface GetStudentsParams {
   search?: string;
   className?: string;
   admissionStatus?: string; // ADMITTED | NOT_ADMITTED
-  status?: string; // ACTIVE | WITHDRAWN | ALUMNI
+  status?: string; // ACTIVE | WITHDRAWN
   sortBy?: string;
   order?: "asc" | "desc";
   academicYearId?: string;
