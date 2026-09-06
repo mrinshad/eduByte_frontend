@@ -148,6 +148,7 @@ export default function SalarySlipsListPage() {
 
     // ── Filter State ────────────────────────────────────────────────────────
     const [search, setSearch] = useState("");
+    const [salaryMonth, setSalaryMonth] = useState("");
     const [from, setFrom] = useState("");
     const [to, setTo] = useState("");
     const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
@@ -209,6 +210,7 @@ export default function SalarySlipsListPage() {
                 page,
                 limit: pagination.limit,
                 search: search.trim() || undefined,
+                salaryMonth: salaryMonth || undefined,
                 from: from || undefined,
                 to: to || undefined,
                 paymentAccountId: selectedAccountId !== "all" ? selectedAccountId : undefined,
@@ -225,7 +227,7 @@ export default function SalarySlipsListPage() {
         } finally {
             setLoading(false);
         }
-    }, [pagination.limit, search, from, to, selectedAccountId, sortBy, order]);
+    }, [pagination.limit, search, salaryMonth, from, to, selectedAccountId, sortBy, order]);
 
     useEffect(() => {
         let isMounted = true;
@@ -235,6 +237,7 @@ export default function SalarySlipsListPage() {
                     page: 1,
                     limit: pagination.limit,
                     search: search.trim() || undefined,
+                    salaryMonth: salaryMonth || undefined,
                     from: from || undefined,
                     to: to || undefined,
                     paymentAccountId: selectedAccountId !== "all" ? selectedAccountId : undefined,
@@ -262,7 +265,7 @@ export default function SalarySlipsListPage() {
         return () => {
             isMounted = false;
         };
-    }, [from, to, selectedAccountId, pagination.limit, search, sortBy, order]);
+    }, [salaryMonth, from, to, selectedAccountId, pagination.limit, search, sortBy, order]);
 
     // Handle auto-print if redirected from Create page
     useEffect(() => {
@@ -390,16 +393,45 @@ export default function SalarySlipsListPage() {
                 </form>
 
                 <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Date Range Picker — Reports Popover / Calendar Style */}
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                    {/* 1. Salary Month Filter (Remuneration Period) */}
+                    <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 h-10 shadow-2xs dark:border-slate-700 dark:bg-slate-900">
+                        <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            Salary Month:
+                        </span>
+                        <input
+                            type="month"
+                            id="salary-slips-month"
+                            value={salaryMonth}
+                            onChange={(e) => setSalaryMonth(e.target.value)}
+                            title="Filter by remuneration period / salary month (e.g. 2026-09)"
+                            className="bg-transparent text-xs outline-none text-slate-800 dark:text-slate-200 cursor-pointer w-28"
+                        />
+                        {salaryMonth && (
+                            <button
+                                type="button"
+                                onClick={() => setSalaryMonth("")}
+                                className="hover:text-rose-500 p-0.5 rounded cursor-pointer ml-1"
+                                title="Clear salary month filter"
+                            >
+                                <X className="h-3 w-3 text-slate-400 hover:text-rose-500" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* 2. Disbursed Date Range Filter (Payout Transaction Period) */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-300 bg-white px-2.5 h-10 shadow-2xs dark:border-slate-700 dark:bg-slate-900">
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            Disbursed:
+                        </span>
                         <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
                             <PopoverTrigger asChild>
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     id="salary-slips-from-btn"
                                     className={cn(
-                                        "h-10 justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 w-36",
-                                        from && "text-slate-900 dark:text-white"
+                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
+                                        from && "text-slate-900 dark:text-white font-semibold"
                                     )}
                                     title="Filter salary slips from disbursement date"
                                 >
@@ -434,18 +466,16 @@ export default function SalarySlipsListPage() {
                             </PopoverContent>
                         </Popover>
 
-                        <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
-                            <ArrowRight className="h-4 w-4" />
-                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
 
                         <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
                             <PopoverTrigger asChild>
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     id="salary-slips-to-btn"
                                     className={cn(
-                                        "h-10 justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 w-36",
-                                        to && "text-slate-900 dark:text-white"
+                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
+                                        to && "text-slate-900 dark:text-white font-semibold"
                                     )}
                                     title="Filter salary slips to disbursement date"
                                 >
@@ -481,7 +511,7 @@ export default function SalarySlipsListPage() {
                         </Popover>
                     </div>
 
-                    {/* Payment Method Filter */}
+                    {/* 3. Payment Method Filter */}
                     <div className="w-52">
                         <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
                             <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 text-xs">
@@ -499,12 +529,13 @@ export default function SalarySlipsListPage() {
                         </Select>
                     </div>
 
-                    {(search || from || to || selectedAccountId !== "all" || sortBy !== "createdAt" || order !== "desc") && (
+                    {(search || salaryMonth || from || to || selectedAccountId !== "all" || sortBy !== "createdAt" || order !== "desc") && (
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
                                 setSearch("");
+                                setSalaryMonth("");
                                 setFrom("");
                                 setTo("");
                                 setSelectedAccountId("all");
