@@ -1,0 +1,401 @@
+import { apiFetch } from "@/lib/api";
+import { authFetch } from "@/lib/auth";
+
+export interface StudentCharge {
+  admissionNumber: string;
+  student: string;
+  class: string;
+  finalAmount?: number;
+  paidAmount?: number;
+  fineAmount?: number;
+  finePaidAmount?: number;
+  totalAmount?: number;
+  totalPaidAmount?: number;
+  enrollmentId: string;
+  status: string;
+}
+
+export interface StudentChargeResponse {
+  success: boolean;
+  message: string;
+  data: StudentCharge[];
+}
+
+type ApiSuccess<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
+
+type ApiError = {
+  success: false;
+  message?: string;
+  errors?: unknown;
+};
+
+export async function getStudentCharges(params?: { academicYearId?: string; academicYear?: string }) {
+  const query = new URLSearchParams();
+  if (params?.academicYearId) query.set("academicYearId", params.academicYearId);
+  if (params?.academicYear) query.set("academicYear", params.academicYear);
+  const payload = (await apiFetch(
+    `/api/stdcharge/admission-no${query.toString() ? `?${query.toString()}` : ""}`
+  )) as ApiSuccess<StudentCharge[]>;
+
+  return payload.data ?? [];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Get all charges for a single student enrollment                    */
+/*  GET /api/stdcharge/enrollment/:enrollmentId?status=PENDING         */
+/*                                                                      */
+/*  NOTE: matches the real response shape — student info comes back   */
+/*  nested under `studentDetails`, and the enrollment fields are flat  */
+/*  (enrollmentId, academicYearId, feeStructureId, status) rather than */
+/*  the earlier `id` / classId / divisionId / rollNumber shape.        */
+/* ------------------------------------------------------------------ */
+
+export type ChargeStatus = "PENDING" | "PARTIAL" | "PAID";
+
+export interface EnrollmentCharge {
+  id: string;
+  enrollmentId: string;
+  chargeTypeId: string;
+  description: string;
+  originalAmount: string;
+  discountAmount: string;
+  finalAmount: string;
+  paidAmount: string;
+  dueDate: string;
+  periodMonth: number;
+  periodYear: number;
+  status: ChargeStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnrollmentStudentDetails {
+  id: string;
+  studentName: string;
+  gender: string;
+  dob: string;
+  bloodGroup: string;
+  fatherName: string;
+  fatherMobile: string;
+  motherName: string;
+  motherMobile: string;
+  whatsappNumber: string;
+  address: string;
+  status: string;
+  rollNumber: string;
+  class: string;
+  division: string;
+}
+
+export interface StudentPaymentTransaction {
+  id: string;
+  receiptId?: string | null;
+  transactionNumber: string;
+  receiptNumber: string;
+  transactionDate: string;
+  description: string;
+  totalAmount: number;
+  status: string;
+  isCancelled: boolean;
+  itemsCovered: string[];
+}
+
+export interface StudentFineItem {
+  id: string;
+  fineType: string;
+  amount: number;
+  paidAmount: number;
+  balance: number;
+  reason: string;
+  status: string;
+  isReversed: boolean;
+  studentChargeId?: string | null;
+  periodMonth?: number | null;
+  periodYear?: number | null;
+  chargeDescription?: string | null;
+  createdAt: string;
+}
+
+export interface StudentEnrollmentCharges {
+  enrollmentId: string;
+  academicYearId: string;
+  feeStructureId: string | null;
+  status: string;
+  studentDetails: EnrollmentStudentDetails;
+  charges: EnrollmentCharge[];
+  fines?: StudentFineItem[];
+  transactions?: StudentPaymentTransaction[];
+}
+
+export interface StudentEnrollmentChargesResponse {
+  success: boolean;
+  message: string;
+  data: StudentEnrollmentCharges;
+}
+
+/**
+ * Fetch student details + all charges for a single enrollment.
+ * Pass `status` to filter server-side; omit it to get every charge so
+ * PENDING / PARTIAL / PAID can all be shown together, sorted client-side.
+ */
+export async function getStudentChargesByEnrollmentId(
+  enrollmentId: string,
+  status?: ChargeStatus
+) {
+  const query = status ? `?status=${status}` : "";
+
+  const payload = (await apiFetch(
+    `/api/stdcharge/enrollment/${enrollmentId}${query}`
+  )) as ApiSuccess<StudentEnrollmentCharges>;
+
+  return payload.data ?? null;
+}
+
+export type CatchUpChargeItem = {
+  studentName: string;
+  admissionNumber: string;
+  chargeType: string;
+  amount: number;
+  periodMonth: number;
+  periodYear: number;
+  periodName: string;
+};
+
+export type FeeGenerationPreviewSummary = {
+  activeStudents: number;
+  enrollmentChargesEvaluated: number;
+  chargesToGenerate: number;
+  alreadyGenerated: number;
+  studentsWithNoCharges: number;
+  catchUpChargesCount?: number;
+};
+
+export type FeeGenerationMonthStatus = {
+  lastGeneratedMonthNumber: number;
+  lastGeneratedPeriod: string;
+  currentTargetMonthNumber: number;
+  currentTargetPeriod: string;
+  upcomingMonthNumber: number | null;
+  upcomingPeriod: string;
+  totalAcademicMonths: number;
+};
+
+export type AcademicYearTimelineItem = {
+  academicMonthNumber: number;
+  periodName: string;
+  monthShort: string;
+  status: "COMPLETED" | "CURRENT_TARGET" | "LOCKED" | "UPCOMING";
+  isCurrentTarget: boolean;
+  isCompleted: boolean;
+  isLocked: boolean;
+  calendarMonth: number;
+  calendarYear: number;
+};
+
+export type TargetMonthStudentItem = {
+  enrollmentId: string;
+  studentName: string;
+  admissionNumber: string;
+  chargesCount: number;
+  totalAmount: number;
+  chargeTypes: string[];
+};
+
+export type FeeGenerationPreviewData = {
+  academicYearId: string;
+  academicYearName: string;
+  targetAcademicMonth: number;
+  targetCalendarMonth: number;
+  targetCalendarYear: number;
+  targetPeriod?: string;
+  monthStatus?: FeeGenerationMonthStatus;
+  academicYearTimeline?: AcademicYearTimelineItem[];
+  instructions?: string;
+  summary: FeeGenerationPreviewSummary;
+  targetMonthStudents?: TargetMonthStudentItem[];
+  chargesBreakdown: Record<string, number>;
+  frequencyBreakdown: Record<string, number>;
+  financialSummary: {
+    byChargeType: Record<string, number>;
+    total: number;
+  };
+  catchUpCharges?: CatchUpChargeItem[];
+  skipped?: {
+    alreadyGenerated: number;
+  };
+  validation: Record<string, boolean>;
+  warnings?: string[];
+  sampleCharges: Array<{
+    enrollmentId: string;
+    chargeType: string;
+    amount: number;
+    dueDate: string;
+  }>;
+  sampleShowing: number;
+  sampleTotal: number;
+  confirmation: {
+    willCreateCharges: number;
+    willUpdateAcademicYear: boolean;
+    willAdvanceTo: number;
+  };
+};
+
+export type FeeGenerationResult = {
+  academicYearId: string;
+  academicYearName: string;
+  targetAcademicMonth: number;
+  targetCalendarMonth: number;
+  targetCalendarYear: number;
+  studentsProcessed: number;
+  enrollmentChargesEvaluated: number;
+  chargesDue: number;
+  chargesGenerated: number;
+  chargesSkipped: number;
+  lastGeneratedAcademicMonth: number;
+};
+
+async function postStudentChargeAction<T>(endpoint: string, body: unknown) {
+  const response = await authFetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | ApiSuccess<T>
+    | ApiError
+    | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.message ?? `API Error: ${response.status}`);
+  }
+
+  return payload as ApiSuccess<T>;
+}
+
+export async function previewFeeGeneration(academicYearId: string) {
+  const payload = await postStudentChargeAction<FeeGenerationPreviewData>(
+    "/api/stdcharge/preview",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
+
+export async function generateFeeCharges(academicYearId: string) {
+  const payload = await postStudentChargeAction<FeeGenerationResult>(
+    "/api/stdcharge/generate",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
+
+export type CatchUpFeeGenerationResult = {
+  academicYearId: string;
+  academicYearName: string;
+  catchUpChargesGenerated: number;
+};
+
+export async function generateCatchUpFeeCharges(academicYearId: string) {
+  const payload = await postStudentChargeAction<CatchUpFeeGenerationResult>(
+    "/api/stdcharge/generate-catchup",
+    { academicYearId }
+  );
+
+  return payload.data ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Single Student Manual Fee Generation                              */
+/* ------------------------------------------------------------------ */
+
+export interface SingleStudentChargeItem {
+  id: string | null;
+  key: string;
+  enrollmentChargeId: string;
+  chargeTypeId: string;
+  chargeTypeName: string;
+  chargeCategory: string;
+  frequency: string;
+  academicMonth: number;
+  periodMonth: number;
+  periodYear: number;
+  periodLabel: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  dueDate: string;
+  dueDay: number | null;
+  status: string;
+  isGenerated: boolean;
+  isAllowedWindow: boolean;
+  templateFinalAmount: number;
+  canSyncAmount: boolean;
+}
+
+export interface SingleStudentGenerationPlan {
+  student: {
+    id: string;
+    studentName: string;
+    admissionNumber: string;
+  };
+  enrollment: {
+    id: string;
+    rollNumber: string | null;
+    className: string;
+    divisionName: string;
+    academicYearId: string;
+    academicYearName: string;
+    totalAcademicMonths: number;
+    lastGeneratedAcademicMonth: number | null;
+  };
+  summary: {
+    totalChargesCount: number;
+    alreadyGeneratedCount: number;
+    ungeneratedCount: number;
+    ungeneratedDueCount: number;
+    totalDueToGenerate: number;
+    totalAllUngenerated: number;
+  };
+  items: SingleStudentChargeItem[];
+}
+
+export interface SingleStudentGenerationResult {
+  createdCount: number;
+  updatedCount: number;
+  totalProcessed: number;
+}
+
+export async function getStudentFeeGenerationPreview(enrollmentId: string) {
+  const payload = (await apiFetch(
+    `/api/stdcharge/student/${enrollmentId}/generation-preview`
+  )) as ApiSuccess<SingleStudentGenerationPlan>;
+
+  return payload.data ?? null;
+}
+
+export async function generateStudentFeesManual(
+  enrollmentId: string,
+  options?: {
+    chargeKeys?: string[];
+    targetAcademicMonths?: number[];
+    allDue?: boolean;
+    syncPendingAmounts?: boolean;
+  }
+) {
+  const payload = await postStudentChargeAction<SingleStudentGenerationResult>(
+    `/api/stdcharge/student/${enrollmentId}/generate`,
+    options ?? { allDue: true }
+  );
+
+  return payload.data ?? null;
+}
