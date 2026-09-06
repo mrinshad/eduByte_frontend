@@ -331,6 +331,7 @@ export default function CreateSalarySlipPage() {
                                     <Button
                                         variant="outline"
                                         role="combobox"
+                                        data-testid="staff-combobox-trigger"
                                         aria-expanded={staffPopoverOpen}
                                         className={cn(
                                             "w-full justify-between font-normal shadow-sm text-left px-3",

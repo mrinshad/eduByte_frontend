@@ -16,10 +16,14 @@ import {
     TrendingDown,
     Building2,
     CheckCircle2,
-    User,
     Calendar as CalendarIcon,
-    Loader2,
+    ArrowRight,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
     X,
+    CreditCard,
+    Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,15 +45,84 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
     getSalarySlips,
     deleteSalarySlip,
     type SalarySlip,
 } from "@/lib/services/salarySlip";
-import { getStaffNamesAndIds, type StaffName } from "@/lib/services/expense";
+import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
 
 const SAGE = "#556043";
+
+function formatDisplayDate(date: string) {
+    if (!date) return "";
+    const datePart = date.slice(0, 10);
+    return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+}
+
+function parseISODate(dateStr: string) {
+    return new Date(`${dateStr}T00:00:00`);
+}
+
+function toISODate(date: Date) {
+    return format(date, "yyyy-MM-dd");
+}
+
+function SortableHeader({
+    label,
+    field,
+    sortBy,
+    order,
+    onSort,
+    className,
+    align = "left",
+}: {
+    label: string;
+    field: string;
+    sortBy: string;
+    order: "asc" | "desc";
+    onSort: (field: string) => void;
+    className?: string;
+    align?: "left" | "right";
+}) {
+    const isActive = sortBy === field;
+    return (
+        <th
+            onClick={() => onSort(field)}
+            className={cn(
+                "px-4 py-3.5 font-medium text-xs uppercase tracking-wider cursor-pointer select-none transition-colors hover:text-slate-900 dark:hover:text-slate-100",
+                isActive ? "text-[#556043] dark:text-[#8b9b6e] font-semibold" : "text-slate-500 dark:text-slate-400",
+                className
+            )}
+            title={`Sort by ${label}`}
+        >
+            <div className={cn("flex items-center gap-1.5", align === "right" && "justify-end")}>
+                <span>{label}</span>
+                {isActive ? (
+                    order === "asc" ? (
+                        <ArrowUp className="h-3.5 w-3.5 text-[#556043] dark:text-[#8b9b6e] shrink-0" />
+                    ) : (
+                        <ArrowDown className="h-3.5 w-3.5 text-[#556043] dark:text-[#8b9b6e] shrink-0" />
+                    )
+                ) : (
+                    <ArrowUpDown className="h-3 w-3 text-slate-400 opacity-60 hover:opacity-100 shrink-0" />
+                )}
+            </div>
+        </th>
+    );
+}
 
 export default function SalarySlipsListPage() {
     const router = useRouter();
@@ -70,23 +143,30 @@ export default function SalarySlipsListPage() {
         total: 0,
         totalPages: 1,
     });
-    const [staffList, setStaffList] = useState<StaffName[]>([]);
+    const [accountsList, setAccountsList] = useState<PaymentMethodAccount[]>([]);
     const [loading, setLoading] = useState(true);
 
     // ── Filter State ────────────────────────────────────────────────────────
     const [search, setSearch] = useState("");
-    const [selectedStaffId, setSelectedStaffId] = useState("all");
-    const [selectedMonth, setSelectedMonth] = useState("");
+    const [from, setFrom] = useState("");
+    const [to, setTo] = useState("");
+    const [fromCalendarOpen, setFromCalendarOpen] = useState(false);
+    const [toCalendarOpen, setToCalendarOpen] = useState(false);
+    const [selectedAccountId, setSelectedAccountId] = useState("all");
+
+    // ── Sort State (Backend-First) ──────────────────────────────────────────
+    const [sortBy, setSortBy] = useState<string>("createdAt");
+    const [order, setOrder] = useState<"asc" | "desc">("desc");
 
     // Delete State
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // ── Load Staff Lookup ───────────────────────────────────────────────────
+    // ── Load Payment Accounts Lookup ─────────────────────────────────────────
     useEffect(() => {
-        getStaffNamesAndIds()
-            .then(setStaffList)
-            .catch((err) => console.error("Failed to load staff list:", err));
+        getPaymentMethodAccounts()
+            .then(setAccountsList)
+            .catch((err) => console.error("Failed to load payment accounts:", err));
     }, []);
 
     // ── Open Dedicated Print Page ───────────────────────────────────────────
@@ -94,7 +174,34 @@ export default function SalarySlipsListPage() {
         router.push(`/print/salary-slips/${slipId}`);
     };
 
-    // ── Fetch Slips ─────────────────────────────────────────────────────────
+    // ── Sort Toggle Handler ─────────────────────────────────────────────────
+    const toggleSort = (field: string) => {
+        if (sortBy === field) {
+            setOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortBy(field);
+            setOrder("asc");
+        }
+    };
+
+    // ── Date Range Handlers ─────────────────────────────────────────────────
+    function handleFromDateSelect(date: Date | undefined) {
+        if (!date) return;
+        const newFrom = toISODate(date);
+        setFrom(newFrom);
+        if (to && newFrom > to) setTo(newFrom);
+        setFromCalendarOpen(false);
+    }
+
+    function handleToDateSelect(date: Date | undefined) {
+        if (!date) return;
+        const newTo = toISODate(date);
+        setTo(newTo);
+        if (from && newTo < from) setFrom(newTo);
+        setToCalendarOpen(false);
+    }
+
+    // ── Fetch Slips (100% Backend First) ─────────────────────────────────────
     const fetchSlips = useCallback(async (page = 1) => {
         setLoading(true);
         try {
@@ -102,8 +209,11 @@ export default function SalarySlipsListPage() {
                 page,
                 limit: pagination.limit,
                 search: search.trim() || undefined,
-                staffId: selectedStaffId !== "all" ? selectedStaffId : undefined,
-                salaryMonth: selectedMonth || undefined,
+                from: from || undefined,
+                to: to || undefined,
+                paymentAccountId: selectedAccountId !== "all" ? selectedAccountId : undefined,
+                sortBy,
+                order,
             });
             setSlips(data.items);
             setStats(data.summary);
@@ -115,7 +225,7 @@ export default function SalarySlipsListPage() {
         } finally {
             setLoading(false);
         }
-    }, [pagination.limit, search, selectedStaffId, selectedMonth]);
+    }, [pagination.limit, search, from, to, selectedAccountId, sortBy, order]);
 
     useEffect(() => {
         let isMounted = true;
@@ -125,8 +235,11 @@ export default function SalarySlipsListPage() {
                     page: 1,
                     limit: pagination.limit,
                     search: search.trim() || undefined,
-                    staffId: selectedStaffId !== "all" ? selectedStaffId : undefined,
-                    salaryMonth: selectedMonth || undefined,
+                    from: from || undefined,
+                    to: to || undefined,
+                    paymentAccountId: selectedAccountId !== "all" ? selectedAccountId : undefined,
+                    sortBy,
+                    order,
                 });
                 if (isMounted) {
                     setSlips(data.items);
@@ -149,7 +262,7 @@ export default function SalarySlipsListPage() {
         return () => {
             isMounted = false;
         };
-    }, [selectedStaffId, selectedMonth, pagination.limit, search]);
+    }, [from, to, selectedAccountId, pagination.limit, search, sortBy, order]);
 
     // Handle auto-print if redirected from Create page
     useEffect(() => {
@@ -263,7 +376,7 @@ export default function SalarySlipsListPage() {
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 lg:flex-row lg:items-center lg:justify-between">
                 <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <Input
@@ -277,57 +390,126 @@ export default function SalarySlipsListPage() {
                 </form>
 
                 <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Month Filter */}
-                    <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-10 shadow-2xs dark:border-slate-700 dark:bg-slate-900">
-                        <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Month:</span>
-                        <input
-                            type="month"
-                            id="salary-month-filter"
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            placeholder="YYYY-MM"
-                            title="Filter salary slips by month (e.g. 2026-09)"
-                            className="bg-transparent text-xs outline-none text-slate-800 dark:text-slate-200 cursor-pointer w-28"
-                        />
-                        {selectedMonth && (
-                            <button
-                                type="button"
-                                onClick={() => setSelectedMonth("")}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1"
-                                title="Clear month filter (show all months)"
+                    {/* Date Range Picker — Reports Popover / Calendar Style */}
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    id="salary-slips-from-btn"
+                                    className={cn(
+                                        "h-10 justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 w-36",
+                                        from && "text-slate-900 dark:text-white"
+                                    )}
+                                    title="Filter salary slips from disbursement date"
+                                >
+                                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                    <span className="truncate">{from ? formatDisplayDate(from) : "From date"}</span>
+                                    {from && (
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setFrom("");
+                                            }}
+                                            className="ml-auto hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                            title="Clear From date"
+                                        >
+                                            <X className="h-3 w-3 text-slate-400 hover:text-rose-500" />
+                                        </span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                align="start"
                             >
-                                <X className="h-3.5 w-3.5" />
-                            </button>
-                        )}
+                                <Calendar
+                                    mode="single"
+                                    selected={from ? parseISODate(from) : undefined}
+                                    onSelect={handleFromDateSelect}
+                                    defaultMonth={from ? parseISODate(from) : undefined}
+                                />
+                            </PopoverContent>
+                        </Popover>
+
+                        <div className="hidden shrink-0 items-center justify-center text-slate-400 sm:flex">
+                            <ArrowRight className="h-4 w-4" />
+                        </div>
+
+                        <Popover open={toCalendarOpen} onOpenChange={setToCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    id="salary-slips-to-btn"
+                                    className={cn(
+                                        "h-10 justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 w-36",
+                                        to && "text-slate-900 dark:text-white"
+                                    )}
+                                    title="Filter salary slips to disbursement date"
+                                >
+                                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                    <span className="truncate">{to ? formatDisplayDate(to) : "To date"}</span>
+                                    {to && (
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTo("");
+                                            }}
+                                            className="ml-auto hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                            title="Clear To date"
+                                        >
+                                            <X className="h-3 w-3 text-slate-400 hover:text-rose-500" />
+                                        </span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-auto rounded-xl border-slate-200 p-0 shadow-lg dark:border-slate-800"
+                                align="start"
+                            >
+                                <Calendar
+                                    mode="single"
+                                    selected={to ? parseISODate(to) : undefined}
+                                    onSelect={handleToDateSelect}
+                                    defaultMonth={to ? parseISODate(to) : undefined}
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
-                    {/* Staff Select */}
-                    <div className="w-48">
-                        <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                    {/* Payment Method Filter */}
+                    <div className="w-52">
+                        <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
                             <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700 text-xs">
-                                <User className="h-3.5 w-3.5 mr-1 text-slate-400 shrink-0" />
-                                <SelectValue placeholder="All Employees" />
+                                <CreditCard className="h-3.5 w-3.5 mr-1 text-slate-400 shrink-0" />
+                                <SelectValue placeholder="All Payment Methods" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Employees</SelectItem>
-                                {staffList.map((st) => (
-                                    <SelectItem key={st.id} value={st.id}>
-                                        {st.name} ({st.employeeCode})
+                                <SelectItem value="all">All Payment Methods</SelectItem>
+                                {accountsList.map((acc) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                        {acc.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {(search || selectedStaffId !== "all" || selectedMonth) && (
+                    {(search || from || to || selectedAccountId !== "all" || sortBy !== "createdAt" || order !== "desc") && (
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
                                 setSearch("");
-                                setSelectedStaffId("all");
-                                setSelectedMonth("");
+                                setFrom("");
+                                setTo("");
+                                setSelectedAccountId("all");
+                                setSortBy("createdAt");
+                                setOrder("desc");
                             }}
                             className="h-10 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                         >
@@ -343,14 +525,14 @@ export default function SalarySlipsListPage() {
                     <table className="w-full text-left text-sm">
                         <thead className="border-b border-slate-200 bg-slate-50/80 text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                             <tr>
-                                <th className="px-4 py-3.5">Slip #</th>
-                                <th className="px-4 py-3.5">Employee</th>
-                                <th className="px-4 py-3.5">Month</th>
-                                <th className="px-4 py-3.5 text-right">Gross Earnings</th>
-                                <th className="px-4 py-3.5 text-right">Deductions</th>
-                                <th className="px-4 py-3.5 text-right">Net Payable</th>
+                                <SortableHeader label="Slip #" field="slipNumber" sortBy={sortBy} order={order} onSort={toggleSort} />
+                                <SortableHeader label="Employee" field="employee" sortBy={sortBy} order={order} onSort={toggleSort} />
+                                <SortableHeader label="Month" field="salaryMonth" sortBy={sortBy} order={order} onSort={toggleSort} />
+                                <SortableHeader label="Gross Earnings" field="grossEarnings" sortBy={sortBy} order={order} onSort={toggleSort} align="right" />
+                                <SortableHeader label="Deductions" field="totalDeductions" sortBy={sortBy} order={order} onSort={toggleSort} align="right" />
+                                <SortableHeader label="Net Payable" field="netSalary" sortBy={sortBy} order={order} onSort={toggleSort} align="right" />
                                 <th className="px-4 py-3.5">Payment Method</th>
-                                <th className="px-4 py-3.5">Disbursed Date</th>
+                                <SortableHeader label="Disbursed Date" field="paymentDate" sortBy={sortBy} order={order} onSort={toggleSort} />
                                 <th className="px-4 py-3.5 text-right">Actions</th>
                             </tr>
                         </thead>

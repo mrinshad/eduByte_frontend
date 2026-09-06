@@ -135,19 +135,31 @@ export async function createSalarySlip(input: CreateSalarySlipInput) {
   }) as Promise<ApiSuccess<SalarySlip>>;
 }
 
-export async function getSalarySlips(params?: {
+export interface GetSalarySlipsParams {
   page?: number;
   limit?: number;
   search?: string;
+  from?: string;
+  to?: string;
+  paymentAccountId?: string;
   staffId?: string;
   salaryMonth?: string;
-}) {
+  sortBy?: string;
+  order?: "asc" | "desc";
+}
+
+export async function getSalarySlips(params?: GetSalarySlipsParams) {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
+  if (params?.from) query.set("from", params.from);
+  if (params?.to) query.set("to", params.to);
+  if (params?.paymentAccountId && params.paymentAccountId !== "all") query.set("paymentAccountId", params.paymentAccountId);
   if (params?.staffId && params.staffId !== "all") query.set("staffId", params.staffId);
   if (params?.salaryMonth && params.salaryMonth !== "all") query.set("salaryMonth", params.salaryMonth);
+  if (params?.sortBy) query.set("sortBy", params.sortBy);
+  if (params?.order) query.set("order", params.order);
 
   const qs = query.toString() ? `?${query.toString()}` : "";
   const payload = (await apiFetch(`/api/salary-slips${qs}`)) as ApiSuccess<SalarySlipsListResponse>;
