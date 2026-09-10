@@ -22,6 +22,9 @@ export interface Account {
   type: AccountType
   description: string
   isActive: boolean
+  balance?: number
+  totalIn?: number
+  totalOut?: number
 }
 
 // Detail item — returned by GET /api/accounts/:id
@@ -31,8 +34,35 @@ export interface AccountDetail {
   type: AccountType
   description: string
   isActive: boolean
+  balance?: number
+  totalIn?: number
+  totalOut?: number
   createdAt: string
   updatedAt: string
+}
+
+export interface TransferFundsInput {
+  fromAccountId: string
+  toAccountId: string
+  amount: number
+  date?: string
+  notes?: string
+}
+
+export interface AccountSummary {
+  account: Account
+  balance: number
+  totalIn: number
+  totalOut: number
+  recentTransactions: Array<{
+    id: string
+    transactionId: string
+    date: string
+    description: string
+    referenceType: string
+    type: "DEBIT" | "CREDIT"
+    amount: number
+  }>
 }
 
 export function createAccount(input: AccountInput) {
@@ -77,4 +107,21 @@ export function deleteAccount(id: string) {
   return apiFetch(`/api/accounts/${id}`, {
     method: "DELETE",
   })
+}
+
+export async function transferFunds(input: TransferFundsInput) {
+  return apiFetch("/api/accounts/transfer", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export async function getAccountSummary(id: string) {
+  const payload = (await apiFetch(`/api/accounts/${id}/summary`)) as {
+    success: boolean
+    message?: string
+    data?: AccountSummary
+  }
+
+  return payload.data ?? null
 }
