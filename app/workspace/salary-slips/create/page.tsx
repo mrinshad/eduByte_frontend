@@ -44,7 +44,7 @@ import {
     type PaymentMethodAccount,
     type StaffName,
 } from "@/lib/services/expense";
-import { createSalarySlip } from "@/lib/services/salarySlip";
+import { createSalarySlip, getStaffPendingAdvance } from "@/lib/services/salarySlip";
 
 // ---------------------------------------------------------------------
 // Sage green accent (#6D755F) identical to Create Expense module
@@ -109,6 +109,8 @@ export default function CreateSalarySlipPage() {
     const [lossOfPay, setLossOfPay] = useState<number | "">("");
     const [fine, setFine] = useState<number | "">("");
     const [otherDeductions, setOtherDeductions] = useState<number | "">("");
+    const [loadingPendingAdvance, setLoadingPendingAdvance] = useState<boolean>(false);
+    const [pendingAdvanceInfo, setPendingAdvanceInfo] = useState<{ total: number; count: number } | null>(null);
 
     // Remarks & Leaves
     const [casualLeaves, setCasualLeaves] = useState<number | "">("");
@@ -165,6 +167,42 @@ export default function CreateSalarySlipPage() {
             mounted = false;
         };
     }, []);
+
+    // ── Fetch & Auto-populate Pending Advance on Staff Selection ────────────
+    useEffect(() => {
+        if (!selectedStaffId) {
+            setPendingAdvanceInfo(null);
+            return;
+        }
+
+        let cancelled = false;
+        async function fetchAdvance() {
+            setLoadingPendingAdvance(true);
+            try {
+                const res = await getStaffPendingAdvance(selectedStaffId);
+                if (cancelled) return;
+                if (res.totalPendingAdvance > 0) {
+                    setAdvanceSalary(res.totalPendingAdvance);
+                    setPendingAdvanceInfo({
+                        total: res.totalPendingAdvance,
+                        count: res.advances.length,
+                    });
+                } else {
+                    setPendingAdvanceInfo(null);
+                }
+            } catch (err) {
+                console.error("Failed to fetch pending advance:", err);
+                if (!cancelled) setPendingAdvanceInfo(null);
+            } finally {
+                if (!cancelled) setLoadingPendingAdvance(false);
+            }
+        }
+
+        fetchAdvance();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedStaffId]);
 
     // ── Selected entities ───────────────────────────────────────────────────
     const selectedStaff = useMemo(
@@ -532,10 +570,19 @@ export default function CreateSalarySlipPage() {
                                 min={0}
                                 placeholder="0.00"
                                 value={advanceSalary}
-                                onChange={(e) => setAdvanceSalary(e.target.value === "" ? "" : Number(e.target.value))}
+                                onChange={(e) => {
+                                    setAdvanceSalary(e.target.value === "" ? "" : Number(e.target.value));
+                                }}
                                 onWheel={(e) => e.currentTarget.blur()}
                                 className={cn("h-10", fieldClass)}
                             />
+                            {loadingPendingAdvance ? (
+                                <p className="text-[11px] text-slate-400 mt-0.5">Checking pending advances...</p>
+                            ) : pendingAdvanceInfo && pendingAdvanceInfo.total > 0 ? (
+                                <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                    Auto-applied ₹{pendingAdvanceInfo.total.toLocaleString()} pending advance ({pendingAdvanceInfo.count} record{pendingAdvanceInfo.count > 1 ? "s" : ""})
+                                </p>
+                            ) : null}
                         </div>
 
                         <div className="flex flex-col gap-1">

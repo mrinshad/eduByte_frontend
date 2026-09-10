@@ -181,3 +181,30 @@ export async function deleteSalarySlip(id: string) {
     method: "DELETE",
   }) as Promise<ApiSuccess<{ id: string }>>;
 }
+
+export interface StaffPendingAdvanceItem {
+  id: string;
+  expenseNumber: string;
+  amount: number;
+  expenseDate: string;
+  notes?: string | null;
+  account?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface StaffPendingAdvanceResponse {
+  staffId: string;
+  staffName: string;
+  employeeCode: string;
+  totalPendingAdvance: number;
+  advances: StaffPendingAdvanceItem[];
+}
+
+export async function getStaffPendingAdvance(staffId: string) {
+  const payload = (await apiFetch(
+    `/api/salary-slips/staff/${staffId}/pending-advance`
+  )) as ApiSuccess<StaffPendingAdvanceResponse>;
+  return payload.data;
+}
