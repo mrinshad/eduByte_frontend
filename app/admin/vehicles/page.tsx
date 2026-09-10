@@ -23,6 +23,7 @@ import { Loader2 } from "lucide-react";
 
 import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2, AlertCircle, Users, Download } from "lucide-react"
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
+import { formatCurrency } from "@/lib/utils";
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -88,6 +89,8 @@ export default function Page() {
   const [vehicleName, setVehicleName] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [driverName, setDriverName] = useState("");
+  const [initialPrice, setInitialPrice] = useState<string>("");
+  const [purchaseDate, setPurchaseDate] = useState<string>("");
 
   const handleSaveVehicle = async () => {
     if (!vehicleName.trim()) {
@@ -112,6 +115,8 @@ export default function Page() {
         vehicleName,
         vehicleNumber,
         driverName,
+        initialPrice: initialPrice.trim() !== "" ? parseFloat(initialPrice) : 0,
+        purchaseDate: purchaseDate.trim() !== "" ? purchaseDate : undefined,
       };
 
       if (editingId) {
@@ -127,6 +132,8 @@ export default function Page() {
       setVehicleName("");
       setVehicleNumber("");
       setDriverName("");
+      setInitialPrice("");
+      setPurchaseDate("");
       setEditingId(null);
 
       setOpen(false);
@@ -179,6 +186,12 @@ export default function Page() {
     setVehicleName(vehicle.vehicleName);
     setVehicleNumber(vehicle.vehicleNumber);
     setDriverName(vehicle.driverName);
+    setInitialPrice(
+      vehicle.asset?.initialPrice !== undefined && vehicle.asset?.initialPrice !== null && vehicle.asset.initialPrice > 0
+        ? String(vehicle.asset.initialPrice)
+        : ""
+    );
+    setPurchaseDate(vehicle.asset?.purchaseDate ? vehicle.asset.purchaseDate.split("T")[0] : "");
 
     setOpen(true);
   };
@@ -211,6 +224,8 @@ export default function Page() {
       { header: "Vehicle Name", accessor: (v) => v.vehicleName || "" },
       { header: "Vehicle Number", accessor: (v) => v.vehicleNumber || "" },
       { header: "Driver Name", accessor: (v) => v.driverName || "-" },
+      { header: "Initial Asset Price", accessor: (v) => (v.asset?.initialPrice ? formatCurrency(v.asset.initialPrice) : "—") },
+      { header: "Purchase Date", accessor: (v) => (v.asset?.purchaseDate ? new Date(v.asset.purchaseDate).toLocaleDateString() : "—") },
       { header: "Assigned Students", accessor: (v) => v._count?.assignments ?? 0 },
       { header: "Linked Expenses", accessor: (v) => v._count?.expenses ?? 0 },
       {
@@ -259,8 +274,9 @@ export default function Page() {
                 setVehicleName("");
                 setVehicleNumber("");
                 setDriverName("");
-                setOpen(true);   // <-- Add this line
-                console.log("Create Vehicle clicked");
+                setInitialPrice("");
+                setPurchaseDate("");
+                setOpen(true);
               }}
               className="
                               w-full sm:w-auto shrink-0
@@ -298,12 +314,16 @@ export default function Page() {
             { type: "text", name: "vehicleName", label: "Vehicle Name", placeholder: "School Bus" },
             { type: "text", name: "vehicleNumber", label: "Vehicle Number", placeholder: "KL 01 AB 1234" },
             { type: "text", name: "driverName", label: "Driver Name", placeholder: "John Mathew" },
+            { type: "number", name: "initialPrice", label: "Initial Asset Cost (₹, optional)", placeholder: "e.g. 1500000" },
+            { type: "date", name: "purchaseDate", label: "Purchase Date (optional)" },
           ]}
-          values={{ vehicleName, vehicleNumber, driverName }}
+          values={{ vehicleName, vehicleNumber, driverName, initialPrice, purchaseDate }}
           onChange={(name, value) => {
             if (name === "vehicleName") setVehicleName(value)
             if (name === "vehicleNumber") setVehicleNumber(value)
             if (name === "driverName") setDriverName(value)
+            if (name === "initialPrice") setInitialPrice(value)
+            if (name === "purchaseDate") setPurchaseDate(value)
           }}
           onSubmit={handleSaveVehicle}
         />
@@ -451,6 +471,15 @@ export default function Page() {
                       </span>
                     )}
                   </div>
+
+                  {Boolean((vehicle.asset?.initialPrice ?? 0) > 0) && (
+                    <div className="flex items-center justify-between gap-2 px-1 text-[11px] pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
+                      <span className="text-slate-400 dark:text-slate-500">Asset Value:</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">
+                        {formatCurrency(vehicle.asset?.initialPrice)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -41,6 +41,7 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-structures/bulk-assign", label: "Bulk Assign Fees", area: "admin", purpose: "Bulk assign fee structures to students", group: "Fee Configuration" },
   { slug: "cca", label: "Co-Curricular (CCA)", area: "admin", purpose: "Manage CCA activities and student allocations", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
+  { slug: "assets", label: "Asset Register", area: "admin", purpose: "Manage physical capital assets, furniture, IT infrastructure, and valuations", group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Transport", area: "admin", purpose: "Manage transport vehicles", group: "Transport Management" },
 
@@ -86,6 +87,7 @@ export const portalSections: PortalSection[] = [
   // A. Executive Overview
   { slug: "reports/academic-year-summary", label: "Academic Year Summary", area: "workspace", purpose: "Executive operational and financial performance overview for academic years", group: "Report", subgroup: "Overview" },
   { slug: "reports/daybook", label: "Consolidated Daybook", area: "workspace", purpose: "Daily chronological register of cash and bank receipts and disbursements", group: "Report", subgroup: "Overview" },
+  { slug: "reports/asset-performance", label: "Asset & ROI Performance", area: "workspace", purpose: "Annual institution and vehicle asset ROI, operating margins, and payback analysis", group: "Report", subgroup: "Overview" },
 
   // B. Receipts (Income)
   { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
@@ -159,6 +161,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fee-structures/bulk-assign": "feestructures.bulkAssignButton",
     "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
+    "assets": "assets.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
@@ -175,6 +178,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     // A. Executive Overview
     "reports/academic-year-summary": "academicyearsummary.listOnNavbar",
     "reports/daybook": "daybook.listOnNavbar",
+    "reports/asset-performance": "assetperformance.listOnNavbar",
 
     // B. Receipts (Income)
     "reports/admissions-master": "admissionsreport.listOnNavbar",
