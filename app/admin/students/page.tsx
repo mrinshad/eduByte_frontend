@@ -712,20 +712,20 @@ export default function Page() {
       
       {/* Relieve Student Confirmation Dialog */}
       <AlertDialog open={!!studentToRelieve} onOpenChange={(open) => !open && setStudentToRelieve(null)}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <LogOut className="h-5 w-5 text-amber-100" />
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-slate-500 dark:text-slate-400 shrink-0" />
               Relieve Student
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3 pt-2 text-sm text-slate-300 dark:text-slate-300">
+              <div className="space-y-3 pt-2 text-sm text-slate-600 dark:text-slate-400">
                 <p>
-                  Are you sure you want to relieve <strong>{studentToRelieve?.studentName}</strong> ({studentToRelieve?.admissionNumber})?
+                  Are you sure you want to relieve <strong className="text-slate-900 dark:text-slate-100">{studentToRelieve?.studentName}</strong> ({studentToRelieve?.admissionNumber})?
                 </p>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-200 dark:text-slate-300">
-                    Relieving Date:
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Relieving Date <span className="text-red-500">*</span>
                   </label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -756,23 +756,43 @@ export default function Page() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="rounded-lg bg-slate-100 p-3 text-slate-900 dark:text-slate-200 text-xs dark:bg-slate-800/60 space-y-1">
-                  <p>• Enrollment status will transition to <strong>COMPLETED</strong>.</p>
-                  <p>• Student master status will transition to <strong>WITHDRAWN</strong>.</p>
-                  <p>• Recurring charge templates and vehicle assignments will be deactivated.</p>
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60 p-3.5 text-xs space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400">Enrollment Status:</span>
+                    <Badge
+                      variant="outline"
+                      className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-400 text-[11px] font-semibold"
+                    >
+                      COMPLETED
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400">Student Master Status:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">WITHDRAWN</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400">Recurring Billing:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Deactivated</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400">Transport Capacity:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Released</span>
+                  </div>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRelieving}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
+            <AlertDialogCancel disabled={isRelieving} className="w-full sm:w-auto rounded-xl">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={isRelieving}
               onClick={(e) => {
                 e.preventDefault();
                 void handleRelieveStudent();
               }}
-              className="bg-[#556043] "
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-xl font-medium"
             >
               {isRelieving ? (
                 <>
@@ -780,7 +800,7 @@ export default function Page() {
                   Relieving...
                 </>
               ) : (
-                "Confirm Relieve"
+                "Confirm & Relieve"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

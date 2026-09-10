@@ -322,10 +322,9 @@ export default function SalarySlipsListPage() {
                     </Button>
                     <Button
                         onClick={() => router.push("/workspace/salary-slips/create")}
-                        className="h-9 gap-1.5 font-medium text-white shadow"
-                        style={{ backgroundColor: SAGE }}
+                        className="h-9 gap-1.5 font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 text-white dark:text-slate-900" />
                         Generate Salary Slip
                     </Button>
                 </div>
@@ -430,7 +429,7 @@ export default function SalarySlipsListPage() {
                                     variant="ghost"
                                     id="salary-slips-from-btn"
                                     className={cn(
-                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
+                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900  dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
                                         from && "text-slate-900 dark:text-white font-semibold"
                                     )}
                                     title="Filter salary slips from disbursement date"
@@ -474,7 +473,7 @@ export default function SalarySlipsListPage() {
                                     variant="ghost"
                                     id="salary-slips-to-btn"
                                     className={cn(
-                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
+                                        "h-8 justify-start px-2 text-left text-xs font-medium text-slate-900  dark:text-slate-100 dark:hover:bg-slate-800 w-32 border-0 shadow-none",
                                         to && "text-slate-900 dark:text-white font-semibold"
                                     )}
                                     title="Filter salary slips to disbursement date"

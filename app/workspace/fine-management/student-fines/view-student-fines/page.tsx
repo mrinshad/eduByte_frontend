@@ -266,7 +266,7 @@ export default function ViewStudentFinePage() {
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none text-slate-200"
             onClick={() => setEditOpen(true)}
           >
             <Pencil className="mr-2 h-4 w-4" />

@@ -1,12 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2, ArrowLeftRight, AlertCircle } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, Building2, Pencil, Trash2, ArrowLeftRight, AlertCircle, Calendar as CalendarIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ACCOUNT_TYPES, type AccountType } from "@/lib/services/accounts"
 import { parseApiError } from "@/lib/api-error"
 import { cn, formatCurrency } from "@/lib/utils"
+import { format } from "date-fns"
 import {
     Table,
     TableBody,
@@ -32,6 +33,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { useEffect, useState, useMemo } from "react"
 import { toast } from "sonner"
 
@@ -141,6 +148,7 @@ export default function Page() {
 
     // Internal Transfer Modal state
     const [transferModalOpen, setTransferModalOpen] = useState(false)
+    const [transferDateOpen, setTransferDateOpen] = useState(false)
     const [isTransferring, setIsTransferring] = useState(false)
     const [transferForm, setTransferForm] = useState({
         fromAccountId: "",
@@ -399,7 +407,7 @@ export default function Page() {
                     <PermissionGate permission="accounts.createAccountButton">
                         <Button
                             variant="outline"
-                            className="w-full sm:w-auto shrink-0 border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 shadow-sm"
+                            className="w-full sm:w-auto shrink-0 border-slate-300 text-slate-700  dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 shadow-sm"
                             onClick={() => setTransferModalOpen(true)}
                         >
                             <ArrowLeftRight className="h-4 w-4 mr-1.5" />
@@ -610,35 +618,41 @@ export default function Page() {
 
             {/* Transfer Funds Dialog */}
             <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
-                <DialogContent className="w-[95vw] sm:max-w-md rounded-2xl p-5 sm:p-6">
-                    <DialogHeader className="space-y-1">
-                        <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                            <ArrowLeftRight className="h-5 w-5 text-[#556043] dark:text-slate-300" />
-                            Internal Fund Transfer
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                            Transfer money between payment methods (e.g. Bank to Revolving Cash Fund).
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="w-[92vw] sm:max-w-md max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden">
+                    <div className="p-6 pb-2 shrink-0">
+                        <DialogHeader className="space-y-1">
+                            <DialogTitle className="text-lg sm:text-xl font-semibold text-white dark:text-white flex items-center gap-2">
+                                <ArrowLeftRight className="h-5 w-5 text-white/90 dark:text-[#9ea98a]" />
+                                Internal Fund Transfer
+                            </DialogTitle>
+                            <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                                Transfer money between payment methods (e.g. Bank to Revolving Cash Fund).
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
-                    <div className="space-y-4 py-2">
+                    <div className="space-y-4 px-6 py-2 flex-1 overflow-y-auto">
                         <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                Source Account (From) <span className="text-red-500">*</span>
+                            <Label className="text-sm font-medium text-white dark:text-slate-200">
+                                Source Account (From) <span className="text-red-500 ml-0.5">*</span>
                             </Label>
                             <Select
                                 value={transferForm.fromAccountId}
                                 onValueChange={(val) => setTransferForm((prev) => ({ ...prev, fromAccountId: val }))}
                             >
-                                <SelectTrigger className="w-full h-9">
+                                <SelectTrigger className="w-full h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40 [&_svg]:text-white/80 dark:[&_svg]:text-slate-300">
                                     <SelectValue placeholder="Select source account" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
                                     {paymentAccounts.map((acc) => (
-                                        <SelectItem key={acc.id} value={acc.id}>
+                                        <SelectItem
+                                            key={acc.id}
+                                            value={acc.id}
+                                            className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer"
+                                        >
                                             <div className="flex items-center justify-between w-full gap-2">
                                                 <span>{acc.name}</span>
-                                                <span className="text-xs text-slate-400 tabular-nums font-mono">
+                                                <span className="text-xs text-slate-200/80 dark:text-slate-400 tabular-nums font-mono">
                                                     ({formatCurrency(acc.balance ?? 0)})
                                                 </span>
                                             </div>
@@ -649,24 +663,28 @@ export default function Page() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                Destination Account (To) <span className="text-red-500">*</span>
+                            <Label className="text-sm font-medium text-white dark:text-slate-200">
+                                Destination Account (To) <span className="text-red-500 ml-0.5">*</span>
                             </Label>
                             <Select
                                 value={transferForm.toAccountId}
                                 onValueChange={(val) => setTransferForm((prev) => ({ ...prev, toAccountId: val }))}
                             >
-                                <SelectTrigger className="w-full h-9">
+                                <SelectTrigger className="w-full h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40 [&_svg]:text-white/80 dark:[&_svg]:text-slate-300">
                                     <SelectValue placeholder="Select destination account" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
                                     {paymentAccounts
                                         .filter((acc) => acc.id !== transferForm.fromAccountId)
                                         .map((acc) => (
-                                            <SelectItem key={acc.id} value={acc.id}>
+                                            <SelectItem
+                                                key={acc.id}
+                                                value={acc.id}
+                                                className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer"
+                                            >
                                                 <div className="flex items-center justify-between w-full gap-2">
                                                     <span>{acc.name}</span>
-                                                    <span className="text-xs text-slate-400 tabular-nums font-mono">
+                                                    <span className="text-xs text-slate-200/80 dark:text-slate-400 tabular-nums font-mono">
                                                         ({formatCurrency(acc.balance ?? 0)})
                                                     </span>
                                                 </div>
@@ -678,8 +696,8 @@ export default function Page() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="transfer-amount" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                    Amount (₹) <span className="text-red-500">*</span>
+                                <Label htmlFor="transfer-amount" className="text-sm font-medium text-white dark:text-slate-200">
+                                    Amount (₹) <span className="text-red-500 ml-0.5">*</span>
                                 </Label>
                                 <Input
                                     id="transfer-amount"
@@ -689,26 +707,52 @@ export default function Page() {
                                     placeholder="0.00"
                                     value={transferForm.amount}
                                     onChange={(e) => setTransferForm((prev) => ({ ...prev, amount: e.target.value }))}
-                                    className="h-9"
+                                    className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="transfer-date" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                <Label className="text-sm font-medium text-white dark:text-slate-200">
                                     Transfer Date
                                 </Label>
-                                <Input
-                                    id="transfer-date"
-                                    type="date"
-                                    value={transferForm.date}
-                                    onChange={(e) => setTransferForm((prev) => ({ ...prev, date: e.target.value }))}
-                                    className="h-9"
-                                />
+                                <Popover open={transferDateOpen} onOpenChange={setTransferDateOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className={cn(
+                                                "w-full h-10 justify-start text-left font-normal text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#586249] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700 px-3 focus-visible:ring-1 focus-visible:ring-white/40 shadow-none",
+                                                !transferForm.date && "text-slate-300 dark:text-slate-400"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4 text-white/80 dark:text-slate-400 shrink-0" />
+                                            <span className="truncate">
+                                                {transferForm.date ? format(new Date(`${transferForm.date}T00:00:00`), "dd MMM yyyy") : "Select date"}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        className="w-auto p-0 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl"
+                                        align="start"
+                                    >
+                                        <Calendar
+                                            mode="single"
+                                            selected={transferForm.date ? new Date(`${transferForm.date}T00:00:00`) : undefined}
+                                            onSelect={(date) => {
+                                                if (date) {
+                                                    setTransferForm((prev) => ({ ...prev, date: format(date, "yyyy-MM-dd") }))
+                                                    setTransferDateOpen(false)
+                                                }
+                                            }}
+                                            defaultMonth={transferForm.date ? new Date(`${transferForm.date}T00:00:00`) : new Date()}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="transfer-notes" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            <Label htmlFor="transfer-notes" className="text-sm font-medium text-white dark:text-slate-200">
                                 Purpose / Notes (Optional)
                             </Label>
                             <Input
@@ -717,55 +761,55 @@ export default function Page() {
                                 placeholder="e.g., Replenish cash fund for expenses"
                                 value={transferForm.notes}
                                 onChange={(e) => setTransferForm((prev) => ({ ...prev, notes: e.target.value }))}
-                                className="h-9"
+                                className="h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                             />
                         </div>
 
                         {/* Live preview */}
                         {selectedFromAccount && selectedToAccount && transferAmountNumber > 0 && (
-                            <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40 p-3 space-y-2.5">
-                                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-950/40 p-3.5 space-y-2.5">
+                                <div className="text-[11px] font-semibold text-slate-200 dark:text-slate-400 uppercase tracking-wider">
                                     Balance Preview
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                    <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 space-y-1">
-                                        <div className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                                    <div className="p-3 rounded-xl bg-[#667155]/60 dark:bg-slate-800 border border-[#8b9478]/40 dark:border-slate-700 space-y-1">
+                                        <div className="font-semibold text-white dark:text-slate-100 truncate">
                                             {selectedFromAccount.name}
                                         </div>
-                                        <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                                        <div className="flex items-center justify-between text-slate-200 dark:text-slate-400 text-[11px]">
                                             <span>Current:</span>
-                                            <span className="tabular-nums font-mono">{formatCurrency(selectedFromAccount.balance ?? 0)}</span>
+                                            <span className="tabular-nums font-mono text-white dark:text-slate-200">{formatCurrency(selectedFromAccount.balance ?? 0)}</span>
                                         </div>
                                         <div className="flex items-center justify-between font-semibold text-[11px]">
-                                            <span>After:</span>
+                                            <span className="text-slate-200 dark:text-slate-300">After:</span>
                                             <span className={cn(
                                                 "tabular-nums font-mono",
                                                 (selectedFromAccount.balance ?? 0) - transferAmountNumber < 0
-                                                    ? "text-red-600 dark:text-red-400"
-                                                    : "text-slate-900 dark:text-slate-100"
+                                                    ? "text-red-300 dark:text-red-400 font-bold"
+                                                    : "text-white dark:text-slate-100"
                                             )}>
                                                 {formatCurrency((selectedFromAccount.balance ?? 0) - transferAmountNumber)}
                                             </span>
                                         </div>
                                         {(selectedFromAccount.balance ?? 0) - transferAmountNumber < 0 && (
-                                            <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 pt-0.5 font-medium">
+                                            <p className="text-[10px] text-amber-300 dark:text-amber-400 flex items-center gap-1 pt-0.5 font-medium">
                                                 <AlertCircle className="h-3 w-3 shrink-0" />
                                                 Source will be overdrawn
                                             </p>
                                         )}
                                     </div>
 
-                                    <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 space-y-1">
-                                        <div className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                                    <div className="p-3 rounded-xl bg-[#667155]/60 dark:bg-slate-800 border border-[#8b9478]/40 dark:border-slate-700 space-y-1">
+                                        <div className="font-semibold text-white dark:text-slate-100 truncate">
                                             {selectedToAccount.name}
                                         </div>
-                                        <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                                        <div className="flex items-center justify-between text-slate-200 dark:text-slate-400 text-[11px]">
                                             <span>Current:</span>
-                                            <span className="tabular-nums font-mono">{formatCurrency(selectedToAccount.balance ?? 0)}</span>
+                                            <span className="tabular-nums font-mono text-white dark:text-slate-200">{formatCurrency(selectedToAccount.balance ?? 0)}</span>
                                         </div>
-                                        <div className="flex items-center justify-between font-semibold text-[11px] text-emerald-700 dark:text-emerald-400">
-                                            <span className="text-slate-900 dark:text-slate-100">After:</span>
-                                            <span className="tabular-nums font-mono">
+                                        <div className="flex items-center justify-between font-semibold text-[11px]">
+                                            <span className="text-slate-200 dark:text-slate-300">After:</span>
+                                            <span className="tabular-nums font-mono text-emerald-300 dark:text-emerald-400 font-bold">
                                                 {formatCurrency((selectedToAccount.balance ?? 0) + transferAmountNumber)}
                                             </span>
                                         </div>
@@ -775,13 +819,13 @@ export default function Page() {
                         )}
                     </div>
 
-                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2">
+                    <DialogFooter className="bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-4 sm:p-5 flex-col-reverse sm:flex-row gap-2 shrink-0">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setTransferModalOpen(false)}
                             disabled={isTransferring}
-                            className="w-full sm:w-auto"
+                            className="w-full sm:w-auto rounded-full border-[#8b9478] bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             Cancel
                         </Button>
@@ -789,7 +833,7 @@ export default function Page() {
                             type="button"
                             onClick={handleTransferSubmit}
                             disabled={isTransferring}
-                            className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                            className="w-full sm:w-auto rounded-full bg-white text-[#556043] hover:bg-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
                         >
                             {isTransferring ? (
                                 <>

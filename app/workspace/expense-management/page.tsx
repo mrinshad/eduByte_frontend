@@ -565,7 +565,7 @@ export default function Page() {
                                 openCategoryDialog("edit")
                               }}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-4 w-4 text-slate-400" />
                             </Button>
                           </PermissionGate>
                           <PermissionGate permission="expense.deleteCategoryButton">

@@ -221,7 +221,7 @@ export default function ViewStaffPage() {
               variant="outline"
               size="sm"
               onClick={() => router.push(`/admin/staff/createStaff?id=${staff.id}`)}
-              className="h-9 gap-1.5 rounded-xl border-slate-300 dark:border-slate-700"
+              className="h-9 gap-1.5 rounded-xl border-slate-300 dark:border-slate-700 text-slate-200"
             >
               <Pencil className="h-4 w-4" /> Edit Staff
             </Button>
@@ -238,10 +238,9 @@ export default function ViewStaffPage() {
           </PermissionGate>
           <Button
             onClick={() => router.push(`/workspace/salary-slips/create?staffId=${staff.id}`)}
-            className="h-9 gap-1.5 rounded-xl font-medium text-white shadow"
-            style={{ backgroundColor: SAGE }}
+            className="h-9 gap-1.5 rounded-xl font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
           >
-            <Plus className="h-4 w-4" /> Generate Slip
+            <Plus className="h-4 w-4 text-white dark:text-slate-900" /> Generate Slip
           </Button>
         </div>
       </div>
