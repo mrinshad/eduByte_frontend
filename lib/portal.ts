@@ -83,45 +83,33 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/student-charges", label: "Fee Ledgers", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
-  // --- WORKSPACE REPORTS (REBUILT & EXPANDED) ---
-  // A. Executive Overview
-  { slug: "reports/academic-year-summary", label: "Academic Year Summary", area: "workspace", purpose: "Executive operational and financial performance overview for academic years", group: "Report", subgroup: "Overview" },
-  { slug: "reports/daybook", label: "Consolidated Daybook", area: "workspace", purpose: "Daily chronological register of cash and bank receipts and disbursements", group: "Report", subgroup: "Overview" },
-  { slug: "reports/asset-performance", label: "Asset & ROI Performance", area: "workspace", purpose: "Annual institution and vehicle asset ROI, operating margins, and payback analysis", group: "Report", subgroup: "Overview" },
+  // --- WORKSPACE REPORTS (5 STREAMLINED CATEGORIES) ---
+  // 1. Overview & Accounts
+  { slug: "reports/academic-year-summary", label: "Annual School Overview", area: "workspace", purpose: "High-level summary of total income, expenses, and enrollment for the year", group: "Report", subgroup: "Overview & Accounts" },
+  { slug: "reports/daybook", label: "Daily Cash & Bank Daybook", area: "workspace", purpose: "Day-to-day chronological record of all money received and paid out", group: "Report", subgroup: "Overview & Accounts" },
+  { slug: "reports/revolving-fund", label: "Petty Cash & Revolving Fund", area: "workspace", purpose: "Daily cash fund for fuel, urgent repairs, minor supplies, and staff advances", group: "Report", subgroup: "Overview & Accounts" },
+  { slug: "reports/asset-performance", label: "School Assets & Maintenance", area: "workspace", purpose: "Catalog of school vehicles, property, and equipment with repair history", group: "Report", subgroup: "Overview & Accounts" },
 
-  // B. Receipts (Income)
-  { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/cca-report", label: "CCA Report", area: "workspace", purpose: "Financial P&L and student roster for Co-Curricular activities", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/cca-activity-profit", label: "CCA Activity Profit & Loss", area: "workspace", purpose: "Individual activity profitability with separate income and expense breakdown", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/fee-defaulters", label: "Fee Defaulters & Aging", area: "workspace", purpose: "Unpaid dues segmented into aging brackets with parent contacts", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/fines-register", label: "Fines & Penalties Register", area: "workspace", purpose: "Categorical audit of levied, collected, and waived fines", group: "Report", subgroup: "Receipts (Income)" },
+  // 2. Student Fees
+  { slug: "reports/daily-receipts", label: "Daily Fee Receipts", area: "workspace", purpose: "Chronological list of fee payments received with Cash and Bank split", group: "Report", subgroup: "Student Fees" },
+  { slug: "reports/fee-type", label: "Fees by Type", area: "workspace", purpose: "Total fees collected grouped by category (Tuition, Transport, Admission, etc.)", group: "Report", subgroup: "Student Fees" },
+  { slug: "reports/fee-defaulters", label: "Unpaid Fee Defaulters", area: "workspace", purpose: "Students with overdue balances, days overdue, and parent phone numbers", group: "Report", subgroup: "Student Fees" },
+  { slug: "reports/fines-register", label: "Fines & Late Fees", area: "workspace", purpose: "Penalties charged, collected, and waived", group: "Report", subgroup: "Student Fees" },
+  { slug: "reports/cca-report", label: "Club & Activity Fees", area: "workspace", purpose: "Student enrollments and fee payments for clubs and sports", group: "Report", subgroup: "Student Fees" },
 
-  // C. Payments (Expenses)
-  { slug: "reports/salary", label: "Salary", area: "workspace", purpose: "Staff payroll, advances, and compensation", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Consolidated daily outgoing expenses register", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/revolving-fund", label: "Revolving Fund Statement", area: "workspace", purpose: "Revolving cash fund transaction statement and running ledger", group: "Report", subgroup: "Payments (Expenses)" },
+  // 3. Expenses & Payroll
+  { slug: "reports/salary", label: "Staff Salaries", area: "workspace", purpose: "Monthly staff payroll disbursements and advance deductions", group: "Report", subgroup: "Expenses & Payroll" },
+  { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Day-to-day outgoing expense vouchers", group: "Report", subgroup: "Expenses & Payroll" },
+  { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Spending breakdown across categories (Fuel, Utilities, Supplies, etc.)", group: "Report", subgroup: "Expenses & Payroll" },
 
-  // D. Transportation
-  { slug: "reports/transport-roster", label: "Vehicle Route Roster", area: "workspace", purpose: "Fleet seating capacity and student passenger manifests", group: "Report", subgroup: "Transportation" },
-  { slug: "reports/transport-profitability", label: "Vehicle Profitability (P&L)", area: "workspace", purpose: "Transport fee collections vs operating costs per vehicle", group: "Report", subgroup: "Transportation" },
+  // 4. Transport & Fleet
+  { slug: "reports/transport-profitability", label: "Vehicle Earnings & Expenses", area: "workspace", purpose: "Lifetime summary of transport fees earned vs fuel/repairs spent vs vehicle purchase cost", group: "Report", subgroup: "Transport & Fleet" },
+  { slug: "reports/transport-roster", label: "Vehicle Routes & Passengers", area: "workspace", purpose: "Assigned vehicles (buses & vans), drivers, pickup routes, and student passenger manifest", group: "Report", subgroup: "Transport & Fleet" },
 
-  // E. Admissions & Academics
-
-  { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Standard class and division census with gender parity ratio", group: "Report", subgroup: "Admissions & Academics" },
-  { slug: "reports/student-progression", label: "Student Progression & TC", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Admissions & Academics" },
-
-  // --- PREVIOUS REPORTS (COMMENTED OUT DURING STEP-BY-STEP REBUILD) ---
-  // { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
-  // { slug: "reports/vehicle-allocation", label: "Bus Passenger Roster", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
-  // { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/term-fee-collection-report", label: "Term Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/daily-fee-collection", label: "Daily Receipts Register", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/student-outstanding", label: "Outstanding Fees", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/categories-by-expense", label: "Expenses by Category", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
-  // { slug: "reports/expense-summary", label: "Expense Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
+  // 5. Students & Admissions
+  { slug: "reports/admissions-master", label: "Student Admissions List", area: "workspace", purpose: "Complete roster of all newly admitted and enrolled students", group: "Report", subgroup: "Students & Admissions" },
+  { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Class-wise and section-wise student strength and boy/girl count", group: "Report", subgroup: "Students & Admissions" },
+  { slug: "reports/student-progression", label: "Student Promotion & Progression", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Students & Admissions" },
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
@@ -206,15 +194,6 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "reports/class-demographics": "classdemographics.listOnNavbar",
     "reports/student-progression": "studentprogression.listOnNavbar",
 
-    // --- PREVIOUS REPORTS (COMMENTED OUT) ---
-    // "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
-    // "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
-    // "reports/daily-collection": "dailycollection.listOnNavbar",
-    // "reports/term-fee-collection-report": "feecollectionreport.listOnNavbar",
-    // "reports/daily-fee-collection": "dailyfeecollection.listOnNavbar",
-    // "reports/student-outstanding": "studentoutstanding.listOnNavbar",
-    // "reports/categories-by-expense": "expensecategorywise.listOnNavbar",
-    // "reports/expense-summary": "expensesummary.listOnNavbar",
   }
   return map[slug] || `${slug.split("/")[0].replace(/-/g, "")}.listOnNavbar`
 }
@@ -372,19 +351,23 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
     "admissionsreport",
     "dailyreceipts",
     "feetype",
+    "feetypecollection",
+    "feedefaulters",
+    "finesregister",
     "salaryreport",
+    "salaryslips",
     "transportexpensereport",
     "dailyexpenses",
-    "dailycollection",
-    "studentoutstanding",
-    "expensesummary",
-    "vehiclefinancialreport",
-    "vehicleallocationreport",
-    "dailyfeecollection",
-    "feecollectionreport",
     "expensecategorywise",
     "ccareport",
     "ccaactivityprofit",
+    "daybook",
+    "revolvingfund",
+    "assetperformance",
+    "transportroster",
+    "transportprofitability",
+    "classdemographics",
+    "studentprogression",
   ]
 
   if (workspaceDomains.some((d) => lower.startsWith(d))) {

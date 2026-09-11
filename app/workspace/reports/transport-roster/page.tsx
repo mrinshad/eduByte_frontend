@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import {
     getVehicleRouteRosterReport,
     type VehicleRouteRosterResponse,
-    type PassengerRosterItem,
-    type VehicleSummaryItem
+    type PassengerRosterItem
 } from "@/lib/services/advancedReports";
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { getVehicles } from "@/lib/services/vehicle";
@@ -226,10 +225,10 @@ export default function TransportRosterReportPage() {
                         </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Vehicle Route & Passenger Roster
+                                Vehicle Routes & Passenger List
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                List of school vehicles and all students assigned to each vehicle.
+                                Assigned vehicles (buses & vans), drivers, student passengers, and pickup routes.
                             </p>
                         </div>
                     </div>
@@ -328,37 +327,6 @@ export default function TransportRosterReportPage() {
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Active transport passengers</p>
                 </div>
             </div>
-            {/* FLEET SUMMARY MATRIX */}
-            {data?.vehiclesSummary && data.vehiclesSummary.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {data.vehiclesSummary.map((v) => (
-                        <div key={v.vehicleId} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                                        <Bus className="h-4 w-4 text-[#556043]" />
-                                        {v.vehicleName}
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">{v.vehicleNumber}</p>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                    {v.status}
-                                </Badge>
-                            </div>
-                            <div className="pt-3 space-y-1.5 text-xs">
-                                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                                    <span>Driver:</span>
-                                    <span className="font-semibold text-slate-900 dark:text-slate-100">{v.driverName}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                                    <span>Assigned Students:</span>
-                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{v.assignedCount} Students</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {/* Search & Filters */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

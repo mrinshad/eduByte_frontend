@@ -71,7 +71,7 @@ export default function TransportProfitabilityReportPage() {
     const canView = can("report.read");
 
     const [academicYears, setAcademicYears] = useState<any[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<string>("");
+    const [selectedYearId, setSelectedYearId] = useState<string>("LIFETIME");
     const [searchInput, setSearchInput] = useState<string>("");
     const [search, setSearch] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
@@ -84,9 +84,6 @@ export default function TransportProfitabilityReportPage() {
                 const res = await getAcademicYears();
                 const yList = (res as any)?.data || res || [];
                 setAcademicYears(yList);
-                const active = yList.find((y: any) => y.isActive);
-                if (active) setSelectedYearId(active.id);
-                else if (yList.length > 0) setSelectedYearId(yList[0].id);
             } catch (err) {
                 console.error("Failed to load academic years", err);
             }
@@ -103,7 +100,6 @@ export default function TransportProfitabilityReportPage() {
     }, [searchInput]);
 
     const loadProfitability = useCallback(async () => {
-        if (!selectedYearId) return;
         try {
             setLoading(true);
             setError(null);
@@ -112,7 +108,7 @@ export default function TransportProfitabilityReportPage() {
             });
             setData(res);
         } catch (err: any) {
-            setError(err.message || "Failed to load Transport Profitability report");
+            setError(err.message || "Failed to load Vehicle Earnings & Expenses report");
         } finally {
             setLoading(false);
         }
@@ -171,10 +167,10 @@ export default function TransportProfitabilityReportPage() {
                         </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Transport Revenue & Cost Analysis
+                                Vehicle Earnings & Expenses
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                See how much each vehicle earned from student bus fees and how much was spent on it.
+                                Lifetime summary of transport fees collected, fuel & maintenance spent, and purchase cost recovery for each vehicle.
                             </p>
                         </div>
                     </div>
@@ -186,10 +182,13 @@ export default function TransportProfitabilityReportPage() {
                                 setSelectedYearId(val);
                             }}
                         >
-                            <SelectTrigger className="h-9 w-full sm:w-[150px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
-                                <SelectValue placeholder="Academic Year" />
+                            <SelectTrigger className="h-9 w-full sm:w-[180px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectValue placeholder="Select Period" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="LIFETIME">
+                                    All Time (Lifetime)
+                                </SelectItem>
                                 {academicYears.map((y) => (
                                     <SelectItem key={y.id} value={y.id}>
                                         {y.name} {y.isActive ? "(Active)" : ""}
@@ -221,10 +220,10 @@ export default function TransportProfitabilityReportPage() {
 
             {/* 4 SUMMARY STAT CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. Fleet Revenue */}
+                {/* 1. Fees Collected */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Transport Fee Revenue</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Fees Collected</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
                             <TrendingUp className="h-4 w-4" />
                         </div>
@@ -236,13 +235,13 @@ export default function TransportProfitabilityReportPage() {
                             {formatCurrency(data?.summary.totalRevenue)}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Passenger fee collections</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Student transport fees received</p>
                 </div>
 
-                {/* 2. Fleet Expenses */}
+                {/* 2. Fuel & Maintenance Spent */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Operating Costs</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fuel & Maintenance Spent</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400">
                             <TrendingDown className="h-4 w-4" />
                         </div>
@@ -261,10 +260,10 @@ export default function TransportProfitabilityReportPage() {
                     </div>
                 </div>
 
-                {/* 3. Net Balance */}
+                {/* 3. Operating Profit / Savings */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Net Operating Balance</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Operating Profit / Savings</span>
                         <div
                             className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                                 netSurplus >= 0
@@ -289,14 +288,14 @@ export default function TransportProfitabilityReportPage() {
                         </p>
                     )}
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {netSurplus >= 0 ? "Surplus operational margin" : "Operating deficit"}
+                        {netSurplus >= 0 ? "Operating profit" : "Operating deficit"}
                     </p>
                 </div>
 
-                {/* 4. Fleet Capital Outlay */}
+                {/* 4. Total Vehicle Purchase Cost */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fleet Capital Outlay</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Vehicle Purchase Cost</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
                             <Bus className="h-4 w-4" />
                         </div>
@@ -309,7 +308,7 @@ export default function TransportProfitabilityReportPage() {
                         </p>
                     )}
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Net after assets: <span className={cn("font-semibold", (data?.summary.netFleetMarginWithAssets ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                        Net after vehicle cost: <span className={cn("font-semibold", (data?.summary.netFleetMarginWithAssets ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
                             {formatCurrency(data?.summary.netFleetMarginWithAssets || 0)}
                         </span>
                     </p>
@@ -368,13 +367,13 @@ export default function TransportProfitabilityReportPage() {
                             <tr>
                                 <th className="px-4 py-3">Vehicle & Driver</th>
                                 <th className="px-4 py-3 text-center">Passengers</th>
-                                <th className="px-4 py-3 text-right">Fee Collected (₹)</th>
-                                <th className="px-4 py-3">Expense Breakdown</th>
-                                <th className="px-4 py-3 text-right">Operating Cost (₹)</th>
-                                <th className="px-4 py-3 text-right">Operating Margin (₹)</th>
-                                <th className="px-4 py-3 text-right">Asset Outlay (₹)</th>
-                                <th className="px-4 py-3 text-right">Net Return (₹)</th>
-                                <th className="px-4 py-3 text-center">Payback</th>
+                                <th className="px-4 py-3 text-right">Fees Collected (₹)</th>
+                                <th className="px-4 py-3">Fuel & Maintenance Breakdown</th>
+                                <th className="px-4 py-3 text-right">Total Spent (₹)</th>
+                                <th className="px-4 py-3 text-right">Operating Profit (₹)</th>
+                                <th className="px-4 py-3 text-right">Purchase Cost (₹)</th>
+                                <th className="px-4 py-3 text-right">Total Net Return (₹)</th>
+                                <th className="px-4 py-3 text-center">Cost Recovered %</th>
                                 <th className="px-4 py-3 text-center">Status</th>
                             </tr>
                         </thead>
@@ -397,7 +396,7 @@ export default function TransportProfitabilityReportPage() {
                             ) : filteredVehicles.length === 0 ? (
                                 <tr>
                                     <td colSpan={10} className="text-center py-12 text-slate-500 dark:text-slate-400">
-                                        No vehicle records found for this academic year.
+                                        No vehicle records found for this period.
                                     </td>
                                 </tr>
                             ) : (
@@ -486,7 +485,13 @@ export default function TransportProfitabilityReportPage() {
                                                         : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
                                                 }`}
                                             >
-                                                {v.paybackStatus || (v.netMargin >= 0 ? "Surplus" : "Deficit")}
+                                                {v.paybackStatus === "RECOVERED"
+                                                    ? "Cost Recovered"
+                                                    : v.paybackStatus === "RECOVERING"
+                                                    ? "Paying Back"
+                                                    : v.paybackStatus === "SURPLUS" || v.netMargin >= 0
+                                                    ? "In Profit"
+                                                    : "Deficit"}
                                             </Badge>
                                         </td>
                                     </tr>

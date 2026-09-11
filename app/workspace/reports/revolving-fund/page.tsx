@@ -220,10 +220,10 @@ export default function RevolvingFundReportPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                Revolving Fund Statement
+                Petty Cash & Revolving Fund
               </h1>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Running ledger statement and liquidity movements for {statement?.account?.name || "Revolving Cash Fund"}.
+                Day-to-day cash fund for minor school expenses, fuel, and staff advances.
               </p>
             </div>
           </div>
@@ -314,11 +314,11 @@ export default function RevolvingFundReportPage() {
 
       {/* 4 SUMMARY STAT CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Live Current Balance */}
+        {/* 1. Cash in Hand */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Live Current Balance
+              Cash in Hand
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               <Wallet className="h-4 w-4" />
@@ -331,14 +331,14 @@ export default function RevolvingFundReportPage() {
               {formatCurrency(summary.liveBalance)}
             </p>
           )}
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Available cash in revolving fund</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Available cash in petty fund</p>
         </div>
 
-        {/* 2. Total Inflow */}
+        {/* 2. Money Added */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Inflow (Debits)
+              Money Added
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
               <ArrowDownLeft className="h-4 w-4" />
@@ -354,11 +354,11 @@ export default function RevolvingFundReportPage() {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Transfers in & top-ups</p>
         </div>
 
-        {/* 3. Total Outflow */}
+        {/* 3. Money Spent */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Outflow (Credits)
+              Money Spent
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400">
               <ArrowUpRight className="h-4 w-4" />
@@ -374,11 +374,11 @@ export default function RevolvingFundReportPage() {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Expenses & disbursements</p>
         </div>
 
-        {/* 4. Period Closing Balance */}
+        {/* 4. Ending Balance */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Period Closing Balance
+              Ending Balance
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
               <IndianRupee className="h-4 w-4" />
@@ -442,11 +442,11 @@ export default function RevolvingFundReportPage() {
             <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
               <tr>
                 <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Reference / Voucher</th>
-                <th className="px-4 py-3">Description / Purpose</th>
-                <th className="px-4 py-3 text-right">Inflow (₹)</th>
-                <th className="px-4 py-3 text-right">Outflow (₹)</th>
-                <th className="px-4 py-3 text-right">Running Balance (₹)</th>
+                <th className="px-4 py-3">Ref / Voucher #</th>
+                <th className="px-4 py-3">Purpose / Description</th>
+                <th className="px-4 py-3 text-right">Money Added (₹)</th>
+                <th className="px-4 py-3 text-right">Money Spent (₹)</th>
+                <th className="px-4 py-3 text-right">Balance (₹)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">

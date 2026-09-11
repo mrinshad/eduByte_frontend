@@ -204,14 +204,14 @@ export default function AssetPerformanceReportPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                  Fixed Asset & Maintenance Register
+                  School Assets & Maintenance
                 </h1>
                 <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
                   Academic Year
                 </Badge>
               </div>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Annual register of capital assets, valuations, and operating maintenance expenses for {report?.academicYear?.name || "the academic year"}.
+                Record of school vehicles, buildings, and property along with repair and service costs.
               </p>
             </div>
           </div>
@@ -269,11 +269,11 @@ export default function AssetPerformanceReportPage() {
 
       {/* 4 Summary Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Total Capital Outlay */}
+        {/* Card 1: Total Asset Value */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Capital Outlay
+              Total Asset Value
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               <Building className="h-4 w-4" />
@@ -282,14 +282,14 @@ export default function AssetPerformanceReportPage() {
           <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
             {loading ? "..." : formatCurrency(summary.totalCapitalOutlay)}
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Initial acquisition cost of all active assets</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Purchase value of all active school assets</p>
         </div>
 
-        {/* Card 2: AY Maintenance Spend */}
+        {/* Card 2: Maintenance Spent */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              AY Maintenance Expenses
+              Maintenance & Repairs Spent
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
               <Wrench className="h-4 w-4" />
@@ -298,7 +298,7 @@ export default function AssetPerformanceReportPage() {
           <p className="mt-2 text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
             {loading ? "..." : formatCurrency(summary.totalAcademicYearMaintenance)}
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Operating repairs, fuel & service during AY</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Repairs, fuel, and servicing spent</p>
         </div>
 
         {/* Card 3: Total Combined Cost */}
@@ -314,14 +314,14 @@ export default function AssetPerformanceReportPage() {
           <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
             {loading ? "..." : formatCurrency(summary.totalCombinedCost)}
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Capital Outlay + AY Maintenance</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Purchase value + maintenance spent</p>
         </div>
 
-        {/* Card 4: Total Assets */}
+        {/* Card 4: Total Items Tracked */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Assets
+              Total Items Tracked
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
               <Layers className="h-4 w-4" />
@@ -400,13 +400,13 @@ export default function AssetPerformanceReportPage() {
           <table className="w-full text-left text-sm font-sans">
             <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
               <tr>
-                <th className="px-4 py-3">Asset / Identity</th>
+                <th className="px-4 py-3">Asset Name</th>
                 <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3 text-right">Initial Outlay</th>
-                <th className="px-4 py-3 text-right">AY Maintenance</th>
-                <th className="px-4 py-3 text-right">Total Cost</th>
-                <th className="px-4 py-3">Acquisition</th>
-                <th className="px-4 py-3">Assigned Driver / Note</th>
+                <th className="px-4 py-3 text-right">Purchase Value (₹)</th>
+                <th className="px-4 py-3 text-right">Maintenance Spent (₹)</th>
+                <th className="px-4 py-3 text-right">Total Cost (₹)</th>
+                <th className="px-4 py-3">Purchase Date</th>
+                <th className="px-4 py-3">Assigned To / Note</th>
                 <th className="px-4 py-3 text-center">Status</th>
               </tr>
             </thead>

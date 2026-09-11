@@ -8,6 +8,7 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  Bus,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
@@ -46,12 +47,13 @@ type SidebarGroupView = {
 function getSubgroupIcon(subgroup: string): LucideIcon {
   const s = subgroup.toLowerCase()
   if (s.includes("overview")) return GraduationCap
-  if (s.includes("receipt") || s.includes("income")) return Banknote
-  if (s.includes("payment") || s.includes("expense")) return Receipt
+  if (s.includes("transport") || s.includes("fleet")) return Bus
+  if (s.includes("admission") || (s.includes("student") && !s.includes("fee"))) return Users
+  if (s.includes("fee") || s.includes("receipt") || s.includes("income") || s.includes("finance")) return Banknote
+  if (s.includes("payment") || s.includes("expense") || s.includes("payroll")) return Receipt
   if (s.includes("setup")) return Settings
   if (s.includes("collection")) return Banknote
   if (s.includes("operation")) return Briefcase
-  if (s.includes("fee") || s.includes("finance")) return CircleDollarSign
   if (s.includes("account")) return Receipt
   return Folder
 }
@@ -300,7 +302,7 @@ function SidebarBody({
         label: ct.name,
         purpose: `Receipts report for ${ct.name}`,
         group: "Report",
-        subgroup: "Receipts (Income)",
+        subgroup: "Student Fees",
       }))
 
       return {

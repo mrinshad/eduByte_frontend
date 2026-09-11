@@ -312,6 +312,7 @@ export interface VehicleProfitabilityItem {
 
 export interface VehicleProfitabilityResponse {
     summary: {
+        isLifetime?: boolean;
         totalRevenue: number;
         totalExpenses: number;
         netFleetMargin: number;
