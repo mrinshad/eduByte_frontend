@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/advancedReports";
 import { getAcademicYears } from "@/lib/services/academicYear";
 import { getVehicles } from "@/lib/services/vehicle";
+import { getReportConfig } from "@/lib/report-definitions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,6 +61,7 @@ function FilterChip({
 
 export default function TransportRosterReportPage() {
     const router = useRouter();
+    const reportConfig = getReportConfig("reports/transport-roster");
     const { can } = usePermission();
     const canView = can("report.read");
 
@@ -224,11 +226,18 @@ export default function TransportRosterReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Vehicle Routes & Passenger List
-                            </h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                                    {reportConfig.title}
+                                </h1>
+                                {reportConfig.badgeText && (
+                                    <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
+                                        {reportConfig.badgeText}
+                                    </Badge>
+                                )}
+                            </div>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                Assigned vehicles (buses & vans), drivers, student passengers, and pickup routes.
+                                {reportConfig.subtitle}
                             </p>
                         </div>
                     </div>

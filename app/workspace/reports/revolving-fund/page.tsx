@@ -43,6 +43,7 @@ import {
   type RevolvingFundStatementResponse,
   type RevolvingFundTransaction,
 } from "@/lib/services/accounts";
+import { getReportConfig } from "@/lib/report-definitions";
 
 function todayISO() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -85,6 +86,7 @@ function toISODate(date: Date) {
 
 export default function RevolvingFundReportPage() {
   const router = useRouter();
+  const reportConfig = getReportConfig("reports/revolving-fund");
 
   const [fromDate, setFromDate] = useState<string>(firstOfMonthISO());
   const [toDate, setToDate] = useState<string>(todayISO());
@@ -219,11 +221,18 @@ export default function RevolvingFundReportPage() {
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                Petty Cash & Revolving Fund
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                  {reportConfig.title}
+                </h1>
+                {reportConfig.badgeText && (
+                  <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
+                    {reportConfig.badgeText}
+                  </Badge>
+                )}
+              </div>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Day-to-day cash fund for minor school expenses, fuel, and staff advances.
+                {reportConfig.subtitle}
               </p>
             </div>
           </div>

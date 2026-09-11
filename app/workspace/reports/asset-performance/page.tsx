@@ -36,6 +36,7 @@ import {
   type AssetPerformanceReport,
   type AssetRegisterRow,
 } from "@/lib/services/asset";
+import { getReportConfig } from "@/lib/report-definitions";
 
 const CATEGORY_LABELS: Record<string, string> = {
   VEHICLE: "Transport Vehicle",
@@ -49,6 +50,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function AssetPerformanceReportPage() {
   const router = useRouter();
+  const reportConfig = getReportConfig("reports/asset-performance");
 
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [searchInput, setSearchInput] = useState("");
@@ -204,14 +206,16 @@ export default function AssetPerformanceReportPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                  School Assets & Maintenance
+                  {reportConfig.title}
                 </h1>
-                <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
-                  Academic Year
-                </Badge>
+                {reportConfig.badgeText && (
+                  <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
+                    {reportConfig.badgeText}
+                  </Badge>
+                )}
               </div>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                Record of school vehicles, buildings, and property along with repair and service costs.
+                {reportConfig.subtitle}
               </p>
             </div>
           </div>

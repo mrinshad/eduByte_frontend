@@ -50,6 +50,8 @@ import {
 } from "@/lib/services/incomeReports";
 import { getClasses, type SchoolClass } from "@/lib/services/class";
 import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
+import { getChargeTypes, type ChargeTypes } from "@/lib/services/chargeTypes";
+import { getReportConfig } from "@/lib/report-definitions";
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -127,12 +129,15 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
     const [paymentMethodFilter, setPaymentMethodFilter] = useState("ALL");
     const [classes, setClasses] = useState<SchoolClass[]>([]);
     const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
+    const [allChargeTypes, setAllChargeTypes] = useState<ChargeTypes[]>([]);
+    const reportConfig = getReportConfig("reports/fee-type");
 
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [report, setReport] = useState<FeeTypeCollectionReportResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const isRangeInvalid = fromDate > toDate;
 
@@ -145,13 +150,16 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Load classes and payment accounts
+    // Load classes, payment accounts and all charge types for the switcher
     useEffect(() => {
         getClasses()
             .then(setClasses)
             .catch(() => {});
         getPaymentMethodAccounts()
             .then(setPaymentAccounts)
+            .catch(() => {});
+        getChargeTypes()
+            .then(setAllChargeTypes)
             .catch(() => {});
     }, []);
 
@@ -188,7 +196,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
         return () => {
             cancelled = true;
         };
-    }, [chargeTypeId, fromDate, toDate, page, limit, search, classNameFilter, paymentMethodFilter]);
+    }, [chargeTypeId, fromDate, toDate, page, limit, search, classNameFilter, paymentMethodFilter, refreshKey]);
 
     const chargeType = report?.chargeType;
     const summary = report?.summary ?? {
@@ -248,7 +256,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
                                 <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                    {chargeType?.name || "Fee Collection Report"}
+                                    {chargeType?.name ? `${chargeType.name} Collection` : reportConfig.title}
                                 </h1>
                                 {chargeType?.frequency && (
                                     <Badge variant="outline" className="text-xs uppercase">
@@ -257,13 +265,37 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                                 )}
                             </div>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                View receipt breakdown across all payment accounts for {formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)}
+                                {reportConfig.subtitle} ({formatDisplayDate(fromDate)} — {formatDisplayDate(toDate)})
                             </p>
                         </div>
                     </div>
 
-                    {/* Date Range Picker */}
+                    {/* Controls: Fee Type Switcher, Date Range, Refresh */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        {allChargeTypes.length > 0 && (
+                            <div className="w-full sm:w-48">
+                                <Select
+                                    value={chargeTypeId}
+                                    onValueChange={(newId) => {
+                                        if (newId !== chargeTypeId) {
+                                            router.push(`/workspace/reports/fee-type/${newId}`);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="h-10 w-full border-slate-300 bg-white font-medium text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                        <SelectValue placeholder="Select Fee Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allChargeTypes.map((ct) => (
+                                            <SelectItem key={ct.id} value={ct.id}>
+                                                {ct.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div className="flex flex-1 flex-col gap-2 sm:flex-row">
                             <Popover open={fromCalendarOpen} onOpenChange={setFromCalendarOpen}>
                                 <PopoverTrigger asChild>
@@ -321,7 +353,7 @@ export default function FeeTypeReportPage({ params }: { params: Promise<{ id: st
                             size="icon"
                             variant="outline"
                             className="h-10 w-10 shrink-0 self-end border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:self-auto"
-                            onClick={() => setPage((p) => p)}
+                            onClick={() => setRefreshKey((k) => k + 1)}
                             disabled={isLoading || isRangeInvalid}
                         >
                             <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
