@@ -58,6 +58,7 @@ import {
     type SalarySlip,
 } from "@/lib/services/salarySlip";
 import { getPaymentMethodAccounts, type PaymentMethodAccount } from "@/lib/services/expense";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const SAGE = "#556043";
 
@@ -320,13 +321,15 @@ export default function SalarySlipsListPage() {
                         <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
                         Refresh
                     </Button>
-                    <Button
-                        onClick={() => router.push("/workspace/salary-slips/create")}
-                        className="h-9 gap-1.5 font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                    >
-                        <Plus className="h-4 w-4 text-white dark:text-slate-900" />
-                        Generate Salary Slip
-                    </Button>
+                    <PermissionGate permission="salaryslips.createSalarySlipButton">
+                        <Button
+                            onClick={() => router.push("/workspace/salary-slips/create")}
+                            className="h-9 gap-1.5 font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                        >
+                            <Plus className="h-4 w-4 text-white dark:text-slate-900" />
+                            Generate Salary Slip
+                        </Button>
+                    </PermissionGate>
                 </div>
             </div>
 
@@ -628,25 +631,29 @@ export default function SalarySlipsListPage() {
                                         </td>
                                         <td className="px-4 py-3 text-right whitespace-nowrap">
                                             <div className="flex items-center justify-end gap-1.5">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 px-2.5 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-slate-800 font-medium"
-                                                    onClick={() => handleOpenPrint(slip.id)}
-                                                    title="View & Print Voucher"
-                                                >
-                                                    <Printer className="h-4 w-4 mr-1.5" />
-                                                    Print
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    title="Delete Slip"
-                                                    onClick={() => setDeleteTargetId(slip.id)}
-                                                    className="h-8 w-8 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <PermissionGate permission="salaryslips.printSalarySlipButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 px-2.5 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-slate-800 font-medium"
+                                                        onClick={() => handleOpenPrint(slip.id)}
+                                                        title="View & Print Voucher"
+                                                    >
+                                                        <Printer className="h-4 w-4 mr-1.5" />
+                                                        Print
+                                                    </Button>
+                                                </PermissionGate>
+                                                <PermissionGate permission="salaryslips.deleteSalarySlipButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        title="Delete Slip"
+                                                        onClick={() => setDeleteTargetId(slip.id)}
+                                                        className="h-8 w-8 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </PermissionGate>
                                             </div>
                                         </td>
                                     </tr>

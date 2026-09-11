@@ -286,13 +286,27 @@ export interface ExpenseBreakdownItem {
 
 export interface VehicleProfitabilityItem {
     vehicleId: string;
+    assetId?: string | null;
     vehicleName: string;
     vehicleNumber: string;
+    driverName?: string;
+    driverStaff?: {
+        id: string;
+        name: string;
+        employeeCode: string;
+        phone?: string | null;
+    } | null;
+    hasInitialPrice?: boolean;
+    initialAssetCost?: number;
+    purchaseDate?: string | null;
     passengerCount: number;
     revenueCollected: number;
     totalExpenses: number;
     expenseBreakdown: ExpenseBreakdownItem[];
     netMargin: number;
+    netReturnAfterAsset?: number;
+    paybackPercentage?: number | null;
+    paybackStatus?: "RECOVERED" | "RECOVERING" | "SURPLUS" | "DEFICIT";
     status: "SURPLUS" | "DEFICIT";
 }
 
@@ -301,6 +315,8 @@ export interface VehicleProfitabilityResponse {
         totalRevenue: number;
         totalExpenses: number;
         netFleetMargin: number;
+        totalFleetInitialCost?: number;
+        netFleetMarginWithAssets?: number;
         categoryBreakdown: ExpenseBreakdownItem[];
     };
     vehicles: VehicleProfitabilityItem[];

@@ -125,3 +125,54 @@ export async function getAccountSummary(id: string) {
 
   return payload.data ?? null
 }
+
+export interface RevolvingFundTransaction {
+  id: string
+  transactionId?: string
+  transactionNumber: string
+  date: string
+  description: string
+  notes?: string | null
+  flowType: "INFLOW" | "OUTFLOW"
+  inflow: number
+  outflow: number
+  runningBalance: number
+}
+
+export interface RevolvingFundStatementResponse {
+  account: {
+    id: string
+    name: string
+    type: string
+    liveBalance: number
+  }
+  period: {
+    from: string
+    to: string
+  }
+  summary: {
+    openingBalance: number
+    totalInflow: number
+    totalOutflow: number
+    netMovement: number
+    closingBalance: number
+    liveBalance: number
+    transactionCount: number
+  }
+  transactions: RevolvingFundTransaction[]
+}
+
+export async function getRevolvingFundStatement(params?: { from?: string; to?: string }) {
+  const query = new URLSearchParams()
+  if (params?.from) query.set("from", params.from)
+  if (params?.to) query.set("to", params.to)
+
+  const qs = query.toString() ? `?${query.toString()}` : ""
+  const payload = (await apiFetch(`/api/accounts/revolving-fund/statement${qs}`)) as {
+    success: boolean
+    message?: string
+    data?: RevolvingFundStatementResponse
+  }
+
+  return payload.data ?? null
+}

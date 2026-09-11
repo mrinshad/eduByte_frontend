@@ -4,6 +4,7 @@ export interface VehicleInput {
   vehicleName: string;
   vehicleNumber: string;
   driverName: string;
+  driverStaffId?: string | null;
   initialPrice?: number;
   purchaseDate?: string;
 }
@@ -13,6 +14,13 @@ export interface Vehicle {
   vehicleName: string;
   vehicleNumber: string;
   driverName: string;
+  driverStaffId?: string | null;
+  driverStaff?: {
+    id: string;
+    name: string;
+    employeeCode: string;
+    phone?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
   asset?: {

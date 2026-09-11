@@ -656,7 +656,7 @@ export default function AssetsPage() {
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ASSET_CATEGORIES.map((cat) => (
+                    {ASSET_CATEGORIES.filter((cat) => editingAsset?.vehicleId || cat !== "VEHICLE").map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {CATEGORY_LABELS[cat] || cat}
                       </SelectItem>

@@ -227,7 +227,7 @@ function CcaActivityProfitContent() {
                                 {profitReport?.activityName || selectedActivity?.name || "CCA Activity"} Profit & Loss
                             </h1>
                             {profitReport?.activityCode && (
-                                <Badge variant="outline" className="font-mono text-xs">
+                                <Badge variant="outline" className="text-xs">
                                     {profitReport.activityCode}
                                 </Badge>
                             )}
@@ -280,7 +280,7 @@ function CcaActivityProfitContent() {
                                                         {act.name}
                                                     </span>
                                                     {act.code && (
-                                                        <span className="text-[10px] text-slate-400 font-mono">
+                                                        <span className="text-[10px] text-slate-400">
                                                             Code: {act.code}
                                                         </span>
                                                     )}

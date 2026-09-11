@@ -404,7 +404,7 @@ export default function Page() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                    <PermissionGate permission="accounts.createAccountButton">
+                    <PermissionGate permission="accounts.transferFundsButton">
                         <Button
                             variant="outline"
                             className="w-full sm:w-auto shrink-0 border-slate-300 text-slate-700  dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 shadow-sm"

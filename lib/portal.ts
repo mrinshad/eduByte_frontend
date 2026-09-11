@@ -102,6 +102,7 @@ export const portalSections: PortalSection[] = [
   { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
   { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Consolidated daily outgoing expenses register", group: "Report", subgroup: "Payments (Expenses)" },
+  { slug: "reports/revolving-fund", label: "Revolving Fund Statement", area: "workspace", purpose: "Revolving cash fund transaction statement and running ledger", group: "Report", subgroup: "Payments (Expenses)" },
 
   // D. Transportation
   { slug: "reports/transport-roster", label: "Vehicle Route Roster", area: "workspace", purpose: "Fleet seating capacity and student passenger manifests", group: "Report", subgroup: "Transportation" },
@@ -173,6 +174,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fine-management/student-fines": "fine.listOnNavbar",
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
+    "salary-slips": "salaryslips.listOnNavbar",
 
     // --- ACTIVE REPORT PERMISSIONS ---
     // A. Executive Overview
@@ -194,6 +196,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "reports/transport-expenses": "transportexpensereport.listOnNavbar",
     "reports/category-expenses": "expensecategorywise.listOnNavbar",
     "reports/daily-expenses": "dailyexpenses.listOnNavbar",
+    "reports/revolving-fund": "revolvingfund.listOnNavbar",
 
     // D. Transportation
     "reports/transport-roster": "transportroster.listOnNavbar",

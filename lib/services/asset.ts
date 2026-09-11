@@ -51,58 +51,63 @@ export interface AssetListResponse {
   };
 }
 
-export interface VehiclePerformanceRow {
-  vehicleId: string;
-  assetId?: string | null;
-  vehicleName: string;
-  vehicleNumber: string;
-  driverName: string;
-  hasInitialPrice: boolean;
-  initialPrice: number;
+export interface AssetRegisterRow {
+  id: string;
+  name: string;
+  category: string;
+  description?: string | null;
+  status: string;
   purchaseDate?: string | null;
-  passengerCount: number;
-  totalCollections: number;
-  totalExpenses: number;
-  expenseBreakdown: Record<string, number>;
-  netOperatingBalance: number;
-  netAssetReturn: number;
-  paybackPercentage?: number | null;
-  status: "SURPLUS" | "DEFICIT" | "RECOVERED" | "PAYING_BACK";
+  initialPrice: number;
+  maintenanceExpenses: number;
+  maintenanceCount: number;
+  totalCost: number;
+  vehicle?: {
+    id: string;
+    vehicleName: string;
+    vehicleNumber: string;
+    driverName: string;
+    driverStaff?: {
+      id: string;
+      name: string;
+      employeeCode: string;
+      phone?: string | null;
+    } | null;
+    status: string;
+  } | null;
+}
+
+export interface AssetCategorySummary {
+  category: string;
+  count: number;
+  initialValue: number;
+  maintenanceSpend: number;
+  totalCost: number;
 }
 
 export interface AssetPerformanceReport {
-  period: {
-    academicYearId?: string | null;
-    academicYearName: string;
+  academicYear: {
+    id: string | null;
+    name: string;
+    code: string;
     startDate: string;
     endDate: string;
   };
-  institutionSummary: {
-    totalInitialAssetValue: number;
-    totalGain: number;
-    gainBreakdown: {
-      studentFees: number;
-      fines: number;
-      cca: number;
-    };
-    totalSpend: number;
-    netOperatingBalance: number;
-    netReturnAfterInitialAssets: number;
-    paybackPercentage?: number | null;
-    status: "SURPLUS" | "DEFICIT";
-    assetCount: number;
-    vehicleCount: number;
-  };
-  vehicles: VehiclePerformanceRow[];
-  nonVehicleAssets: Array<{
+  academicYears: Array<{
     id: string;
     name: string;
-    category: string;
-    initialPrice: number;
-    purchaseDate?: string | null;
-    description?: string | null;
-    status: string;
+    academicYear: string;
+    isActive: boolean;
   }>;
+  summary: {
+    totalCapitalOutlay: number;
+    totalAcademicYearMaintenance: number;
+    totalCombinedCost: number;
+    totalAssetsCount: number;
+    activeAssetsCount: number;
+  };
+  categoryBreakdown: AssetCategorySummary[];
+  assets: AssetRegisterRow[];
 }
 
 type ApiSuccess<T> = {
