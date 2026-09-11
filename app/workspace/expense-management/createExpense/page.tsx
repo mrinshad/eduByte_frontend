@@ -547,7 +547,7 @@ export default function Page() {
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${editId}`);
                     } else {
-                        router.push("/workspace/reports/expense-summary");
+                        router.push("/workspace/reports/daily-expenses");
                     }
                 } else {
                     toast.error(result.message || "An error occurred during update.");
@@ -560,7 +560,7 @@ export default function Page() {
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${result.data.id}`);
                     } else {
-                        router.push("/workspace/reports/expense-summary");
+                        router.push("/workspace/reports/daily-expenses");
                     }
                 } else {
                     toast.error(result.message || "An error occurred during submission.");
