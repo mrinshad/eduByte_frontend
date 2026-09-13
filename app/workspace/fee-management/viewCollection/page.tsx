@@ -124,7 +124,7 @@ function ChargesTableSkeleton() {
       <Skeleton className="mb-2 h-3 w-32" />
       <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800/50">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900/60">
+          <thead className="bg-slate-50 dark:bg-slate-900">
             <tr className="text-left text-slate-500 dark:text-slate-400">
               <th className="px-3 py-2 font-medium w-10"></th>
               <th className="px-3 py-2 font-medium">Charge</th>
@@ -139,7 +139,7 @@ function ChargesTableSkeleton() {
             <tr>
               <td
                 colSpan={7}
-                className="bg-slate-50 px-3 py-1.5 dark:bg-slate-900/60"
+                className="bg-slate-50 px-3 py-1.5 dark:bg-slate-900"
               >
                 <Skeleton className="h-3 w-24" />
               </td>
@@ -182,7 +182,7 @@ function FinesTableSkeleton() {
       <Skeleton className="mb-2 h-3 w-16" />
       <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800/50">
         <table className="w-full min-w-[520px] text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900/60">
+          <thead className="bg-slate-50 dark:bg-slate-900">
             <tr className="text-left text-slate-500 dark:text-slate-400">
               <th className="px-3 py-2 font-medium w-10"></th>
               <th className="px-3 py-2 font-medium">Fine</th>
@@ -342,12 +342,14 @@ export default function Page() {
     }
 
     if (enrollmentId) {
-      fetchStudentDetails()
-      fetchChargesAndFines()
+      void fetchStudentDetails()
+      void fetchChargesAndFines()
     } else {
-      setLoading(false)
-      setChargesLoading(false)
-      setError("No student selected.")
+      queueMicrotask(() => {
+        setLoading(false)
+        setChargesLoading(false)
+        setError("No student selected.")
+      })
     }
   }, [enrollmentId])
 
@@ -747,7 +749,7 @@ export default function Page() {
                 </h3>
                 <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[400px]">
                   <table className="w-full min-w-[640px] text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                    <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                       <tr className="text-left text-slate-500 dark:text-slate-400">
                         <th className="px-3 py-2 font-medium w-10"></th>
                         <th className="px-3 py-2 font-medium">Charge</th>
@@ -764,7 +766,7 @@ export default function Page() {
                           <tr>
                             <td
                               colSpan={7}
-                              className="bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 sticky top-[37px] z-10"
+                              className="bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900 dark:text-slate-400 sticky top-[37px] z-10 border-b border-slate-200 dark:border-slate-800"
                             >
                               {group.label}
                             </td>
@@ -856,7 +858,7 @@ export default function Page() {
                 </h3>
                 <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[200px]">
                   <table className="w-full min-w-[520px] text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                    <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                       <tr className="text-left text-slate-500 dark:text-slate-400">
                         <th className="px-3 py-2 font-medium w-10"></th>
                         <th className="px-3 py-2 font-medium">Fine</th>
@@ -945,7 +947,7 @@ export default function Page() {
                 </h3>
                 <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[220px]">
                   <table className="w-full min-w-[520px] text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                    <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                       <tr className="text-left text-slate-500 dark:text-slate-400">
                         <th className="px-3 py-2 font-medium w-10"></th>
                         <th className="px-3 py-2 font-medium">Activity & Period</th>
