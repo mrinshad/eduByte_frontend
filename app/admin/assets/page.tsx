@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -18,10 +18,12 @@ import {
   LandPlot,
   Box,
   Layers,
-  Calendar,
+  Calendar as CalendarIcon,
   AlertCircle,
   Loader2,
+  X,
 } from "lucide-react";
+import { format } from "date-fns";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +53,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,6 +126,7 @@ export default function AssetsPage() {
   const [formCategory, setFormCategory] = useState<AssetCategory>("EQUIPMENT");
   const [formInitialPrice, setFormInitialPrice] = useState("");
   const [formPurchaseDate, setFormPurchaseDate] = useState("");
+  const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
   const [formDescription, setFormDescription] = useState("");
   const [formStatus, setFormStatus] = useState("ACTIVE");
 
@@ -125,7 +134,7 @@ export default function AssetsPage() {
   const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchAssets = async () => {
+  const fetchAssets = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAssets({
@@ -146,19 +155,24 @@ export default function AssetsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
-    fetchAssets();
-  }, [selectedCategory]);
+    let ignore = false;
+    const timer = setTimeout(
+      () => {
+        if (!ignore) {
+          void fetchAssets();
+        }
+      },
+      searchQuery ? 300 : 0
+    );
 
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchAssets();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [fetchAssets, searchQuery]);
 
   const handleOpenCreate = () => {
     setEditingAsset(null);
@@ -166,6 +180,7 @@ export default function AssetsPage() {
     setFormCategory("EQUIPMENT");
     setFormInitialPrice("");
     setFormPurchaseDate("");
+    setPurchaseDateOpen(false);
     setFormDescription("");
     setFormStatus("ACTIVE");
     setIsDialogOpen(true);
@@ -179,6 +194,7 @@ export default function AssetsPage() {
     setFormPurchaseDate(
       asset.purchaseDate ? asset.purchaseDate.split("T")[0] : ""
     );
+    setPurchaseDateOpen(false);
     setFormDescription(asset.description || "");
     setFormStatus(asset.status || "ACTIVE");
     setIsDialogOpen(true);
@@ -212,9 +228,11 @@ export default function AssetsPage() {
 
       setIsDialogOpen(false);
       fetchAssets();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Save asset error:", error);
-      toast.error(error?.message || "Failed to save asset.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save asset.";
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -228,9 +246,11 @@ export default function AssetsPage() {
       toast.success("Asset deleted successfully.");
       setAssetToDelete(null);
       fetchAssets();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete asset error:", error);
-      toast.error(error?.message || "Failed to delete asset.");
+      const message =
+        error instanceof Error ? error.message : "Failed to delete asset.";
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -501,7 +521,7 @@ export default function AssetsPage() {
                   <Box className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
                   <p className="text-sm font-medium">No assets registered yet</p>
                   <p className="text-xs text-slate-400">
-                    Click "Add Asset" or create a vehicle to populate the register.
+                    Click &quot;Add Asset&quot; or create a vehicle to populate the register.
                   </p>
                 </TableCell>
               </TableRow>
@@ -548,7 +568,7 @@ export default function AssetsPage() {
                     <TableCell className="text-xs text-slate-600 dark:text-slate-400">
                       {asset.purchaseDate ? (
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-slate-400" />
+                          <CalendarIcon className="h-3 w-3 text-slate-400" />
                           {new Date(asset.purchaseDate).toLocaleDateString()}
                         </span>
                       ) : (
@@ -621,122 +641,196 @@ export default function AssetsPage() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingAsset ? "Edit Asset" : "Add New Asset"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingAsset
-                ? "Update capital asset details and valuation."
-                : "Register a standalone capital asset into the institutional register."}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[92vw] sm:max-w-lg max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden [&>button:last-child]:text-white/80 hover:[&>button:last-child]:text-white hover:[&>button:last-child]:bg-white/10">
+          <div className="p-6 pb-2 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl font-semibold text-white">
+                {editingAsset ? "Edit Asset" : "Add New Asset"}
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                {editingAsset
+                  ? "Update capital asset details and valuation."
+                  : "Register a standalone capital asset into the institutional register."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <form onSubmit={handleSaveAsset} className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Asset Name *</Label>
-              <Input
-                placeholder="e.g. Physics Lab Microscope, Main Block AC"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSaveAsset} className="flex flex-col flex-1 min-h-0">
+            <div className="space-y-4 px-6 py-2 flex-1 overflow-y-auto">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Category *</Label>
-                <Select
-                  value={formCategory}
-                  onValueChange={(val) => setFormCategory(val as AssetCategory)}
-                  disabled={Boolean(editingAsset?.vehicleId)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ASSET_CATEGORIES.filter((cat) => editingAsset?.vehicleId || cat !== "VEHICLE").map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {CATEGORY_LABELS[cat] || cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {editingAsset?.vehicleId && (
-                  <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                    Category is locked because asset is synced with a vehicle.
-                  </p>
-                )}
+                <Label className="text-sm font-medium text-white dark:text-slate-200">
+                  Asset Name <span className="text-red-400 ml-0.5">*</span>
+                </Label>
+                <Input
+                  placeholder="e.g. Physics Lab Microscope, Main Block AC"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  required
+                  className="rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
+                    Category <span className="text-red-400 ml-0.5">*</span>
+                  </Label>
+                  <Select
+                    value={formCategory}
+                    onValueChange={(val) => setFormCategory(val as AssetCategory)}
+                    disabled={Boolean(editingAsset?.vehicleId)}
+                  >
+                    <SelectTrigger className="w-full rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40 [&_svg]:text-white/80 dark:[&_svg]:text-slate-300 disabled:opacity-60 disabled:cursor-not-allowed">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
+                      {ASSET_CATEGORIES.filter((cat) => editingAsset?.vehicleId || cat !== "VEHICLE").map((cat) => (
+                        <SelectItem
+                          key={cat}
+                          value={cat}
+                          className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer"
+                        >
+                          {CATEGORY_LABELS[cat] || cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {editingAsset?.vehicleId && (
+                    <p className="text-[10px] text-amber-300 dark:text-amber-400">
+                      Category is locked because asset is synced with a vehicle.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">Initial Cost (₹, optional)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 50000"
+                    value={formInitialPrice}
+                    onChange={(e) => setFormInitialPrice(e.target.value)}
+                    className="rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
+                    Purchase Date (optional)
+                  </Label>
+                  <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full h-8 justify-start text-left font-normal text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white hover:bg-[#586249] hover:text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700 px-2.5 focus-visible:ring-1 focus-visible:ring-white/40 shadow-none",
+                          !formPurchaseDate && "text-slate-300 dark:text-slate-400"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-white/80 dark:text-slate-400 shrink-0" />
+                        <span className="truncate flex-1">
+                          {formPurchaseDate
+                            ? format(new Date(`${formPurchaseDate}T00:00:00`), "dd MMM yyyy")
+                            : "Select purchase date"}
+                        </span>
+                        {formPurchaseDate && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormPurchaseDate("");
+                            }}
+                            className="ml-1 hover:text-rose-300 p-0.5 rounded cursor-pointer shrink-0"
+                            title="Clear date"
+                          >
+                            <X className="h-3.5 w-3.5 opacity-70 hover:opacity-100" />
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl"
+                      align="start"
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={
+                          formPurchaseDate
+                            ? new Date(`${formPurchaseDate}T00:00:00`)
+                            : undefined
+                        }
+                        onSelect={(date) => {
+                          if (date) {
+                            setFormPurchaseDate(format(date, "yyyy-MM-dd"));
+                            setPurchaseDateOpen(false);
+                          } else {
+                            setFormPurchaseDate("");
+                          }
+                        }}
+                        defaultMonth={
+                          formPurchaseDate
+                            ? new Date(`${formPurchaseDate}T00:00:00`)
+                            : new Date()
+                        }
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-white dark:text-slate-200">
+                    Status <span className="text-red-400 ml-0.5">*</span>
+                  </Label>
+                  <Select value={formStatus} onValueChange={setFormStatus}>
+                    <SelectTrigger className="w-full rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40 [&_svg]:text-white/80 dark:[&_svg]:text-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
+                      <SelectItem value="ACTIVE" className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer">ACTIVE</SelectItem>
+                      <SelectItem value="MAINTENANCE" className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer">MAINTENANCE</SelectItem>
+                      <SelectItem value="RETIRED" className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer">RETIRED</SelectItem>
+                      <SelectItem value="DISPOSED" className="text-white dark:text-slate-100 focus:bg-[#556043] focus:text-white dark:focus:bg-slate-800 cursor-pointer">DISPOSED</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Initial Cost (₹, optional)</Label>
+                <Label className="text-sm font-medium text-white dark:text-slate-200">Description / Specs (optional)</Label>
                 <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="e.g. 50000"
-                  value={formInitialPrice}
-                  onChange={(e) => setFormInitialPrice(e.target.value)}
+                  placeholder="Serial number, warranty details, location..."
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Purchase Date (optional)</Label>
-                <Input
-                  type="date"
-                  value={formPurchaseDate}
-                  onChange={(e) => setFormPurchaseDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Status *</Label>
-                <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                    <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
-                    <SelectItem value="RETIRED">RETIRED</SelectItem>
-                    <SelectItem value="DISPOSED">DISPOSED</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Description / Specs (optional)</Label>
-              <Input
-                placeholder="Serial number, warranty details, location..."
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
+            <DialogFooter className="bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-4 sm:p-5 mt-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
                 disabled={isSaving}
+                className="w-full sm:w-auto rounded-full border-[#8b9478] bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-[#556043] text-white hover:bg-[#4a533b]"
                 disabled={isSaving}
+                className="w-full sm:w-auto rounded-full bg-white text-[#556043] hover:bg-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-medium"
               >
                 {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Saving...
-                  </>
+                  </span>
                 ) : editingAsset ? (
                   "Update Asset"
                 ) : (
@@ -756,7 +850,7 @@ export default function AssetsPage() {
         <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete Asset "{assetToDelete?.name}"?
+              Delete Asset &quot;{assetToDelete?.name}&quot;?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <span className="block text-slate-600 dark:text-slate-400">
@@ -771,7 +865,7 @@ export default function AssetsPage() {
                       Note: Linked Transport Vehicle
                     </span>
                     <span>
-                      This asset is linked to vehicle "{assetToDelete.vehicle?.vehicleName}".
+                      This asset is linked to vehicle &quot;{assetToDelete.vehicle?.vehicleName}&quot;.
                       Deleting this asset will unbind its valuation while keeping the vehicle record intact.
                     </span>
                   </div>

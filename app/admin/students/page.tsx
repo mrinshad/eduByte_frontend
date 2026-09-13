@@ -628,6 +628,7 @@ export default function Page() {
                           </Button>
                         </PermissionGate>
                         {student.status === "ACTIVE" && (
+                          <PermissionGate permission="students.relieveStudentButton">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -637,6 +638,7 @@ export default function Page() {
                           >
                             <LogOut className="h-4 w-4" />
                           </Button>
+                          </PermissionGate>
                         )}
                         <PermissionGate permission="students.deleteStudentButton">
                           <Button
