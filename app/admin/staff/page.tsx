@@ -486,6 +486,7 @@ export default function Page() {
 
                     <TableCell className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
+                        <PermissionGate permission="staff.viewStaffButton">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -495,6 +496,7 @@ export default function Page() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        </PermissionGate>
                         <PermissionGate permission="staff.editStaffButton">
                         <Button
                           variant="ghost"
