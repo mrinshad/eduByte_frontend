@@ -245,7 +245,7 @@ export default function AssetPerformanceReportPage() {
               disabled={loading}
               title="Refresh Report"
             >
-              <RotateCw className={cn("h-4 w-4 text-slate-600 dark:text-slate-300", loading && "animate-spin")} />
+              <RotateCw className={cn("h-4 w-4 text-slate-300 dark:text-slate-300", loading && "animate-spin")} />
             </Button>
 
             <Button
