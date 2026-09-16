@@ -55,6 +55,7 @@ export const portalSections: PortalSection[] = [
 
   { slug: "users", label: "Users", area: "admin", purpose: "User accounts", group: "User Management" },
   { slug: "roles", label: "Roles & Permissions", area: "admin", purpose: "Role management", group: "User Management" },
+  { slug: "permissions", label: "Permissions Directory", area: "admin", purpose: "Manage system permission catalog", group: "User Management" },
   { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "Track system activities, data changes, and operator history", group: "User Management" },
 
   // --- STUDENT AREA ---
@@ -502,6 +503,7 @@ const SECTION_KEYWORDS: Record<string, string[]> = {
   "vehicles": ["transport", "vehicles", "buses", "routes", "drivers"],
   "users": ["users", "accounts", "admin users", "staff login"],
   "roles": ["roles", "permissions", "rbac", "access control"],
+  "permissions": ["permissions", "permission list", "rbac catalog", "security roles"],
   "fee-management": ["fee collection", "collect fees", "counter", "payments", "receipts", "cash collection"],
   "expense-management": ["expenses", "payments", "vouchers", "bills", "costs", "spending"],
   "fine-management/student-fines": ["student fines", "penalties", "late fee", "waive fine"],
