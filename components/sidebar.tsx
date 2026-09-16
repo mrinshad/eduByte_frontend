@@ -34,6 +34,7 @@ import {
   Fuel,
   GraduationCap,
   History,
+  Key,
   Landmark,
   Layers,
   LayoutDashboard,
@@ -130,6 +131,7 @@ const ICON_BY_SLUG: Record<string, LucideIcon> = {
   vehicles: Bus,
   users: Users,
   roles: ShieldCheck,
+  permissions: Key,
   "audit-logs": ClipboardList,
 
   // --- Workspace Operations ---
