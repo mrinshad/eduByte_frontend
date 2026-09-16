@@ -79,6 +79,7 @@ async function apiFetch(path: string, init: RequestInit = {}) {
     ...init,
     headers,
     credentials: "include",
+    signal: init.signal || AbortSignal.timeout(15000),
   })
 }
 
@@ -157,6 +158,25 @@ export async function getCurrentSession(forceRefresh = false): Promise<AuthSessi
           } as AuthSession
           cachedSession = session
           return session
+        }
+      }
+
+      if (!storedToken && !forceRefresh) {
+        // Fast fallback for unauthenticated visits: don't hang page on sleeping backend
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 4000)
+        try {
+          const res = await apiFetch("/api/auth/refresh", { method: "POST", signal: controller.signal })
+          clearTimeout(timer)
+          const payload = await res.json()
+          if (!res.ok) throw new Error(payload.message || "No active session")
+          const session = payload.data as AuthSession
+          storeAccessToken(session.accessToken)
+          cachedSession = session
+          return session
+        } catch {
+          clearTimeout(timer)
+          throw new Error("No active session")
         }
       }
 
