@@ -831,6 +831,7 @@ export default function FeeGenerationPage() {
               </div>
 
               {groupedCatchUpStudents.length > 0 && (
+                <PermissionGate permission="feegeneration.generateCatchupFeesButton">
                 <Button
                   size="sm"
                   onClick={handleGenerateCatchUpCharges}
@@ -844,6 +845,7 @@ export default function FeeGenerationPage() {
                   )}
                   Generate Catch-Up Fees ({groupedCatchUpStudents.length})
                 </Button>
+                </PermissionGate>
               )}
             </div>
 
@@ -935,6 +937,7 @@ export default function FeeGenerationPage() {
               </div>
 
               {ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 && (
+                <PermissionGate permission="feegeneration.generateCCAChargesButton">
                 <Button
                   size="sm"
                   onClick={() => setCcaConfirmOpen(true)}
@@ -948,6 +951,7 @@ export default function FeeGenerationPage() {
                   )}
                   Generate CCA Fees ({ccaPreview.summary.chargesToGenerate})
                 </Button>
+                </PermissionGate>
               )}
             </div>
 

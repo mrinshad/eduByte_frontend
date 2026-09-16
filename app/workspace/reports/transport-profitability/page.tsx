@@ -10,6 +10,7 @@ import {
     type ExpenseBreakdownItem
 } from "@/lib/services/advancedReports";
 import { getAcademicYears } from "@/lib/services/academicYear";
+import { getReportConfig } from "@/lib/report-definitions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +34,7 @@ import {
     ChevronRight,
     X
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
 
 function formatCurrency(amount?: number) {
@@ -66,11 +68,12 @@ function FilterChip({
 
 export default function TransportProfitabilityReportPage() {
     const router = useRouter();
+    const reportConfig = getReportConfig("reports/transport-profitability");
     const { can } = usePermission();
     const canView = can("report.read");
 
     const [academicYears, setAcademicYears] = useState<any[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<string>("");
+    const [selectedYearId, setSelectedYearId] = useState<string>("LIFETIME");
     const [searchInput, setSearchInput] = useState<string>("");
     const [search, setSearch] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
@@ -83,9 +86,6 @@ export default function TransportProfitabilityReportPage() {
                 const res = await getAcademicYears();
                 const yList = (res as any)?.data || res || [];
                 setAcademicYears(yList);
-                const active = yList.find((y: any) => y.isActive);
-                if (active) setSelectedYearId(active.id);
-                else if (yList.length > 0) setSelectedYearId(yList[0].id);
             } catch (err) {
                 console.error("Failed to load academic years", err);
             }
@@ -102,7 +102,6 @@ export default function TransportProfitabilityReportPage() {
     }, [searchInput]);
 
     const loadProfitability = useCallback(async () => {
-        if (!selectedYearId) return;
         try {
             setLoading(true);
             setError(null);
@@ -111,7 +110,7 @@ export default function TransportProfitabilityReportPage() {
             });
             setData(res);
         } catch (err: any) {
-            setError(err.message || "Failed to load Transport Profitability report");
+            setError(err.message || "Failed to load Vehicle Earnings & Expenses report");
         } finally {
             setLoading(false);
         }
@@ -169,11 +168,18 @@ export default function TransportProfitabilityReportPage() {
                             <ArrowLeft className="h-4 w-4 text-foreground" />
                         </Button>
                         <div className="min-w-0">
-                            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Transport Revenue & Cost Analysis
-                            </h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                                    {reportConfig.title}
+                                </h1>
+                                {reportConfig.badgeText && (
+                                    <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-[#556043] border-[#556043]/30 bg-[#556043]/5">
+                                        {reportConfig.badgeText}
+                                    </Badge>
+                                )}
+                            </div>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                                See how much each vehicle earned from student bus fees and how much was spent on it.
+                                {reportConfig.subtitle}
                             </p>
                         </div>
                     </div>
@@ -185,10 +191,13 @@ export default function TransportProfitabilityReportPage() {
                                 setSelectedYearId(val);
                             }}
                         >
-                            <SelectTrigger className="h-9 w-full sm:w-[150px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
-                                <SelectValue placeholder="Academic Year" />
+                            <SelectTrigger className="h-9 w-full sm:w-[180px] text-xs font-semibold rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                                <SelectValue placeholder="Select Period" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="LIFETIME">
+                                    All Time (Lifetime)
+                                </SelectItem>
                                 {academicYears.map((y) => (
                                     <SelectItem key={y.id} value={y.id}>
                                         {y.name} {y.isActive ? "(Active)" : ""}
@@ -220,10 +229,10 @@ export default function TransportProfitabilityReportPage() {
 
             {/* 4 SUMMARY STAT CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. Fleet Revenue */}
+                {/* 1. Fees Collected */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Transport Fee Revenue</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Fees Collected</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
                             <TrendingUp className="h-4 w-4" />
                         </div>
@@ -235,13 +244,13 @@ export default function TransportProfitabilityReportPage() {
                             {formatCurrency(data?.summary.totalRevenue)}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Passenger fee collections</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Student transport fees received</p>
                 </div>
 
-                {/* 2. Fleet Expenses */}
+                {/* 2. Fuel & Maintenance Spent */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Operating Costs</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fuel & Maintenance Spent</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400">
                             <TrendingDown className="h-4 w-4" />
                         </div>
@@ -260,10 +269,10 @@ export default function TransportProfitabilityReportPage() {
                     </div>
                 </div>
 
-                {/* 3. Net Balance */}
+                {/* 3. Operating Profit / Savings */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Net Operating Balance</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Operating Profit / Savings</span>
                         <div
                             className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                                 netSurplus >= 0
@@ -288,15 +297,15 @@ export default function TransportProfitabilityReportPage() {
                         </p>
                     )}
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {netSurplus >= 0 ? "Surplus operational margin" : "Operating deficit"}
+                        {netSurplus >= 0 ? "Operating profit" : "Operating deficit"}
                     </p>
                 </div>
 
-                {/* 4. Fleet Capacity */}
+                {/* 4. Total Vehicle Purchase Cost */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fleet Vehicles</span>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Vehicle Purchase Cost</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
                             <Bus className="h-4 w-4" />
                         </div>
                     </div>
@@ -304,10 +313,14 @@ export default function TransportProfitabilityReportPage() {
                         <Skeleton className="mt-2 h-7 w-28" />
                     ) : (
                         <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {data?.vehicles?.length ?? 0} Vehicles
+                            {formatCurrency(data?.summary.totalFleetInitialCost || 0)}
                         </p>
                     )}
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Total fleet operations</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Net after vehicle cost: <span className={cn("font-semibold", (data?.summary.netFleetMarginWithAssets ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                            {formatCurrency(data?.summary.netFleetMarginWithAssets || 0)}
+                        </span>
+                    </p>
                 </div>
             </div>
 
@@ -316,7 +329,7 @@ export default function TransportProfitabilityReportPage() {
                 <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
-                        placeholder="Search vehicle name or registration..."
+                        placeholder="Search vehicle, number, or driver..."
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         className="h-10 w-full rounded-lg pl-9 border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 text-xs sm:text-sm"
@@ -361,12 +374,15 @@ export default function TransportProfitabilityReportPage() {
                     <table className="w-full text-left text-sm font-sans">
                         <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
                             <tr>
-                                <th className="px-4 py-3">Vehicle Details</th>
+                                <th className="px-4 py-3">Vehicle & Driver</th>
                                 <th className="px-4 py-3 text-center">Passengers</th>
-                                <th className="px-4 py-3 text-right">Fee Collected (₹)</th>
-                                <th className="px-4 py-3">Expense Breakdown</th>
-                                <th className="px-4 py-3 text-right">Total Cost (₹)</th>
-                                <th className="px-4 py-3 text-right">Net Balance (₹)</th>
+                                <th className="px-4 py-3 text-right">Fees Collected (₹)</th>
+                                <th className="px-4 py-3">Fuel & Maintenance Breakdown</th>
+                                <th className="px-4 py-3 text-right">Total Spent (₹)</th>
+                                <th className="px-4 py-3 text-right">Operating Profit (₹)</th>
+                                <th className="px-4 py-3 text-right">Purchase Cost (₹)</th>
+                                <th className="px-4 py-3 text-right">Total Net Return (₹)</th>
+                                <th className="px-4 py-3 text-center">Cost Recovered %</th>
                                 <th className="px-4 py-3 text-center">Status</th>
                             </tr>
                         </thead>
@@ -380,13 +396,16 @@ export default function TransportProfitabilityReportPage() {
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-20 ml-auto" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-20 ml-auto" /></td>
+                                        <td className="px-4 py-3"><Skeleton className="h-5 w-12 mx-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16 mx-auto" /></td>
                                     </tr>
                                 ))
                             ) : filteredVehicles.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-12 text-slate-500 dark:text-slate-400">
-                                        No vehicle records found for this academic year.
+                                    <td colSpan={10} className="text-center py-12 text-slate-500 dark:text-slate-400">
+                                        No vehicle records found for this period.
                                     </td>
                                 </tr>
                             ) : (
@@ -396,8 +415,16 @@ export default function TransportProfitabilityReportPage() {
                                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                                                 {v.vehicleName}
                                             </div>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                                            <div className="text-xs text-slate-500">
                                                 {v.vehicleNumber}
+                                            </div>
+                                            <div className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
+                                                <span>Driver: {v.driverStaff?.name || v.driverName || "—"}</span>
+                                                {v.driverStaff?.employeeCode && (
+                                                    <span className="rounded bg-slate-200/80 dark:bg-slate-700 px-1.5 py-0.2 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                                                        {v.driverStaff.employeeCode}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-center">
@@ -405,14 +432,14 @@ export default function TransportProfitabilityReportPage() {
                                                 {v.passengerCount}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                                        <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
                                             {formatCurrency(v.revenueCollected)}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-wrap gap-1">
                                                 {v.expenseBreakdown && v.expenseBreakdown.length > 0 ? (
                                                     v.expenseBreakdown.map((cat) => (
-                                                        <span key={cat.category} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md border font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                        <span key={cat.category} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-medium bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                                             {cat.category}: {formatCurrency(cat.amount)}
                                                         </span>
                                                     ))
@@ -421,11 +448,11 @@ export default function TransportProfitabilityReportPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-right font-semibold text-rose-600 dark:text-rose-400">
+                                        <td className="px-4 py-3 text-right font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
                                             {formatCurrency(v.totalExpenses)}
                                         </td>
                                         <td
-                                            className={`px-4 py-3 text-right font-semibold text-sm ${
+                                            className={`px-4 py-3 text-right font-semibold text-sm tabular-nums ${
                                                 v.netMargin >= 0
                                                     ? "text-emerald-600 dark:text-emerald-400"
                                                     : "text-rose-600 dark:text-rose-400"
@@ -433,16 +460,47 @@ export default function TransportProfitabilityReportPage() {
                                         >
                                             {formatCurrency(v.netMargin)}
                                         </td>
+                                        <td className="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 tabular-nums">
+                                            {v.hasInitialPrice && (v.initialAssetCost ?? 0) > 0 ? formatCurrency(v.initialAssetCost) : "—"}
+                                        </td>
+                                        <td
+                                            className={`px-4 py-3 text-right font-bold text-sm tabular-nums ${
+                                                (v.netReturnAfterAsset ?? v.netMargin) >= 0
+                                                    ? "text-emerald-600 dark:text-emerald-400"
+                                                    : "text-rose-600 dark:text-rose-400"
+                                            }`}
+                                        >
+                                            {formatCurrency(v.netReturnAfterAsset ?? v.netMargin)}
+                                        </td>
+                                        <td className="px-4 py-3 text-center text-xs">
+                                            {v.paybackPercentage !== null && v.paybackPercentage !== undefined ? (
+                                                <span className={cn("font-semibold", v.paybackPercentage >= 100 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
+                                                    {v.paybackPercentage}%
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-400">—</span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3 text-center">
                                             <Badge
                                                 variant="outline"
-                                                className={`text-[11px] font-semibold ${
-                                                    v.netMargin >= 0
+                                                className={`text-[10px] font-semibold uppercase tracking-wider ${
+                                                    v.paybackStatus === "RECOVERED"
+                                                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                                        : v.paybackStatus === "RECOVERING"
+                                                        ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-400"
+                                                        : v.paybackStatus === "SURPLUS" || v.netMargin >= 0
                                                         ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400"
                                                         : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
                                                 }`}
                                             >
-                                                {v.netMargin >= 0 ? "Surplus" : "Deficit"}
+                                                {v.paybackStatus === "RECOVERED"
+                                                    ? "Cost Recovered"
+                                                    : v.paybackStatus === "RECOVERING"
+                                                    ? "Paying Back"
+                                                    : v.paybackStatus === "SURPLUS" || v.netMargin >= 0
+                                                    ? "In Profit"
+                                                    : "Deficit"}
                                             </Badge>
                                         </td>
                                     </tr>

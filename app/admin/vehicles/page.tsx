@@ -9,6 +9,7 @@ import {
   deleteVehicle,
   type Vehicle,
 } from "@/lib/services/vehicle";
+import { getStaff, type StaffListItem } from "@/lib/services/staff";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import { Loader2 } from "lucide-react";
 
 import { ArrowLeft, Plus, Bus, User, Hash, Pencil, Trash2, AlertCircle, Users, Download } from "lucide-react"
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
+import { formatCurrency } from "@/lib/utils";
 import { ReusableFormDialog, type FormField } from "@/components/common/resusable-dialoge-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogHeader, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -87,7 +89,12 @@ export default function Page() {
 
   const [vehicleName, setVehicleName] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [driverStaffId, setDriverStaffId] = useState<string>("");
   const [driverName, setDriverName] = useState("");
+  const [initialPrice, setInitialPrice] = useState<string>("");
+  const [purchaseDate, setPurchaseDate] = useState<string>("");
+
+  const [staffList, setStaffList] = useState<StaffListItem[]>([]);
 
   const handleSaveVehicle = async () => {
     if (!vehicleName.trim()) {
@@ -100,8 +107,11 @@ export default function Page() {
       return;
     }
 
-    if (!driverName.trim()) {
-      toast.error("Please enter driver name");
+    const selectedStaff = staffList.find((s) => s.id === driverStaffId);
+    const resolvedDriverName = selectedStaff?.name || driverName.trim();
+
+    if (!resolvedDriverName) {
+      toast.error("Please select a driver from the staff directory");
       return;
     }
 
@@ -109,9 +119,12 @@ export default function Page() {
 
     try {
       const payload = {
-        vehicleName,
-        vehicleNumber,
-        driverName,
+        vehicleName: vehicleName.trim(),
+        vehicleNumber: vehicleNumber.trim(),
+        driverName: resolvedDriverName,
+        driverStaffId: driverStaffId || undefined,
+        initialPrice: initialPrice.trim() !== "" ? parseFloat(initialPrice) : 0,
+        purchaseDate: purchaseDate.trim() !== "" ? purchaseDate : undefined,
       };
 
       if (editingId) {
@@ -126,7 +139,10 @@ export default function Page() {
 
       setVehicleName("");
       setVehicleNumber("");
+      setDriverStaffId("");
       setDriverName("");
+      setInitialPrice("");
+      setPurchaseDate("");
       setEditingId(null);
 
       setOpen(false);
@@ -155,7 +171,19 @@ export default function Page() {
 
   useEffect(() => {
     loadVehicles();
+    loadStaff();
   }, []);
+
+  const loadStaff = async () => {
+    try {
+      const res = await getStaff({ limit: 100, status: "ACTIVE" });
+      if (res?.data?.items) {
+        setStaffList(res.data.items);
+      }
+    } catch (err) {
+      console.error("Failed to load staff for driver dropdown", err);
+    }
+  };
 
   const loadVehicles = async () => {
     try {
@@ -178,7 +206,14 @@ export default function Page() {
 
     setVehicleName(vehicle.vehicleName);
     setVehicleNumber(vehicle.vehicleNumber);
-    setDriverName(vehicle.driverName);
+    setDriverStaffId(vehicle.driverStaffId || vehicle.driverStaff?.id || "");
+    setDriverName(vehicle.driverStaff?.name || vehicle.driverName || "");
+    setInitialPrice(
+      vehicle.asset?.initialPrice !== undefined && vehicle.asset?.initialPrice !== null && vehicle.asset.initialPrice > 0
+        ? String(vehicle.asset.initialPrice)
+        : ""
+    );
+    setPurchaseDate(vehicle.asset?.purchaseDate ? vehicle.asset.purchaseDate.split("T")[0] : "");
 
     setOpen(true);
   };
@@ -211,6 +246,8 @@ export default function Page() {
       { header: "Vehicle Name", accessor: (v) => v.vehicleName || "" },
       { header: "Vehicle Number", accessor: (v) => v.vehicleNumber || "" },
       { header: "Driver Name", accessor: (v) => v.driverName || "-" },
+      { header: "Initial Asset Price", accessor: (v) => (v.asset?.initialPrice ? formatCurrency(v.asset.initialPrice) : "—") },
+      { header: "Purchase Date", accessor: (v) => (v.asset?.purchaseDate ? new Date(v.asset.purchaseDate).toLocaleDateString() : "—") },
       { header: "Assigned Students", accessor: (v) => v._count?.assignments ?? 0 },
       { header: "Linked Expenses", accessor: (v) => v._count?.expenses ?? 0 },
       {
@@ -258,9 +295,11 @@ export default function Page() {
                 setEditingId(null);
                 setVehicleName("");
                 setVehicleNumber("");
+                setDriverStaffId("");
                 setDriverName("");
-                setOpen(true);   // <-- Add this line
-                console.log("Create Vehicle clicked");
+                setInitialPrice("");
+                setPurchaseDate("");
+                setOpen(true);
               }}
               className="
                               w-full sm:w-auto shrink-0
@@ -295,15 +334,34 @@ export default function Page() {
           submitLabel="Save"
           editSubmitLabel="Update"
           fields={[
-            { type: "text", name: "vehicleName", label: "Vehicle Name", placeholder: "School Bus" },
-            { type: "text", name: "vehicleNumber", label: "Vehicle Number", placeholder: "KL 01 AB 1234" },
-            { type: "text", name: "driverName", label: "Driver Name", placeholder: "John Mathew" },
+            { type: "text", name: "vehicleName", label: "Vehicle Name", placeholder: "School Bus", required: true },
+            { type: "text", name: "vehicleNumber", label: "Vehicle Number", placeholder: "KL 01 AB 1234", required: true },
+            {
+              type: "select",
+              name: "driverStaffId",
+              label: "Assigned Driver (Staff Member)",
+              placeholder: staffList.length ? "Select driver from staff..." : "Loading staff directory...",
+              options: staffList.map((s) => ({
+                label: `${s.name} (${s.employeeCode})`,
+                value: s.id,
+              })),
+              required: true,
+            },
+            { type: "number", name: "initialPrice", label: "Initial Asset Cost (₹, optional)", placeholder: "e.g. 1500000" },
+            { type: "date", name: "purchaseDate", label: "Purchase Date (optional)" },
           ]}
-          values={{ vehicleName, vehicleNumber, driverName }}
+          values={{ vehicleName, vehicleNumber, driverStaffId, driverName, initialPrice, purchaseDate }}
           onChange={(name, value) => {
             if (name === "vehicleName") setVehicleName(value)
             if (name === "vehicleNumber") setVehicleNumber(value)
+            if (name === "driverStaffId") {
+              setDriverStaffId(value)
+              const matched = staffList.find((s) => s.id === value)
+              if (matched) setDriverName(matched.name)
+            }
             if (name === "driverName") setDriverName(value)
+            if (name === "initialPrice") setInitialPrice(value)
+            if (name === "purchaseDate") setPurchaseDate(value)
           }}
           onSubmit={handleSaveVehicle}
         />
@@ -425,13 +483,18 @@ export default function Page() {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 rounded-lg bg-slate-50/50 p-2 dark:bg-slate-800/40">
                     <User className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-                    <div className="min-w-0 flex items-center gap-1.5">
+                    <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
                       <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
                         Driver:
                       </span>
                       <span className="truncate text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {vehicle.driverName}
+                        {vehicle.driverStaff?.name || vehicle.driverName || "—"}
                       </span>
+                      {vehicle.driverStaff?.employeeCode && (
+                        <span className="rounded bg-slate-200/80 dark:bg-slate-700 px-1.5 py-0.2 text-[10px] font-mono font-medium text-slate-600 dark:text-slate-300">
+                          {vehicle.driverStaff.employeeCode}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -451,6 +514,15 @@ export default function Page() {
                       </span>
                     )}
                   </div>
+
+                  {Boolean((vehicle.asset?.initialPrice ?? 0) > 0) && (
+                    <div className="flex items-center justify-between gap-2 px-1 text-[11px] pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
+                      <span className="text-slate-400 dark:text-slate-500">Asset Value:</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">
+                        {formatCurrency(vehicle.asset?.initialPrice)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

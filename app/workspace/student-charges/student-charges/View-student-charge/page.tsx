@@ -541,10 +541,10 @@ export default function ViewAdmissionPage() {
               {studentDetails.status}
             </Badge>
             <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] font-semibold text-xs h-9 shadow-sm"
+              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-semibold text-xs h-9 shadow-sm"
               onClick={() => router.push(`/workspace/fee-management/viewCollection?id=${enrollment.enrollmentId}`)}
             >
-              <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+              <CreditCard className="mr-1.5 h-3.5 w-3.5 text-white dark:text-slate-900" />
               Collect Fee
             </Button>
           </div>

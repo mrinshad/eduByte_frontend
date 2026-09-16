@@ -57,6 +57,7 @@ import {
     type ExpenseDetail,
 } from "@/lib/services/reports";
 import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 // ---------------------------------------------------------------------
 // Shared bits — same sage accent (#6D755F) as the rest of the app.
@@ -148,7 +149,7 @@ export default function Page() {
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
     const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
 
-    // ── Edit mode loading ─────────────────────────────────────────────────
+    // ── Edit mode loading ────────────────────────────────────────────────
     const [loadingExpense, setLoadingExpense] = useState(false);
     const [expenseDetail, setExpenseDetail] = useState<ExpenseDetail | null>(null);
 
@@ -547,7 +548,7 @@ export default function Page() {
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${editId}`);
                     } else {
-                        router.push("/workspace/reports/expense-summary");
+                        router.push("/workspace/reports/daily-expenses");
                     }
                 } else {
                     toast.error(result.message || "An error occurred during update.");
@@ -560,7 +561,7 @@ export default function Page() {
                     if (printAfterCreate) {
                         router.push(`/print/expenses/${result.data.id}`);
                     } else {
-                        router.push("/workspace/reports/expense-summary");
+                        router.push("/workspace/reports/daily-expenses");
                     }
                 } else {
                     toast.error(result.message || "An error occurred during submission.");
@@ -596,24 +597,27 @@ export default function Page() {
 
             {/* ── Left: form fields ───────────────────────────────────── */}
             <div className="flex flex-1 flex-col gap-6 h-[590px] overflow-y-auto p-6 lg:p-10">
-                <div className="flex items-center gap-3">
-                    <Button
-                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
-                        size="icon"
-                        onClick={() => router.back()}
-                    >
-                        <ArrowLeft className="h-4 w-4 text-foreground" />
-                    </Button>
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            {isEditMode ? "Edit Expense" : "Create Expense"}
-                        </h1>
-                        <p className="text-xs text-slate-400">
-                            {isEditMode
-                                ? `Editing ${expenseDetail?.expenseNumber ?? ""}`
-                                : "Log a new expense and how it was paid"}
-                        </p>
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                            size="icon"
+                            onClick={() => router.back()}
+                        >
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
+                        </Button>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                {isEditMode ? "Edit Expense" : "Create Expense"}
+                            </h1>
+                            <p className="text-xs text-slate-400">
+                                {isEditMode
+                                    ? `Editing ${expenseDetail?.expenseNumber ?? ""}`
+                                    : "Log a new expense and how it was paid"}
+                            </p>
+                        </div>
                     </div>
+
                 </div>
 
                 {/* Staff / date */}
@@ -719,8 +723,8 @@ export default function Page() {
                     </div>
                 </div>
 
-                {/* Category / sub category */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Category / Sub Category / Linked Activity */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="flex flex-col gap-1.5">
                         <FieldLabel>Category<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                         <Popover open={categoryPopoverOpen} onOpenChange={handleCategoryPopoverChange}>
@@ -838,8 +842,71 @@ export default function Page() {
                         </Popover>
                         <FieldError>{fieldErrors.subCategory}</FieldError>
                     </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Linked Activity (optional)</FieldLabel>
+                        <Popover open={ccaPopoverOpen} onOpenChange={setCcaPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={ccaPopoverOpen}
+                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                >
+                                    <span className="flex items-center gap-2 truncate text-slate-900 dark:text-slate-100">
+                                        <Activity className="h-3.5 w-3.5 shrink-0 text-[#6D755F]" />
+                                        <span className="truncate">
+                                            {selectedCCAActivityId 
+                                                ? ccaActivities.find(a => toId(a.id) === selectedCCAActivityId)?.name || "Not linked" 
+                                                : "Not linked"}
+                                        </span>
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search CCA activity..." />
+                                    <CommandList>
+                                        <CommandEmpty>No activities found.</CommandEmpty>
+                                        <CommandGroup>
+                                            <CommandItem
+                                                value="none"
+                                                onSelect={() => {
+                                                    setSelectedCCAActivityId("");
+                                                    setCcaPopoverOpen(false);
+                                                }}
+                                                className="cursor-pointer"
+                                            >
+                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === "" ? "opacity-100" : "opacity-0")} />
+                                                <span className="text-slate-600 dark:text-slate-400">Not linked</span>
+                                            </CommandItem>
+                                            {ccaActivities.map((act) => (
+                                                <CommandItem
+                                                    key={act.id}
+                                                    value={act.name}
+                                                    onSelect={() => {
+                                                        setSelectedCCAActivityId(toId(act.id));
+                                                        setCcaPopoverOpen(false);
+                                                    }}
+                                                    className="py-2.5 cursor-pointer"
+                                                >
+                                                    <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === toId(act.id) ? "opacity-100" : "opacity-0")} />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-slate-200 dark:text-slate-100">{act.name}</span>
+                                                        <span className="text-[11px] text-slate-400">Default: ₹{act.defaultFee}/mo</span>
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
 
+                {/* Amount / Vehicle */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                     <div className="flex flex-col gap-1.5">
@@ -925,68 +992,6 @@ export default function Page() {
                             </PopoverContent>
                         </Popover>
                     </div>
-
-                    <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Linked Activity (optional)</FieldLabel>
-                        <Popover open={ccaPopoverOpen} onOpenChange={setCcaPopoverOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={ccaPopoverOpen}
-                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
-                                >
-                                    <span className="flex items-center gap-2 truncate text-slate-900 dark:text-slate-100">
-                                        <Activity className="h-3.5 w-3.5 shrink-0 text-[#6D755F]" />
-                                        <span className="truncate">
-                                            {selectedCCAActivityId 
-                                                ? ccaActivities.find(a => toId(a.id) === selectedCCAActivityId)?.name || "Not linked" 
-                                                : "Not linked"}
-                                        </span>
-                                    </span>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg" align="start">
-                                <Command>
-                                    <CommandInput placeholder="Search CCA activity..." />
-                                    <CommandList>
-                                        <CommandEmpty>No activities found.</CommandEmpty>
-                                        <CommandGroup>
-                                            <CommandItem
-                                                value="none"
-                                                onSelect={() => {
-                                                    setSelectedCCAActivityId("");
-                                                    setCcaPopoverOpen(false);
-                                                }}
-                                                className="cursor-pointer"
-                                            >
-                                                <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === "" ? "opacity-100" : "opacity-0")} />
-                                                <span className="text-slate-600 dark:text-slate-400">Not linked</span>
-                                            </CommandItem>
-                                            {ccaActivities.map((act) => (
-                                                <CommandItem
-                                                    key={act.id}
-                                                    value={act.name}
-                                                    onSelect={() => {
-                                                        setSelectedCCAActivityId(toId(act.id));
-                                                        setCcaPopoverOpen(false);
-                                                    }}
-                                                    className="py-2.5 cursor-pointer"
-                                                >
-                                                    <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", selectedCCAActivityId === toId(act.id) ? "opacity-100" : "opacity-0")} />
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-200 dark:text-slate-100">{act.name}</span>
-                                                        <span className="text-[11px] text-slate-400">Default: ₹{act.defaultFee}/mo</span>
-                                                    </div>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -995,22 +1000,26 @@ export default function Page() {
 
                     <div className="flex flex-col gap-1.5">
 
-                        <FieldLabel>Notes</FieldLabel>
+                        <div className="flex h-6 items-center">
+                            <FieldLabel>Notes</FieldLabel>
+                        </div>
 
                         <textarea
                             placeholder="Optional context for this expense"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            rows={6}
                             className="
                 w-full
+                flex-1
+                h-full
+                min-h-[74px]
                 resize-none
                 rounded-lg
                 border
                 border-slate-200
                 bg-white
                 px-3
-                py-2
+                py-2.5
                 text-sm
                 dark:border-slate-700
                 dark:bg-slate-950
@@ -1023,22 +1032,23 @@ export default function Page() {
 
                     {/* RIGHT */}
                     {/* Payment split */}
-                    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                        <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex h-6 items-center justify-between">
                             <FieldLabel>Payment Accounts<span className="text-red-600 ml-0.5">*</span></FieldLabel>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={addPaymentRow}
-                                className="h-7 rounded-md px-2 text-xs hover:bg-transparent hover:underline"
+                                className="h-6 rounded-md px-2 text-xs hover:bg-transparent hover:underline"
                                 style={{ color: SAGE }}
                             >
                                 <Plus className="mr-1 h-3.5 w-3.5" /> Add account
                             </Button>
                         </div>
 
-                        <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
+                        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex max-h-[168px] flex-col gap-2 overflow-y-auto pr-1">
                             {payments.map((row, index) => {
                                 const rowAccount = accountsDropdown.find((a) => toId(a.id) === row.accountId);
                                 const rowError = paymentErrors[row.id];
@@ -1137,9 +1147,9 @@ export default function Page() {
                         )}
                     </div>
                 </div>
-
-
             </div>
+
+        </div>
 
             {/* ── Right: review & submit panel ───────────────────────── */}
             <div

@@ -547,7 +547,7 @@ export default function ViewAdmissionPage() {
             <AlertDialogTitle className="break-words">
               Withdraw "{student.studentName}"?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+            <AlertDialogDescription className="space-y-2 text-sm text-slate-400 dark:text-slate-400">
               <p>
                 This will mark the student's admission as <strong>WITHDRAWN</strong>.
               </p>
@@ -571,7 +571,7 @@ export default function ViewAdmissionPage() {
                 e.preventDefault();
                 void handleWithdrawAdmission();
               }}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-slate-400"
             >
               {isWithdrawing ? (
                 <>
