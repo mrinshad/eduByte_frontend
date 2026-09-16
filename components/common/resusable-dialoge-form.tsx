@@ -40,7 +40,7 @@ export type FieldOption = { label: string; value: string }
 
 export type FormField =
   | {
-      type: "text" | "number" | "password"
+      type: "text" | "number" | "password" | "date"
       name: string
       label: string
       placeholder?: string
@@ -204,9 +204,9 @@ export function ReusableFormDialog({
                   </Label>
                 )}
 
-                {(field.type === "text" || field.type === "number" || field.type === "password") && (
+                {(field.type === "text" || field.type === "number" || field.type === "password" || field.type === "date") && (
                   <Input
-                    type={field.type === "number" ? "number" : field.type === "password" ? "password" : "text"}
+                    type={field.type === "number" ? "number" : field.type === "password" ? "password" : field.type === "date" ? "date" : "text"}
                     min={field.type === "number" ? 0 : undefined}
                     step={field.type === "number" ? "0.01" : undefined}
                     onWheel={field.type === "number" ? (e) => e.currentTarget.blur() : undefined}

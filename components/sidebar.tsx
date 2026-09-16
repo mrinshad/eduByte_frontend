@@ -4,20 +4,65 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  Banknote,
+  AlertCircle,
+  AlertTriangle,
+  ArrowUpRight,
+  BadgeIndianRupee,
+  BarChart3,
+  Bell,
   BookOpen,
+  BookOpenCheck,
+  Boxes,
   Briefcase,
   Building2,
+  Bus,
+  Calendar,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
+  ClipboardList,
+  Clock,
+  Coins,
+  Contact,
+  CopyCheck,
+  CreditCard,
+  FileMinus,
+  FileSpreadsheet,
   FileText,
   Folder,
+  FolderTree,
+  Fuel,
   GraduationCap,
-  Home,
+  History,
+  Landmark,
+  Layers,
+  LayoutDashboard,
+  LineChart,
+  Medal,
+  Milestone,
+  PieChart,
   Receipt,
+  ReceiptText,
+  RotateCcw,
+  Route,
+  Scale,
+  School,
   Settings,
+  ShieldCheck,
+  Sparkles,
+  Split,
+  Tag,
+  Ticket,
+  TrendingUp,
+  Trophy,
+  User,
+  UserCheck,
+  UserMinus,
+  UserPlus,
   Users,
+  UsersRound,
+  Wallet,
+  Wrench,
   type LucideIcon,
 } from "lucide-react"
 
@@ -43,40 +88,124 @@ type SidebarGroupView = {
   subgroups?: Record<string, PortalNavItem[]>
 }
 
+const SUBGROUP_ICONS: Record<string, LucideIcon> = {
+  "Fee Management": CreditCard,
+  "Accounting": Landmark,
+  "Overview & Accounts": BarChart3,
+  "Student Fees": BadgeIndianRupee,
+  "Expenses & Payroll": ReceiptText,
+  "Transport & Fleet": Bus,
+  "Students & Admissions": GraduationCap,
+}
+
 function getSubgroupIcon(subgroup: string): LucideIcon {
+  if (SUBGROUP_ICONS[subgroup]) return SUBGROUP_ICONS[subgroup]
   const s = subgroup.toLowerCase()
-  if (s.includes("overview")) return GraduationCap
-  if (s.includes("receipt") || s.includes("income")) return Banknote
-  if (s.includes("payment") || s.includes("expense")) return Receipt
+  if (s.includes("overview")) return BarChart3
+  if (s.includes("transport") || s.includes("fleet")) return Bus
+  if (s.includes("admission") || s.includes("student")) return GraduationCap
+  if (s.includes("fee") || s.includes("receipt") || s.includes("income")) return BadgeIndianRupee
+  if (s.includes("payment") || s.includes("expense") || s.includes("payroll")) return ReceiptText
   if (s.includes("setup")) return Settings
-  if (s.includes("collection")) return Banknote
+  if (s.includes("account") || s.includes("finance")) return Landmark
   if (s.includes("operation")) return Briefcase
-  if (s.includes("fee") || s.includes("finance")) return CircleDollarSign
-  if (s.includes("account")) return Receipt
   return Folder
 }
 
-function getIcon(slug: string): LucideIcon {
-  const normalizedSlug = slug.toLowerCase()
+const ICON_BY_SLUG: Record<string, LucideIcon> = {
+  // --- Admin Area ---
+  dashboard: LayoutDashboard,
+  "academic-profile": School,
+  staff: Contact,
+  students: GraduationCap,
+  admissions: UserPlus,
+  promotion: ArrowUpRight,
+  relieving: UserMinus,
+  "charge-types": Tag,
+  "fee-structures": Layers,
+  "fee-structures/bulk-assign": CopyCheck,
+  cca: Trophy,
+  accounts: Landmark,
+  assets: Boxes,
+  vehicles: Bus,
+  users: Users,
+  roles: ShieldCheck,
+  "audit-logs": ClipboardList,
 
-  if (normalizedSlug.includes("dashboard")) return Home
-  if (normalizedSlug.includes("student")) return GraduationCap
-  if (normalizedSlug.includes("class") || normalizedSlug.includes("division")) return BookOpen
-  if (normalizedSlug.includes("staff") || normalizedSlug.includes("admission") || normalizedSlug.includes("user")) return Users
-  if (
-    normalizedSlug.includes("fee") ||
-    normalizedSlug.includes("charge") ||
-    normalizedSlug.includes("discount") ||
-    normalizedSlug.includes("refund") ||
-    normalizedSlug.includes("collection") ||
-    normalizedSlug.includes("expense") ||
-    normalizedSlug.includes("payroll") ||
-    normalizedSlug.includes("vendor") ||
-    normalizedSlug.includes("account")
-  )
-    return CircleDollarSign
-  if (normalizedSlug.includes("receipt")) return Receipt
-  if (normalizedSlug.includes("report") || normalizedSlug.includes("audit")) return FileText
+  // --- Workspace Operations ---
+  "fee-management": BadgeIndianRupee,
+  "fine-management/student-fines": AlertCircle,
+  "expense-management": ReceiptText,
+  "salary-slips": Wallet,
+  "student-charges/student-charges": FileSpreadsheet,
+  "student-charges/generate-charges": Sparkles,
+
+  // --- Workspace Reports ---
+  "reports/academic-year-summary": LineChart,
+  "reports/daybook": BookOpenCheck,
+  "reports/revolving-fund": Coins,
+  "reports/asset-performance": Wrench,
+  "reports/daily-receipts": Receipt,
+  "reports/fee-type": PieChart,
+  "reports/fee-defaulters": AlertTriangle,
+  "reports/fines-register": Clock,
+  "reports/cca-report": Medal,
+  "reports/cca-activity-profit": Scale,
+  "reports/salary": Briefcase,
+  "reports/daily-expenses": FileMinus,
+  "reports/category-expenses": FolderTree,
+  "reports/transport-expenses": Fuel,
+  "reports/transport-profitability": TrendingUp,
+  "reports/transport-roster": Route,
+  "reports/admissions-master": UserCheck,
+  "reports/class-demographics": UsersRound,
+  "reports/student-progression": Milestone,
+
+  // --- Student Area ---
+  "profile/personal-details": User,
+  "profile/parent-details": Users,
+  "profile/academic-details": GraduationCap,
+  "academic-history/academic-years": Calendar,
+  "academic-history/classes": BookOpen,
+  "academic-history/divisions": Split,
+  "fees/current-charges": CircleDollarSign,
+  "fees/outstanding-fees": AlertCircle,
+  "fees/fine-details": Clock,
+  "fees/payment-history": History,
+  "fees/receipts": Receipt,
+  "fees/refund-history": RotateCcw,
+  "transport/assigned-vehicle": Bus,
+  "transport/transport-fee-details": Ticket,
+  "notifications/fee-reminders": Bell,
+}
+
+function getIcon(link: PortalNavItem): LucideIcon {
+  // Dynamic individual fee type reports under /workspace/reports/fee-type/:id
+  if (link.slug === "reports/fee-type" && link.href && link.href.includes("/fee-type/")) {
+    return Tag
+  }
+
+  if (ICON_BY_SLUG[link.slug]) {
+    return ICON_BY_SLUG[link.slug]
+  }
+
+  // Fallback pattern matching if an unmapped slug is encountered
+  const normalized = link.slug.toLowerCase()
+  if (normalized.includes("dashboard")) return LayoutDashboard
+  if (normalized.includes("student")) return GraduationCap
+  if (normalized.includes("class") || normalized.includes("division")) return BookOpen
+  if (normalized.includes("staff")) return Contact
+  if (normalized.includes("admission")) return UserPlus
+  if (normalized.includes("user")) return Users
+  if (normalized.includes("role") || normalized.includes("permission")) return ShieldCheck
+  if (normalized.includes("asset")) return Boxes
+  if (normalized.includes("vehicle") || normalized.includes("transport")) return Bus
+  if (normalized.includes("receipt")) return Receipt
+  if (normalized.includes("fine")) return AlertCircle
+  if (normalized.includes("salary") || normalized.includes("payroll")) return Wallet
+  if (normalized.includes("expense")) return ReceiptText
+  if (normalized.includes("fee") || normalized.includes("charge")) return BadgeIndianRupee
+  if (normalized.includes("report") || normalized.includes("audit")) return FileText
   return Building2
 }
 
@@ -93,8 +222,6 @@ function SidebarItem({
   isSubItem?: boolean
   onNavigate?: () => void
 }) {
-  const Icon = getIcon(link.slug)
-
   const activeClass = isSubItem
     ? "bg-white shadow-sm ring-1 ring-black/[0.05] text-slate-900 dark:bg-slate-800 dark:ring-white/[0.08] dark:text-slate-100 font-semibold"
     : "bg-gradient-to-r from-amber-500/10 to-orange-500/[0.02] border-l-2 border-amber-500 font-semibold text-amber-900 dark:from-amber-500/10 dark:to-transparent dark:text-amber-200"
@@ -121,7 +248,10 @@ function SidebarItem({
               : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300"
           }`}
         >
-          <Icon className={isSubItem ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={active ? 2.2 : 1.8} />
+          {React.createElement(getIcon(link), {
+            className: isSubItem ? "h-3.5 w-3.5" : "h-4 w-4",
+            strokeWidth: active ? 2.2 : 1.8,
+          })}
         </span>
 
         <span
@@ -172,7 +302,6 @@ function SidebarSubgroup({
 }) {
   const mountaineerActive = items.some((item) => isLinkActive(item.href, pathname, allHrefs))
   const [isOpen, setIsOpen] = React.useState<boolean>(mountaineerActive || true)
-  const SubgroupIcon = getSubgroupIcon(subgroup)
 
   return (
     <div
@@ -201,7 +330,10 @@ function SidebarSubgroup({
                 : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300"
             }`}
           >
-            <SubgroupIcon className="h-4 w-4" strokeWidth={mountaineerActive && collapsed ? 2.2 : 1.8} />
+            {React.createElement(getSubgroupIcon(subgroup), {
+              className: "h-4 w-4",
+              strokeWidth: mountaineerActive && collapsed ? 2.2 : 1.8,
+            })}
           </span>
           {!collapsed && (
             <span
@@ -263,7 +395,7 @@ function SidebarBody({
 }: Omit<SidebarProps, "mobileOpen">) {
   const pathname = usePathname()
 
-  const permissions = userPermissions || []
+  const permissions = React.useMemo(() => userPermissions || [], [userPermissions])
 
   const [chargeTypes, setChargeTypes] = React.useState<ChargeTypes[]>([])
 
@@ -300,7 +432,7 @@ function SidebarBody({
         label: ct.name,
         purpose: `Receipts report for ${ct.name}`,
         group: "Report",
-        subgroup: "Receipts (Income)",
+        subgroup: "Student Fees",
       }))
 
       return {

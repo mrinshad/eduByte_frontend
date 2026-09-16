@@ -1425,8 +1425,8 @@ export default function CCAManagementPage() {
                       className={cn(
                         "flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer",
                         isChecked
-                          ? "border-white/60 bg-[#6a7459] dark:border-slate-600 dark:bg-slate-800"
-                          : "border-[#8b9478]/50 bg-[#667155]/60 hover:bg-[#667155] dark:border-slate-700 dark:bg-slate-850 dark:hover:bg-slate-800"
+                          ? "border-white/60 bg-[#6a7459] dark:border-slate-500 dark:bg-slate-700"
+                          : "border-[#8b9478]/50 bg-[#667155]/60 hover:bg-[#667155] dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                       )}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
@@ -2301,8 +2301,8 @@ export default function CCAManagementPage() {
       <AlertDialog open={!!assignmentToDrop} onOpenChange={(open) => !open && setAssignmentToDrop(null)}>
         <AlertDialogContent className="w-[92vw] sm:max-w-lg rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-semibold text-slate-950 dark:text-white">Drop Student from CCA?</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-100 dark:text-white">Drop Student from CCA?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm text-slate-400 dark:text-slate-400">
               Are you sure you want to drop <strong>{assignmentToDrop?.studentName}</strong> from{" "}
               <strong>{assignmentToDrop?.activityName}</strong>? The student&apos;s participation will be closed with end date set to today.
             </AlertDialogDescription>
@@ -2315,7 +2315,7 @@ export default function CCAManagementPage() {
                 e.preventDefault();
                 void handleExecuteDrop();
               }}
-              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white rounded-full"
+              className="w-full sm:w-auto bg-amber-700 text-red-500 rounded-full"
             >
               {isDroppingAssignment ? (
                 <>

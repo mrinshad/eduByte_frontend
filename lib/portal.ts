@@ -1,4 +1,12 @@
 import { checkPermission } from "@/hooks/usePermission"
+import {
+  REPORT_CONFIGS,
+  getReportConfig,
+  type ReportConfig,
+  type ReportCategory,
+} from "./report-definitions"
+
+export { REPORT_CONFIGS, getReportConfig, type ReportConfig, type ReportCategory }
 
 export type PortalArea = "workspace" | "admin" | "student"
 
@@ -41,6 +49,7 @@ export const portalSections: PortalSection[] = [
   { slug: "fee-structures/bulk-assign", label: "Bulk Assign Fees", area: "admin", purpose: "Bulk assign fee structures to students", group: "Fee Configuration" },
   { slug: "cca", label: "Co-Curricular (CCA)", area: "admin", purpose: "Manage CCA activities and student allocations", group: "Fee Configuration" },
   { slug: "accounts", label: "Accounts", area: "admin", purpose: "Define account types", group: "Fee Configuration" },
+  { slug: "assets", label: "Asset Register", area: "admin", purpose: "Manage physical capital assets, furniture, IT infrastructure, and valuations", group: "Fee Configuration" },
 
   { slug: "vehicles", label: "Transport", area: "admin", purpose: "Manage transport vehicles", group: "Transport Management" },
 
@@ -82,43 +91,15 @@ export const portalSections: PortalSection[] = [
   { slug: "student-charges/student-charges", label: "Fee Ledgers", area: "workspace", purpose: "Show fees owed by students", group: "Finance", subgroup: "Accounting" },
   { slug: "student-charges/generate-charges", label: "Generate Fees", area: "workspace", purpose: "Preview and generate recurring student charges", group: "Finance", subgroup: "Accounting" },
 
-  // --- WORKSPACE REPORTS (REBUILT & EXPANDED) ---
-  // A. Executive Overview
-  { slug: "reports/academic-year-summary", label: "Academic Year Summary", area: "workspace", purpose: "Executive operational and financial performance overview for academic years", group: "Report", subgroup: "Overview" },
-  { slug: "reports/daybook", label: "Consolidated Daybook", area: "workspace", purpose: "Daily chronological register of cash and bank receipts and disbursements", group: "Report", subgroup: "Overview" },
-
-  // B. Receipts (Income)
-  { slug: "reports/admissions-master", label: "Admissions Master", area: "workspace", purpose: "Master roster of all student admissions with full details", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/cca-report", label: "CCA Report", area: "workspace", purpose: "Financial P&L and student roster for Co-Curricular activities", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/cca-activity-profit", label: "CCA Activity Profit & Loss", area: "workspace", purpose: "Individual activity profitability with separate income and expense breakdown", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/daily-receipts", label: "Daily Receipts", area: "workspace", purpose: "Consolidated daily receipts register with Cash and Bank split", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/fee-defaulters", label: "Fee Defaulters & Aging", area: "workspace", purpose: "Unpaid dues segmented into aging brackets with parent contacts", group: "Report", subgroup: "Receipts (Income)" },
-  { slug: "reports/fines-register", label: "Fines & Penalties Register", area: "workspace", purpose: "Categorical audit of levied, collected, and waived fines", group: "Report", subgroup: "Receipts (Income)" },
-
-  // C. Payments (Expenses)
-  { slug: "reports/salary", label: "Salary", area: "workspace", purpose: "Staff payroll, advances, and compensation", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/transport-expenses", label: "Transportation Expenses", area: "workspace", purpose: "Vehicle operational costs, fuel, and repairs", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/category-expenses", label: "Expenses by Category", area: "workspace", purpose: "Category & subcategory expense ledger", group: "Report", subgroup: "Payments (Expenses)" },
-  { slug: "reports/daily-expenses", label: "Daily Expenses", area: "workspace", purpose: "Consolidated daily outgoing expenses register", group: "Report", subgroup: "Payments (Expenses)" },
-
-  // D. Transportation
-  { slug: "reports/transport-roster", label: "Vehicle Route Roster", area: "workspace", purpose: "Fleet seating capacity and student passenger manifests", group: "Report", subgroup: "Transportation" },
-  { slug: "reports/transport-profitability", label: "Vehicle Profitability (P&L)", area: "workspace", purpose: "Transport fee collections vs operating costs per vehicle", group: "Report", subgroup: "Transportation" },
-
-  // E. Admissions & Academics
-
-  { slug: "reports/class-demographics", label: "Class Demographics Census", area: "workspace", purpose: "Standard class and division census with gender parity ratio", group: "Report", subgroup: "Admissions & Academics" },
-  { slug: "reports/student-progression", label: "Student Progression & TC", area: "workspace", purpose: "Annual promotion flows, retainees, and TC withdrawals", group: "Report", subgroup: "Admissions & Academics" },
-
-  // --- PREVIOUS REPORTS (COMMENTED OUT DURING STEP-BY-STEP REBUILD) ---
-  // { slug: "reports/vehicle-wise-report", label: "Transport Financials", area: "workspace", purpose: "expense and income report", group: "Report", subgroup: "Vehicle" },
-  // { slug: "reports/vehicle-allocation", label: "Bus Passenger Roster", area: "workspace", purpose: "Shows which students are assigned to each vehicle. Useful for transport management", group: "Report", subgroup: "Vehicle" },
-  // { slug: "reports/daily-collection", label: "Daily Collection", area: "workspace", purpose: "View daily collection from different fees and by payment methods", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/term-fee-collection-report", label: "Term Collection Report", area: "workspace", purpose: "View term-wise fee collection", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/daily-fee-collection", label: "Daily Receipts Register", area: "workspace", purpose: "View daily fee collection", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/student-outstanding", label: "Outstanding Fees", area: "workspace", purpose: "View student fees", group: "Report", subgroup: "Fee Collection" },
-  // { slug: "reports/categories-by-expense", label: "Expenses by Category", area: "workspace", purpose: "View expenses by category", group: "Report", subgroup: "Expense" },
-  // { slug: "reports/expense-summary", label: "Expense Summary", area: "workspace", purpose: "View expenses by chargetype", group: "Report", subgroup: "Expense" },
+  // --- WORKSPACE REPORTS (DYNAMICALLY DERIVED FROM REPORT_CONFIGS) ---
+  ...Object.values(REPORT_CONFIGS).map((rc) => ({
+    slug: rc.slug,
+    label: rc.title,
+    area: "workspace" as PortalArea,
+    purpose: rc.subtitle,
+    group: "Report",
+    subgroup: rc.category,
+  })),
 ]
 
 export const portalAreas: Record<PortalArea, { title: string; subtitle: string }> = {
@@ -159,6 +140,7 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fee-structures/bulk-assign": "feestructures.bulkAssignButton",
     "cca": "cca.listOnNavbar",
     "accounts": "accounts.listOnNavbar",
+    "assets": "assets.listOnNavbar",
     "vehicles": "vehicle.listOnNavbar",
     "users": "users.listOnNavbar",
     "roles": "roles.listOnNavbar",
@@ -170,44 +152,15 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
     "fine-management/student-fines": "fine.listOnNavbar",
     "student-charges/student-charges": "studentcharges.listOnNavbar",
     "student-charges/generate-charges": "feegeneration.listOnNavbar",
+    "salary-slips": "salaryslips.listOnNavbar",
 
-    // --- ACTIVE REPORT PERMISSIONS ---
-    // A. Executive Overview
-    "reports/academic-year-summary": "academicyearsummary.listOnNavbar",
-    "reports/daybook": "daybook.listOnNavbar",
-
-    // B. Receipts (Income)
-    "reports/admissions-master": "admissionsreport.listOnNavbar",
-    "reports/cca-report": "ccareport.listOnNavbar",
-    "reports/cca-activity-profit": "ccaactivityprofit.listOnNavbar",
-    "reports/daily-receipts": "dailyreceipts.listOnNavbar",
-    "reports/fee-defaulters": "feedefaulters.listOnNavbar",
-    "reports/fines-register": "finesregister.listOnNavbar",
-    "reports/fee-type": "feetypecollection.listOnNavbar",
-
-    // C. Payments (Expenses)
-    "reports/salary": "salaryreport.listOnNavbar",
-    "reports/transport-expenses": "transportexpensereport.listOnNavbar",
-    "reports/category-expenses": "expensecategorywise.listOnNavbar",
-    "reports/daily-expenses": "dailyexpenses.listOnNavbar",
-
-    // D. Transportation
-    "reports/transport-roster": "transportroster.listOnNavbar",
-    "reports/transport-profitability": "transportprofitability.listOnNavbar",
-
-    // E. Admissions & Academics
-    "reports/class-demographics": "classdemographics.listOnNavbar",
-    "reports/student-progression": "studentprogression.listOnNavbar",
-
-    // --- PREVIOUS REPORTS (COMMENTED OUT) ---
-    // "reports/vehicle-wise-report": "vehiclefinancialreport.listOnNavbar",
-    // "reports/vehicle-allocation": "vehicleallocationreport.listOnNavbar",
-    // "reports/daily-collection": "dailycollection.listOnNavbar",
-    // "reports/term-fee-collection-report": "feecollectionreport.listOnNavbar",
-    // "reports/daily-fee-collection": "dailyfeecollection.listOnNavbar",
-    // "reports/student-outstanding": "studentoutstanding.listOnNavbar",
-    // "reports/categories-by-expense": "expensecategorywise.listOnNavbar",
-    // "reports/expense-summary": "expensesummary.listOnNavbar",
+    // Reports permissions are dynamically resolved from REPORT_CONFIGS below
+  }
+  if (slug.startsWith("reports/")) {
+    const reportKey = slug.replace(/^reports\//, "")
+    if (REPORT_CONFIGS[reportKey]?.permissionKey) {
+      return REPORT_CONFIGS[reportKey].permissionKey
+    }
   }
   return map[slug] || `${slug.split("/")[0].replace(/-/g, "")}.listOnNavbar`
 }
@@ -365,19 +318,23 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
     "admissionsreport",
     "dailyreceipts",
     "feetype",
+    "feetypecollection",
+    "feedefaulters",
+    "finesregister",
     "salaryreport",
+    "salaryslips",
     "transportexpensereport",
     "dailyexpenses",
-    "dailycollection",
-    "studentoutstanding",
-    "expensesummary",
-    "vehiclefinancialreport",
-    "vehicleallocationreport",
-    "dailyfeecollection",
-    "feecollectionreport",
     "expensecategorywise",
     "ccareport",
     "ccaactivityprofit",
+    "daybook",
+    "revolvingfund",
+    "assetperformance",
+    "transportroster",
+    "transportprofitability",
+    "classdemographics",
+    "studentprogression",
   ]
 
   if (workspaceDomains.some((d) => lower.startsWith(d))) {
@@ -550,22 +507,7 @@ const SECTION_KEYWORDS: Record<string, string[]> = {
   "fine-management/student-fines": ["student fines", "penalties", "late fee", "waive fine"],
   "student-charges/student-charges": ["fee ledgers", "student dues", "outstanding balances"],
   "student-charges/generate-charges": ["generate fees", "recurring charges", "monthly fees", "quarterly fees"],
-  "reports/academic-year-summary": ["academic year summary", "operational overview", "kpis"],
-  "reports/daybook": ["daybook", "daily cashbook", "transactions", "daily register", "cash and bank"],
-  "reports/admissions-master": ["admissions master", "student roster report", "intake report"],
-  "reports/cca-report": ["cca report", "co-curricular report", "activity roster"],
-  "reports/cca-activity-profit": ["cca profit", "p&l", "activity financial breakdown"],
-  "reports/daily-receipts": ["daily receipts", "collections register", "income"],
-  "reports/fee-defaulters": ["fee defaulters", "unpaid dues", "aging report", "pending fees", "arrears"],
-  "reports/fines-register": ["fines register", "penalties report", "waived fines audit"],
-  "reports/salary": ["salary report", "payroll", "staff compensation", "wages"],
-  "reports/transport-expenses": ["transport expenses", "fuel", "vehicle maintenance", "repairs"],
-  "reports/category-expenses": ["category expenses", "expense breakdown", "spending by category"],
-  "reports/daily-expenses": ["daily expenses", "outgoing register", "disbursements"],
-  "reports/transport-roster": ["route roster", "bus passengers", "manifest", "seating capacity"],
-  "reports/transport-profitability": ["transport profit", "vehicle p&l", "fleet profitability"],
-  "reports/class-demographics": ["class demographics", "census", "gender ratio", "strength"],
-  "reports/student-progression": ["student progression", "annual promotion report", "tc report", "retention"],
+  // Report search keywords are dynamically merged from REPORT_CONFIGS
 }
 
 export function getSearchableSections(
@@ -585,7 +527,8 @@ export function getSearchableSections(
       return checkPermission(permissions, permKey)
     })
     .map((s) => {
-      const customKeywords = SECTION_KEYWORDS[s.slug] || []
+      const reportKey = s.slug.startsWith("reports/") ? s.slug.replace(/^reports\//, "") : ""
+      const customKeywords = (reportKey && REPORT_CONFIGS[reportKey]?.searchKeywords) || SECTION_KEYWORDS[s.slug] || []
       return {
         id: `${s.area}-${s.slug}`,
         slug: s.slug,

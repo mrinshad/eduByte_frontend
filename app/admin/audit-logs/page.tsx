@@ -787,16 +787,31 @@ export default function AuditLogsPage() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
                         !fromDate && "text-slate-400 dark:text-slate-500"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 text-[#556043] dark:text-[#9ea98a]" />
                       <span className="truncate">{fromDate ? formatDisplayDate(fromDate) : "From Date"}</span>
+                      {fromDate && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFromDate("");
+                            setCurrentPage(1);
+                          }}
+                          className="ml-auto hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                          title="Clear From date"
+                        >
+                          <X className="h-3 w-3 text-slate-400 hover:text-rose-500" />
+                        </span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-auto rounded-xl border border-slate-200 dark:border-slate-800 p-0 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                    className="w-auto p-0 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg"
                     align="start"
                   >
                     <CalendarComponent
@@ -805,7 +820,6 @@ export default function AuditLogsPage() {
                       onSelect={handleFromDateSelect}
                       defaultMonth={fromDate ? parseISODate(fromDate) : new Date()}
                       disabled={(d) => (toDate ? d > parseISODate(toDate) : false)}
-                      className="text-slate-900 dark:text-slate-100"
                     />
                   </PopoverContent>
                 </Popover>
@@ -818,16 +832,31 @@ export default function AuditLogsPage() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs  dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
+                        "h-9 min-w-[130px] justify-start rounded-lg border-slate-300 bg-white px-3 text-left text-xs font-medium text-slate-900 shadow-xs dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-[#556043]",
                         !toDate && "text-slate-400 dark:text-slate-500"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 text-[#556043] dark:text-[#9ea98a]" />
                       <span className="truncate">{toDate ? formatDisplayDate(toDate) : "To Date"}</span>
+                      {toDate && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setToDate("");
+                            setCurrentPage(1);
+                          }}
+                          className="ml-auto hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                          title="Clear To date"
+                        >
+                          <X className="h-3 w-3 text-slate-400 hover:text-rose-500" />
+                        </span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-auto rounded-xl border border-slate-200 dark:border-slate-800 p-0 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                    className="w-auto p-0 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg"
                     align="start"
                   >
                     <CalendarComponent
@@ -836,7 +865,6 @@ export default function AuditLogsPage() {
                       onSelect={handleToDateSelect}
                       defaultMonth={toDate ? parseISODate(toDate) : new Date()}
                       disabled={(d) => (fromDate ? d < parseISODate(fromDate) : false)}
-                      className="text-slate-900 dark:text-slate-100"
                     />
                   </PopoverContent>
                 </Popover>
@@ -1095,15 +1123,15 @@ export default function AuditLogsPage() {
 
         {/* Human-Friendly Audit Details Modal */}
         <Dialog open={Boolean(selectedLog)} onOpenChange={(open) => !open && setSelectedLog(null)}>
-          <DialogContent className="sm:max-w-3xl w-[95vw] max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900">
-            <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-900/60 flex flex-col gap-2">
+          <DialogContent className="sm:max-w-3xl w-[95vw] max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-[#6a7459] dark:border-slate-800 shadow-2xl bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100">
+            <DialogHeader className="px-6 pt-5 pb-4 border-b border-[#8b9478]/40 dark:border-slate-800 bg-[#6a7459]/50 dark:bg-slate-900/60 flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#556043]/10 dark:bg-[#556043]/20 flex items-center justify-center shrink-0 text-[#556043] dark:text-[#9ea98a]">
+                <div className="h-10 w-10 rounded-xl bg-white/10 dark:bg-slate-800 flex items-center justify-center shrink-0 text-white dark:text-[#9ea98a]">
                   <ShieldAlert className="h-5 w-5" />
                 </div>
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
+                    <DialogTitle className="text-base sm:text-lg font-semibold text-white dark:text-white">
                       Activity Details
                     </DialogTitle>
                     {selectedLog && (
@@ -1123,7 +1151,7 @@ export default function AuditLogsPage() {
                       </div>
                     )}
                   </div>
-                  <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                  <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 font-medium truncate">
                     {selectedLog?.description || "Summary of activity performed"}
                   </DialogDescription>
                 </div>
@@ -1133,38 +1161,38 @@ export default function AuditLogsPage() {
             {selectedLog && diff && (
               <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 text-xs">
                 {/* Clean Context Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-[#667155]/40 dark:bg-slate-800/60 border border-[#8b9478]/40 dark:border-slate-700/60">
                   <div>
-                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-200 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Performed By
                     </span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
-                      <User className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
+                    <span className="font-medium text-white dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <User className="h-3.5 w-3.5 text-white/80 dark:text-[#9ea98a]" />
                       {selectedLog.user ? selectedLog.user.name : "System Engine"}
                     </span>
                     {selectedLog.user?.role?.name && (
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 pl-5">
+                      <span className="block text-[10px] text-slate-200/80 dark:text-slate-400 pl-5">
                         Role: {selectedLog.user.role.name}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-200 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Section / Module
                     </span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
-                      <Layers className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
+                    <span className="font-medium text-white dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <Layers className="h-3.5 w-3.5 text-white/80 dark:text-[#9ea98a]" />
                       {formatModuleLabel(selectedLog.module)}
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold">
+                    <span className="text-slate-200 dark:text-slate-400 block text-[10px] uppercase font-semibold">
                       Timestamp
                     </span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" />
+                    <span className="font-medium text-white dark:text-slate-100 text-xs flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3.5 w-3.5 text-white/80 dark:text-[#9ea98a]" />
                       {formatDateTime(selectedLog.createdAt)}
                     </span>
                   </div>
@@ -1175,8 +1203,8 @@ export default function AuditLogsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Edit3 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <span className="font-semibold text-sm text-slate-900 dark:text-white">
+                        <Edit3 className="h-4 w-4 text-amber-300 dark:text-amber-400" />
+                        <span className="font-semibold text-sm text-white dark:text-white">
                           Modified Information ({diff.changed.length} changed)
                         </span>
                       </div>
@@ -1185,7 +1213,7 @@ export default function AuditLogsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowUnchanged(!showUnchanged)}
-                          className="h-7 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white gap-1"
+                          className="h-7 text-xs text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white gap-1 hover:bg-white/10 dark:hover:bg-slate-800"
                         >
                           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showUnchanged && "rotate-180")} />
                           {showUnchanged ? "Hide" : "Show"} unchanged ({diff.unchanged.length})
@@ -1194,36 +1222,36 @@ export default function AuditLogsPage() {
                     </div>
 
                     {diff.changed.length === 0 ? (
-                      <div className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40 text-center text-slate-500 text-xs">
+                      <div className="p-4 rounded-xl border border-[#8b9478]/40 bg-[#556043]/30 dark:border-slate-800 dark:bg-slate-900/40 text-center text-slate-200 dark:text-slate-400 text-xs">
                         No direct value modifications detected (record touched or refreshed without field changes).
                       </div>
                     ) : (
-                      <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+                      <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 overflow-hidden shadow-xs">
                         <Table>
                           <TableHeader>
-                            <TableRow className="bg-[#556043] hover:bg-[#556043] dark:bg-background dark:hover:bg-background border-none">
-                              <TableHead className="w-[180px] font-semibold text-white dark:text-foreground text-xs">Field</TableHead>
-                              <TableHead className="font-semibold text-white dark:text-foreground text-xs">Previous Value</TableHead>
+                            <TableRow className="bg-[#6a7459] hover:bg-[#6a7459] dark:bg-slate-950/80 dark:hover:bg-slate-950/80 border-none">
+                              <TableHead className="w-[180px] font-semibold text-white dark:text-slate-200 text-xs">Field</TableHead>
+                              <TableHead className="font-semibold text-white dark:text-slate-200 text-xs">Previous Value</TableHead>
                               <TableHead className="w-[28px] text-center"></TableHead>
-                              <TableHead className="font-semibold text-white dark:text-foreground text-xs">Updated Value</TableHead>
+                              <TableHead className="font-semibold text-white dark:text-slate-200 text-xs">Updated Value</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {diff.changed.map((row) => (
-                              <TableRow key={row.key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                <TableCell className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                              <TableRow key={row.key} className="border-b border-[#8b9478]/30 dark:border-slate-800 hover:bg-white/5 dark:hover:bg-slate-800/40">
+                                <TableCell className="font-medium text-xs text-white dark:text-slate-100">
                                   {row.label}
                                 </TableCell>
                                 <TableCell className="text-xs">
-                                  <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 inline-block max-w-full break-words">
+                                  <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 dark:text-rose-300 border border-rose-500/20 inline-block max-w-full break-words">
                                     {renderFormattedValue(row.oldVal, row.key, "rose")}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-center text-slate-400 dark:text-slate-500">
-                                  <ArrowRight className="h-3.5 w-3.5 mx-auto text-[#556043] dark:text-[#9ea98a]" />
+                                <TableCell className="text-center text-slate-300 dark:text-slate-400">
+                                  <ArrowRight className="h-3.5 w-3.5 mx-auto text-white/80 dark:text-[#9ea98a]" />
                                 </TableCell>
                                 <TableCell className="text-xs">
-                                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 inline-block max-w-full break-words font-semibold">
+                                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 dark:text-emerald-300 border border-emerald-500/20 inline-block max-w-full break-words font-semibold">
                                     {renderFormattedValue(row.newVal, row.key, "emerald")}
                                   </div>
                                 </TableCell>
@@ -1236,15 +1264,15 @@ export default function AuditLogsPage() {
 
                     {/* Optional Unchanged Fields */}
                     {showUnchanged && diff.unchanged.length > 0 && (
-                      <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40 space-y-2">
-                        <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 block">
+                      <div className="p-3.5 rounded-xl border border-[#8b9478]/40 bg-[#556043]/30 dark:border-slate-800 dark:bg-slate-950/40 space-y-2">
+                        <span className="font-semibold text-xs text-slate-200 dark:text-slate-300 block">
                           Unchanged Fields
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           {diff.unchanged.map((item) => (
-                            <div key={item.key} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
-                              <span className="text-slate-500 dark:text-slate-400 font-medium">{item.label}</span>
-                              <span className="font-medium text-slate-900 dark:text-slate-100">{renderFormattedValue(item.val, item.key, "default")}</span>
+                            <div key={item.key} className="flex items-center justify-between p-2 rounded-lg bg-[#667155]/50 dark:bg-slate-800/80 border border-[#8b9478]/30 dark:border-slate-700/60">
+                              <span className="text-slate-200 dark:text-slate-400 font-medium">{item.label}</span>
+                              <span className="font-medium text-white dark:text-slate-100">{renderFormattedValue(item.val, item.key, "default")}</span>
                             </div>
                           ))}
                         </div>
@@ -1257,26 +1285,26 @@ export default function AuditLogsPage() {
                 {diff.isCreate && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <PlusCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-semibold text-sm text-slate-900 dark:text-white">
+                      <PlusCircle className="h-4 w-4 text-emerald-400 dark:text-emerald-400" />
+                      <span className="font-semibold text-sm text-white dark:text-white">
                         Created Record Information
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-950/40 p-3">
                       {diff.added.length > 0
                         ? diff.added.map((item) => (
-                            <div key={item.key} className="p-2.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-1">
-                              <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400">
+                            <div key={item.key} className="p-2.5 rounded-lg bg-[#667155]/50 dark:bg-slate-800/80 border border-[#8b9478]/30 dark:border-slate-700/60 flex flex-col gap-1">
+                              <span className="text-[10px] uppercase font-semibold text-slate-200 dark:text-slate-400">
                                 {item.label}
                               </span>
-                              <div className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                              <div className="font-medium text-xs text-white dark:text-slate-100">
                                 {renderFormattedValue(item.val, item.key, "default")}
                               </div>
                             </div>
                           ))
                         : (
-                          <span className="text-slate-400 italic col-span-2 text-center py-4">
+                          <span className="text-slate-300 italic col-span-2 text-center py-4">
                             No field data provided for creation.
                           </span>
                         )}
@@ -1288,26 +1316,26 @@ export default function AuditLogsPage() {
                 {diff.isDelete && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                      <span className="font-semibold text-sm text-slate-900 dark:text-white">
+                      <Trash2 className="h-4 w-4 text-rose-400 dark:text-rose-400" />
+                      <span className="font-semibold text-sm text-white dark:text-white">
                         Removed / Relieved Record Information
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-950/40 p-3">
                       {diff.removed.length > 0
                         ? diff.removed.map((item) => (
-                            <div key={item.key} className="p-2.5 rounded-lg bg-rose-500/5 border border-rose-500/10 flex flex-col gap-1">
-                              <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400">
+                            <div key={item.key} className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 flex flex-col gap-1">
+                              <span className="text-[10px] uppercase font-semibold text-slate-200 dark:text-slate-400">
                                 {item.label}
                               </span>
-                              <div className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                              <div className="font-medium text-xs text-white dark:text-slate-100">
                                 {renderFormattedValue(item.val, item.key, "default")}
                               </div>
                             </div>
                           ))
                         : (
-                          <span className="text-slate-400 italic col-span-2 text-center py-4">
+                          <span className="text-slate-300 italic col-span-2 text-center py-4">
                             No prior field snapshot available.
                           </span>
                         )}
@@ -1316,24 +1344,24 @@ export default function AuditLogsPage() {
                 )}
 
                 {/* Secondary: Discrete Raw JSON Accordion for Technical Reference */}
-                <details className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                  <summary className="cursor-pointer hover:text-slate-900 dark:hover:text-white font-medium py-1 inline-flex items-center gap-1.5 select-none">
-                    <Code2 className="h-3.5 w-3.5 text-[#556043] dark:text-[#9ea98a]" /> Technical / Raw Payload
+                <details className="pt-2 border-t border-[#8b9478]/30 dark:border-slate-800 text-xs text-slate-200 dark:text-slate-400">
+                  <summary className="cursor-pointer hover:text-white dark:hover:text-white font-medium py-1 inline-flex items-center gap-1.5 select-none">
+                    <Code2 className="h-3.5 w-3.5 text-white/80 dark:text-[#9ea98a]" /> Technical / Raw Payload
                   </summary>
-                  <div className="mt-2 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2 font-mono text-[11px]">
-                    <div className="flex justify-between items-center pb-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span>Full Audit Payload</span>
+                  <div className="mt-2 p-3 rounded-xl bg-[#556043]/40 dark:bg-slate-950/80 border border-[#8b9478]/30 dark:border-slate-800 space-y-2 font-mono text-[11px]">
+                    <div className="flex justify-between items-center pb-1 border-b border-[#8b9478]/30 dark:border-slate-800">
+                      <span className="text-slate-200 dark:text-slate-300">Full Audit Payload</span>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={copyRawJson}
-                        className="h-6 px-2 text-[10px] gap-1"
+                        className="h-6 px-2 text-[10px] gap-1 text-slate-200 hover:text-white hover:bg-white/10 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800"
                       >
-                        {copiedRaw ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                        {copiedRaw ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                         {copiedRaw ? "Copied" : "Copy JSON"}
                       </Button>
                     </div>
-                    <pre className="whitespace-pre-wrap break-all max-h-[160px] overflow-auto text-[10px] text-slate-800 dark:text-slate-200">
+                    <pre className="whitespace-pre-wrap break-all max-h-[160px] overflow-auto text-[10px] text-white dark:text-slate-200">
                       {JSON.stringify(
                         {
                           previousData: selectedLog.oldData,
@@ -1348,11 +1376,11 @@ export default function AuditLogsPage() {
               </div>
             )}
 
-            <DialogFooter className="m-0 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-900/60 flex items-center justify-between sm:justify-between">
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+            <DialogFooter className="m-0 px-6 py-3.5 border-t border-[#8b9478]/40 dark:border-slate-800 bg-[#6a7459] dark:bg-slate-950 flex items-center justify-between sm:justify-between">
+              <div className="text-xs text-slate-200 dark:text-slate-400">
                 {selectedLog?.referenceId ? (
                   <span className="font-mono text-[11px]">
-                    Reference ID: <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedLog.referenceId}</span>
+                    Reference ID: <span className="text-white dark:text-slate-200 font-semibold">{selectedLog.referenceId}</span>
                   </span>
                 ) : (
                   <span>Audit Reference Log</span>
@@ -1363,7 +1391,7 @@ export default function AuditLogsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedLog(null)}
-                className="rounded-full px-5 h-9 text-xs sm:text-sm font-medium border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="rounded-full px-5 h-9 text-xs sm:text-sm font-medium border-[#8b9478] bg-transparent text-white hover:bg-white/10 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Close
               </Button>

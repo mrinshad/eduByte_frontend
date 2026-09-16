@@ -504,7 +504,7 @@ function UserViewContent() {
             <DetailRow icon={MapPin} label="Default Portal">
               <Badge
                 variant="outline"
-                className="rounded-lg text-xs font-semibold capitalize mt-1 border-slate-200 dark:border-slate-700"
+                className="rounded-lg text-xs text-slate-400 font-semibold capitalize mt-1 border-slate-200 dark:border-slate-700"
               >
                 {role?.defaultPortal ?? "workspace"}
               </Badge>

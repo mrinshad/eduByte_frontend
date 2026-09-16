@@ -4,6 +4,9 @@ export interface VehicleInput {
   vehicleName: string;
   vehicleNumber: string;
   driverName: string;
+  driverStaffId?: string | null;
+  initialPrice?: number;
+  purchaseDate?: string;
 }
 
 export interface Vehicle {
@@ -11,8 +14,20 @@ export interface Vehicle {
   vehicleName: string;
   vehicleNumber: string;
   driverName: string;
+  driverStaffId?: string | null;
+  driverStaff?: {
+    id: string;
+    name: string;
+    employeeCode: string;
+    phone?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
+  asset?: {
+    id: string;
+    initialPrice: number;
+    purchaseDate?: string | null;
+  } | null;
   _count?: {
     assignments?: number;
     expenses?: number;

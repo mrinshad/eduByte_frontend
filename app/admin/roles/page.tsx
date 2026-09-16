@@ -585,7 +585,7 @@ export default function Page() {
   // ---------------------------------------------------------------------
   return (
     <TooltipProvider>
-      <section className="px-4 sm:px-6 py-2 flex flex-col h-[calc(100vh-8rem)] max-h-[78vh] overflow-hidden">
+      <section className="px-4 sm:px-6 py-2 flex flex-col min-h-0 lg:h-[calc(100vh-8rem)] lg:max-h-[78vh] lg:overflow-hidden">
         <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
           <PermissionGate permission="roles.createPermissionButton">
             <Button
@@ -600,12 +600,12 @@ export default function Page() {
 
         } />
 
-        <div className="mt-3 grid gap-5 lg:grid-cols-2 flex-1 min-h-0 overflow-hidden">
+        <div className="mt-3 grid gap-5 lg:grid-cols-2 flex-1 min-h-0 lg:overflow-hidden">
           {/* --------------------------------------------------------- */}
           {/* Roles — click a row to scope the permission card on the   */}
           {/* right.                                                    */}
           {/* --------------------------------------------------------- */}
-          <Card className="flex flex-col h-full min-h-0 overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
+          <Card className="flex flex-col lg:h-full min-h-0 lg:overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
@@ -626,7 +626,7 @@ export default function Page() {
 
             <CardContent
               className="
-              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto
+              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto max-h-[260px] sm:max-h-[300px] lg:max-h-none
               scrollbar-thin
               scrollbar-thumb-slate-300
               scrollbar-track-transparent
@@ -745,7 +745,7 @@ export default function Page() {
           {/* --------------------------------------------------------- */}
           {/* Permissions — scoped to the selected role.                */}
           {/* --------------------------------------------------------- */}
-          <Card className="flex flex-col h-full min-h-0 overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
+          <Card className="flex flex-col lg:h-full min-h-0 lg:overflow-hidden dark:bg-slate-900 dark:border-slate-100 dark:text-slate-100">
             <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 border-b border-black/5 dark:border-white/10">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 bg-amber-500/10">
@@ -865,7 +865,7 @@ export default function Page() {
 
             <CardContent
               className="
-              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto
+              flex-1 min-h-0 space-y-2 pt-4 overflow-y-auto min-h-[320px] max-h-[500px] sm:max-h-[600px] lg:max-h-none lg:min-h-0
               scrollbar-thin
               scrollbar-thumb-slate-300
               scrollbar-track-transparent
