@@ -57,6 +57,7 @@ import {
     type ExpenseDetail,
 } from "@/lib/services/reports";
 import { getCCAActivities, type CCAActivity } from "@/lib/services/cca";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 // ---------------------------------------------------------------------
 // Shared bits — same sage accent (#6D755F) as the rest of the app.
@@ -148,7 +149,7 @@ export default function Page() {
     const [payments, setPayments] = useState<PaymentRow[]>([createPaymentRow()]);
     const [openPaymentRowId, setOpenPaymentRowId] = useState<string | null>(null);
 
-    // ── Edit mode loading ─────────────────────────────────────────────────
+    // ── Edit mode loading ────────────────────────────────────────────────
     const [loadingExpense, setLoadingExpense] = useState(false);
     const [expenseDetail, setExpenseDetail] = useState<ExpenseDetail | null>(null);
 
@@ -596,24 +597,27 @@ export default function Page() {
 
             {/* ── Left: form fields ───────────────────────────────────── */}
             <div className="flex flex-1 flex-col gap-6 h-[590px] overflow-y-auto p-6 lg:p-10">
-                <div className="flex items-center gap-3">
-                    <Button
-                        className="bg-background text-foreground hover:opacity-90 shadow-sm"
-                        size="icon"
-                        onClick={() => router.back()}
-                    >
-                        <ArrowLeft className="h-4 w-4 text-foreground" />
-                    </Button>
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            {isEditMode ? "Edit Expense" : "Create Expense"}
-                        </h1>
-                        <p className="text-xs text-slate-400">
-                            {isEditMode
-                                ? `Editing ${expenseDetail?.expenseNumber ?? ""}`
-                                : "Log a new expense and how it was paid"}
-                        </p>
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            className="bg-background text-foreground hover:opacity-90 shadow-sm"
+                            size="icon"
+                            onClick={() => router.back()}
+                        >
+                            <ArrowLeft className="h-4 w-4 text-foreground" />
+                        </Button>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                {isEditMode ? "Edit Expense" : "Create Expense"}
+                            </h1>
+                            <p className="text-xs text-slate-400">
+                                {isEditMode
+                                    ? `Editing ${expenseDetail?.expenseNumber ?? ""}`
+                                    : "Log a new expense and how it was paid"}
+                            </p>
+                        </div>
                     </div>
+
                 </div>
 
                 {/* Staff / date */}

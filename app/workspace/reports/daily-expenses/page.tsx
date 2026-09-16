@@ -10,15 +10,30 @@ import {
     ChevronRight,
     IndianRupee,
     Loader2,
+    Pencil,
     Printer,
     Receipt,
     RefreshCcw,
     Search,
+    Trash2,
     Wallet,
     Landmark,
     X,
 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { deleteExpenseSummary } from "@/lib/services/reports";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +62,7 @@ import { cn } from "@/lib/utils";
 import {
     getDailyExpensesRegisterReport,
     type DailyExpensesRegisterResponse,
+    type DailyExpenseVoucher,
 } from "@/lib/services/expenseReports";
 import { getExpenseCategories, getPaymentMethodAccounts, type ExpenseCategory, type PaymentMethodAccount } from "@/lib/services/expense";
 
@@ -119,6 +135,29 @@ export default function DailyExpensesRegisterPage() {
     const [report, setReport] = useState<DailyExpensesRegisterResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const [expenseToDelete, setExpenseToDelete] = useState<DailyExpenseVoucher | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteExpense = async () => {
+        if (!expenseToDelete) return;
+        setIsDeleting(true);
+        try {
+            const res = await deleteExpenseSummary(expenseToDelete.expenseId);
+            if (res.success) {
+                toast.success("Expense voucher deleted and accounting entries reversed");
+                setExpenseToDelete(null);
+                setRefreshTrigger((k) => k + 1);
+            } else {
+                toast.error(res.message || "Failed to delete expense");
+            }
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete expense");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const isRangeInvalid = fromDate > toDate;
 
@@ -170,7 +209,7 @@ export default function DailyExpensesRegisterPage() {
         return () => {
             cancelled = true;
         };
-    }, [fromDate, toDate, page, limit, search, categoryFilter, paymentMethodFilter]);
+    }, [fromDate, toDate, page, limit, search, categoryFilter, paymentMethodFilter, refreshTrigger]);
 
     const summary = report?.summary ?? {
         totalExpenses: 0,
@@ -514,16 +553,42 @@ export default function DailyExpensesRegisterPage() {
                                             {formatCurrency(v.totalAmount)}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-right whitespace-nowrap">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 px-2 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-slate-800"
-                                                onClick={() => router.push(`/print/expenses/${v.expenseId}`)}
-                                                title="Print Voucher"
-                                            >
-                                                <Printer className="h-4 w-4 mr-1" />
-                                                Print
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-slate-800"
+                                                    onClick={() => router.push(`/print/expenses/${v.expenseId}`)}
+                                                    title="Print Voucher"
+                                                >
+                                                    <Printer className="h-4 w-4 mr-1" />
+                                                    Print
+                                                </Button>
+                                                <PermissionGate permission="expensesummary.editExpenseButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 px-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                                        onClick={() => router.push(`/workspace/expense-management/createExpense?id=${v.expenseId}`)}
+                                                        title="Edit Expense"
+                                                    >
+                                                        <Pencil className="h-4 w-4 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </PermissionGate>
+                                                <PermissionGate permission="expensesummary.deleteExpenseButton">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                                                        onClick={() => setExpenseToDelete(v)}
+                                                        title="Delete Expense"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        Delete
+                                                    </Button>
+                                                </PermissionGate>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -585,6 +650,39 @@ export default function DailyExpensesRegisterPage() {
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            {/* ── Confirm Delete Dialog ────────────────────────────────────── */}
+            <AlertDialog
+                open={!!expenseToDelete}
+                onOpenChange={(open) => {
+                    if (!open && !isDeleting) setExpenseToDelete(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Expense Voucher?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete voucher <strong className="text-slate-900 dark:text-slate-100">{expenseToDelete?.expenseNumber}</strong> for <strong className="text-slate-900 dark:text-slate-100">{formatCurrency(expenseToDelete?.totalAmount ?? 0)}</strong> ({expenseToDelete?.categoryName})?
+                            <br /><br />
+                            This will soft-delete the expense and automatically reverse the linked double-entry accounting transaction. This action can be tracked in audit logs.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void handleDeleteExpense();
+                            }}
+                            className="bg-rose-600 hover:bg-rose-700 text-white"
+                        >
+                            {isDeleting ? "Deleting…" : "Delete Voucher"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </section>
     );
 }
