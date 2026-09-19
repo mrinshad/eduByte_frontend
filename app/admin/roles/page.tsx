@@ -93,7 +93,6 @@ const assignCheckboxClass = `${whiteCheckboxClass} hover:border-black`
 const PORTAL_OPTIONS: { value: DefaultPortal; label: string }[] = [
   { value: "admin", label: "Admin" },
   { value: "workspace", label: "Workspace" },
-  { value: "student", label: "Student" },
 ]
 
 function AddAction({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean }) {

@@ -4,7 +4,7 @@ import { apiFetch } from "@/lib/api";
 // Types
 // ---------------------------------------------------------------------
 
-export type DefaultPortal = "admin" | "workspace" | "student";
+export type DefaultPortal = "admin" | "workspace";
 
 export interface Permission {
   id: string;
