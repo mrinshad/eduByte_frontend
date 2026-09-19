@@ -163,22 +163,6 @@ const ICON_BY_SLUG: Record<string, LucideIcon> = {
   "reports/class-demographics": UsersRound,
   "reports/student-progression": Milestone,
 
-  // --- Student Area ---
-  "profile/personal-details": User,
-  "profile/parent-details": Users,
-  "profile/academic-details": GraduationCap,
-  "academic-history/academic-years": Calendar,
-  "academic-history/classes": BookOpen,
-  "academic-history/divisions": Split,
-  "fees/current-charges": CircleDollarSign,
-  "fees/outstanding-fees": AlertCircle,
-  "fees/fine-details": Clock,
-  "fees/payment-history": History,
-  "fees/receipts": Receipt,
-  "fees/refund-history": RotateCcw,
-  "transport/assigned-vehicle": Bus,
-  "transport/transport-fee-details": Ticket,
-  "notifications/fee-reminders": Bell,
 }
 
 function getIcon(link: PortalNavItem): LucideIcon {
@@ -411,9 +395,6 @@ function SidebarBody({
 
   const isAllowed = React.useCallback(
     (item: PortalNavItem) => {
-      if (area === "student") {
-        return true
-      }
       const permKey = permissionForSlug(item.slug, area)
       return checkPermission(permissions, permKey)
     },

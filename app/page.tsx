@@ -185,7 +185,7 @@ export default function Page() {
             </div>
 
             <div className="rounded-[1.5rem] border border-white/10 bg-black/10 p-4 text-sm leading-6 text-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-              A focused school interface for administrators, office teams, teachers, accountants, and families.
+              A focused school interface for administrators, office teams, teachers, accountants, and staff.
             </div>
           </section>
 

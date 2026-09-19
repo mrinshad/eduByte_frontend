@@ -8,7 +8,7 @@ import {
 
 export { REPORT_CONFIGS, getReportConfig, type ReportConfig, type ReportCategory }
 
-export type PortalArea = "workspace" | "admin" | "student"
+export type PortalArea = "workspace" | "admin"
 
 export type PortalSection = {
   slug: string
@@ -58,27 +58,6 @@ export const portalSections: PortalSection[] = [
   { slug: "permissions", label: "Permissions Directory", area: "admin", purpose: "Manage system permission catalog", group: "User Management" },
   { slug: "audit-logs", label: "Audit Logs", area: "admin", purpose: "Track system activities, data changes, and operator history", group: "User Management" },
 
-  // --- STUDENT AREA ---
-  { slug: "dashboard", label: "Dashboard", area: "student", purpose: "Student dashboard", group: "Student" },
-  { slug: "profile/personal-details", label: "Personal Details", area: "student", purpose: "Student personal info", group: "Profile" },
-  { slug: "profile/parent-details", label: "Parent Details", area: "student", purpose: "Parent contact info", group: "Profile" },
-  { slug: "profile/academic-details", label: "Academic Details", area: "student", purpose: "Student academic info", group: "Profile" },
-
-  { slug: "academic-history/academic-years", label: "Academic Years", area: "student", purpose: "Academic history years", group: "Academic History" },
-  { slug: "academic-history/classes", label: "Classes", area: "student", purpose: "Academic history classes", group: "Academic History" },
-  { slug: "academic-history/divisions", label: "Divisions", area: "student", purpose: "Academic history divisions", group: "Academic History" },
-
-  { slug: "fees/current-charges", label: "Current Charges", area: "student", purpose: "Current fee charges", group: "Fees" },
-  { slug: "fees/outstanding-fees", label: "Outstanding Fees", area: "student", purpose: "Outstanding fee summary", group: "Fees" },
-  { slug: "fees/fine-details", label: "Fine Details", area: "student", purpose: "Fine information", group: "Fees" },
-  { slug: "fees/payment-history", label: "Payment History", area: "student", purpose: "Payment history", group: "Fees" },
-  { slug: "fees/receipts", label: "Receipts", area: "student", purpose: "Receipts", group: "Fees" },
-  { slug: "fees/refund-history", label: "Refund History", area: "student", purpose: "Refunds", group: "Fees" },
-
-  { slug: "transport/assigned-vehicle", label: "Assigned Vehicle", area: "student", purpose: "Transport assignment", group: "Transport" },
-  { slug: "transport/transport-fee-details", label: "Transport Fee Details", area: "student", purpose: "Transport fees", group: "Transport" },
-
-  { slug: "notifications/fee-reminders", label: "Fee Reminders", area: "student", purpose: "Fee reminders", group: "Notifications" },
 
   // --- WORKSPACE AREA ---
   { slug: "dashboard", label: "Dashboard", area: "workspace", purpose: "Quick overview of collections, expenses, and pending fees", group: "Overview" },
@@ -111,10 +90,6 @@ export const portalAreas: Record<PortalArea, { title: string; subtitle: string }
   admin: {
     title: "Administration",
     subtitle: "",
-  },
-  student: {
-    title: "Student Portal",
-    subtitle: "A focused view for learners and families.",
   },
 }
 
@@ -169,9 +144,6 @@ export function permissionForSlug(slug: string, area?: PortalArea): string {
 export function getPortalRoute(defaultPortal?: string | null) {
   const normalized = (defaultPortal || "").toLowerCase()
 
-  if (normalized === "student") {
-    return "/student/dashboard"
-  }
 
   if (normalized === "admin") {
     return "/admin/dashboard"
@@ -185,10 +157,6 @@ export function canAccessPortalArea(area: PortalArea, permissions: string[] = []
     return true
   }
 
-  const normalizedRole = normalizeRole(role)
-  if (area === "student") {
-    return normalizedRole === "STUDENT"
-  }
 
   const areaSections = portalSections.filter((s) => s.area === area)
   return areaSections.some((s) => {
@@ -203,12 +171,11 @@ export function getUserAccessiblePortal(
   defaultPortal?: string | null
 ): PortalArea | null {
   const preferred = (defaultPortal || "").toLowerCase() as PortalArea
-  if (preferred && ["admin", "workspace", "student"].includes(preferred) && canAccessPortalArea(preferred, permissions, role)) {
+  if (preferred && ["admin", "workspace"].includes(preferred) && canAccessPortalArea(preferred, permissions, role)) {
     return preferred
   }
   if (canAccessPortalArea("workspace", permissions, role)) return "workspace"
   if (canAccessPortalArea("admin", permissions, role)) return "admin"
-  if (canAccessPortalArea("student", permissions, role)) return "student"
   return null
 }
 
@@ -221,9 +188,6 @@ export function getInitialUserRoute(
   const area = targetArea || getUserAccessiblePortal(permissions, role, defaultPortal)
   if (!area) return null
 
-  if (area === "student") {
-    return "/student/dashboard"
-  }
 
   if (Array.isArray(permissions) && permissions.includes("*")) {
     return `/${area}/dashboard`
@@ -252,19 +216,10 @@ export function getAlternateAccessiblePortal(
   permissions: string[] = [],
   role?: string | null
 ): PortalArea | null {
-  const checkOrder: PortalArea[] =
-    currentArea === "workspace"
-      ? ["admin", "student"]
-      : currentArea === "admin"
-        ? ["workspace", "student"]
-        : ["workspace", "admin"]
-
-  for (const altArea of checkOrder) {
-    if (canAccessPortalArea(altArea, permissions, role)) {
-      return altArea
-    }
+  const altArea: PortalArea = currentArea === "workspace" ? "admin" : "workspace"
+  if (canAccessPortalArea(altArea, permissions, role)) {
+    return altArea
   }
-
   return null
 }
 
@@ -275,35 +230,29 @@ export function canSwitchPortals(permissions: string[] = [], role?: string | nul
 export function getUserPortalAccessSummary(permissions: string[] = [], role?: string | null) {
   const canAdmin = canAccessPortalArea("admin", permissions, role)
   const canWorkspace = canAccessPortalArea("workspace", permissions, role)
-  const canStudent = canAccessPortalArea("student", permissions, role)
   const canSwitch = canSwitchPortals(permissions, role)
 
-  let type: "BOTH" | "ADMIN_ONLY" | "WORKSPACE_ONLY" | "STUDENT_ONLY" | "NONE" = "NONE"
+  let type: "BOTH" | "ADMIN_ONLY" | "WORKSPACE_ONLY" | "NONE" = "NONE"
   if (canAdmin && canWorkspace) type = "BOTH"
   else if (canAdmin) type = "ADMIN_ONLY"
   else if (canWorkspace) type = "WORKSPACE_ONLY"
-  else if (canStudent) type = "STUDENT_ONLY"
 
   return {
     type,
     canAdmin,
     canWorkspace,
-    canStudent,
     canSwitch,
     totalPermissions: permissions.length,
   }
 }
 
 export function getRequiredPermissionsForArea(area: PortalArea): string[] {
-  if (area === "student") {
-    return ["STUDENT role", "*"]
-  }
   const areaSections = portalSections.filter((s) => s.area === area)
   const requiredKeys = areaSections.map((s) => permissionForSlug(s.slug, area))
   return Array.from(new Set(requiredKeys))
 }
 
-export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "STUDENT" | "GLOBAL" {
+export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "GLOBAL" {
   if (!permName) return "ADMIN"
   if (permName === "*") return "GLOBAL"
 
@@ -340,10 +289,6 @@ export function getPermissionPortal(permName: string): "ADMIN" | "WORKSPACE" | "
 
   if (workspaceDomains.some((d) => lower.startsWith(d))) {
     return "WORKSPACE"
-  }
-
-  if (lower.startsWith("student.")) {
-    return "STUDENT"
   }
 
   return "ADMIN"
@@ -388,7 +333,7 @@ export function getRequiredPermissionForPath(
   pathname: string,
   area: PortalArea
 ): { permKey: string; sectionLabel: string } | null {
-  if (!pathname || area === "student") return null
+  if (!pathname) return null
 
   const prefix = `/${area}/`
   if (!pathname.startsWith(prefix)) return null
