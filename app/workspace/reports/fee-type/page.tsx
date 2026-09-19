@@ -22,10 +22,6 @@ export default function FeeTypeReportsIndexPage() {
         const list = await getChargeTypes();
         if (!cancelled) {
           setChargeTypes(list);
-          // Auto-navigate to the first fee type report (e.g., Tuition Fee)
-          if (list.length > 0) {
-            router.replace(`/workspace/reports/fee-type/${list[0].id}`);
-          }
         }
       } catch (err) {
         console.error("Failed to load charge types:", err);
@@ -39,7 +35,7 @@ export default function FeeTypeReportsIndexPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   return (
     <div className="w-full space-y-6 px-4 py-6 max-w-7xl mx-auto font-sans min-h-screen">
