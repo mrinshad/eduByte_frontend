@@ -109,8 +109,9 @@ export default function FeeGenerationPage() {
           search: studentSearchQuery.trim() || undefined,
           limit: 15,
           academicYearId: activeAcademicYearId || undefined,
+          status: "ACTIVE",
         });
-        setSearchResults(res?.items || []);
+        setSearchResults((res?.items || []).filter((item) => !item.status || item.status === "ACTIVE"));
       } catch (err) {
         console.warn("Error searching admissions for fee generation:", err);
       } finally {

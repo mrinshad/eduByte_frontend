@@ -146,17 +146,27 @@ export async function deleteFineType(id: string) {
   })
 }
 
-export async function getStudentAdmissionAndName() {
+export async function getStudentAdmissionAndName(params?: { page?: number; limit?: number }) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  const qs = query.toString() ? `?${query.toString()}` : "";
+
   const payload = (await apiFetch(
-    `/api/stdfines/stdenid-name`
+    `/api/stdfines/stdenid-name${qs}`
   )) as ApiSuccess<StudentAdmissionAndName[]>;
 
   return payload.data ?? [];
 }
 
-export async function getStudentAdmissionAndNameWithEnrollment() {
+export async function getStudentAdmissionAndNameWithEnrollment(params?: { page?: number; limit?: number }) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  const qs = query.toString() ? `?${query.toString()}` : "";
+
   const payload = (await apiFetch(
-    `/api/stdfines/stdenid-name-enrollment`
+    `/api/stdfines/stdenid-name-enrollment${qs}`
   )) as ApiSuccess<StudentAdmissionAndNameWithEnrollment[]>;
 
   return payload.data ?? [];

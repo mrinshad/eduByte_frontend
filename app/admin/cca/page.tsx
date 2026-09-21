@@ -243,7 +243,7 @@ export default function CCAManagementPage() {
   const loadAdmissionsAndClasses = async () => {
     try {
       const [admRes, clsRes] = await Promise.all([
-        getStudentAdmissions({ page: 1, limit: 500 }),
+        getStudentAdmissions({ page: 1, limit: 500, status: "ACTIVE" }),
         getClasses(),
       ]);
       setAllAdmissions(admRes.items || []);
@@ -417,6 +417,8 @@ export default function CCAManagementPage() {
   const bulkClassStudents = useMemo(() => {
     if (!bulkClassId) return [];
     return allAdmissions.filter((adm) => {
+      const isActive = !adm.status || adm.status === "ACTIVE";
+      if (!isActive) return false;
       const classMatch = adm.class?.toLowerCase() === bulkClassId.toLowerCase();
       if (!classMatch) return false;
       if (bulkDivision !== "all") {
@@ -1377,7 +1379,9 @@ export default function CCAManagementPage() {
                     <CommandList>
                       <CommandEmpty className="py-6 text-center text-xs text-slate-200 dark:text-slate-400">No matching active students found.</CommandEmpty>
                       <CommandGroup className="max-h-56 overflow-y-auto">
-                        {allAdmissions.map((adm) => (
+                        {allAdmissions
+                          .filter((adm) => !adm.status || adm.status === "ACTIVE")
+                          .map((adm) => (
                           <CommandItem
                             key={adm.id}
                             value={`${adm.admissionNumber} ${adm.studentName} ${adm.class}`}
