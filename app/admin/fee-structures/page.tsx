@@ -186,9 +186,13 @@ export default function Page() {
         <div className="flex flex-col gap-4">
           {/* Title row */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 items-center gap-3">
-              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0 text-white" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4" />
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <Button
+                size="icon"
+                className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+                onClick={() => router.back()}
+              >
+                <ArrowLeft className="h-4 w-4 text-foreground" />
               </Button>
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Fee Structures</h1>
@@ -257,7 +261,7 @@ export default function Page() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <Select
             value={classFilter}
             onValueChange={(value) => {
@@ -265,7 +269,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[120px] rounded-lg border-slate-300 sm:w-[140px]">
+            <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 sm:w-[140px]">
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +287,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[120px] rounded-lg border-slate-300 sm:w-[140px]">
+            <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 sm:w-[140px]">
               <SelectValue placeholder="All Years" />
             </SelectTrigger>
             <SelectContent>
@@ -301,7 +305,7 @@ export default function Page() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-[calc(50%-0.25rem)] min-w-[110px] rounded-lg border-slate-300 sm:w-[130px]">
+            <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 sm:w-[130px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -315,7 +319,7 @@ export default function Page() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
+              className="h-10 w-full sm:w-auto text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30"
               onClick={clearAllFilters}
             >
               <X className="mr-1 h-3.5 w-3.5" />

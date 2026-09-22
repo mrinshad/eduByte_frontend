@@ -588,15 +588,13 @@ export default function Page() {
         <PageHeader title="Roles & Permissions" description="Manage system roles and their permissions" actions={
           <PermissionGate permission="roles.createPermissionButton">
             <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => router.push("/admin/permissions")}
-
             >
-              <SquareDashedKanban className="h-4 w-4"/>
+              <SquareDashedKanban className="h-4 w-4 mr-2"/>
               Manage Permission
             </Button>
           </PermissionGate>
-
         } />
 
         <div className="mt-3 grid gap-5 lg:grid-cols-2 flex-1 min-h-0 lg:overflow-hidden">

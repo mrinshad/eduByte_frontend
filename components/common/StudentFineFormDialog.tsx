@@ -91,7 +91,7 @@ export default function StudentFineFormDialog({
 
   async function loadStudents() {
     try {
-      const data = await getStudentAdmissionAndNameWithEnrollment();
+      const data = await getStudentAdmissionAndNameWithEnrollment({ limit: 500 });
 
       setStudents(
         data.filter(

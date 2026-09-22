@@ -282,7 +282,7 @@ export default function StudentRelievingPage() {
             </Button>
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
-                <GraduationCap className="h-6 w-6 text-[#556043] dark:text-[#9ea98a]" />
+               
                 Student Relieving
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">

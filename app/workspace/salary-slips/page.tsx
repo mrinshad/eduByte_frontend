@@ -17,6 +17,7 @@ import {
     Building2,
     CheckCircle2,
     Calendar as CalendarIcon,
+    ArrowLeft,
     ArrowRight,
     ArrowUpDown,
     ArrowUp,
@@ -302,21 +303,30 @@ export default function SalarySlipsListPage() {
         <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                        Salary Slips & Payroll
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Monthly staff remuneration register, allowances, deductions, and vouchers
-                    </p>
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <Button
+                        size="icon"
+                        className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-4 w-4 text-foreground" />
+                    </Button>
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                            Salary Slips & Payroll
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Monthly staff remuneration register, allowances, deductions, and vouchers
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => fetchSlips(pagination.page)}
                         disabled={loading}
-                        className="h-9 gap-1.5"
+                        className="w-full sm:w-auto h-9 gap-1.5"
                     >
                         <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
                         Refresh
@@ -324,7 +334,7 @@ export default function SalarySlipsListPage() {
                     <PermissionGate permission="salaryslips.createSalarySlipButton">
                         <Button
                             onClick={() => router.push("/workspace/salary-slips/create")}
-                            className="h-9 gap-1.5 font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                            className="w-full sm:w-auto h-9 gap-1.5 font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                         >
                             <Plus className="h-4 w-4 text-white dark:text-slate-900" />
                             Generate Salary Slip

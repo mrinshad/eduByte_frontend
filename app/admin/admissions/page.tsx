@@ -62,6 +62,7 @@ export default function StudentAdmissionListPage() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [feeStructureFilter, setFeeStructureFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pagination, setPagination] = useState({
@@ -133,6 +134,7 @@ export default function StudentAdmissionListPage() {
           className: classFilter === "all" ? "" : classFilter,
           feeStructure: feeStructureFilter === "all" ? "" : feeStructureFilter,
           academicYear: currentAcademicYear !== "Academic Year" ? currentAcademicYear : undefined,
+          status: statusFilter === "all" ? undefined : statusFilter,
         });
         if (!active) return;
 
@@ -165,7 +167,7 @@ export default function StudentAdmissionListPage() {
     return () => {
       active = false;
     };
-  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter, currentAcademicYear]);
+  }, [currentPage, rowsPerPage, search, classFilter, feeStructureFilter, currentAcademicYear, statusFilter]);
 
   const filteredClassOptions = useMemo(() => {
     if (feeStructureFilter !== "all") {
@@ -195,8 +197,9 @@ export default function StudentAdmissionListPage() {
     () =>
       classFilter !== "all" ||
       feeStructureFilter !== "all" ||
+      statusFilter !== "all" ||
       search.trim().length > 0,
-    [classFilter, feeStructureFilter, search]
+    [classFilter, feeStructureFilter, statusFilter, search]
   );
 
   const clearAllFilters = () => {
@@ -204,6 +207,7 @@ export default function StudentAdmissionListPage() {
     setSearch("");
     setClassFilter("all");
     setFeeStructureFilter("all");
+    setStatusFilter("all");
     setCurrentPage(1);
   };
 
@@ -255,6 +259,25 @@ export default function StudentAdmissionListPage() {
 
         {/* Second row: filters, right-aligned below the search/button row */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full flex-wrap sm:justify-end">
+          {/* 👇 Status filter dropdown */}
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[150px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="WITHDRAWN">Withdrawn</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* 👇 Class filter dropdown */}
           <Select
             value={classFilter}
@@ -337,6 +360,15 @@ export default function StudentAdmissionListPage() {
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2 -mt-2">
           <span className="text-xs font-medium text-slate-400">Filters:</span>
+          {statusFilter !== "all" && (
+            <FilterChip
+              label={`Status: ${statusFilter === "ACTIVE" ? "Active" : statusFilter === "WITHDRAWN" ? "Withdrawn" : statusFilter}`}
+              onRemove={() => {
+                setStatusFilter("all");
+                setCurrentPage(1);
+              }}
+            />
+          )}
           {classFilter !== "all" && (
             <FilterChip
               label={`Class: ${classFilter}`}
