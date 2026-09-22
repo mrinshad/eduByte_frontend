@@ -271,15 +271,19 @@ export default function Page() {
     <section className="px-3 sm:px-6 py-4">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <Button variant="outline" size="icon" className="text-white shrink-0" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
+          <Button
+            size="icon"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-semibold text-slate-950 dark:text-white">Transport</h1>
             <p className="text-xs sm:text-sm leading-6 text-slate-600 dark:text-slate-600">Manage transport vehicles, registration numbers, seating capacities, and drivers.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             className="w-full sm:w-auto shrink-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"

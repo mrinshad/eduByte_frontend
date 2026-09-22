@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
@@ -16,6 +17,7 @@ import {
   ShieldAlert,
   UserCheck,
   Clock,
+  ArrowLeft,
   ArrowUpDown,
   Filter,
   Eye,
@@ -160,6 +162,7 @@ function TableSkeleton({ rows = 6 }: { rows?: number }) {
 // Main Page
 // ---------------------------------------------------------------------------
 export default function UsersPage() {
+  const router = useRouter()
   // ----------------------------------------------------------------------
   // Data
   // ----------------------------------------------------------------------
@@ -492,13 +495,22 @@ export default function UsersPage() {
     <section className="w-full px-6 py-4 space-y-6">
       {/* ── Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-            Users
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Manage system user accounts, access credentials, and role assignments.
-          </p>
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <Button
+            size="icon"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4 text-foreground" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+              Users
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+              Manage system user accounts, access credentials, and role assignments.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto flex-wrap">
@@ -514,7 +526,7 @@ export default function UsersPage() {
 
           {roles.length > 0 && (
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+              <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
@@ -529,7 +541,7 @@ export default function UsersPage() {
           )}
 
           <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as StatusFilter)}>
-            <SelectTrigger className="h-10 w-[140px] rounded-lg border-slate-300 shrink-0">
+            <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-lg border-slate-300 shrink-0">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -543,7 +555,7 @@ export default function UsersPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
+              className="h-10 w-full sm:w-auto text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:bg-red-950/30 shrink-0"
               onClick={clearAllFilters}
             >
               <X className="mr-1 h-3.5 w-3.5" />
@@ -552,7 +564,7 @@ export default function UsersPage() {
           )}
           <PermissionGate permission="users.createNewUserButton">
             <Button
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={() => openDialog("add")}
             >
               <Plus className="h-4 w-4 mr-2 text-white dark:text-slate-900" />

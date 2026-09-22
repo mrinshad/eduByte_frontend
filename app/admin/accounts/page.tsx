@@ -403,7 +403,7 @@ export default function Page() {
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                     <PermissionGate permission="accounts.transferFundsButton">
                         <Button
                             variant="outline"

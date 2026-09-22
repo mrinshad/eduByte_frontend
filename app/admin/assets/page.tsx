@@ -319,12 +319,11 @@ export default function AssetsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
-            variant="outline"
             size="icon"
-            className="text-white shrink-0"
+            className="bg-background text-foreground hover:opacity-90 shadow-sm shrink-0"
             onClick={() => router.back()}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 text-foreground" />
           </Button>
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-semibold text-slate-950 dark:text-white">
@@ -336,13 +335,13 @@ export default function AssetsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCsv}
             disabled={assets.length === 0}
-            className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+            className="w-full sm:w-auto border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
           >
             <Download className="mr-2 h-4 w-4" />
             Export CSV
@@ -352,7 +351,7 @@ export default function AssetsPage() {
             <Button
               size="sm"
               onClick={handleOpenCreate}
-              className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Asset

@@ -703,23 +703,23 @@ export default function CCAManagementPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {activeTab === "activities" ? (
             <PermissionGate permission="cca.addCcaActivityButton">
               <Button
                 onClick={handleOpenAddActivity}
-                className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium text-xs sm:text-sm h-10 px-4 rounded-lg"
+                className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium text-xs sm:text-sm h-10 px-4 rounded-lg"
               >
                 <Plus className="h-4 w-4 mr-1.5 text-white dark:text-slate-900" /> Add CCA Activity
               </Button>
             </PermissionGate>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <PermissionGate permission="cca.bulkAssignClassButton">
                 <Button
                   onClick={handleOpenBulkAssign}
                   variant="outline"
-                  className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200  dark:hover:bg-slate-700 shadow-xs font-medium text-xs sm:text-sm h-10 px-4 rounded-lg gap-1.5"
+                  className="w-full sm:w-auto border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200  dark:hover:bg-slate-700 shadow-xs font-medium text-xs sm:text-sm h-10 px-4 rounded-lg gap-1.5"
                 >
                   <Layers className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
                   Bulk Assign Class
@@ -728,7 +728,7 @@ export default function CCAManagementPage() {
               <PermissionGate permission="cca.assignStudentButton">
                 <Button
                   onClick={handleOpenAssignStudent}
-                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium text-xs sm:text-sm h-10 px-4 rounded-lg"
+                  className="w-full sm:w-auto bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-sm font-medium text-xs sm:text-sm h-10 px-4 rounded-lg"
                 >
                   <Plus className="h-4 w-4 mr-1.5 text-white dark:text-slate-900" /> Assign Student
                 </Button>
@@ -781,9 +781,9 @@ export default function CCAManagementPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <Select value={activityStatusFilter} onValueChange={setActivityStatusFilter}>
-                <SelectTrigger className="h-10 w-[140px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                <SelectTrigger className="h-10 w-full sm:w-[140px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -801,7 +801,7 @@ export default function CCAManagementPage() {
                     setActivitySearch("");
                     setActivityStatusFilter("ALL");
                   }}
-                  className="h-10 text-xs sm:text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg"
+                  className="h-10 w-full sm:w-auto text-xs sm:text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg"
                 >
                   Reset
                 </Button>
@@ -989,9 +989,9 @@ export default function CCAManagementPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="h-10 w-[150px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                <SelectTrigger className="h-10 w-full sm:w-[150px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                   <SelectValue placeholder="All Activities" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1005,7 +1005,7 @@ export default function CCAManagementPage() {
               </Select>
 
               <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger className="h-10 w-[130px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                <SelectTrigger className="h-10 w-full sm:w-[130px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1022,7 +1022,7 @@ export default function CCAManagementPage() {
                 value={statusFilter}
                 onValueChange={(val: "ALL" | "ACTIVE" | "DROPPED") => setStatusFilter(val)}
               >
-                <SelectTrigger className="h-10 w-[120px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
+                <SelectTrigger className="h-10 w-full sm:w-[120px] text-xs sm:text-sm rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-[#556043]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1042,7 +1042,7 @@ export default function CCAManagementPage() {
                     setClassFilter("all");
                     setStatusFilter("ALL");
                   }}
-                  className="h-10 text-xs sm:text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg"
+                  className="h-10 w-full sm:w-auto text-xs sm:text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg"
                 >
                   Clear Filters
                 </Button>

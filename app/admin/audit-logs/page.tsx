@@ -636,7 +636,7 @@ export default function AuditLogsPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
-                <ShieldAlert className="h-6 w-6 text-[#556043] dark:text-[#9ea98a]" />
+                
                 Audit Logs
               </h1>
               <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
@@ -645,7 +645,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
             <Button
               onClick={handleExportCsv}
               disabled={exporting || loading}
