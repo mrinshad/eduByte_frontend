@@ -136,6 +136,7 @@ export default function SalarySlipsListPage() {
         totalDisbursed: 0,
         totalEarnings: 0,
         totalDeductions: 0,
+        totalAdvanceSalary: 0,
         totalSlips: 0,
     });
     const [pagination, setPagination] = useState({
@@ -365,7 +366,14 @@ export default function SalarySlipsListPage() {
                     <div className="mt-2 text-2xl font-bold tracking-tight text-rose-700 dark:text-rose-400 tabular-nums">
                         {formatCurrency(stats.totalDeductions)}
                     </div>
-                    <p className="mt-1 text-xs text-slate-400">Advances, LOP, fines & withholdings</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Advances, LOP, fines & withholdings
+                        {Number(stats.totalAdvanceSalary || 0) > 0 && (
+                            <span className="block font-medium text-amber-700 dark:text-amber-400">
+                                Advances: {formatCurrency(Number(stats.totalAdvanceSalary))}
+                            </span>
+                        )}
+                    </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -617,8 +625,15 @@ export default function SalarySlipsListPage() {
                                         <td className="px-4 py-3 text-right font-medium text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
                                             {formatCurrency(Number(slip.totalEarnings))}
                                         </td>
-                                        <td className="px-4 py-3 text-right font-medium text-rose-700 dark:text-rose-400 tabular-nums whitespace-nowrap">
-                                            - {formatCurrency(Number(slip.totalDeductions))}
+                                        <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
+                                            <span className="font-medium text-rose-700 dark:text-rose-400 block">
+                                                - {formatCurrency(Number(slip.totalDeductions))}
+                                            </span>
+                                            {Number(slip.advanceSalary) > 0 && (
+                                                <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 block">
+                                                    Advance: {formatCurrency(Number(slip.advanceSalary))}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-slate-100 tabular-nums whitespace-nowrap">
                                             {formatCurrency(Number(slip.netSalary))}

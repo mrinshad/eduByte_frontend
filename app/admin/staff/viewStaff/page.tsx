@@ -468,8 +468,15 @@ export default function ViewStaffPage() {
                       <TableCell className="px-4 py-3 text-right whitespace-nowrap font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
                         {formatCurrency(slip.totalEarnings)}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right whitespace-nowrap font-medium text-rose-700 dark:text-rose-400 tabular-nums">
-                        - {formatCurrency(slip.totalDeductions)}
+                      <TableCell className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        <span className="font-medium text-rose-700 dark:text-rose-400 block">
+                          - {formatCurrency(slip.totalDeductions)}
+                        </span>
+                        {Number(slip.advanceSalary || 0) > 0 && (
+                          <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 block">
+                            Advance: {formatCurrency(Number(slip.advanceSalary))}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right whitespace-nowrap font-bold text-slate-950 dark:text-white tabular-nums">
                         {formatCurrency(slip.netSalary)}

@@ -120,6 +120,7 @@ export interface SalarySlipsListResponse {
     totalDisbursed: number;
     totalEarnings: number;
     totalDeductions: number;
+    totalAdvanceSalary: number;
     totalSlips: number;
   };
 }

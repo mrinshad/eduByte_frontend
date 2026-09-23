@@ -16,8 +16,8 @@ import {
     Wallet,
     TrendingUp,
     TrendingDown,
-    FileText,
     AlertCircle,
+    Info,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,11 @@ import {
     type PaymentMethodAccount,
     type StaffName,
 } from "@/lib/services/expense";
-import { createSalarySlip, getStaffPendingAdvance } from "@/lib/services/salarySlip";
+import {
+    createSalarySlip,
+    getStaffPendingAdvance,
+    type StaffPendingAdvanceItem,
+} from "@/lib/services/salarySlip";
 
 // ---------------------------------------------------------------------
 // Sage green accent (#6D755F) identical to Create Expense module
@@ -111,6 +115,8 @@ export default function CreateSalarySlipPage() {
     const [otherDeductions, setOtherDeductions] = useState<number | "">("");
     const [loadingPendingAdvance, setLoadingPendingAdvance] = useState<boolean>(false);
     const [pendingAdvanceInfo, setPendingAdvanceInfo] = useState<{ total: number; count: number } | null>(null);
+    const [pendingAdvances, setPendingAdvances] = useState<StaffPendingAdvanceItem[]>([]);
+    const [advancePopoverOpen, setAdvancePopoverOpen] = useState<boolean>(false);
 
     // Remarks & Leaves
     const [casualLeaves, setCasualLeaves] = useState<number | "">("");
@@ -170,29 +176,37 @@ export default function CreateSalarySlipPage() {
 
     // ── Fetch & Auto-populate Pending Advance on Staff Selection ────────────
     useEffect(() => {
-        if (!selectedStaffId) {
-            setPendingAdvanceInfo(null);
-            return;
-        }
-
         let cancelled = false;
         async function fetchAdvance() {
+            if (!selectedStaffId) {
+                setAdvanceSalary("");
+                setPendingAdvances([]);
+                setPendingAdvanceInfo(null);
+                return;
+            }
             setLoadingPendingAdvance(true);
             try {
                 const res = await getStaffPendingAdvance(selectedStaffId);
                 if (cancelled) return;
                 if (res.totalPendingAdvance > 0) {
                     setAdvanceSalary(res.totalPendingAdvance);
+                    setPendingAdvances(res.advances || []);
                     setPendingAdvanceInfo({
                         total: res.totalPendingAdvance,
                         count: res.advances.length,
                     });
                 } else {
-                    setPendingAdvanceInfo(null);
+                    setAdvanceSalary("");
+                    setPendingAdvances([]);
+                    setPendingAdvanceInfo({ total: 0, count: 0 });
                 }
             } catch (err) {
                 console.error("Failed to fetch pending advance:", err);
-                if (!cancelled) setPendingAdvanceInfo(null);
+                if (!cancelled) {
+                    setAdvanceSalary("");
+                    setPendingAdvances([]);
+                    setPendingAdvanceInfo(null);
+                }
             } finally {
                 if (!cancelled) setLoadingPendingAdvance(false);
             }
@@ -562,7 +576,61 @@ export default function CreateSalarySlipPage() {
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                         <div className="flex flex-col gap-1">
-                            <FieldLabel>Advance Salary</FieldLabel>
+                            <div className="flex items-center justify-between">
+                                <FieldLabel>Advance Salary</FieldLabel>
+                                {pendingAdvances.length > 0 && (
+                                    <Popover open={advancePopoverOpen} onOpenChange={setAdvancePopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="text-[11px] font-semibold text-[#556043] dark:text-[#8b9b6e] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                                                title="View advance payment details"
+                                            >
+                                                <Info className="h-3 w-3" />
+                                                View Breakdown ({pendingAdvances.length})
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 sm:w-96 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl" align="start">
+                                            <div className="flex flex-col gap-2.5">
+                                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                                                        Pending Advances ({pendingAdvances.length})
+                                                    </span>
+                                                    <span className="text-xs font-bold text-[#556043] dark:text-[#8b9b6e] tabular-nums">
+                                                        Total: {formatCurrency(pendingAdvanceInfo?.total ?? 0)}
+                                                    </span>
+                                                </div>
+                                                <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                                                    {pendingAdvances.map((adv) => (
+                                                        <div
+                                                            key={adv.id}
+                                                            className="rounded-lg border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/60 p-2.5 text-xs flex flex-col gap-1"
+                                                        >
+                                                            <div className="flex items-center justify-between font-semibold">
+                                                                <span className="text-slate-800 dark:text-slate-200">{adv.expenseNumber}</span>
+                                                                <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
+                                                                    {formatCurrency(Number(adv.amount))}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                                                <span>{format(new Date(adv.expenseDate), "dd MMM yyyy, hh:mm a")}</span>
+                                                                <span className="font-medium bg-slate-200/70 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+                                                                    {adv.account?.name || "Cash"}
+                                                                </span>
+                                                            </div>
+                                                            {adv.notes && (
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 italic mt-0.5 border-t border-slate-200/40 dark:border-slate-800/40 pt-1">
+                                                                    &ldquo;{adv.notes}&rdquo;
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            </div>
                             <Input
                                 type="number"
                                 data-testid="advance-salary-input"
@@ -582,6 +650,8 @@ export default function CreateSalarySlipPage() {
                                 <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5">
                                     Auto-applied ₹{pendingAdvanceInfo.total.toLocaleString()} pending advance ({pendingAdvanceInfo.count} record{pendingAdvanceInfo.count > 1 ? "s" : ""})
                                 </p>
+                            ) : selectedStaffId && pendingAdvanceInfo && pendingAdvanceInfo.total === 0 ? (
+                                <p className="text-[11px] text-slate-400 mt-0.5">No pending advances for this employee</p>
                             ) : null}
                         </div>
 

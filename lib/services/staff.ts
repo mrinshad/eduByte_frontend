@@ -35,6 +35,7 @@ export interface StaffSalarySlipItem {
   slipNumber: string;
   salaryMonth: string;
   totalEarnings: number;
+  advanceSalary?: number;
   totalDeductions: number;
   netSalary: number;
   paymentMethod: string;
