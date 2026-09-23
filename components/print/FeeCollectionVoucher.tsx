@@ -5,6 +5,7 @@ import { ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { FeeCollectionPrintResponse } from "@/lib/services/feeCollection";
+import VoucherWatermark from "./VoucherWatermark";
 
 const SAGE = "#556043";
 
@@ -149,7 +150,9 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                         }}
                     >
                         {/* Inner Border Box for traditional receipt look */}
-                        <div className="border-2 border-black flex-1 flex flex-col p-5">
+                        <div className="relative border-2 border-black flex-1 flex flex-col p-5 overflow-hidden">
+                            <VoucherWatermark text="RECEIVED" color="green" />
+                            <div className="relative z-10 flex-1 flex flex-col">
 
                             {/* Header Section */}
                             <div className="text-center mb-5 border-b-2 border-black pb-4">
@@ -301,6 +304,7 @@ export default function FeeCollectionVoucher({ transaction }: FeeCollectionVouch
                             <div>
                                 <div className="border-t border-black w-3/5 mx-auto pt-1.5">Received By</div>
                             </div>
+                        </div>
                         </div>
 
                     </div>

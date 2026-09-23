@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import VoucherWatermark from "./VoucherWatermark";
 
 const SAGE = "#6D755F";
 
@@ -138,7 +139,9 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                         }}
                     >
                         {/* Inner Border Box */}
-                        <div className="border-2 border-black flex-1 flex flex-col p-5">
+                        <div className="relative border-2 border-black flex-1 flex flex-col p-5 overflow-hidden">
+                            <VoucherWatermark text="PAID" color="green" />
+                            <div className="relative z-10 flex-1 flex flex-col">
                             {/* Header */}
                             <div className="text-center mb-4 border-b-2 border-black pb-3.5">
                                 <h1 className="text-xl font-bold uppercase leading-tight tracking-wide">
@@ -259,6 +262,7 @@ export default function ExpenseVoucher({ expense }: ExpenseVoucherProps) {
                                 <div>
                                     <div className="border-t border-black w-3/4 mx-auto pt-2">Receiver's Sign</div>
                                 </div>
+                            </div>
                             </div>
                         </div>
                     </div>
