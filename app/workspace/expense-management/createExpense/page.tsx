@@ -158,6 +158,7 @@ export default function Page() {
         category?: string;
         subCategory?: string;
         amount?: string;
+        staff?: string;
     }>({});
     const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
 
@@ -203,6 +204,12 @@ export default function Page() {
         if (!selectedCategoryId) return [];
         return subCategoriesDropdown.filter((sc) => toId(sc.categoryId) === toId(selectedCategoryId));
     }, [subCategoriesDropdown, selectedCategoryId]);
+
+    const isAdvanceExpense = useMemo(() => {
+        const catName = selectedCategory?.name?.toLowerCase() ?? "";
+        const subCatName = selectedSubCategory?.name?.toLowerCase() ?? "";
+        return catName.includes("advance") || subCatName.includes("advance");
+    }, [selectedCategory, selectedSubCategory]);
 
     // ── Preload categories + sub categories + vehicles + staff eagerly ─────
     // NOTE: vehicles & staff used to be lazy-loaded only when their popover
@@ -475,6 +482,9 @@ export default function Page() {
         if (!selectedCategoryId) nextFieldErrors.category = "Please select a category";
         if (!selectedSubCategoryId) nextFieldErrors.subCategory = "Please select a sub category";
         if (amount === "" || Number(amount) <= 0) nextFieldErrors.amount = "Please enter a valid amount";
+        if (isAdvanceExpense && !selectedStaffId) {
+            nextFieldErrors.staff = "Please select a staff member for salary advance disbursements";
+        }
 
         payments.forEach((row) => {
             if (!row.accountId) {
@@ -488,6 +498,7 @@ export default function Page() {
             nextFieldErrors.category ??
             nextFieldErrors.subCategory ??
             nextFieldErrors.amount ??
+            nextFieldErrors.staff ??
             Object.values(nextPaymentErrors)[0];
 
         return {
@@ -623,18 +634,24 @@ export default function Page() {
                 {/* Staff / date */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Staff (optional)</FieldLabel>
+                        <FieldLabel>
+                            Staff {isAdvanceExpense ? <span className="text-red-600 ml-0.5">*</span> : <span className="text-slate-400 font-normal">(optional)</span>}
+                        </FieldLabel>
                         <Popover open={staffPopoverOpen} onOpenChange={handleStaffPopoverChange}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={staffPopoverOpen}
-                                    className={cn("w-full justify-between font-normal shadow-sm text-left px-3", fieldClass)}
+                                    className={cn(
+                                        "w-full justify-between font-normal shadow-sm text-left px-3",
+                                        fieldClass,
+                                        fieldErrors.staff && fieldErrorClass
+                                    )}
                                 >
                                     <span className="flex items-center gap-2 truncate text-slate-700 dark:text-slate-200">
                                         <User className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                                        <span className="truncate">{selectedStaff ? selectedStaff.name : "Not linked"}</span>
+                                        <span className="truncate">{selectedStaff ? selectedStaff.name : isAdvanceExpense ? "Select staff member *" : "Not linked"}</span>
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -669,6 +686,7 @@ export default function Page() {
                                                             onSelect={() => {
                                                                 setSelectedStaffId(toId(staff.id));
                                                                 setStaffPopoverOpen(false);
+                                                                setFieldErrors((prev) => ({ ...prev, staff: undefined }));
                                                             }}
                                                             className="py-3 cursor-pointer"
                                                         >
@@ -686,6 +704,7 @@ export default function Page() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
+                        <FieldError>{fieldErrors.staff}</FieldError>
                     </div>
 
                     <div className="flex flex-col gap-1.5">

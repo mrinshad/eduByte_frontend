@@ -20,6 +20,7 @@ import {
     ToggleLeft,
     BadgeCheck,
     IndianRupee,
+    Briefcase,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,9 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import {
     Command,
+    CommandEmpty,
     CommandGroup,
+    CommandInput,
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
@@ -43,6 +46,7 @@ import {
     updateStaff,
     getStaffById,
     StaffInput,
+    STAFF_DESIGNATIONS,
 } from "@/lib/services/staff";
 
 // ── Shared step/field building blocks (same pattern as the admission / fee structure pages) ──
@@ -192,12 +196,14 @@ export default function Page() {
     const [name, setName] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [phone, setPhone] = useState<string>("");
+    const [designation, setDesignation] = useState<string>("");
     const [joiningDate, setJoiningDate] = useState<Date | undefined>(undefined);
     const [basicSalary, setBasicSalary] = useState<string | number>("");
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
     const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+    const [designationPopoverOpen, setDesignationPopoverOpen] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [loadingStaff, setLoadingStaff] = useState(false);
@@ -226,6 +232,7 @@ export default function Page() {
                 setName(record.name ?? "");
                 setEmail(record.email ?? "");
                 setPhone(record.phone ?? "");
+                setDesignation(record.designation ?? "");
                 setJoiningDate(record.joiningDate ? new Date(record.joiningDate) : undefined);
                 setBasicSalary(record.basicSalary !== undefined && record.basicSalary !== null ? Number(record.basicSalary) : "");
                 setStatus(record.status ?? "ACTIVE");
@@ -267,6 +274,7 @@ export default function Page() {
             name: name.trim(),
             email: email.trim(),
             phone: phone.trim(),
+            designation: designation ? designation.trim() : null,
             joiningDate: joiningDate ? joiningDate.toISOString() : "",
             basicSalary: basicSalary === "" ? 0 : Number(basicSalary),
             status,
@@ -484,6 +492,9 @@ export default function Page() {
                                         <Calendar
                                             mode="single"
                                             selected={joiningDate}
+                                            captionLayout="dropdown"
+                                            startMonth={new Date(1970, 0, 1)}
+                                            endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
                                             onSelect={(date) => {
                                                 if (date) {
                                                     setJoiningDate(date);
@@ -501,6 +512,50 @@ export default function Page() {
                                         {fieldErrors.joiningDate}
                                     </p>
                                 )}
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Briefcase className="h-3.5 w-3.5 text-[#6D755F]" /> Designation
+                                </span>
+                                <Popover open={designationPopoverOpen} onOpenChange={setDesignationPopoverOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={designationPopoverOpen}
+                                            disabled={submitting}
+                                            className={cn("w-full justify-between font-normal shadow-sm text-left", fieldClass)}
+                                        >
+                                            {designation || "Select designation..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border-slate-200 dark:border-slate-800" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search designation..." />
+                                            <CommandList>
+                                                <CommandEmpty>No designation found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {STAFF_DESIGNATIONS.map((item) => (
+                                                        <CommandItem
+                                                            key={item}
+                                                            value={item}
+                                                            onSelect={() => {
+                                                                setDesignation(designation === item ? "" : item);
+                                                                setDesignationPopoverOpen(false);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-[#6D755F]", designation === item ? "opacity-100" : "opacity-0")} />
+                                                            <span>{item}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             <div className="flex flex-col gap-2">
@@ -545,7 +600,7 @@ export default function Page() {
                                 </Popover>
                             </div>
 
-                            <div className="flex flex-col gap-2 md:col-span-2">
+                            <div className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Monthly Basic Salary (₹)
                                 </span>
@@ -565,7 +620,7 @@ export default function Page() {
                             </div>
                         </div>
 
-                        {(employeeCode || name || email || phone || joiningDate || basicSalary) && (
+                        {(employeeCode || name || email || phone || joiningDate || designation || basicSalary) && (
                             <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                                 <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                                     <BadgeCheck className="h-4 w-4 text-[#6D755F]" /> Staff Record Preview
@@ -573,6 +628,7 @@ export default function Page() {
                                 <InfoGrid>
                                     <InfoItem label="Employee Code" value={employeeCode} />
                                     <InfoItem label="Full Name" value={name} />
+                                    <InfoItem label="Designation" value={designation || "Not configured"} />
                                     <InfoItem label="Status Allocation" value={
                                         <span className={cn(
                                             "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",

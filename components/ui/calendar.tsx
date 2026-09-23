@@ -35,6 +35,9 @@ function Calendar({
 }) {
   const defaultClassNames = getDefaultClassNames()
 
+  const resolvedStartMonth = props.startMonth ?? fromMonth ?? (fromYear ? new Date(fromYear, 0, 1) : undefined)
+  const resolvedEndMonth = props.endMonth ?? toMonth ?? (toYear ? new Date(toYear, 11, 31) : undefined)
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -183,6 +186,8 @@ function Calendar({
         ...components,
       }}
       {...props}
+      startMonth={resolvedStartMonth}
+      endMonth={resolvedEndMonth}
     />
   )
 }

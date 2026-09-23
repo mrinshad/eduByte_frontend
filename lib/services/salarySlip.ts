@@ -4,6 +4,7 @@ export interface SalarySlipStaff {
   id: string;
   name: string;
   employeeCode: string;
+  designation?: string | null;
   phone?: string | null;
   email?: string | null;
   status?: string;
@@ -89,6 +90,7 @@ export interface SalarySlipPrintData {
     id: string;
     name: string;
     code: string;
+    designation?: string | null;
     phone?: string;
     email?: string;
     role?: string;
@@ -118,6 +120,7 @@ export interface SalarySlipsListResponse {
     totalDisbursed: number;
     totalEarnings: number;
     totalDeductions: number;
+    totalAdvanceSalary: number;
     totalSlips: number;
   };
 }

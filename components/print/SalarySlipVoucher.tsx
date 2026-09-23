@@ -5,6 +5,7 @@ import { ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { SalarySlipPrintData } from "@/lib/services/salarySlip";
+import VoucherWatermark from "./VoucherWatermark";
 
 const SAGE = "#556043";
 
@@ -140,7 +141,9 @@ export default function SalarySlipVoucher({ slip }: SalarySlipVoucherProps) {
                         }}
                     >
                         {/* Double/Solid Border Box */}
-                        <div className="border-2 border-black flex-1 flex flex-col p-5">
+                        <div className="relative border-2 border-black flex-1 flex flex-col p-5 overflow-hidden">
+                            <VoucherWatermark text="PAID" color="green" />
+                            <div className="relative z-10 flex-1 flex flex-col">
                             {/* School Brand Header */}
                             <div className="text-center mb-4 border-b-2 border-black pb-3.5">
                                 <h1 className="text-xl font-bold uppercase leading-tight tracking-wide">
@@ -189,7 +192,7 @@ export default function SalarySlipVoucher({ slip }: SalarySlipVoucherProps) {
                                 </div>
                                 <div className="grid grid-cols-[130px_1fr]">
                                     <span className="font-bold">Role / Designation</span>
-                                    <span>: {slip.employee.role || "Staff Member"}</span>
+                                    <span>: {slip.employee.designation || slip.employee.role || "Staff Member"}</span>
                                 </div>
                                 <div className="grid grid-cols-[130px_1fr]">
                                     <span className="font-bold">Payment Method</span>
@@ -329,6 +332,7 @@ export default function SalarySlipVoucher({ slip }: SalarySlipVoucherProps) {
                                 <div>
                                     <div className="border-t border-black w-3/4 mx-auto pt-2">Employee Signature</div>
                                 </div>
+                            </div>
                             </div>
                         </div>
                     </div>

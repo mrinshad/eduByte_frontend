@@ -1,10 +1,30 @@
 import { apiFetch } from "@/lib/api";
 
+export const STAFF_DESIGNATIONS = [
+  "Chairman",
+  "Principal",
+  "Office Staff",
+  "Home Teacher",
+  "Computer Teacher",
+  "Arabic Language Teacher",
+  "Assistant Teacher",
+  "Office Staff & Teacher",
+  "Pre-School Teacher",
+  "English Teacher",
+  "New Teacher",
+  "On Call Teacher",
+  "Cleaner",
+  "Driver",
+] as const;
+
+export type StaffDesignation = (typeof STAFF_DESIGNATIONS)[number];
+
 export interface StaffInput {
   employeeCode: string;
   name: string;
   phone: string;
   email: string;
+  designation?: string | null;
   joiningDate: string; // ISO date-time string, e.g. "2026-07-01T00:00:00Z"
   basicSalary?: number;
   status ?: "ACTIVE" | "INACTIVE";
@@ -15,6 +35,7 @@ export interface StaffSalarySlipItem {
   slipNumber: string;
   salaryMonth: string;
   totalEarnings: number;
+  advanceSalary?: number;
   totalDeductions: number;
   netSalary: number;
   paymentMethod: string;
@@ -28,6 +49,7 @@ export interface Staff {
   id: string;
   employeeCode: string;
   name: string;
+  designation?: string | null;
   phone: string;
   email: string;
   joiningDate: string;
@@ -52,6 +74,7 @@ export interface StaffListItem {
   id: string;
   employeeCode: string;
   name: string;
+  designation?: string | null;
   phone: string;
   email: string;
   joiningDate: string;
@@ -89,6 +112,7 @@ export interface GetStaffParams {
   limit?: number;
   search?: string;
   status?: string;
+  designation?: string;
   sortBy?: string;
   order?: "asc" | "desc";
 }
@@ -110,6 +134,7 @@ export async function getStaff(params: GetStaffParams = {}): Promise<StaffListRe
   if (params.limit) query.set("limit", String(params.limit));
   if (params.search) query.set("search", params.search);
   if (params.status) query.set("status", params.status);
+  if (params.designation) query.set("designation", params.designation);
   if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.order) query.set("order", params.order);
 
