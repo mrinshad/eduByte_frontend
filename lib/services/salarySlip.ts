@@ -4,6 +4,7 @@ export interface SalarySlipStaff {
   id: string;
   name: string;
   employeeCode: string;
+  designation?: string | null;
   phone?: string | null;
   email?: string | null;
   status?: string;
@@ -89,6 +90,7 @@ export interface SalarySlipPrintData {
     id: string;
     name: string;
     code: string;
+    designation?: string | null;
     phone?: string;
     email?: string;
     role?: string;

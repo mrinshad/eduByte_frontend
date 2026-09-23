@@ -189,7 +189,7 @@ export default function SalarySlipVoucher({ slip }: SalarySlipVoucherProps) {
                                 </div>
                                 <div className="grid grid-cols-[130px_1fr]">
                                     <span className="font-bold">Role / Designation</span>
-                                    <span>: {slip.employee.role || "Staff Member"}</span>
+                                    <span>: {slip.employee.designation || slip.employee.role || "Staff Member"}</span>
                                 </div>
                                 <div className="grid grid-cols-[130px_1fr]">
                                     <span className="font-bold">Payment Method</span>

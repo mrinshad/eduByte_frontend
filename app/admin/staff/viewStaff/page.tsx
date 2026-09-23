@@ -21,6 +21,7 @@ import {
   Plus,
   Building2,
   AlertCircle,
+  Briefcase,
 } from "lucide-react";
 
 import {
@@ -271,6 +272,12 @@ export default function ViewStaffPage() {
                 >
                   {staff.status}
                 </Badge>
+                {staff.designation && (
+                  <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 rounded-full border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                    <Briefcase className="h-3 w-3 mr-1 text-[#556043]" />
+                    {staff.designation}
+                  </Badge>
+                )}
                 {staff.user?.roleName && (
                   <Badge variant="secondary" className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                     <ShieldCheck className="h-3 w-3 mr-1 text-[#556043]" />
@@ -340,6 +347,11 @@ export default function ViewStaffPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
               <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Full Name</span>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{staff.name}</p>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Designation</span>
+              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{staff.designation || "—"}</p>
             </div>
 
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">

@@ -24,7 +24,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { deleteStaff, getStaff, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
+import { deleteStaff, getStaff, STAFF_DESIGNATIONS, type StaffListItem, type StaffPagination } from "@/lib/services/staff";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -95,6 +95,7 @@ export default function Page() {
   const [exporting, setExporting] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [designationFilter, setDesignationFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -129,6 +130,7 @@ export default function Page() {
           limit: rowsPerPage,
           search: search || undefined,
           status: statusFilter === "all" ? undefined : statusFilter,
+          designation: designationFilter === "all" ? undefined : designationFilter,
           sortBy,
           order,
         });
@@ -150,21 +152,22 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, rowsPerPage, search, sortBy, order, statusFilter]);
+  }, [currentPage, rowsPerPage, search, sortBy, order, statusFilter, designationFilter]);
 
   const { total, totalPages, page: safePage } = pagination;
   const startEntry = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endEntry = total === 0 ? 0 : Math.min(safePage * rowsPerPage, total);
 
   const hasActiveFilters = useMemo(
-    () => statusFilter !== "all" || search.trim().length > 0,
-    [statusFilter, search]
+    () => statusFilter !== "all" || designationFilter !== "all" || search.trim().length > 0,
+    [statusFilter, designationFilter, search]
   );
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearch("");
     setStatusFilter("all");
+    setDesignationFilter("all");
     setCurrentPage(1);
   };
 
@@ -181,6 +184,7 @@ export default function Page() {
         limit: rowsPerPage,
         search: search || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
+        designation: designationFilter === "all" ? undefined : designationFilter,
         sortBy,
         order,
       });
@@ -230,6 +234,7 @@ export default function Page() {
         limit: 5000,
         search,
         status: statusFilter !== "all" ? statusFilter : undefined,
+        designation: designationFilter !== "all" ? designationFilter : undefined,
         sortBy,
         order,
       });
@@ -243,6 +248,7 @@ export default function Page() {
       const columns: CsvColumn<StaffListItem>[] = [
         { header: "Staff ID", accessor: (s) => s.employeeCode || "" },
         { header: "Staff Name", accessor: (s) => s.name || "" },
+        { header: "Designation", accessor: (s) => s.designation || "-" },
         { header: "Phone Number", accessor: (s) => s.phone || "-" },
         { header: "Email Address", accessor: (s) => s.email || "-" },
         { header: "Joining Date", accessor: (s) => formatDate(s.joiningDate) },
@@ -350,6 +356,24 @@ export default function Page() {
             </SelectContent>
           </Select>
 
+          <Select
+            value={designationFilter}
+            onValueChange={(value) => {
+              setDesignationFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-[170px] rounded-lg border-slate-300 shrink-0">
+              <SelectValue placeholder="All Designations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Designations</SelectItem>
+              {STAFF_DESIGNATIONS.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -374,6 +398,12 @@ export default function Page() {
               onRemove={() => { setStatusFilter("all"); setCurrentPage(1); }}
             />
           )}
+          {designationFilter !== "all" && (
+            <FilterChip
+              label={`Designation: ${designationFilter}`}
+              onRemove={() => { setDesignationFilter("all"); setCurrentPage(1); }}
+            />
+          )}
           {search.trim() && (
             <FilterChip
               label={`Search: ${search}`}
@@ -394,6 +424,7 @@ export default function Page() {
                 </TableHead>
                 <SortableHeader label="Employee Code" field="employeeCode" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <SortableHeader label="Name" field="name" sortBy={sortBy} order={order} onSort={toggleSort} />
+                <SortableHeader label="Designation" field="designation" sortBy={sortBy} order={order} onSort={toggleSort} />
                 <TableHead className="px-4 sm:px-6 h-12 bg-[#556043] dark:bg-background text-white dark:text-foreground font-semibold tracking-tight whitespace-nowrap">
                   Phone
                 </TableHead>
@@ -411,7 +442,7 @@ export default function Page() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-40 text-center">
+                  <TableCell colSpan={9} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-7 w-7 animate-spin text-[#556043]" />
                       <p className="text-sm">Loading staff...</p>
@@ -420,7 +451,7 @@ export default function Page() {
                 </TableRow>
               ) : staff.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-40 text-center text-slate-500">
+                  <TableCell colSpan={9} className="h-40 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-slate-300" />
                       <p className="text-sm">No staff found.</p>
@@ -457,6 +488,16 @@ export default function Page() {
                       >
                         {formatText(member.name)}
                       </button>
+                    </TableCell>
+
+                    <TableCell className="px-4 sm:px-6 py-4 text-sm whitespace-nowrap">
+                      {member.designation ? (
+                        <Badge variant="outline" className="font-medium text-xs border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                          {member.designation}
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">-</span>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-4 sm:px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
