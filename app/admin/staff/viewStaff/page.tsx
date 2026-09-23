@@ -21,6 +21,7 @@ import {
   Plus,
   Building2,
   AlertCircle,
+  Briefcase,
 } from "lucide-react";
 
 import {
@@ -271,6 +272,12 @@ export default function ViewStaffPage() {
                 >
                   {staff.status}
                 </Badge>
+                {staff.designation && (
+                  <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 rounded-full border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                    <Briefcase className="h-3 w-3 mr-1 text-[#556043]" />
+                    {staff.designation}
+                  </Badge>
+                )}
                 {staff.user?.roleName && (
                   <Badge variant="secondary" className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                     <ShieldCheck className="h-3 w-3 mr-1 text-[#556043]" />
@@ -340,6 +347,11 @@ export default function ViewStaffPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
               <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Full Name</span>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{staff.name}</p>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Designation</span>
+              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{staff.designation || "—"}</p>
             </div>
 
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
@@ -456,8 +468,15 @@ export default function ViewStaffPage() {
                       <TableCell className="px-4 py-3 text-right whitespace-nowrap font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
                         {formatCurrency(slip.totalEarnings)}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right whitespace-nowrap font-medium text-rose-700 dark:text-rose-400 tabular-nums">
-                        - {formatCurrency(slip.totalDeductions)}
+                      <TableCell className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        <span className="font-medium text-rose-700 dark:text-rose-400 block">
+                          - {formatCurrency(slip.totalDeductions)}
+                        </span>
+                        {Number(slip.advanceSalary || 0) > 0 && (
+                          <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 block">
+                            Advance: {formatCurrency(Number(slip.advanceSalary))}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right whitespace-nowrap font-bold text-slate-950 dark:text-white tabular-nums">
                         {formatCurrency(slip.netSalary)}

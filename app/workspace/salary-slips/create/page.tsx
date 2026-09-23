@@ -16,8 +16,8 @@ import {
     Wallet,
     TrendingUp,
     TrendingDown,
-    FileText,
     AlertCircle,
+    Info,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import {
     Command,
@@ -44,7 +52,11 @@ import {
     type PaymentMethodAccount,
     type StaffName,
 } from "@/lib/services/expense";
-import { createSalarySlip, getStaffPendingAdvance } from "@/lib/services/salarySlip";
+import {
+    createSalarySlip,
+    getStaffPendingAdvance,
+    type StaffPendingAdvanceItem,
+} from "@/lib/services/salarySlip";
 
 // ---------------------------------------------------------------------
 // Sage green accent (#6D755F) identical to Create Expense module
@@ -111,6 +123,9 @@ export default function CreateSalarySlipPage() {
     const [otherDeductions, setOtherDeductions] = useState<number | "">("");
     const [loadingPendingAdvance, setLoadingPendingAdvance] = useState<boolean>(false);
     const [pendingAdvanceInfo, setPendingAdvanceInfo] = useState<{ total: number; count: number } | null>(null);
+    const [pendingAdvances, setPendingAdvances] = useState<StaffPendingAdvanceItem[]>([]);
+    const [advancePopoverOpen, setAdvancePopoverOpen] = useState<boolean>(false);
+    const [advanceWarningModalOpen, setAdvanceWarningModalOpen] = useState<boolean>(false);
 
     // Remarks & Leaves
     const [casualLeaves, setCasualLeaves] = useState<number | "">("");
@@ -170,29 +185,37 @@ export default function CreateSalarySlipPage() {
 
     // ── Fetch & Auto-populate Pending Advance on Staff Selection ────────────
     useEffect(() => {
-        if (!selectedStaffId) {
-            setPendingAdvanceInfo(null);
-            return;
-        }
-
         let cancelled = false;
         async function fetchAdvance() {
+            if (!selectedStaffId) {
+                setAdvanceSalary("");
+                setPendingAdvances([]);
+                setPendingAdvanceInfo(null);
+                return;
+            }
             setLoadingPendingAdvance(true);
             try {
                 const res = await getStaffPendingAdvance(selectedStaffId);
                 if (cancelled) return;
                 if (res.totalPendingAdvance > 0) {
                     setAdvanceSalary(res.totalPendingAdvance);
+                    setPendingAdvances(res.advances || []);
                     setPendingAdvanceInfo({
                         total: res.totalPendingAdvance,
                         count: res.advances.length,
                     });
                 } else {
-                    setPendingAdvanceInfo(null);
+                    setAdvanceSalary("");
+                    setPendingAdvances([]);
+                    setPendingAdvanceInfo({ total: 0, count: 0 });
                 }
             } catch (err) {
                 console.error("Failed to fetch pending advance:", err);
-                if (!cancelled) setPendingAdvanceInfo(null);
+                if (!cancelled) {
+                    setAdvanceSalary("");
+                    setPendingAdvances([]);
+                    setPendingAdvanceInfo(null);
+                }
             } finally {
                 if (!cancelled) setLoadingPendingAdvance(false);
             }
@@ -241,7 +264,7 @@ export default function CreateSalarySlipPage() {
     }, [salaryMonth]);
 
     // ── Form Validation & Submission ────────────────────────────────────────
-    const handleSubmit = async () => {
+    const executeSubmission = async (options?: { overrideAdvance?: number; skipAdvanceCheck?: boolean }) => {
         const nextErrors: typeof errors = {};
 
         if (!selectedStaffId) {
@@ -253,8 +276,12 @@ export default function CreateSalarySlipPage() {
         if (basicSalary === "" || numBasic <= 0) {
             nextErrors.basicSalary = "Basic salary must be greater than 0";
         }
-        if (totalDeductions > totalEarnings) {
-            nextErrors.general = `Total deductions (₹${totalDeductions.toLocaleString()}) cannot exceed total earnings (₹${totalEarnings.toLocaleString()})`;
+
+        const effectiveAdvance = options?.overrideAdvance !== undefined ? options.overrideAdvance : numAdvance;
+        const effectiveDeductions = effectiveAdvance + numLOP + numFine + numOtherDed;
+
+        if (effectiveDeductions > totalEarnings) {
+            nextErrors.general = `Total deductions (₹${effectiveDeductions.toLocaleString()}) cannot exceed total earnings (₹${totalEarnings.toLocaleString()})`;
         }
         if (!selectedAccountId) {
             nextErrors.paymentAccount = "Please select a payment account";
@@ -263,6 +290,12 @@ export default function CreateSalarySlipPage() {
         setErrors(nextErrors);
         if (Object.keys(nextErrors).length > 0) {
             toast.error(nextErrors.general || "Please resolve highlighted fields before submitting.");
+            return;
+        }
+
+        // Warn if employee has pending advances in DB but user is submitting with 0 advance recovery
+        if (!options?.skipAdvanceCheck && pendingAdvanceInfo && pendingAdvanceInfo.total > 0 && effectiveAdvance === 0) {
+            setAdvanceWarningModalOpen(true);
             return;
         }
 
@@ -276,7 +309,7 @@ export default function CreateSalarySlipPage() {
                 overtime: numOT,
                 bonus: numBonus,
                 otherEarnings: numOtherEarn,
-                advanceSalary: numAdvance,
+                advanceSalary: effectiveAdvance,
                 lossOfPay: numLOP,
                 fine: numFine,
                 otherDeductions: numOtherDed,
@@ -308,6 +341,10 @@ export default function CreateSalarySlipPage() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleSubmit = () => {
+        void executeSubmission();
     };
 
     if (loadingLookups) {
@@ -562,7 +599,61 @@ export default function CreateSalarySlipPage() {
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                         <div className="flex flex-col gap-1">
-                            <FieldLabel>Advance Salary</FieldLabel>
+                            <div className="flex items-center justify-between">
+                                <FieldLabel>Advance Salary</FieldLabel>
+                                {pendingAdvances.length > 0 && (
+                                    <Popover open={advancePopoverOpen} onOpenChange={setAdvancePopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="text-[11px] font-semibold text-[#556043] dark:text-[#8b9b6e] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                                                title="View advance payment details"
+                                            >
+                                                <Info className="h-3 w-3" />
+                                                View Breakdown ({pendingAdvances.length})
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 sm:w-96 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl" align="start">
+                                            <div className="flex flex-col gap-2.5">
+                                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                                                        Pending Advances ({pendingAdvances.length})
+                                                    </span>
+                                                    <span className="text-xs font-bold text-[#556043] dark:text-[#8b9b6e] tabular-nums">
+                                                        Total: {formatCurrency(pendingAdvanceInfo?.total ?? 0)}
+                                                    </span>
+                                                </div>
+                                                <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                                                    {pendingAdvances.map((adv) => (
+                                                        <div
+                                                            key={adv.id}
+                                                            className="rounded-lg border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/60 p-2.5 text-xs flex flex-col gap-1"
+                                                        >
+                                                            <div className="flex items-center justify-between font-semibold">
+                                                                <span className="text-slate-800 dark:text-slate-200">{adv.expenseNumber}</span>
+                                                                <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
+                                                                    {formatCurrency(Number(adv.amount))}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                                                <span>{format(new Date(adv.expenseDate), "dd MMM yyyy, hh:mm a")}</span>
+                                                                <span className="font-medium bg-slate-200/70 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+                                                                    {adv.account?.name || "Cash"}
+                                                                </span>
+                                                            </div>
+                                                            {adv.notes && (
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 italic mt-0.5 border-t border-slate-200/40 dark:border-slate-800/40 pt-1">
+                                                                    &ldquo;{adv.notes}&rdquo;
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            </div>
                             <Input
                                 type="number"
                                 data-testid="advance-salary-input"
@@ -579,9 +670,60 @@ export default function CreateSalarySlipPage() {
                             {loadingPendingAdvance ? (
                                 <p className="text-[11px] text-slate-400 mt-0.5">Checking pending advances...</p>
                             ) : pendingAdvanceInfo && pendingAdvanceInfo.total > 0 ? (
-                                <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5">
-                                    Auto-applied ₹{pendingAdvanceInfo.total.toLocaleString()} pending advance ({pendingAdvanceInfo.count} record{pendingAdvanceInfo.count > 1 ? "s" : ""})
-                                </p>
+                                numAdvance === 0 ? (
+                                    <div className="rounded-xl border border-amber-200/90 bg-amber-50/80 dark:border-amber-900/40 dark:bg-amber-950/20 p-2.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1.5 transition-all">
+                                        <div className="flex items-start gap-2 text-amber-900 dark:text-amber-300">
+                                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-semibold text-amber-950 dark:text-amber-200">
+                                                    Advance Recovery Set to ₹0.00
+                                                </span>
+                                                <span className="text-[11px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+                                                    Employee has {formatCurrency(pendingAdvanceInfo.total)} in pending advances ({pendingAdvanceInfo.count} record{pendingAdvanceInfo.count > 1 ? "s" : ""}) that will remain unrecovered.
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setAdvanceSalary(pendingAdvanceInfo.total)}
+                                            className="h-7 px-2.5 text-[11px] font-semibold rounded-lg shrink-0 border-amber-300 bg-amber-100/70 text-amber-900 hover:bg-amber-200/80 dark:border-amber-700/60 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60 cursor-pointer self-start sm:self-center"
+                                        >
+                                            Restore Full ({formatCurrency(pendingAdvanceInfo.total)})
+                                        </Button>
+                                    </div>
+                                ) : numAdvance < pendingAdvanceInfo.total ? (
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/40 p-2.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1.5 transition-all">
+                                        <div className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+                                            <Info className="h-4 w-4 shrink-0 text-[#556043] dark:text-[#8b9b6e] mt-0.5" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                                                    Partial Advance Recovery
+                                                </span>
+                                                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                                    Deducting {formatCurrency(numAdvance)}. Remaining {formatCurrency(pendingAdvanceInfo.total - numAdvance)} will carry forward to next payroll.
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setAdvanceSalary(pendingAdvanceInfo.total)}
+                                            className="h-7 px-2 text-[11px] font-medium text-[#556043] dark:text-[#8b9b6e] hover:underline cursor-pointer self-start sm:self-center shrink-0"
+                                        >
+                                            Deduct full ({formatCurrency(pendingAdvanceInfo.total)})
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                                        <Check className="h-3 w-3" />
+                                        Auto-applied full {formatCurrency(pendingAdvanceInfo.total)} pending advance ({pendingAdvanceInfo.count} record{pendingAdvanceInfo.count > 1 ? "s" : ""})
+                                    </p>
+                                )
+                            ) : selectedStaffId && pendingAdvanceInfo && pendingAdvanceInfo.total === 0 ? (
+                                <p className="text-[11px] text-slate-400 mt-0.5">No pending advances for this employee</p>
                             ) : null}
                         </div>
 
@@ -830,6 +972,91 @@ export default function CreateSalarySlipPage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Advance Recovery Warning Modal */}
+            <Dialog open={advanceWarningModalOpen} onOpenChange={setAdvanceWarningModalOpen}>
+                <DialogContent className="w-[92vw] sm:max-w-md max-h-[90vh] flex flex-col p-0 rounded-2xl border border-[#6a7459] dark:border-slate-800 bg-[#5f694d] dark:bg-slate-900 text-white dark:text-slate-100 shadow-2xl overflow-hidden">
+                    <div className="p-6 pb-2 shrink-0">
+                        <DialogHeader className="space-y-1">
+                            <DialogTitle className="text-lg sm:text-xl font-semibold text-white dark:text-white flex items-center gap-2">
+                                <AlertCircle className="h-5 w-5 text-amber-300 dark:text-amber-400 shrink-0" />
+                                Unrecovered Advances
+                            </DialogTitle>
+                            <DialogDescription className="text-xs sm:text-sm text-slate-200 dark:text-slate-400 mt-1">
+                                This employee has outstanding salary advances on record.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    <div className="space-y-3.5 px-6 py-2 flex-1 overflow-y-auto">
+                        <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 bg-[#667155]/60 dark:bg-slate-800/80 p-3.5 space-y-2">
+                            <div className="flex items-center justify-between text-xs border-b border-white/10 dark:border-slate-700/60 pb-2">
+                                <span className="text-slate-200 dark:text-slate-400">Employee</span>
+                                <span className="font-semibold text-white dark:text-slate-100">
+                                    {selectedStaff?.name} ({selectedStaff?.employeeCode})
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs border-b border-white/10 dark:border-slate-700/60 pb-2">
+                                <span className="text-slate-200 dark:text-slate-400">Total Pending Advances</span>
+                                <span className="font-bold text-amber-300 dark:text-amber-400 tabular-nums font-mono">
+                                    {formatCurrency(pendingAdvanceInfo?.total ?? 0)} ({pendingAdvanceInfo?.count} records)
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-200 dark:text-slate-400">Advance Recovery Entered</span>
+                                <span className="font-semibold text-rose-300 dark:text-rose-400 tabular-nums font-mono">
+                                    {formatCurrency(0)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 p-3 text-xs text-amber-200 dark:text-amber-300 flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-300 dark:text-amber-400" />
+                            <p className="leading-relaxed">
+                                If you proceed without deduction, these advance expenses will <strong>not</strong> be linked to this salary slip and will remain pending for future payroll months.
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="bg-[#6a7459] dark:bg-slate-950 border-t border-[#8b9478]/40 dark:border-slate-800 p-4 sm:p-5 flex-col-reverse sm:flex-row gap-2 shrink-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setAdvanceWarningModalOpen(false)}
+                            className="rounded-xl border-[#8b9478] bg-transparent text-white hover:bg-[#586249] hover:text-white dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800 text-xs sm:text-sm"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                                setAdvanceWarningModalOpen(false);
+                                void executeSubmission({ skipAdvanceCheck: true });
+                            }}
+                            className="rounded-xl text-white/80 hover:text-white hover:bg-white/10 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 text-xs sm:text-sm"
+                        >
+                            Proceed with ₹0
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (pendingAdvanceInfo?.total) {
+                                    setAdvanceSalary(pendingAdvanceInfo.total);
+                                }
+                                setAdvanceWarningModalOpen(false);
+                                void executeSubmission({
+                                    overrideAdvance: pendingAdvanceInfo?.total,
+                                    skipAdvanceCheck: true,
+                                });
+                            }}
+                            className="rounded-xl bg-white text-[#5f694d] hover:bg-slate-100 font-semibold dark:bg-[#78865f] dark:text-white dark:hover:bg-[#6a7752] text-xs sm:text-sm shadow-md"
+                        >
+                            Recover Full ({formatCurrency(pendingAdvanceInfo?.total ?? 0)})
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );

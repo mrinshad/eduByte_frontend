@@ -548,6 +548,9 @@ export default function Page() {
                                         <Calendar
                                           mode="single"
                                           selected={editingYearStartDate}
+                                          captionLayout="dropdown"
+                                          startMonth={minCalendarDate}
+                                          endMonth={maxCalendarDate}
                                           onSelect={(date) => {
                                             setEditingYearStartDate(date ?? undefined)
                                             setEditFromOpen(false)
@@ -578,6 +581,9 @@ export default function Page() {
                                         <Calendar
                                           mode="single"
                                           selected={editingYearEndDate}
+                                          captionLayout="dropdown"
+                                          startMonth={minCalendarDate}
+                                          endMonth={maxCalendarDate}
                                           onSelect={(date) => {
                                             setEditingYearEndDate(date ?? undefined)
                                             setEditToOpen(false)
@@ -756,6 +762,9 @@ export default function Page() {
                             <Calendar
                               mode="single"
                               selected={fromDate}
+                              captionLayout="dropdown"
+                              startMonth={minCalendarDate}
+                              endMonth={maxCalendarDate}
                               onSelect={(date) => {
                                 setFromDate(date ?? undefined)
                                 setFromOpen(false)
@@ -784,6 +793,9 @@ export default function Page() {
                             <Calendar
                               mode="single"
                               selected={toDate}
+                              captionLayout="dropdown"
+                              startMonth={minCalendarDate}
+                              endMonth={maxCalendarDate}
                               onSelect={(date) => {
                                 setToDate(date ?? undefined)
                                 setToOpen(false)
