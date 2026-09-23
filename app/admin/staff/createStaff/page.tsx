@@ -484,6 +484,9 @@ export default function Page() {
                                         <Calendar
                                             mode="single"
                                             selected={joiningDate}
+                                            captionLayout="dropdown"
+                                            startMonth={new Date(1970, 0, 1)}
+                                            endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
                                             onSelect={(date) => {
                                                 if (date) {
                                                     setJoiningDate(date);
