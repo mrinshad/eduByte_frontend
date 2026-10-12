@@ -256,6 +256,23 @@ export type FeeGenerationResult = {
   chargesGenerated: number;
   chargesSkipped: number;
   lastGeneratedAcademicMonth: number;
+  feeReminderSummary?: {
+    remindersStaged: number;
+    remindersSkipped: number;
+    monthlyTemplateCount: number;
+    quarterlyTemplateCount: number;
+    skippedRecipients?: Array<{
+      enrollmentId?: string;
+      studentId?: string;
+      studentName?: string;
+      phone?: string;
+      reason: string;
+    }>;
+    billingPeriod?: {
+      month: number;
+      year: number;
+    };
+  } | null;
 };
 
 async function postStudentChargeAction<T>(endpoint: string, body: unknown) {

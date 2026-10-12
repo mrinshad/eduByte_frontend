@@ -22,6 +22,7 @@ import {
   Zap,
   Trophy,
   Search,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
+import { FeeReminderDispatchModal, type StagingSummaryReport } from "@/components/whatsapp/FeeReminderDispatchModal";
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import {
   Dialog,
@@ -84,6 +86,8 @@ export default function FeeGenerationPage() {
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [stagingReport, setStagingReport] = useState<StagingSummaryReport | null>(null);
 
   // CCA Generation State
   const [ccaPreview, setCcaPreview] = useState<CCAChargePreviewData | null>(null);
@@ -326,6 +330,15 @@ export default function FeeGenerationPage() {
       const result = await generateFeeCharges(activeAcademicYearId);
       if (result) {
         setLastGenerationResult(result);
+        if (result.feeReminderSummary) {
+          setStagingReport(result.feeReminderSummary);
+          if (result.feeReminderSummary.remindersStaged > 0) {
+            toast.info(
+              `Staged ${result.feeReminderSummary.remindersStaged} WhatsApp fee reminders for staff review.`,
+              { duration: 6000 }
+            );
+          }
+        }
         if (result.chargesGenerated > 0) {
           toast.success(
             `Generated ${result.chargesGenerated} charge(s) for ${result.studentsProcessed} student(s)!`
@@ -427,6 +440,16 @@ export default function FeeGenerationPage() {
               >
                 <RefreshCw className={`mr-1.5 h-3.5 w-3.5 text-[#556043] dark:text-slate-200 ${isLoadingPreview ? "animate-spin" : ""}`} />
                 Refresh
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission="feegeneration.generateChargesButton">
+              <Button
+                onClick={() => setDispatchModalOpen(true)}
+                variant="outline"
+                className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 font-semibold text-xs h-9 shadow-sm inline-flex items-center"
+              >
+                <Send className="mr-1.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                WhatsApp Reminders
               </Button>
             </PermissionGate>
             <PermissionGate permission="feegeneration.generateChargesButton">
@@ -592,6 +615,38 @@ export default function FeeGenerationPage() {
       {/* Main Preview Content */}
       {preview ? (
         <>
+          {/* WhatsApp Fee Reminders Staged Banner */}
+          {(stagingReport || lastGenerationResult?.feeReminderSummary) && (
+            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                  <Send className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                      WhatsApp Fee Reminders Staged
+                    </h4>
+                    <Badge className="bg-emerald-600 text-white text-[11px] font-semibold">
+                      {(stagingReport || lastGenerationResult?.feeReminderSummary)?.remindersStaged || 0} Staged
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                    Fee reminders have been safely staged in PostgreSQL. Staff must review and confirm before dispatching.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setDispatchModalOpen(true)}
+                className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs inline-flex items-center gap-1.5 shrink-0"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Review & Send Reminders
+              </Button>
+            </div>
+          )}
+
           {/* ── Executive Summary Bar (3 Cards) ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Card 1: Target Month */}
@@ -1218,6 +1273,21 @@ export default function FeeGenerationPage() {
             setSelectedStudentEnrollmentId(null);
           }}
           onSuccess={() => {
+            handleRefreshPreview();
+          }}
+        />
+      )}
+
+      {activeAcademicYearId && (
+        <FeeReminderDispatchModal
+          isOpen={dispatchModalOpen}
+          onClose={() => setDispatchModalOpen(false)}
+          academicYearId={activeAcademicYearId}
+          academicYearName={preview?.academicYearName}
+          periodMonth={preview?.targetCalendarMonth || (new Date().getMonth() + 1)}
+          periodYear={preview?.targetCalendarYear || new Date().getFullYear()}
+          initialStagingReport={stagingReport || lastGenerationResult?.feeReminderSummary || null}
+          onDispatchComplete={() => {
             handleRefreshPreview();
           }}
         />

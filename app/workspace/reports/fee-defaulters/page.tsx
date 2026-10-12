@@ -40,6 +40,7 @@ import {
 import { exportToCsv, type CsvColumn } from "@/lib/utils/csvExport";
 import { usePermission } from "@/hooks/usePermission";
 import { toast } from "sonner";
+import { SendWhatsAppDialog, type StudentContextData } from "@/components/whatsapp/SendWhatsAppDialog";
 
 function formatCurrency(amount?: number) {
     return new Intl.NumberFormat("en-IN", {
@@ -145,8 +146,19 @@ export default function FeeDefaultersReportPage() {
         loadDefaulters();
     }, [loadDefaulters]);
 
-    const handleWhatsAppReminder = (student: FeeDefaulterItem) => {
-        toast.info("Feature coming soon");
+    const [selectedWhatsAppStudent, setSelectedWhatsAppStudent] = useState<StudentContextData | null>(null);
+    const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState<boolean>(false);
+
+    const handleWhatsAppReminder = (st: FeeDefaulterItem) => {
+        setSelectedWhatsAppStudent({
+            studentId: st.studentId,
+            admissionNumber: st.admissionNumber,
+            studentName: st.studentName,
+            className: st.className,
+            whatsappNumber: st.whatsappNumber,
+            totalDue: st.totalOutstanding,
+        });
+        setIsWhatsAppDialogOpen(true);
     };
 
     const selectedClassName = useMemo(() => {
@@ -624,6 +636,11 @@ export default function FeeDefaultersReportPage() {
                     </div>
                 )}
             </div>
+            <SendWhatsAppDialog
+                isOpen={isWhatsAppDialogOpen}
+                onClose={() => setIsWhatsAppDialogOpen(false)}
+                student={selectedWhatsAppStudent}
+            />
         </div>
     );
 }
