@@ -84,6 +84,7 @@ export default function FeeGenerationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCatchUp, setIsGeneratingCatchUp] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showClassDetails, setShowClassDetails] = useState(false);
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
@@ -110,6 +111,36 @@ export default function FeeGenerationPage() {
   const [isSearchingStudents, setIsSearchingStudents] = useState(false);
   const [selectedStudentEnrollmentId, setSelectedStudentEnrollmentId] = useState<string | null>(null);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+
+  const classWiseGroups = useMemo(() => {
+    if (preview?.classWiseStudents && preview.classWiseStudents.length > 0) {
+      return preview.classWiseStudents;
+    }
+    if (!preview?.targetMonthStudents || preview.targetMonthStudents.length === 0) {
+      return [];
+    }
+    const map = new Map<string, { className: string; studentCount: number; admissionNumbers: string[] }>();
+    for (const s of preview.targetMonthStudents) {
+      const cls = s.className ? (s.divisionName ? `${s.className} - ${s.divisionName}` : s.className) : "Unassigned";
+      if (!map.has(cls)) {
+        map.set(cls, { className: cls, studentCount: 0, admissionNumbers: [] });
+      }
+      const item = map.get(cls)!;
+      item.studentCount++;
+      if (s.admissionNumber) item.admissionNumbers.push(s.admissionNumber);
+    }
+    return Array.from(map.values()).sort((a, b) => a.className.localeCompare(b.className));
+  }, [preview]);
+
+  const studentsToChargeCount = useMemo(() => {
+    if (typeof preview?.summary?.studentsToCharge === "number") {
+      return preview.summary.studentsToCharge;
+    }
+    if (classWiseGroups.length > 0) {
+      return classWiseGroups.reduce((sum, g) => sum + g.studentCount, 0);
+    }
+    return preview?.targetMonthStudents?.length ?? 0;
+  }, [preview, classWiseGroups]);
 
   useEffect(() => {
     if (activeTab !== "individual") return;
@@ -405,6 +436,7 @@ export default function FeeGenerationPage() {
       return;
     }
 
+    setShowClassDetails(false);
     setConfirmOpen(true);
   }
 
@@ -739,7 +771,7 @@ export default function FeeGenerationPage() {
                       Students & Charges
                     </span>
                     <span className="text-[10px] font-semibold bg-[#556043]/10 text-[#556043] dark:bg-slate-800 dark:text-slate-300 border border-[#556043]/20 dark:border-slate-700 px-2 py-0.5 rounded">
-                      {preview.summary.activeStudents} Active Students
+                      {studentsToChargeCount} Students to Charge
                     </span>
                   </div>
                   <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">
@@ -1235,8 +1267,8 @@ export default function FeeGenerationPage() {
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{preview.summary.chargesToGenerate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Active Students:</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{preview.summary.activeStudents}</span>
+                <span className="text-slate-500">Students to Charge:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{studentsToChargeCount}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Total Billing:</span>
@@ -1244,6 +1276,66 @@ export default function FeeGenerationPage() {
                   {formatCurrency(preview.financialSummary.total)}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* More Details Collapsible Section */}
+          {preview && (
+            <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/80 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowClassDetails((prev) => !prev)}
+                className="w-full flex items-center justify-between p-3 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  More Details
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  {showClassDetails ? "Hide" : "Show class breakdown"}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      showClassDetails ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {showClassDetails && (
+                <div className="border-t border-slate-100 dark:border-slate-800/80 p-3 pt-2.5 max-h-48 overflow-y-auto space-y-2.5">
+                  {classWiseGroups.length > 0 ? (
+                    classWiseGroups.map((group) => (
+                      <div
+                        key={group.className}
+                        className="rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 p-2.5 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {group.className}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                            {group.studentCount} {group.studentCount === 1 ? "student" : "students"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {group.admissionNumbers.map((adm) => (
+                            <span
+                              key={adm}
+                              className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                            >
+                              {adm}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 py-2 text-center">
+                      No students scheduled for fee generation this month.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

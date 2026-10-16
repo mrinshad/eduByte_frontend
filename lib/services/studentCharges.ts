@@ -180,6 +180,7 @@ export type CatchUpChargeItem = {
 
 export type FeeGenerationPreviewSummary = {
   activeStudents: number;
+  studentsToCharge?: number;
   enrollmentChargesEvaluated: number;
   chargesToGenerate: number;
   alreadyGenerated: number;
@@ -215,10 +216,18 @@ export type AcademicYearTimelineItem = {
   remindersUncertainCount?: number;
 };
 
+export type ClassWiseStudentItem = {
+  className: string;
+  studentCount: number;
+  admissionNumbers: string[];
+};
+
 export type TargetMonthStudentItem = {
   enrollmentId: string;
   studentName: string;
   admissionNumber: string;
+  className?: string;
+  divisionName?: string;
   chargesCount: number;
   totalAmount: number;
   chargeTypes: string[];
@@ -248,6 +257,7 @@ export type FeeGenerationPreviewData = {
   instructions?: string;
   summary: FeeGenerationPreviewSummary;
   targetMonthStudents?: TargetMonthStudentItem[];
+  classWiseStudents?: ClassWiseStudentItem[];
   chargesBreakdown: Record<string, number>;
   frequencyBreakdown: Record<string, number>;
   financialSummary: {
