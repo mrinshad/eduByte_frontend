@@ -22,7 +22,6 @@ import {
   Zap,
   Trophy,
   Search,
-  Send,
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
-import { FeeReminderDispatchModal, type StagingSummaryReport } from "@/components/whatsapp/FeeReminderDispatchModal";
 import { getStudentAdmissions, type BackendAdmission } from "@/lib/services/admissions";
 import {
   Dialog,
@@ -88,14 +86,6 @@ export default function FeeGenerationPage() {
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
-  const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
-  const [stagingReport, setStagingReport] = useState<StagingSummaryReport | null>(null);
-  const [selectedReminderPeriod, setSelectedReminderPeriod] = useState<{
-    month: number;
-    year: number;
-    periodName: string;
-    academicMonthNumber: number;
-  } | null>(null);
   const [sendWhatsAppReminders, setSendWhatsAppReminders] = useState<boolean>(true);
 
   // CCA Generation State
@@ -374,7 +364,6 @@ export default function FeeGenerationPage() {
       if (result) {
         setLastGenerationResult(result);
         if (result.feeReminderSummary) {
-          setStagingReport(result.feeReminderSummary);
           if ((result.feeReminderSummary.remindersSent ?? 0) > 0) {
             toast.success(
               `Fee generation complete & ${result.feeReminderSummary.remindersSent} WhatsApp reminder(s) sent!`,
@@ -491,40 +480,6 @@ export default function FeeGenerationPage() {
                 Refresh
               </Button>
             </PermissionGate>
-            {/* <PermissionGate permission="feegeneration.generateChargesButton">
-              {preview?.feeReminderStatus?.hasSentReminders ? (
-                <Button
-                  disabled
-                  variant="outline"
-                  className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs h-9 shadow-none cursor-not-allowed inline-flex items-center gap-1.5"
-                  title="WhatsApp fee reminders for this billing period have already been sent."
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Reminders Sent ✓
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setDispatchModalOpen(true)}
-                  disabled={!preview?.feeReminderStatus?.canSendReminders}
-                  variant="outline"
-                  className={
-                    preview?.feeReminderStatus?.canSendReminders
-                      ? "border-emerald-300 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold text-xs h-9 shadow-sm inline-flex items-center gap-1.5"
-                      : "border-slate-200 text-slate-400 dark:border-slate-800 dark:text-slate-500 font-medium text-xs h-9 cursor-not-allowed opacity-60 inline-flex items-center gap-1.5"
-                  }
-                  title={
-                    preview?.feeReminderStatus?.canSendReminders
-                      ? `Send WhatsApp fee reminders to ${preview.feeReminderStatus.stagedCount} students.`
-                      : "Generate fee charges first to stage reminders."
-                  }
-                >
-                  <Send className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                  {preview?.feeReminderStatus?.canSendReminders
-                    ? `Send Reminders (${preview.feeReminderStatus.stagedCount})`
-                    : "Send Reminders"}
-                </Button>
-              )}
-            </PermissionGate> */}
             <PermissionGate permission="feegeneration.generateChargesButton">
               <Button
                 className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 font-semibold text-xs h-9 shadow-sm"
@@ -686,53 +641,6 @@ export default function FeeGenerationPage() {
           {/* Main Preview Content */}
           {preview ? (
             <>
-              {/* PREVIOUS IMPLEMENTATION - COMMENTED OUT
-              {preview?.feeReminderStatus?.canSendReminders ? (
-                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
-                      <Send className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
-                          WhatsApp Fee Reminders Ready
-                        </h4>
-                        <Badge className="bg-emerald-600 text-white text-[11px] font-semibold">
-                          {preview.feeReminderStatus.stagedCount} Ready
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
-                        Fee reminders are staged in database for {preview.feeReminderStatus.periodName}. Click below to confirm and dispatch to parent numbers.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setDispatchModalOpen(true)}
-                    className="h-8 px-3 text-xs bg-[#556043] hover:bg-[#465037] text-white font-medium shadow-xs inline-flex items-center gap-1.5 shrink-0"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    Send Reminders Now
-                  </Button>
-                </div>
-              ) : preview?.feeReminderStatus?.hasSentReminders ? (
-                <div className="rounded-2xl border border-emerald-200/80 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 px-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-                      <CheckCircle2 className="h-4 w-4" />
-                    </span>
-                    <p className="text-xs text-emerald-900 dark:text-emerald-200">
-                      WhatsApp fee reminders for <strong>{preview.feeReminderStatus.periodName}</strong> have been successfully dispatched to registered parent numbers.
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 shrink-0 inline-flex items-center gap-1">
-                    <Check className="h-3 w-3" /> Reminders Sent
-                  </span>
-                </div>
-              ) : null}
-              */}
-
               {/* ── Executive Summary Bar (3 Cards) ── */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Card 1: Target Month */}
@@ -834,19 +742,7 @@ export default function FeeGenerationPage() {
                     return (
                       <div
                         key={m.academicMonthNumber}
-                        onClick={() => {
-                          if (isCompleted) {
-                            setSelectedReminderPeriod({
-                              month: m.calendarMonth,
-                              year: m.calendarYear,
-                              periodName: m.periodName,
-                              academicMonthNumber: m.academicMonthNumber,
-                            });
-                            setDispatchModalOpen(true);
-                          }
-                        }}
-                        className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[90px] relative ${isCompleted ? "cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-xs" : ""
-                          } ${isCurrent
+                        className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[90px] relative ${isCurrent
                             ? "bg-[#556043]/10 border-[#556043] ring-2 ring-[#556043]/20 shadow-xs dark:bg-slate-800/80 dark:border-slate-600"
                             : isCompleted
                               ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40"
@@ -888,24 +784,9 @@ export default function FeeGenerationPage() {
                         {/* Bottom: Status Tag */}
                         <div className="mt-1">
                           {isCompleted ? (
-                            <div className="flex items-center justify-between gap-1 flex-wrap">
-                              <span className="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-                                Generated
-                              </span>
-                              {/* PREVIOUS IMPLEMENTATION - COMMENTED OUT
-                              {m.hasSentReminders ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/70 px-1.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
-                                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
-                                  Reminders Sent
-                                </span>
-                              ) : m.hasStagedReminders ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/70 px-1.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-700">
-                                  <Clock className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
-                                  Reminders Ready
-                                </span>
-                              ) : null}
-                              */}
-                            </div>
+                            <span className="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              Generated
+                            </span>
                           ) : isCurrent ? (
                             <span className="inline-flex items-center text-[10px] font-bold text-[#556043] dark:text-slate-200 uppercase">
                               {generationLocked
@@ -1480,43 +1361,6 @@ export default function FeeGenerationPage() {
           }}
         />
       )}
-
-      {/* PREVIOUS IMPLEMENTATION - COMMENTED OUT
-      {activeAcademicYearId && (
-        <FeeReminderDispatchModal
-          isOpen={dispatchModalOpen}
-          onClose={() => {
-            setDispatchModalOpen(false);
-            setSelectedReminderPeriod(null);
-          }}
-          academicYearId={activeAcademicYearId}
-          academicYearName={preview?.academicYearName}
-          periodMonth={
-            selectedReminderPeriod?.month ||
-            preview?.feeReminderStatus?.calendarMonth ||
-            stagingReport?.billingPeriod?.month ||
-            preview?.targetCalendarMonth ||
-            (new Date().getMonth() + 1)
-          }
-          periodYear={
-            selectedReminderPeriod?.year ||
-            preview?.feeReminderStatus?.calendarYear ||
-            stagingReport?.billingPeriod?.year ||
-            preview?.targetCalendarYear ||
-            new Date().getFullYear()
-          }
-          initialStagingReport={
-            selectedReminderPeriod
-              ? null
-              : stagingReport || lastGenerationResult?.feeReminderSummary || null
-          }
-          onDispatchComplete={() => {
-            handleRefreshPreview();
-            setSelectedReminderPeriod(null);
-          }}
-        />
-      )}
-      */}
     </section>
   );
 }
