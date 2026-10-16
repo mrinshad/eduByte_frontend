@@ -197,3 +197,16 @@ export async function resolveUncertainFeeReminder(params: {
   })) as ApiSuccess<WhatsAppMessageLogItem>;
   return res.data;
 }
+
+export async function markFeeRemindersAsSent(params: {
+  academicYearId: string;
+  periodMonth: number;
+  periodYear: number;
+}): Promise<{ markedCount: number; billingPeriod: { month: number; year: number } }> {
+  const res = (await apiFetch("/api/whatsapp/fee-reminders/mark-as-sent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  })) as ApiSuccess<{ markedCount: number; billingPeriod: { month: number; year: number } }>;
+  return res.data;
+}

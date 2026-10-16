@@ -15,22 +15,18 @@ import { toast } from "sonner";
 import {
   Send,
   Loader2,
-  AlertTriangle,
   CheckCircle2,
-  XCircle,
-  HelpCircle,
-  RefreshCw,
-  PhoneOff,
+  AlertCircle,
+  Users,
+  Calendar,
   Layers,
+  Check,
 } from "lucide-react";
 import {
   getFeeRemindersSummary,
   dispatchFeeRemindersBatch,
-  retryFailedFeeReminders,
-  resolveUncertainFeeReminder,
+  markFeeRemindersAsSent,
   type FeeRemindersSummary,
-  getWhatsAppLogs,
-  type WhatsAppMessageLogItem,
 } from "@/lib/services/whatsapp";
 
 export interface StagingSummaryReport {
@@ -51,7 +47,7 @@ export interface StagingSummaryReport {
   };
 }
 
-interface FeeReminderDispatchModalProps {
+export interface FeeReminderDispatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   academicYearId: string;
@@ -61,6 +57,11 @@ interface FeeReminderDispatchModalProps {
   initialStagingReport?: StagingSummaryReport | null;
   onDispatchComplete?: () => void;
 }
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 export function FeeReminderDispatchModal({
   isOpen,
@@ -75,23 +76,9 @@ export function FeeReminderDispatchModal({
   const [summary, setSummary] = useState<FeeRemindersSummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
   const [isDispatching, setIsDispatching] = useState<boolean>(false);
-  const [confirmSend, setConfirmSend] = useState<boolean>(false);
-  const [dispatchProgress, setDispatchProgress] = useState<{
-    sent: number;
-    failed: number;
-    uncertain: number;
-    remaining: number;
-  } | null>(null);
+  const [isMarkingSent, setIsMarkingSent] = useState<boolean>(false);
 
-  const [uncertainLogs, setUncertainLogs] = useState<WhatsAppMessageLogItem[]>([]);
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [retryingFailed, setRetryingFailed] = useState<boolean>(false);
-
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  const periodLabel = `${monthNames[periodMonth - 1] || `Month ${periodMonth}`} ${periodYear}`;
+  const periodLabel = `${MONTH_NAMES[periodMonth - 1] || `Month ${periodMonth}`} ${periodYear}`;
 
   const loadSummary = useCallback(async () => {
     if (!academicYearId || !periodMonth || !periodYear) return;
@@ -103,19 +90,8 @@ export function FeeReminderDispatchModal({
         periodYear,
       });
       setSummary(data);
-
-      if (data.uncertain > 0) {
-        const logData = await getWhatsAppLogs({
-          messageType: "FEE_REMINDER",
-          status: "UNCERTAIN",
-          limit: 10,
-        });
-        setUncertainLogs(logData.logs);
-      } else {
-        setUncertainLogs([]);
-      }
     } catch (err: unknown) {
-      console.error("Failed to load fee reminders summary:", err);
+      console.warn("Could not load fee reminders summary:", err);
     } finally {
       setLoadingSummary(false);
     }
@@ -123,390 +99,260 @@ export function FeeReminderDispatchModal({
 
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => {
-        setConfirmSend(false);
-        setDispatchProgress(null);
-        void loadSummary();
-      }, 0);
-      return () => clearTimeout(timer);
+      void loadSummary();
     }
   }, [isOpen, loadSummary]);
 
-  const handleStartDispatch = async () => {
-    setIsDispatching(true);
-    setConfirmSend(false);
+  const stagedCount =
+    summary?.staged ?? initialStagingReport?.remindersStaged ?? 0;
+  const sentCount = summary?.sent ?? 0;
+  const skippedCount = initialStagingReport?.remindersSkipped ?? 0;
+  const monthlyCount = initialStagingReport?.monthlyTemplateCount ?? 0;
+  const quarterlyCount = initialStagingReport?.quarterlyTemplateCount ?? 0;
+  const alreadySent = stagedCount === 0 && sentCount > 0;
 
-    let totalSent = 0;
-    let totalFailed = 0;
-    let totalUncertain = 0;
+  const handleMarkAsSent = async () => {
+    try {
+      setIsMarkingSent(true);
+      const res = await markFeeRemindersAsSent({
+        academicYearId,
+        periodMonth,
+        periodYear,
+      });
+
+      toast.success(
+        `Marked ${res.markedCount} reminder${res.markedCount !== 1 ? "s" : ""} as sent (messages were not dispatched).`
+      );
+
+      if (onDispatchComplete) {
+        onDispatchComplete();
+      }
+      onClose();
+    } catch (err: unknown) {
+      toast.error(
+        (err as Error).message || "An error occurred while marking reminders as sent."
+      );
+    } finally {
+      setIsMarkingSent(false);
+    }
+  };
+
+  const handleStartDispatch = async () => {
+    if (stagedCount === 0) {
+      toast.info("No staged reminders are pending to be sent for this period.");
+      return;
+    }
 
     try {
-      let hasMore = true;
-      while (hasMore) {
-        const batchResult = await dispatchFeeRemindersBatch({
+      setIsDispatching(true);
+      let remaining = stagedCount;
+      let totalSent = 0;
+      let iteration = 0;
+
+      while (remaining > 0 && iteration < 10) {
+        iteration++;
+        const res = await dispatchFeeRemindersBatch({
           academicYearId,
           periodMonth,
           periodYear,
-          batchSize: 10,
+          batchSize: 50,
           delayMs: 250,
         });
 
-        totalSent += batchResult.sentCount;
-        totalFailed += batchResult.failedCount;
-        totalUncertain += batchResult.uncertainCount;
+        totalSent += res.sentCount;
+        remaining = res.remainingStaged;
 
-        setDispatchProgress({
-          sent: totalSent,
-          failed: totalFailed,
-          uncertain: totalUncertain,
-          remaining: batchResult.remainingStaged,
-        });
-
-        if (batchResult.processed === 0 || batchResult.remainingStaged === 0) {
-          hasMore = false;
+        if (res.processed === 0 || res.remainingStaged === 0) {
+          break;
         }
       }
 
-      toast.success(`Dispatched ${totalSent} reminders successfully.`);
-      await loadSummary();
-      if (onDispatchComplete) onDispatchComplete();
+      if (totalSent > 0) {
+        toast.success(
+          `Dispatched ${totalSent} WhatsApp fee reminder${totalSent > 1 ? "s" : ""} successfully!`
+        );
+      } else {
+        toast.info("Reminder dispatch completed.");
+      }
+
+      if (onDispatchComplete) {
+        onDispatchComplete();
+      }
+      onClose();
     } catch (err: unknown) {
-      toast.error((err as Error).message || "An error occurred during reminder dispatch.");
-      await loadSummary();
+      toast.error(
+        (err as Error).message || "An error occurred during WhatsApp reminder dispatch."
+      );
     } finally {
       setIsDispatching(false);
     }
   };
 
-  const handleRetryFailed = async () => {
-    try {
-      setRetryingFailed(true);
-      const res = await retryFailedFeeReminders({
-        academicYearId,
-        periodMonth,
-        periodYear,
-      });
-      toast.success(`Requeued ${res.requeuedCount} failed reminders back to STAGED.`);
-      await loadSummary();
-    } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to requeue reminders");
-    } finally {
-      setRetryingFailed(false);
-    }
-  };
-
-  const handleResolveUncertain = async (
-    logId: string,
-    action: "MARK_SENT" | "MARK_FAILED" | "REQUEUE"
-  ) => {
-    try {
-      setResolvingId(logId);
-      await resolveUncertainFeeReminder({
-        logId,
-        action,
-        note: `Staff manual resolution in dispatch modal`,
-      });
-      toast.success(`Message marked as ${action === "REQUEUE" ? "STAGED" : action.replace("MARK_", "")}`);
-      await loadSummary();
-    } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to resolve uncertain message");
-    } finally {
-      setResolvingId(null);
-    }
-  };
-
-  const stagedCount = summary?.staged ?? initialStagingReport?.remindersStaged ?? 0;
-  const skippedList = initialStagingReport?.skippedRecipients || [];
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !isDispatching && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto font-sans p-6">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
-              <Send className="h-5 w-5" />
-            </span>
-            <div>
-              <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Staff Review: WhatsApp Fee Reminders
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                Billing Period: {periodLabel} {academicYearName ? `• ${academicYearName}` : ""}
-              </DialogDescription>
-            </div>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isDispatching) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-lg w-[95vw] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl overflow-hidden [&>button:last-child]:text-slate-500 hover:[&>button:last-child]:text-slate-800 dark:hover:[&>button:last-child]:text-white">
+        {/* Header */}
+        <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-start gap-3.5">
+          <div className="p-2.5 rounded-xl bg-[#556043]/10 text-[#556043] dark:bg-emerald-950/50 dark:text-emerald-400 shrink-0 mt-0.5">
+            <Send className="h-5 w-5" />
           </div>
-        </DialogHeader>
-
-        {loadingSummary && !summary ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-            <p className="text-xs text-slate-500">Loading current reminder tracking status...</p>
+          <div>
+            <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
+              Send WhatsApp Fee Reminders
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Billing Period: {periodLabel} {academicYearName ? `• ${academicYearName}` : ""}
+            </DialogDescription>
           </div>
-        ) : (
-          <div className="space-y-5 my-2">
-            {/* Status Statistics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <span>Staged (Ready)</span>
-                  <Layers className="h-4 w-4 text-blue-500" />
-                </div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {summary?.staged ?? stagedCount}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Awaiting staff send</div>
-              </div>
+        </div>
 
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <span>Sent</span>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                </div>
-                <div className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {summary?.sent ?? 0}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Accepted by Meta</div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <span>Failed</span>
-                  <XCircle className="h-4 w-4 text-rose-500" />
-                </div>
-                <div className="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">
-                  {summary?.failed ?? 0}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Delivery rejected</div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <span>Uncertain</span>
-                  <HelpCircle className="h-4 w-4 text-amber-500" />
-                </div>
-                <div className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">
-                  {summary?.uncertain ?? 0}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Network timeout</div>
-              </div>
+        {/* Body Content */}
+        <div className="p-5 space-y-4 text-xs">
+          {loadingSummary && !summary ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-2.5">
+              <Loader2 className="h-5 w-5 animate-spin text-[#556043] dark:text-emerald-400" />
+              <p className="text-xs text-slate-500">Checking reminder status...</p>
             </div>
-
-            {/* Template Breakdown & Staging Notice */}
-            <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-4">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">
-                  Template Routing:
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Badge variant="outline" className="font-semibold text-slate-700 dark:text-slate-300">
-                    Monthly: {initialStagingReport?.monthlyTemplateCount ?? 0}
-                  </Badge>
-                  <Badge variant="outline" className="font-semibold text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
-                    Quarterly: {initialStagingReport?.quarterlyTemplateCount ?? 0}
-                  </Badge>
-                </span>
+          ) : alreadySent ? (
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                Reminders Already Sent
               </div>
-              <div className="text-slate-500 text-[11px]">
-                {initialStagingReport?.remindersSkipped ?? 0} recipients skipped
-              </div>
+              <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+                All <strong>{sentCount}</strong> fee reminders for <strong>{periodLabel}</strong> have already been sent to registered student numbers. No duplicate reminders will be sent.
+              </p>
             </div>
+          ) : stagedCount === 0 ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                <AlertCircle className="h-4 w-4 text-slate-500" />
+                No Staged Reminders
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+                There are no staged fee reminders waiting to be dispatched for {periodLabel}. Generate fee charges first to stage reminders for this period.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                Are you sure you want to send WhatsApp fee reminders for <strong>{periodLabel}</strong>?
+                Messages will be sent directly to registered parent numbers via the official Meta WhatsApp Cloud API.
+              </p>
 
-            {/* Dispatching in progress indicator */}
-            {isDispatching && (
-              <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/40 space-y-2">
+              {/* Summary Card */}
+              <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-blue-900 dark:text-blue-100">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    Dispatching WhatsApp reminders in bounded chunks...
-                  </div>
-                  {dispatchProgress && (
-                    <span className="text-xs font-mono font-medium text-blue-700 dark:text-blue-300">
-                      Remaining: {dispatchProgress.remaining}
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" /> Billing Period
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {periodLabel}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-slate-400" /> Eligible Students
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {stagedCount} recipient{stagedCount > 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {(monthlyCount > 0 || quarterlyCount > 0) && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/70 dark:border-slate-700/60">
+                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-slate-400" /> Templates
                     </span>
-                  )}
-                </div>
-                {dispatchProgress && (
-                  <div className="text-xs text-blue-800 dark:text-blue-200 flex gap-4 pt-1 font-mono">
-                    <span>Sent: {dispatchProgress.sent}</span>
-                    <span>Failed: {dispatchProgress.failed}</span>
-                    <span>Uncertain: {dispatchProgress.uncertain}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {monthlyCount > 0 ? `${monthlyCount} Monthly` : ""}
+                      {monthlyCount > 0 && quarterlyCount > 0 ? " • " : ""}
+                      {quarterlyCount > 0 ? `${quarterlyCount} Quarterly` : ""}
+                    </span>
+                  </div>
+                )}
+
+                {skippedCount > 0 && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/70 dark:border-slate-700/60 text-[11px] text-amber-700 dark:text-amber-400">
+                    <span>Skipped (missing WhatsApp number):</span>
+                    <span className="font-semibold">{skippedCount}</span>
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Confirmation Banner */}
-            {confirmSend && (
-              <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                      Confirm Live WhatsApp Dispatch
-                    </h4>
-                    <p className="text-xs text-amber-800/90 dark:text-amber-200/90 mt-1 leading-relaxed">
-                      This action will send real WhatsApp template messages to{" "}
-                      <strong>{summary?.staged ?? stagedCount}</strong> registered student numbers
-                      via the official Meta WhatsApp Cloud API. Messages cannot be recalled once sent.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 justify-end pt-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirmSend(false)}
-                    className="h-8 text-xs"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleStartDispatch}
-                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
-                  >
-                    Yes, Send Reminders Now
-                  </Button>
-                </div>
+              {/* Informational notice */}
+              <div className="flex items-center gap-2 text-[11px] text-[#556043] dark:text-emerald-400 bg-[#556043]/10 dark:bg-emerald-950/40 p-2.5 rounded-lg font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                <span>Reminders are sent once and button will be locked after send.</span>
               </div>
-            )}
+            </>
+          )}
+        </div>
 
-            {/* Skipped Recipients List */}
-            {skippedList.length > 0 && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="bg-slate-100/70 dark:bg-slate-800/50 px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  <span className="flex items-center gap-1.5">
-                    <PhoneOff className="h-3.5 w-3.5 text-slate-500" /> Skipped Recipients ({skippedList.length})
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-normal">
-                    Never falls back to parent numbers
-                  </span>
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-44 overflow-y-auto text-xs">
-                  {skippedList.map((st, i) => (
-                    <div key={i} className="px-4 py-2 flex items-center justify-between">
-                      <div>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {st.studentName || "Student"}
-                        </span>
-                        {st.phone && (
-                          <span className="text-slate-400 font-mono text-[11px] ml-2">
-                            ({st.phone})
-                          </span>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="text-[11px] text-slate-500 border-slate-200">
-                        {st.reason}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Footer Actions */}
+        <div className="p-3.5 px-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex flex-wrap sm:flex-nowrap items-center justify-end gap-2.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            disabled={isDispatching || isMarkingSent}
+            className="h-9 px-3.5 text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
+          >
+            {alreadySent ? "Close" : "Cancel"}
+          </Button>
 
-            {/* Uncertain Messages Resolution Panel */}
-            {uncertainLogs.length > 0 && (
-              <div className="rounded-xl border border-amber-300 dark:border-amber-800 overflow-hidden">
-                <div className="bg-amber-100/70 dark:bg-amber-950/60 px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-amber-900 dark:text-amber-200">
-                  <span className="flex items-center gap-1.5">
-                    <HelpCircle className="h-3.5 w-3.5 text-amber-600" />
-                    Uncertain Messages Requiring Review ({uncertainLogs.length})
-                  </span>
-                  <span className="text-[11px] text-amber-700 dark:text-amber-400 font-normal">
-                    Never auto-resent to prevent duplicates
-                  </span>
-                </div>
-                <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-48 overflow-y-auto text-xs bg-amber-50/30 dark:bg-amber-950/20">
-                  {uncertainLogs.map((log) => (
-                    <div key={log.id} className="p-3 flex items-center justify-between gap-2">
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">
-                          {log.recipientName || log.recipientPhone}
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          {log.recipientPhone} • {log.errorMessage || "HTTP timeout"}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={resolvingId === log.id}
-                          onClick={() => handleResolveUncertain(log.id, "MARK_SENT")}
-                          className="h-6 px-2 text-[11px] border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                        >
-                          Mark Sent
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={resolvingId === log.id}
-                          onClick={() => handleResolveUncertain(log.id, "REQUEUE")}
-                          className="h-6 px-2 text-[11px] border-blue-300 text-blue-700 hover:bg-blue-50"
-                        >
-                          Requeue
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={resolvingId === log.id}
-                          onClick={() => handleResolveUncertain(log.id, "MARK_FAILED")}
-                          className="h-6 px-2 text-[11px] border-rose-300 text-rose-700 hover:bg-rose-50"
-                        >
-                          Mark Failed
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <DialogFooter className="flex items-center justify-between sm:justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            {summary && summary.failed > 0 && (
+          {!alreadySent && stagedCount > 0 && (
+            <>
               <Button
-                variant="outline"
+                type="button"
                 size="sm"
-                disabled={retryingFailed || isDispatching}
-                onClick={handleRetryFailed}
-                className="h-8 text-xs border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 inline-flex items-center gap-1.5"
+                onClick={handleMarkAsSent}
+                disabled={isDispatching || isMarkingSent || stagedCount === 0}
+                className="h-9 px-3.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-400 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-300 dark:border-emerald-700 shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+                title="Mark reminders as sent without dispatching external WhatsApp messages"
               >
-                {retryingFailed ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {isMarkingSent ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-700 dark:text-emerald-300" />
+                    Marking as Sent...
+                  </>
                 ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+                    Mark as Sent (Skip Send)
+                  </>
                 )}
-                Retry Failed ({summary.failed})
               </Button>
-            )}
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isDispatching}
-              onClick={onClose}
-              className="h-8 text-xs"
-            >
-              Close
-            </Button>
-            {!confirmSend && stagedCount > 0 && (
               <Button
+                type="button"
                 size="sm"
-                disabled={isDispatching}
-                onClick={() => setConfirmSend(true)}
-                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs inline-flex items-center gap-1.5"
+                onClick={handleStartDispatch}
+                disabled={isDispatching || isMarkingSent || stagedCount === 0}
+                className="h-9 px-4 text-xs font-semibold bg-[#556043] hover:bg-[#465037] text-white shadow-xs inline-flex items-center gap-1.5 cursor-pointer shrink-0"
               >
-                <Send className="h-3.5 w-3.5" />
-                Send {stagedCount} Reminders
+                {isDispatching ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    Sending Reminders...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-3.5 w-3.5 text-white" />
+                    Confirm & Send Reminders
+                  </>
+                )}
               </Button>
-            )}
-          </div>
-        </DialogFooter>
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

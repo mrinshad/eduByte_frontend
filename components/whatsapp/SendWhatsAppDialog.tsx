@@ -95,16 +95,16 @@ export function SendWhatsAppDialog({
             ? templateName === "hello_world"
               ? []
               : [
-                  student?.studentName || "Student",
-                  templateName === "fee_payment_quarterly"
-                    ? "Quarterly Fee Reminder"
-                    : "Monthly Fee Reminder",
-                  formattedDue,
-                  "₹0",
-                  "₹0",
-                  formattedDue,
-                  new Date().toLocaleDateString("en-IN"),
-                ]
+                student?.studentName || "Student",
+                templateName === "fee_payment_quarterly"
+                  ? "Third Quarter"
+                  : `month of ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`,
+                formattedDue.replace("₹", "Rs. "),
+                "Rs. 0",
+                "None",
+                formattedDue.replace("₹", "Rs. "),
+                `${new Date().getDate()}th ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`,
+              ]
             : undefined,
       };
 
@@ -159,7 +159,7 @@ export function SendWhatsAppDialog({
             </label>
             <Input
               type="text"
-              placeholder="e.g. 9895612423"
+              placeholder="e.g. 9999999999"
               value={recipientPhone}
               onChange={(e) => setRecipientPhone(e.target.value)}
               className="text-sm font-mono h-9"

@@ -120,12 +120,25 @@ export interface StudentFineItem {
   createdAt: string;
 }
 
+export interface ScheduledEnrollmentChargeItem {
+  id: string;
+  chargeTypeName: string;
+  category?: string | null;
+  frequency: string;
+  amount: number;
+  originalAmount: number;
+  discountAmount: number;
+  dueDay?: number | null;
+}
+
 export interface StudentEnrollmentCharges {
   enrollmentId: string;
   academicYearId: string;
   feeStructureId: string | null;
+  feeStructureName?: string | null;
   status: string;
   studentDetails: EnrollmentStudentDetails;
+  enrollmentCharges?: ScheduledEnrollmentChargeItem[];
   charges: EnrollmentCharge[];
   fines?: StudentFineItem[];
   transactions?: StudentPaymentTransaction[];
@@ -194,6 +207,12 @@ export type AcademicYearTimelineItem = {
   isLocked: boolean;
   calendarMonth: number;
   calendarYear: number;
+  hasSentReminders?: boolean;
+  hasStagedReminders?: boolean;
+  remindersSentCount?: number;
+  remindersStagedCount?: number;
+  remindersFailedCount?: number;
+  remindersUncertainCount?: number;
 };
 
 export type TargetMonthStudentItem = {
@@ -205,6 +224,17 @@ export type TargetMonthStudentItem = {
   chargeTypes: string[];
 };
 
+export type FeeReminderPeriodStatus = {
+  academicMonthNumber: number;
+  periodName: string;
+  calendarMonth: number;
+  calendarYear: number;
+  stagedCount: number;
+  sentCount: number;
+  hasSentReminders: boolean;
+  canSendReminders: boolean;
+};
+
 export type FeeGenerationPreviewData = {
   academicYearId: string;
   academicYearName: string;
@@ -214,6 +244,7 @@ export type FeeGenerationPreviewData = {
   targetPeriod?: string;
   monthStatus?: FeeGenerationMonthStatus;
   academicYearTimeline?: AcademicYearTimelineItem[];
+  feeReminderStatus?: FeeReminderPeriodStatus | null;
   instructions?: string;
   summary: FeeGenerationPreviewSummary;
   targetMonthStudents?: TargetMonthStudentItem[];
@@ -258,6 +289,7 @@ export type FeeGenerationResult = {
   lastGeneratedAcademicMonth: number;
   feeReminderSummary?: {
     remindersStaged: number;
+    remindersSent?: number;
     remindersSkipped: number;
     monthlyTemplateCount: number;
     quarterlyTemplateCount: number;
@@ -305,10 +337,16 @@ export async function previewFeeGeneration(academicYearId: string) {
   return payload.data ?? null;
 }
 
-export async function generateFeeCharges(academicYearId: string) {
+export async function generateFeeCharges(
+  academicYearId: string,
+  options?: { sendWhatsAppReminders?: boolean }
+) {
   const payload = await postStudentChargeAction<FeeGenerationResult>(
     "/api/stdcharge/generate",
-    { academicYearId }
+    {
+      academicYearId,
+      sendWhatsAppReminders: options?.sendWhatsAppReminders ?? false,
+    }
   );
 
   return payload.data ?? null;
