@@ -6,7 +6,7 @@ export const STAFF_DESIGNATIONS = [
   "Office Staff",
   "Home Teacher",
   "Computer Teacher",
-  "Arabic Language Teacher",
+  "Language Teacher",
   "Assistant Teacher",
   "Office Staff & Teacher",
   "Pre-School Teacher",
@@ -15,6 +15,7 @@ export const STAFF_DESIGNATIONS = [
   "On Call Teacher",
   "Cleaner",
   "Driver",
+  "Housekeeper"
 ] as const;
 
 export type StaffDesignation = (typeof STAFF_DESIGNATIONS)[number];
