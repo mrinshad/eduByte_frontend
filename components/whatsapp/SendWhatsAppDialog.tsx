@@ -4,15 +4,22 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, MessageSquare, Phone, CheckCircle2 } from "lucide-react";
 import {
   sendIndividualWhatsAppMessage,
   type SendIndividualMessagePayload,
@@ -129,70 +136,96 @@ export function SendWhatsAppDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="pb-2 border-b">
-          <DialogTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            Send WhatsApp Reminder
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md w-[95vw] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl overflow-hidden [&>button:last-child]:text-slate-400 hover:[&>button:last-child]:text-slate-700 dark:hover:[&>button:last-child]:text-slate-200 [&>button:last-child]:top-4 [&>button:last-child]:right-4">
+        {/* Header */}
+        <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-start gap-3.5">
+          <div className="p-2.5 rounded-xl bg-[#556043]/10 text-[#556043] dark:bg-emerald-950/50 dark:text-emerald-400 shrink-0 mt-0.5">
+            <MessageSquare className="h-5 w-5" />
+          </div>
+          <div>
+            <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
+              Send WhatsApp Reminder
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Send an official fee reminder or custom message directly to parent WhatsApp.
+            </DialogDescription>
+          </div>
+        </div>
 
-        <div className="space-y-4 py-2 text-sm">
+        <div className="p-5 space-y-4 text-xs sm:text-sm">
           {/* Compact Student Summary */}
           {student && (
-            <div className="flex items-center justify-between text-xs py-1.5 px-3 rounded bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400">
-              <div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 p-3">
+              <div className="min-w-0 pr-2">
+                <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs sm:text-sm">
                   {student.studentName}
-                </span>
-                {student.className && <span> · {student.className}</span>}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {student.admissionNumber && <span>Adm: {student.admissionNumber}</span>}
+                  {student.admissionNumber && student.className && <span> • </span>}
+                  {student.className && <span>{student.className}</span>}
+                </div>
               </div>
-              <div className="font-medium text-rose-600 dark:text-rose-400">
-                Due: {formattedDue}
+              <div className="text-right shrink-0">
+                <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">
+                  Total Due
+                </div>
+                <div className="font-bold text-rose-600 dark:text-rose-400 text-sm">
+                  {formattedDue}
+                </div>
               </div>
             </div>
           )}
 
           {/* Recipient Phone */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              Phone Number
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>Phone Number</span>
+              <span className="text-[11px] font-normal text-slate-400">e.g. 919876543210</span>
             </label>
-            <Input
-              type="text"
-              placeholder="e.g. 9999999999"
-              value={recipientPhone}
-              onChange={(e) => setRecipientPhone(e.target.value)}
-              className="text-sm font-mono h-9"
-            />
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="e.g. 919876543210"
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                className="h-10 pl-9 font-mono text-xs sm:text-sm rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20"
+              />
+            </div>
           </div>
 
           {/* Message Template / Custom Text selector */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Message Template
             </label>
-            <select
+            <Select
               value={mode === "TEXT" ? "custom_text" : templateName}
-              onChange={(e) => {
-                if (e.target.value === "custom_text") {
+              onValueChange={(val) => {
+                if (val === "custom_text") {
                   setMode("TEXT");
                 } else {
                   setMode("TEMPLATE");
-                  setTemplateName(e.target.value);
+                  setTemplateName(val);
                 }
               }}
-              className="w-full h-9 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2.5 focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="fee_payment_monthly">Monthly Fee Notice (Standard)</option>
-              <option value="fee_payment_quarterly">Quarterly Fee Notice</option>
-              <option value="custom_text">Custom Text Message (24h Window)</option>
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-[#556043]/20 focus:border-[#556043]">
+                <SelectValue placeholder="Select a template" />
+              </SelectTrigger>
+              <SelectContent className=" dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 shadow-lg">
+                <SelectItem value="fee_payment_monthly">Monthly Fee Notice (Standard)</SelectItem>
+                <SelectItem value="fee_payment_quarterly">Quarterly Fee Notice</SelectItem>
+                <SelectItem value="custom_text">Custom Text Message (24h Window)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Minimal Content Preview or Textarea */}
           {mode === "TEXT" ? (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Message Content
               </label>
               <Textarea
@@ -200,39 +233,42 @@ export function SendWhatsAppDialog({
                 placeholder="Type your message here..."
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
-                className="text-xs"
+                className="rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 resize-none"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-amber-600 dark:text-amber-400">
                 Custom text requires the recipient to have messaged within 24 hours.
               </p>
             </div>
           ) : (
-            <div className="text-xs text-slate-500 bg-slate-50/60 dark:bg-slate-900/60 p-2.5 rounded border border-slate-100 dark:border-slate-800 space-y-0.5">
-              <div className="text-slate-700 dark:text-slate-300 font-medium">
+            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3 space-y-1 text-xs">
+              <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 Official Fee Notice
               </div>
-              <div className="text-[11px]">
-                Will send {formattedDue} outstanding notice for {student?.studentName || "student"} with breakdown and school contact details.
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Will send {formattedDue} outstanding notice for <strong>{student?.studentName || "student"}</strong> with breakdown and school contact details.
               </div>
             </div>
           )}
         </div>
 
-        <DialogFooter className="pt-2 border-t gap-2 sm:gap-0">
+        <div className="p-3.5 px-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-end gap-2.5">
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={onClose}
             disabled={isSending}
-            className="text-xs h-8"
+            className="h-9 px-3.5 text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer"
           >
             Cancel
           </Button>
           <Button
+            type="button"
             size="sm"
             onClick={handleSend}
             disabled={isSending || !recipientPhone.trim()}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+            className="h-9 px-4 text-xs font-semibold bg-[#556043] hover:bg-[#465037] text-white shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
           >
             {isSending ? (
               <>
@@ -246,7 +282,7 @@ export function SendWhatsAppDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
