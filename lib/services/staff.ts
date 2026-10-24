@@ -3,18 +3,28 @@ import { apiFetch } from "@/lib/api";
 export const STAFF_DESIGNATIONS = [
   "Chairman",
   "Principal",
+  "Vice Principal",
+  "Academic Coordinator",
   "Office Staff",
-  "Home Teacher",
+  "Home Teacher  - Grade 1",
+  "Home Teacher  - Grade 2",
+  "Home Teacher  - Grade 3",
+  "Home Teacher  - Grade 4",
+  "Home Teacher  - Mont 1",
+  "Home Teacher  - Mont 2",
+  "Home Teacher  - Mont 3",
+  "Home Teacher  - Mont 4",
+  "Montessori Teacher",
   "Computer Teacher",
-  "Arabic Language Teacher",
+  "Language Teacher",
   "Assistant Teacher",
   "Office Staff & Teacher",
   "Pre-School Teacher",
   "English Teacher",
   "New Teacher",
   "On Call Teacher",
-  "Cleaner",
   "Driver",
+  "Housekeeping"
 ] as const;
 
 export type StaffDesignation = (typeof STAFF_DESIGNATIONS)[number];

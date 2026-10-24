@@ -643,6 +643,46 @@ export default function Page() {
                 );
               })()}
 
+              {/* Enrolled Fee Structure & Schedule Baseline */}
+              {feeData.enrollmentCharges && feeData.enrollmentCharges.length > 0 && (
+                <InfoSection icon={Receipt} title="Enrolled Fee Structure & Schedule">
+                  <div className="px-5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      Fee Plan: <strong className="text-slate-900 dark:text-slate-200">{feeData.feeStructureName || "Standard Fee Plan"}</strong>
+                    </span>
+                    <Badge variant="outline" className="text-[11px] font-medium bg-white dark:bg-slate-800">
+                      {feeData.enrollmentCharges.length} Assigned Fee Head{feeData.enrollmentCharges.length !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                  <Table className="table-fixed w-full">
+                    <TableHeader>
+                      <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                        <TableHead className="h-9 w-12 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">Sl.</TableHead>
+                        <TableHead className="h-9 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">Fee Head</TableHead>
+                        <TableHead className="h-9 text-xs font-semibold text-slate-500 dark:text-slate-400">Frequency</TableHead>
+                        <TableHead className="h-9 text-xs font-semibold text-slate-500 dark:text-slate-400">Category</TableHead>
+                        <TableHead className="h-9 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Scheduled Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {feeData.enrollmentCharges.map((charge, idx) => (
+                        <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                          <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400">{idx + 1}</TableCell>
+                          <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100">{charge.chargeTypeName}</TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">
+                            <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">{charge.category || "—"}</TableCell>
+                          <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100">
+                            {formatCurrency(charge.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </InfoSection>
+              )}
+
               {/* Payment & Transaction History */}
               <InfoSection icon={History} title="Payment & Transaction History">
                 {(!feeData.transactions || feeData.transactions.length === 0) ? (
@@ -855,7 +895,18 @@ export default function Page() {
                 return (
                   <InfoSection icon={Receipt} title="Itemized Monthly Charges & Fines">
                     <div className="p-4 space-y-4">
-                      {groups.map((group) => (
+                      {groups.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center">
+                          <Receipt className="h-7 w-7 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                          <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            No Monthly Invoices Generated Yet
+                          </h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                            Monthly charges for this academic year will appear here once the fee generation run is executed for each billing month. Scheduled baseline fee heads are shown in the table above.
+                          </p>
+                        </div>
+                      ) : (
+                        groups.map((group) => (
                         <div
                           key={group.monthLabel}
                           className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-slate-800 dark:bg-slate-950/60"
@@ -969,7 +1020,7 @@ export default function Page() {
                             </TableBody>
                           </Table>
                         </div>
-                      ))}
+                      )))}
                     </div>
                   </InfoSection>
                 );

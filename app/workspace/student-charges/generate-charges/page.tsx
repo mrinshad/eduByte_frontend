@@ -22,6 +22,7 @@ import {
   Zap,
   Trophy,
   Search,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -81,9 +82,11 @@ export default function FeeGenerationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCatchUp, setIsGeneratingCatchUp] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showClassDetails, setShowClassDetails] = useState(false);
   const [lastGenerationResult, setLastGenerationResult] = useState<FeeGenerationResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [sendWhatsAppReminders, setSendWhatsAppReminders] = useState<boolean>(true);
 
   // CCA Generation State
   const [ccaPreview, setCcaPreview] = useState<CCAChargePreviewData | null>(null);
@@ -98,6 +101,36 @@ export default function FeeGenerationPage() {
   const [isSearchingStudents, setIsSearchingStudents] = useState(false);
   const [selectedStudentEnrollmentId, setSelectedStudentEnrollmentId] = useState<string | null>(null);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+
+  const classWiseGroups = useMemo(() => {
+    if (preview?.classWiseStudents && preview.classWiseStudents.length > 0) {
+      return preview.classWiseStudents;
+    }
+    if (!preview?.targetMonthStudents || preview.targetMonthStudents.length === 0) {
+      return [];
+    }
+    const map = new Map<string, { className: string; studentCount: number; admissionNumbers: string[] }>();
+    for (const s of preview.targetMonthStudents) {
+      const cls = s.className ? (s.divisionName ? `${s.className} - ${s.divisionName}` : s.className) : "Unassigned";
+      if (!map.has(cls)) {
+        map.set(cls, { className: cls, studentCount: 0, admissionNumbers: [] });
+      }
+      const item = map.get(cls)!;
+      item.studentCount++;
+      if (s.admissionNumber) item.admissionNumbers.push(s.admissionNumber);
+    }
+    return Array.from(map.values()).sort((a, b) => a.className.localeCompare(b.className));
+  }, [preview]);
+
+  const studentsToChargeCount = useMemo(() => {
+    if (typeof preview?.summary?.studentsToCharge === "number") {
+      return preview.summary.studentsToCharge;
+    }
+    if (classWiseGroups.length > 0) {
+      return classWiseGroups.reduce((sum, g) => sum + g.studentCount, 0);
+    }
+    return preview?.targetMonthStudents?.length ?? 0;
+  }, [preview, classWiseGroups]);
 
   useEffect(() => {
     if (activeTab !== "individual") return;
@@ -220,6 +253,10 @@ export default function FeeGenerationPage() {
         isLocked: status === "LOCKED" || status === "UPCOMING",
         calendarMonth: mNum,
         calendarYear: preview.targetCalendarYear,
+        hasSentReminders: false,
+        hasStagedReminders: false,
+        remindersSentCount: 0,
+        remindersStagedCount: 0,
       };
     });
   }, [preview, monthLabel]);
@@ -323,9 +360,22 @@ export default function FeeGenerationPage() {
     setIsGenerating(true);
 
     try {
-      const result = await generateFeeCharges(activeAcademicYearId);
+      const result = await generateFeeCharges(activeAcademicYearId, { sendWhatsAppReminders });
       if (result) {
         setLastGenerationResult(result);
+        if (result.feeReminderSummary) {
+          if ((result.feeReminderSummary.remindersSent ?? 0) > 0) {
+            toast.success(
+              `Fee generation complete & ${result.feeReminderSummary.remindersSent} WhatsApp reminder(s) sent!`,
+              { duration: 6000 }
+            );
+          } else if (result.feeReminderSummary.remindersStaged > 0) {
+            toast.info(
+              `Staged ${result.feeReminderSummary.remindersStaged} WhatsApp fee reminder(s).`,
+              { duration: 6000 }
+            );
+          }
+        }
         if (result.chargesGenerated > 0) {
           toast.success(
             `Generated ${result.chargesGenerated} charge(s) for ${result.studentsProcessed} student(s)!`
@@ -375,6 +425,7 @@ export default function FeeGenerationPage() {
       return;
     }
 
+    setShowClassDetails(false);
     setConfirmOpen(true);
   }
 
@@ -454,11 +505,10 @@ export default function FeeGenerationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("batch")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-            activeTab === "batch"
-              ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-          }`}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === "batch"
+            ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
+            : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+            }`}
         >
           <Calendar className="h-4 w-4" />
           School Batch Generation
@@ -466,11 +516,10 @@ export default function FeeGenerationPage() {
         <button
           type="button"
           onClick={() => setActiveTab("individual")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-            activeTab === "individual"
-              ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-          }`}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === "individual"
+            ? "border-[#556043] text-[#556043] dark:border-slate-200 dark:text-white"
+            : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+            }`}
         >
           <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Single Student Generation
@@ -562,518 +611,515 @@ export default function FeeGenerationPage() {
       ) : (
         <>
           {/* Loading Skeleton */}
-      {isLoadingPreview && !preview ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50">
-          <div className="flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
-            <Loader2 className="h-8 w-8 animate-spin text-[#556043]" />
-            <p className="text-sm font-medium">Calculating fee generation preview...</p>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Error state */}
-      {!isLoadingPreview && loadError && !preview ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700 dark:border-red-800/60 dark:bg-red-950/20 dark:text-red-300">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4" />
-              <div>
-                <p className="text-sm font-semibold">Unable to load fee generation preview</p>
-                <p className="text-sm">{loadError}</p>
+          {isLoadingPreview && !preview ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/50">
+              <div className="flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                <Loader2 className="h-8 w-8 animate-spin text-[#556043]" />
+                <p className="text-sm font-medium">Calculating fee generation preview...</p>
               </div>
             </div>
-            <Button variant="outline" onClick={initializePage}>
-              Retry
-            </Button>
-          </div>
-        </div>
-      ) : null}
+          ) : null}
 
-      {/* Main Preview Content */}
-      {preview ? (
-        <>
-          {/* ── Executive Summary Bar (3 Cards) ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Card 1: Target Month */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300" />
-                  Target Billing Month
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    generationLocked
-                      ? "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300"
-                      : preview.summary.chargesToGenerate > 0
-                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300"
-                      : "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300"
-                  }`}
-                >
-                  {generationLocked
-                    ? "LOCKED"
-                    : preview.summary.chargesToGenerate > 0
-                    ? "READY TO GENERATE"
-                    : "READY TO ADVANCE (0 CHARGES)"}
-                </span>
-              </div>
-              <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">{monthLabel}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Academic Month {preview.targetAcademicMonth} of {preview.monthStatus?.totalAcademicMonths ?? 12} ({preview.academicYearName})
-              </p>
-            </div>
-
-            {/* Card 2: Student & Charge Count */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-[#556043] dark:text-slate-300" />
-                  Students & Charges
-                </span>
-                <span className="text-[10px] font-semibold bg-[#556043]/10 text-[#556043] dark:bg-slate-800 dark:text-slate-300 border border-[#556043]/20 dark:border-slate-700 px-2 py-0.5 rounded">
-                  {preview.summary.activeStudents} Active Students
-                </span>
-              </div>
-              <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">
-                {preview.summary.chargesToGenerate} Charge{preview.summary.chargesToGenerate !== 1 ? "s" : ""}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {preview.summary.chargesToGenerate === 0
-                  ? "No charges due for this month (fees start in a later month or no fees due)"
-                  : catchUpCount > 0
-                  ? `Includes ${catchUpCount} mid-year catch-up charge(s)`
-                  : "Standard monthly billing run"}
-              </p>
-            </div>
-
-            {/* Card 3: Total Estimated Amount */}
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/20 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                  <IndianRupee className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
-                  Total Estimated Billing
-                </span>
-                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded">
-                  SUM
-                </span>
-              </div>
-              <p className="text-xl font-bold text-emerald-950 dark:text-emerald-100 pt-0.5 truncate">
-                {formatCurrency(preview.financialSummary.total)}
-              </p>
-              <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">
-                Total estimated revenue to be billed
-              </p>
-            </div>
-          </div>
-
-          {/* ── 1. ACADEMIC YEAR BILLING TIMELINE (MONTH-BY-MONTH PROGRESSION) ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-[#556043]" />
-                  Academic Year Fee Generation Timeline ({preview.academicYearName})
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Sequential billing progression across all {timelineMonths.length} academic months.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs font-semibold bg-slate-50 dark:bg-slate-800">
-                  {completedMonthsCount} of {timelineMonths.length} Months Billed
-                </Badge>
-              </div>
-            </div>
-
-            {/* Visual Month Sequence */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
-              {timelineMonths.map((m) => {
-                const isCurrent = m.isCurrentTarget;
-                const isCompleted = m.isCompleted;
-
-                return (
-                  <div
-                    key={m.academicMonthNumber}
-                    className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[90px] relative ${
-                      isCurrent
-                        ? "bg-[#556043]/10 border-[#556043] ring-2 ring-[#556043]/20 shadow-xs dark:bg-slate-800/80 dark:border-slate-600"
-                        : isCompleted
-                        ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40"
-                        : "bg-slate-50/50 border-slate-200/80 opacity-60 dark:bg-slate-900/40 dark:border-slate-800"
-                    }`}
-                  >
-                    {/* Top Row: Month # and Status Icon */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        Month {m.academicMonthNumber}
-                      </span>
-                      {isCompleted ? (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      ) : isCurrent ? (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#556043] text-white animate-pulse">
-                          <Clock className="h-3 w-3" />
-                        </span>
-                      ) : (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          <Lock className="h-2.5 w-2.5" />
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Middle: Month Name */}
-                    <div className="my-1.5">
-                      <p className={`text-xs sm:text-sm font-bold truncate ${
-                        isCurrent
-                          ? "text-slate-950 dark:text-white"
-                          : isCompleted
-                          ? "text-emerald-950 dark:text-emerald-100"
-                          : "text-slate-600 dark:text-slate-400"
-                      }`}>
-                        {m.periodName}
-                      </p>
-                    </div>
-
-                    {/* Bottom: Status Tag */}
-                    <div>
-                      {isCompleted ? (
-                        <span className="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-                          Generated
-                        </span>
-                      ) : isCurrent ? (
-                        <span className="inline-flex items-center text-[10px] font-bold text-[#556043] dark:text-slate-200 uppercase">
-                          {generationLocked
-                            ? "Locked"
-                            : preview?.summary?.chargesToGenerate > 0
-                            ? "● Target Month"
-                            : "● Target (0 Charges)"}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center text-[10px] font-medium text-slate-400">
-                          Upcoming
-                        </span>
-                      )}
-                    </div>
+          {/* Error state */}
+          {!isLoadingPreview && loadError && !preview ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700 dark:border-red-800/60 dark:bg-red-950/20 dark:text-red-300">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4" />
+                  <div>
+                    <p className="text-sm font-semibold">Unable to load fee generation preview</p>
+                    <p className="text-sm">{loadError}</p>
                   </div>
-                );
-              })}
+                </div>
+                <Button variant="outline" onClick={initializePage}>
+                  Retry
+                </Button>
+              </div>
             </div>
+          ) : null}
 
-            {/* Fee Category Breakdown for Target Month */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Target Month Fee Structure Breakdown ({monthLabel})
-              </h3>
-              {estimatedByType.length > 0 ? (
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-50/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
-                          Fee Category
-                        </th>
-                        <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                          Billing Frequency
-                        </th>
-                        <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                          Students Evaluated
-                        </th>
-                        <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
-                          Estimated Subtotal (₹)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                      {estimatedByType.map(([name, amount]) => {
-                        const count = preview.chargesBreakdown[name] ?? 0;
-                        const freq = preview.frequencyBreakdown[name] || "MONTHLY";
-                        return (
-                          <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                            <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
-                              {name}
+          {/* Main Preview Content */}
+          {preview ? (
+            <>
+              {/* ── Executive Summary Bar (3 Cards) ── */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Card 1: Target Month */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-[#556043] dark:text-slate-300" />
+                      Target Billing Month
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded border ${generationLocked
+                        ? "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300"
+                        : preview.summary.chargesToGenerate > 0
+                          ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300"
+                          : "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300"
+                        }`}
+                    >
+                      {generationLocked
+                        ? "LOCKED"
+                        : preview.summary.chargesToGenerate > 0
+                          ? "READY TO GENERATE"
+                          : "READY TO ADVANCE (0 CHARGES)"}
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">{monthLabel}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Academic Month {preview.targetAcademicMonth} of {preview.monthStatus?.totalAcademicMonths ?? 12} ({preview.academicYearName})
+                  </p>
+                </div>
+
+                {/* Card 2: Student & Charge Count */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-[#556043] dark:text-slate-300" />
+                      Students & Charges
+                    </span>
+                    <span className="text-[10px] font-semibold bg-[#556043]/10 text-[#556043] dark:bg-slate-800 dark:text-slate-300 border border-[#556043]/20 dark:border-slate-700 px-2 py-0.5 rounded">
+                      {studentsToChargeCount} Students to Charge
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold text-slate-950 dark:text-white pt-0.5">
+                    {preview.summary.chargesToGenerate} Charge{preview.summary.chargesToGenerate !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {preview.summary.chargesToGenerate === 0
+                      ? "No charges due for this month (fees start in a later month or no fees due)"
+                      : catchUpCount > 0
+                        ? `Includes ${catchUpCount} mid-year catch-up charge(s)`
+                        : "Standard monthly billing run"}
+                  </p>
+                </div>
+
+                {/* Card 3: Total Estimated Amount */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/20 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <IndianRupee className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                      Total Estimated Billing
+                    </span>
+                    <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded">
+                      SUM
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold text-emerald-950 dark:text-emerald-100 pt-0.5 truncate">
+                    {formatCurrency(preview.financialSummary.total)}
+                  </p>
+                  <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                    Total estimated revenue to be billed
+                  </p>
+                </div>
+              </div>
+
+              {/* ── 1. ACADEMIC YEAR BILLING TIMELINE (MONTH-BY-MONTH PROGRESSION) ── */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-[#556043]" />
+                      Academic Year Fee Generation Timeline ({preview.academicYearName})
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Sequential billing progression across all {timelineMonths.length} academic months.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-semibold bg-slate-50 dark:bg-slate-800">
+                      {completedMonthsCount} of {timelineMonths.length} Months Billed
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Visual Month Sequence */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+                  {timelineMonths.map((m) => {
+                    const isCurrent = m.isCurrentTarget;
+                    const isCompleted = m.isCompleted;
+
+                    return (
+                      <div
+                        key={m.academicMonthNumber}
+                        className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[90px] relative ${isCurrent
+                            ? "bg-[#556043]/10 border-[#556043] ring-2 ring-[#556043]/20 shadow-xs dark:bg-slate-800/80 dark:border-slate-600"
+                            : isCompleted
+                              ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40"
+                              : "bg-slate-50/50 border-slate-200/80 opacity-60 dark:bg-slate-900/40 dark:border-slate-800"
+                          }`}
+                      >
+                        {/* Top Row: Month # and Status Icon */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Month {m.academicMonthNumber}
+                          </span>
+                          {isCompleted ? (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          ) : isCurrent ? (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#556043] text-white animate-pulse">
+                              <Clock className="h-3 w-3" />
+                            </span>
+                          ) : (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              <Lock className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Middle: Month Name */}
+                        <div className="my-1.5">
+                          <p className={`text-xs sm:text-sm font-bold truncate ${isCurrent
+                            ? "text-slate-950 dark:text-white"
+                            : isCompleted
+                              ? "text-emerald-950 dark:text-emerald-100"
+                              : "text-slate-600 dark:text-slate-400"
+                            }`}>
+                            {m.periodName}
+                          </p>
+                        </div>
+
+                        {/* Bottom: Status Tag */}
+                        <div className="mt-1">
+                          {isCompleted ? (
+                            <span className="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              Generated
+                            </span>
+                          ) : isCurrent ? (
+                            <span className="inline-flex items-center text-[10px] font-bold text-[#556043] dark:text-slate-200 uppercase">
+                              {generationLocked
+                                ? "Locked"
+                                : preview?.summary?.chargesToGenerate > 0
+                                  ? "● Target Month"
+                                  : "● Target (0 Charges)"}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center text-[10px] font-medium text-slate-400">
+                              Upcoming
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Fee Category Breakdown for Target Month */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Target Month Fee Structure Breakdown ({monthLabel})
+                  </h3>
+                  {estimatedByType.length > 0 ? (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-slate-50/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
+                          <tr>
+                            <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                              Fee Category
+                            </th>
+                            <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                              Billing Frequency
+                            </th>
+                            <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                              Students Evaluated
+                            </th>
+                            <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                              Estimated Subtotal (₹)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {estimatedByType.map(([name, amount]) => {
+                            const count = preview.chargesBreakdown[name] ?? 0;
+                            const freq = preview.frequencyBreakdown[name] || "MONTHLY";
+                            return (
+                              <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                                  {name}
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                  <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                    {freq}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-300">
+                                  {count}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
+                                  {formatCurrency(amount)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 py-2">
+                      No standard fee categories scheduled for this target month.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── 2. CATCH-UP FEES ONLY SECTION (THE ONLY STUDENT LIST DISPLAYED) ── */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      Mid-Year Catch-Up Fees
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Historical dues for newly enrolled or mid-year admitted students who joined after academic month 1.
+                    </p>
+                  </div>
+
+                  {groupedCatchUpStudents.length > 0 && (
+                    <PermissionGate permission="feegeneration.generateCatchupFeesButton">
+                      <Button
+                        size="sm"
+                        onClick={handleGenerateCatchUpCharges}
+                        disabled={isGeneratingCatchUp || isGenerating || isLoadingPreview}
+                        className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 text-xs font-semibold h-9 shadow-sm"
+                      >
+                        {isGeneratingCatchUp ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Generate Catch-Up Fees ({groupedCatchUpStudents.length})
+                      </Button>
+                    </PermissionGate>
+                  )}
+                </div>
+
+                {groupedCatchUpStudents.length > 0 ? (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-amber-500/10 border-b border-amber-500/20">
+                        <tr>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                            Student Name
+                          </th>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                            Admission No
+                          </th>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                            Pending Historical Fee Types
+                          </th>
+                          <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
+                            Historical Period
+                          </th>
+                          <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-amber-200">
+                            Catch-Up Amount
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-amber-500/10 font-medium">
+                        {groupedCatchUpStudents.map((item) => (
+                          <tr key={`${item.admissionNumber}-${item.periodName}`} className="hover:bg-amber-500/10">
+                            <td className="px-4 py-3 font-semibold text-slate-950 dark:text-slate-100">
+                              {item.studentName}
                             </td>
-                            <td className="px-4 py-2.5 text-center">
-                              <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
-                                {freq}
-                              </Badge>
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono">
+                              {item.admissionNumber || "—"}
                             </td>
-                            <td className="px-4 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-300">
-                              {count}
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                              <div className="flex flex-wrap gap-1">
+                                {item.chargeTypes.map((type) => (
+                                  <Badge key={type} variant="outline" className="text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200">
+                                    {type}
+                                  </Badge>
+                                ))}
+                              </div>
                             </td>
-                            <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
-                              {formatCurrency(amount)}
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-semibold">
+                              {item.periodName}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-amber-800 dark:text-amber-300">
+                              {formatCurrency(item.totalAmount)}
                             </td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500 py-2">
-                  No standard fee categories scheduled for this target month.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* ── 2. CATCH-UP FEES ONLY SECTION (THE ONLY STUDENT LIST DISPLAYED) ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  Mid-Year Catch-Up Fees
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Historical dues for newly enrolled or mid-year admitted students who joined after academic month 1.
-                </p>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        All Enrolled Students Are Up to Date
+                      </p>
+                      <p className="text-xs">
+                        No newly admitted or mid-year transfer students require historical catch-up fee generation.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {groupedCatchUpStudents.length > 0 && (
-                <PermissionGate permission="feegeneration.generateCatchupFeesButton">
-                <Button
-                  size="sm"
-                  onClick={handleGenerateCatchUpCharges}
-                  disabled={isGeneratingCatchUp || isGenerating || isLoadingPreview}
-                  className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 text-xs font-semibold h-9 shadow-sm"
+              {/* ── 3. CCA FEE GENERATION SECTION ── */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                        CCA Fee Generation
+                      </h2>
+                      {ccaPreview && ccaPreview.lastGeneratedAcademicMonth > 0 && (
+                        <Badge variant="outline" className="text-[10px] font-semibold bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
+                          Billed Through Month {ccaPreview.lastGeneratedAcademicMonth}
+                          {ccaPreview.generatedMonths?.length ? ` (${ccaPreview.generatedMonths[ccaPreview.generatedMonths.length - 1]})` : ""}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Co-curricular activity fees are synchronized with the academic timeline with duplicate protection per month.
+                    </p>
+                  </div>
+
+                  {ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 && (
+                    <PermissionGate permission="feegeneration.generateCCAChargesButton">
+                      <Button
+                        size="sm"
+                        onClick={() => setCcaConfirmOpen(true)}
+                        disabled={isGeneratingCca || isLoadingCcaPreview}
+                        className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:text-white dark:hover:bg-violet-400 text-xs font-semibold h-9 shadow-sm"
+                      >
+                        {isGeneratingCca ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trophy className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Generate CCA Fees ({ccaPreview.summary.chargesToGenerate})
+                      </Button>
+                    </PermissionGate>
+                  )}
+                </div>
+
+                {isLoadingCcaPreview ? (
+                  <div className="flex items-center justify-center py-6 gap-2 text-slate-500">
+                    <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
+                    <span className="text-xs font-medium">Loading CCA preview...</span>
+                  </div>
+                ) : ccaPreview?.message ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      <p className="text-xs font-medium">{ccaPreview.message}</p>
+                    </div>
+                  </div>
+                ) : ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 ? (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-slate-300">
+                      <span>
+                        Found <strong className="text-violet-700 dark:text-violet-300">{ccaPreview.summary.chargesToGenerate}</strong> pending charge(s) for newly assigned students across generated months.
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Existing charges are safely skipped.
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-violet-50/80 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/30">
+                          <tr>
+                            <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                              CCA Activity
+                            </th>
+                            <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                              Charges to Generate
+                            </th>
+                            <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                              Estimated Total (₹)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {Object.entries(ccaPreview.byActivity).map(([name, count]) => (
+                            <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                              <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                                {name}
+                              </td>
+                              <td className="px-4 py-2.5 text-center text-slate-700 dark:text-slate-300 font-semibold">
+                                {count}
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
+                                {formatCurrency(ccaPreview.financialByActivity[name] ?? 0)}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-violet-50/60 dark:bg-violet-950/20">
+                            <td className="px-4 py-2.5 font-bold text-slate-900 dark:text-slate-100">Total</td>
+                            <td className="px-4 py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
+                              {ccaPreview.summary.chargesToGenerate}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-bold text-violet-700 dark:text-violet-300">
+                              {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        CCA Fees Are Up to Date
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {ccaPreview?.activeAssignmentCount === 0
+                          ? "No active CCA assignments found."
+                          : `All CCA charges have been generated through Month ${ccaPreview?.lastGeneratedAcademicMonth ?? 0}.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Collapsible How Fee Generation Works Instructions ── */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                <div
+                  className="flex items-center justify-between cursor-pointer select-none"
+                  onClick={() => setShowHowItWorks((prev) => !prev)}
                 >
-                  {isGeneratingCatchUp ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4 text-[#556043]" />
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      How Recurring Fee Generation Works
+                    </span>
+                  </div>
+                  {showHowItWorks ? (
+                    <ChevronUp className="h-4 w-4 text-slate-500" />
                   ) : (
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Generate Catch-Up Fees ({groupedCatchUpStudents.length})
-                </Button>
-                </PermissionGate>
-              )}
-            </div>
-
-            {groupedCatchUpStudents.length > 0 ? (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-amber-500/10 border-b border-amber-500/20">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
-                        Student Name
-                      </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
-                        Admission No
-                      </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
-                        Pending Historical Fee Types
-                      </th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-slate-800 dark:text-amber-200">
-                        Historical Period
-                      </th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-amber-200">
-                        Catch-Up Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-amber-500/10 font-medium">
-                    {groupedCatchUpStudents.map((item) => (
-                      <tr key={`${item.admissionNumber}-${item.periodName}`} className="hover:bg-amber-500/10">
-                        <td className="px-4 py-3 font-semibold text-slate-950 dark:text-slate-100">
-                          {item.studentName}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono">
-                          {item.admissionNumber || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                          <div className="flex flex-wrap gap-1">
-                            {item.chargeTypes.map((type) => (
-                              <Badge key={type} variant="outline" className="text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200">
-                                {type}
-                              </Badge>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-semibold">
-                          {item.periodName}
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-amber-800 dark:text-amber-300">
-                          {formatCurrency(item.totalAmount)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
-                <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    All Enrolled Students Are Up to Date
-                  </p>
-                  <p className="text-xs">
-                    No newly admitted or mid-year transfer students require historical catch-up fee generation.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── 3. CCA FEE GENERATION SECTION ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-slate-950 dark:text-white flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                    CCA Fee Generation
-                  </h2>
-                  {ccaPreview && ccaPreview.lastGeneratedAcademicMonth > 0 && (
-                    <Badge variant="outline" className="text-[10px] font-semibold bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
-                      Billed Through Month {ccaPreview.lastGeneratedAcademicMonth}
-                      {ccaPreview.generatedMonths?.length ? ` (${ccaPreview.generatedMonths[ccaPreview.generatedMonths.length - 1]})` : ""}
-                    </Badge>
+                    <ChevronDown className="h-4 w-4 text-slate-500" />
                   )}
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Co-curricular activity fees are synchronized with the academic timeline with duplicate protection per month.
-                </p>
-              </div>
 
-              {ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 && (
-                <PermissionGate permission="feegeneration.generateCCAChargesButton">
-                <Button
-                  size="sm"
-                  onClick={() => setCcaConfirmOpen(true)}
-                  disabled={isGeneratingCca || isLoadingCcaPreview}
-                  className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:text-white dark:hover:bg-violet-400 text-xs font-semibold h-9 shadow-sm"
-                >
-                  {isGeneratingCca ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trophy className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Generate CCA Fees ({ccaPreview.summary.chargesToGenerate})
-                </Button>
-                </PermissionGate>
-              )}
-            </div>
-
-            {isLoadingCcaPreview ? (
-              <div className="flex items-center justify-center py-6 gap-2 text-slate-500">
-                <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
-                <span className="text-xs font-medium">Loading CCA preview...</span>
+                {showHowItWorks && (
+                  <div className="mt-3 text-xs text-slate-600 dark:text-slate-400 space-y-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+                    <p>
+                      • <strong>Sequential Advancing</strong>: Fee generation proceeds strictly month by month (Month 1, then Month 2, etc.) to guarantee zero skipped or duplicate billings.
+                    </p>
+                    <p>
+                      • <strong>Billing Window Guard</strong>: To prevent accidental future billings, generation is permitted only for the current calendar month and one month in advance.
+                    </p>
+                    <p>
+                      • <strong>Mid-Year Catch-Up Fees</strong>: When a new student is admitted mid-session, click &quot;Generate Catch-Up Fees&quot; to back-generate charges for the past academic months they were enrolled in.
+                    </p>
+                  </div>
+                )}
               </div>
-            ) : ccaPreview?.message ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
-                <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  <p className="text-xs font-medium">{ccaPreview.message}</p>
-                </div>
-              </div>
-            ) : ccaPreview && (ccaPreview.summary?.chargesToGenerate ?? 0) > 0 ? (
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-slate-300">
-                  <span>
-                    Found <strong className="text-violet-700 dark:text-violet-300">{ccaPreview.summary.chargesToGenerate}</strong> pending charge(s) for newly assigned students across generated months.
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Existing charges are safely skipped.
-                  </span>
-                </div>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-violet-50/80 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/30">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
-                          CCA Activity
-                        </th>
-                        <th className="px-4 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                          Charges to Generate
-                        </th>
-                        <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
-                          Estimated Total (₹)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                      {Object.entries(ccaPreview.byActivity).map(([name, count]) => (
-                        <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
-                            {name}
-                          </td>
-                          <td className="px-4 py-2.5 text-center text-slate-700 dark:text-slate-300 font-semibold">
-                            {count}
-                          </td>
-                          <td className="px-4 py-2.5 text-right font-bold text-slate-950 dark:text-slate-100">
-                            {formatCurrency(ccaPreview.financialByActivity[name] ?? 0)}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="bg-violet-50/60 dark:bg-violet-950/20">
-                        <td className="px-4 py-2.5 font-bold text-slate-900 dark:text-slate-100">Total</td>
-                        <td className="px-4 py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
-                          {ccaPreview.summary.chargesToGenerate}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-bold text-violet-700 dark:text-violet-300">
-                          {formatCurrency(ccaPreview.summary.totalEstimatedAmount)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
-                <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    CCA Fees Are Up to Date
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {ccaPreview?.activeAssignmentCount === 0
-                      ? "No active CCA assignments found."
-                      : `All CCA charges have been generated through Month ${ccaPreview?.lastGeneratedAcademicMonth ?? 0}.`}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Collapsible How Fee Generation Works Instructions ── */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
-            <div
-              className="flex items-center justify-between cursor-pointer select-none"
-              onClick={() => setShowHowItWorks((prev) => !prev)}
-            >
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 text-[#556043]" />
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  How Recurring Fee Generation Works
-                </span>
-              </div>
-              {showHowItWorks ? (
-                <ChevronUp className="h-4 w-4 text-slate-500" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-slate-500" />
-              )}
-            </div>
-
-            {showHowItWorks && (
-              <div className="mt-3 text-xs text-slate-600 dark:text-slate-400 space-y-2 border-t border-slate-200 dark:border-slate-800 pt-3">
-                <p>
-                  • <strong>Sequential Advancing</strong>: Fee generation proceeds strictly month by month (Month 1, then Month 2, etc.) to guarantee zero skipped or duplicate billings.
-                </p>
-                <p>
-                  • <strong>Billing Window Guard</strong>: To prevent accidental future billings, generation is permitted only for the current calendar month and one month in advance.
-                </p>
-                <p>
-                  • <strong>Mid-Year Catch-Up Fees</strong>: When a new student is admitted mid-session, click &quot;Generate Catch-Up Fees&quot; to back-generate charges for the past academic months they were enrolled in.
-                </p>
-              </div>
-            )}
-          </div>
+            </>
+          ) : null}
         </>
-      ) : null}
-    </>
-  )}
+      )}
 
       {/* Confirmation Modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -1102,8 +1148,8 @@ export default function FeeGenerationPage() {
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{preview.summary.chargesToGenerate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Active Students:</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{preview.summary.activeStudents}</span>
+                <span className="text-slate-500">Students to Charge:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{studentsToChargeCount}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Total Billing:</span>
@@ -1113,6 +1159,99 @@ export default function FeeGenerationPage() {
               </div>
             </div>
           )}
+
+          {/* More Details Collapsible Section */}
+          {preview && (
+            <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/80 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowClassDetails((prev) => !prev)}
+                className="w-full flex items-center justify-between p-3 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  More Details
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  {showClassDetails ? "Hide" : "Show class breakdown"}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      showClassDetails ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {showClassDetails && (
+                <div className="border-t border-slate-100 dark:border-slate-800/80 p-3 pt-2.5 max-h-48 overflow-y-auto space-y-2.5">
+                  {classWiseGroups.length > 0 ? (
+                    classWiseGroups.map((group) => (
+                      <div
+                        key={group.className}
+                        className="rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 p-2.5 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {group.className}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                            {group.studentCount} {group.studentCount === 1 ? "student" : "students"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {group.admissionNumbers.map((adm) => (
+                            <span
+                              key={adm}
+                              className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                            >
+                              {adm}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 py-2 text-center">
+                      No students scheduled for fee generation this month.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* WhatsApp Fee Reminders Switch */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/80">
+            <div className="space-y-0.5 pr-2">
+              <label
+                htmlFor="send-whatsapp-switch"
+                className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 cursor-pointer"
+              >
+                <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                Send WhatsApp Fee Reminders
+              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Automatically dispatch WhatsApp reminder to parents after fees are generated
+              </p>
+            </div>
+            <button
+              id="send-whatsapp-switch"
+              type="button"
+              role="switch"
+              aria-checked={sendWhatsAppReminders}
+              onClick={() => setSendWhatsAppReminders(!sendWhatsAppReminders)}
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                sendWhatsAppReminders ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  sendWhatsAppReminders ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
