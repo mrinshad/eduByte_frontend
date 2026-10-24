@@ -360,7 +360,7 @@ export default function AdmissionsMasterReportPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-8 px-2 text-[#556043] hover:text-[#4a533b] hover:bg-[#556043]/10 dark:text-slate-300 dark:hover:bg-slate-800"
-                                                onClick={() => router.push(`/admin/admissions/viewAdmission/${item.enrollmentId}`)}
+                                                onClick={() => router.push(`/admin/admissions/viewAdmission?id=${item.enrollmentId}`)}
                                                 title="View Admission Details"
                                             >
                                                 <Eye className="h-4 w-4 mr-1" />
