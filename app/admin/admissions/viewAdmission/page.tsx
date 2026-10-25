@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { refreshLateFines } from "@/lib/services/lateFine";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
+import { AadhaarInfoItem } from "@/components/common/AadhaarInfoItem";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -318,7 +319,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Gender" value={student.gender} />
             <InfoItem label="Date of birth" value={formatDob(student.dob)} />
             <InfoItem label="Blood group" value={student.bloodGroup} />
-            <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+            <AadhaarInfoItem value={student.adharNo} />
             <InfoItem label="Religion" value={student.religion || "—"} />
             <InfoItem label="Community" value={student.community || "—"} />
             <InfoItem label="Category" value={student.category || "—"} />

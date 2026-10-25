@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import { toast } from "sonner"
+import { AadhaarInfoItem } from "@/components/common/AadhaarInfoItem"
 import { getStudentById, deleteStudent, type Student } from "@/lib/services/student"
 import {
   getStudentChargesByEnrollmentId,
@@ -556,7 +557,7 @@ export default function Page() {
                 {student.dob ? <InfoItem label="Date of birth" value={formatDateOnly(student.dob)} /> : null}
                 <InfoItem label="Status" value={student.status} />
                 <InfoItem label="Admission status" value={admissionStatus} />
-                <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+                <AadhaarInfoItem value={student.adharNo} />
                 <InfoItem label="Religion" value={student.religion || "—"} />
                 <InfoItem label="Community" value={student.community || "—"} />
                 <InfoItem label="Category" value={student.category || "—"} />

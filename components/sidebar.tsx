@@ -554,9 +554,35 @@ function SidebarBody({
           </div>
         )}
 
-        {/* Physical spacer to guarantee scrolling past bottom items in mobile viewports & simulator device frames */}
-        <div className="h-28 w-full shrink-0 pointer-events-none" aria-hidden="true" />
+        {/* Physical spacer for scroll clearance */}
+        <div className="h-6 w-full shrink-0 pointer-events-none" aria-hidden="true" />
       </nav>
+
+      {/* Pinned Bottom Legal Footer */}
+      {!collapsed && (
+        <div className="shrink-0 border-t border-black/[0.05] bg-slate-50/70 px-4 py-3 dark:border-white/[0.06] dark:bg-slate-900/50">
+          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+            eduByte <span className="font-normal text-slate-400 dark:text-slate-500">• Byten Solutions</span>
+          </p>
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+            <Link
+              href="/privacy"
+              className="hover:text-slate-900 dark:hover:text-slate-200 underline underline-offset-2 transition-colors"
+              onClick={onCloseMobile}
+            >
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link
+              href="/terms"
+              className="hover:text-slate-900 dark:hover:text-slate-200 underline underline-offset-2 transition-colors"
+              onClick={onCloseMobile}
+            >
+              Terms & Conditions
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -583,8 +609,6 @@ export function Sidebar(props: SidebarProps) {
   return (
     <div className="sticky top-16 h-[calc(100vh-4rem)] pt-3 pb-4 pl-4 hidden md:block">
       <aside
-        onMouseEnter={() => props.setCollapsed(false)}
-        onMouseLeave={() => props.setCollapsed(true)}
         className={`h-full flex flex-col rounded-2xl border border-black/[0.05] bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-white/[0.06] dark:bg-slate-950/60 dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] ${
           props.collapsed ? "w-16" : "w-64"
         }`}

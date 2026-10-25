@@ -40,6 +40,7 @@ import {
     CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 import {
     createStaff,
@@ -600,24 +601,26 @@ export default function Page() {
                                 </Popover>
                             </div>
 
-                            <div className="flex flex-col gap-2">
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Monthly Basic Salary (₹)
-                                </span>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min={0}
-                                    placeholder="e.g. 35000.00"
-                                    value={basicSalary}
-                                    onChange={(e) => setBasicSalary(e.target.value === "" ? "" : Number(e.target.value))}
-                                    disabled={submitting}
-                                    className={fieldClass}
-                                />
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                    Default basic pay automatically pre-filled when generating monthly salary slips for this employee.
-                                </p>
-                            </div>
+                            <PermissionGate permission="salaryslips.createSalarySlipButton">
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <IndianRupee className="h-3.5 w-3.5 text-[#6D755F]" /> Monthly Basic Salary (₹)
+                                    </span>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min={0}
+                                        placeholder="e.g. 35000.00"
+                                        value={basicSalary}
+                                        onChange={(e) => setBasicSalary(e.target.value === "" ? "" : Number(e.target.value))}
+                                        disabled={submitting}
+                                        className={fieldClass}
+                                    />
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Default basic pay automatically pre-filled when generating monthly salary slips for this employee.
+                                    </p>
+                                </div>
+                            </PermissionGate>
                         </div>
 
                         {(employeeCode || name || email || phone || joiningDate || designation || basicSalary) && (
@@ -640,7 +643,9 @@ export default function Page() {
                                     <InfoItem label="Email Address" value={email} />
                                     <InfoItem label="Phone Number" value={phone} />
                                     <InfoItem label="Joining Date" value={joiningDate ? format(joiningDate, "PPP") : "-"} />
-                                    <InfoItem label="Basic Salary (₹)" value={basicSalary !== "" ? `₹ ${Number(basicSalary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "Not configured"} />
+                                    <PermissionGate permission="salaryslips.createSalarySlipButton">
+                                        <InfoItem label="Basic Salary (₹)" value={basicSalary !== "" ? `₹ ${Number(basicSalary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "Not configured"} />
+                                    </PermissionGate>
                                 </InfoGrid>
                             </div>
                         )}
