@@ -337,6 +337,7 @@ export default function ViewAdmissionPage() {
       string,
       {
         monthLabel: string;
+        sortKey: number;
         items: Array<{
           type: "FEE" | "FINE";
           id: string;
@@ -360,6 +361,34 @@ export default function ViewAdmissionPage() {
       "July", "August", "September", "October", "November", "December"
     ];
 
+    const getMonthSortKey = (
+      label: string,
+      periodYear?: number | null,
+      periodMonth?: number | null,
+      dueDate?: string | null
+    ): number => {
+      if (periodYear && periodMonth && periodMonth >= 1 && periodMonth <= 12) {
+        return periodYear * 100 + periodMonth;
+      }
+      const match = label.match(/([A-Za-z]+)\s+(\d{4})/);
+      if (match) {
+        const monthIndex = monthNames.findIndex(
+          (m) => m.toLowerCase() === match[1].toLowerCase()
+        );
+        if (monthIndex !== -1) {
+          const year = parseInt(match[2], 10);
+          return year * 100 + (monthIndex + 1);
+        }
+      }
+      if (dueDate) {
+        const d = new Date(dueDate);
+        if (!isNaN(d.getTime())) {
+          return d.getFullYear() * 100 + (d.getMonth() + 1);
+        }
+      }
+      return 0;
+    };
+
     // Build map from studentCharge.id -> monthLabel
     const chargeIdToMonthLabel = new Map<string, string>();
 
@@ -369,17 +398,25 @@ export default function ViewAdmissionPage() {
       const match = c.description?.match(/([A-Za-z]+ \d{4})/);
       if (match) {
         monthLabel = match[1];
-      } else if (c.periodYear && c.periodMonth !== undefined && c.periodMonth !== null) {
-        monthLabel = `${monthNames[c.periodMonth] ?? "Month"} ${c.periodYear}`;
+      } else if (c.periodYear && c.periodMonth !== undefined && c.periodMonth !== null && c.periodMonth >= 1 && c.periodMonth <= 12) {
+        monthLabel = `${monthNames[c.periodMonth - 1]} ${c.periodYear}`;
+      } else if (c.dueDate) {
+        const d = new Date(c.dueDate);
+        if (!isNaN(d.getTime())) {
+          monthLabel = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        }
       }
 
       if (c.id) {
         chargeIdToMonthLabel.set(c.id, monthLabel);
       }
 
+      const sortKey = getMonthSortKey(monthLabel, c.periodYear, c.periodMonth, c.dueDate);
+
       if (!map.has(monthLabel)) {
         map.set(monthLabel, {
           monthLabel,
+          sortKey,
           items: [],
           totalFee: 0,
           totalFine: 0,
@@ -390,6 +427,10 @@ export default function ViewAdmissionPage() {
       }
 
       const group = map.get(monthLabel)!;
+      if (group.sortKey === 0 && sortKey !== 0) {
+        group.sortKey = sortKey;
+      }
+
       const final = parseFloat(c.finalAmount || "0");
       const paid = parseFloat(c.paidAmount || "0");
       const effectivePayable = Math.max(final, paid);
@@ -414,8 +455,8 @@ export default function ViewAdmissionPage() {
 
       if (f.studentChargeId && chargeIdToMonthLabel.has(f.studentChargeId)) {
         monthLabel = chargeIdToMonthLabel.get(f.studentChargeId)!;
-      } else if (f.periodYear && f.periodMonth !== undefined && f.periodMonth !== null) {
-        monthLabel = `${monthNames[f.periodMonth] ?? "Month"} ${f.periodYear}`;
+      } else if (f.periodYear && f.periodMonth !== undefined && f.periodMonth !== null && f.periodMonth >= 1 && f.periodMonth <= 12) {
+        monthLabel = `${monthNames[f.periodMonth - 1]} ${f.periodYear}`;
       } else {
         const textToSearch = `${f.chargeDescription || ""} ${f.reason || ""}`;
         const match = textToSearch.match(/([A-Za-z]+ \d{4})/);
@@ -434,9 +475,12 @@ export default function ViewAdmissionPage() {
         monthLabel = firstGroupKey || monthLabel || "General Charges";
       }
 
+      const sortKey = getMonthSortKey(monthLabel, f.periodYear, f.periodMonth, f.createdAt);
+
       if (!map.has(monthLabel)) {
         map.set(monthLabel, {
           monthLabel,
+          sortKey,
           items: [],
           totalFee: 0,
           totalFine: 0,
@@ -447,6 +491,10 @@ export default function ViewAdmissionPage() {
       }
 
       const group = map.get(monthLabel)!;
+      if (group.sortKey === 0 && sortKey !== 0) {
+        group.sortKey = sortKey;
+      }
+
       const amount = f.amount || 0;
       const paid = f.paidAmount || 0;
       const effectivePayable = Math.max(amount, paid);
@@ -465,13 +513,27 @@ export default function ViewAdmissionPage() {
       group.totalPaid += paid;
     }
 
-    // 3. Compute group totals
+    // 3. Compute group totals and sort items
     for (const group of map.values()) {
       group.totalPayable = group.totalFee + group.totalFine;
       group.totalBalance = Math.max(0, group.totalPayable - group.totalPaid);
+      group.items.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === "FEE" ? -1 : 1;
+        }
+        return a.description.localeCompare(b.description);
+      });
     }
 
-    return Array.from(map.values());
+    // 4. Return groups in chronological order
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.sortKey !== b.sortKey) {
+        if (a.sortKey === 0) return -1;
+        if (b.sortKey === 0) return 1;
+        return a.sortKey - b.sortKey;
+      }
+      return a.monthLabel.localeCompare(b.monthLabel);
+    });
   }, [rawCharges, rawFines]);
 
   if (loading) {
