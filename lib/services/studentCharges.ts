@@ -464,3 +464,18 @@ export async function generateStudentFeesManual(
 
   return payload.data ?? null;
 }
+
+export async function updateStudentChargeAmount(
+  chargeId: string,
+  data: { newAmount: number; reason?: string }
+) {
+  const payload = (await apiFetch(`/api/stdcharge/${chargeId}/amount`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })) as ApiSuccess<Record<string, unknown>>;
+
+  return payload.data;
+}

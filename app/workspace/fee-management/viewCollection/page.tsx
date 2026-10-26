@@ -11,9 +11,20 @@ import {
   CheckCircle2,
   Loader2,
   Trophy,
+  Pencil,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import {
@@ -22,6 +33,7 @@ import {
   getStudentFines,
   getPaymentMethodAccounts,
   collectFee,
+  updateChargeAmount,
   type EnrollmentDetails,
   type StudentCharge,
   type Fine,
@@ -286,6 +298,13 @@ export default function Page() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successInfo, setSuccessInfo] = useState<{ transactionNumber: string; totalAmount: number } | null>(null)
 
+  // Edit charge modal states
+  const [editingCharge, setEditingCharge] = useState<StudentCharge | null>(null)
+  const [newAmountInput, setNewAmountInput] = useState<string>("")
+  const [editReasonInput, setEditReasonInput] = useState<string>("")
+  const [isUpdatingCharge, setIsUpdatingCharge] = useState<boolean>(false)
+  const [editChargeError, setEditChargeError] = useState<string | null>(null)
+
   const chargeKey = (id: string) => `charge:${id}`
   const fineKey = (id: string) => `fine:${id}`
   const ccaKey = (id: string) => `cca:${id}`
@@ -403,6 +422,74 @@ export default function Page() {
     if (isNaN(val)) return
     const clamped = Math.max(0, Math.min(val, max))
     setSelected((prev) => ({ ...prev, [key]: clamped }))
+  }
+
+  function handleOpenEditCharge(charge: StudentCharge) {
+    setEditingCharge(charge)
+    setNewAmountInput(String(charge.finalAmount))
+    const noteMatch = charge.description?.match(/\[Note:\s*(.*?)\]/)
+    setEditReasonInput(noteMatch ? noteMatch[1] : "")
+    setEditChargeError(null)
+  }
+
+  async function handleSaveChargeAmount(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!editingCharge) return
+
+    const parsed = parseFloat(newAmountInput)
+    if (isNaN(parsed) || parsed < 0) {
+      setEditChargeError("Please enter a valid non-negative number.")
+      return
+    }
+    if (parsed < editingCharge.paidAmount) {
+      setEditChargeError(`Amount cannot be less than already paid ${formatCurrency(editingCharge.paidAmount)}.`)
+      return
+    }
+
+    try {
+      setIsUpdatingCharge(true)
+      setEditChargeError(null)
+
+      const updated = await updateChargeAmount(editingCharge.id, {
+        newAmount: parsed,
+        reason: editReasonInput.trim() || undefined,
+      })
+
+      setCharges((prev) =>
+        prev.map((c) =>
+          c.id === updated.id
+            ? {
+                ...c,
+                originalAmount: updated.originalAmount,
+                discountAmount: updated.discountAmount,
+                finalAmount: updated.finalAmount,
+                balance: updated.balance,
+                status: updated.status,
+                description: updated.description,
+                canCollect: updated.canCollect,
+              }
+            : c
+        )
+      )
+
+      setSelected((prev) => {
+        const key = chargeKey(updated.id)
+        if (!(key in prev)) return prev
+        const wasFullBalance = prev[key] === editingCharge.balance
+        const newAlloc = wasFullBalance ? updated.balance : Math.min(prev[key], updated.balance)
+        return {
+          ...prev,
+          [key]: newAlloc,
+        }
+      })
+
+      toast.success(`Charge amount updated to ${formatCurrency(updated.finalAmount)}`)
+      setEditingCharge(null)
+    } catch (err) {
+      setEditChargeError(err instanceof Error ? err.message : "Failed to update charge amount.")
+    } finally {
+      setIsUpdatingCharge(false)
+    }
   }
 
   const feeOutstanding = useMemo(() => {
@@ -806,12 +893,35 @@ export default function Page() {
                                       )
                                     )}
                                   </div>
+                                  {charge.description && charge.description !== charge.chargeType && (
+                                    <div
+                                      className="mt-0.5 max-w-xs truncate text-[11px] font-normal text-slate-500 dark:text-slate-400"
+                                      title={charge.description}
+                                    >
+                                      {charge.description}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                                   <PeriodLabel month={charge.periodMonth} year={charge.periodYear} />
                                 </td>
                                 <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
-                                  {formatCurrency(charge.finalAmount)}
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <span>{formatCurrency(charge.finalAmount)}</span>
+                                    {!isPaid && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleOpenEditCharge(charge)
+                                        }}
+                                        title="Edit Charge Amount"
+                                        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">
                                   {formatCurrency(charge.paidAmount)}
@@ -1205,6 +1315,128 @@ export default function Page() {
           )}
         </InfoSection>
       )}
+
+      {/* ── Edit Charge Amount Dialog ── */}
+      <Dialog
+        open={!!editingCharge}
+        onOpenChange={(open) => !open && !isUpdatingCharge && setEditingCharge(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Charge Amount</DialogTitle>
+            <DialogDescription>
+              Adjust the generated fee amount before collection (e.g. multiple transport fees or route revisions).
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingCharge && (
+            <form onSubmit={handleSaveChargeAmount} className="space-y-4 pt-2">
+              <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Student:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {student?.studentName || "Student"} {student?.admissionNumber ? `(${student.admissionNumber})` : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Charge:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {editingCharge.chargeType}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Period:</span>
+                  <span className="text-slate-700 dark:text-slate-300">
+                    <PeriodLabel month={editingCharge.periodMonth} year={editingCharge.periodYear} />
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200/60 pt-1.5 dark:border-slate-800">
+                  <span className="text-slate-500">Already Paid:</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(editingCharge.paidAmount)}
+                  </span>
+                </div>
+              </div>
+
+              {editChargeError && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+                  {editChargeError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="charge-new-amount" className="text-xs font-semibold">
+                  New Amount (₹) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="charge-new-amount"
+                  type="number"
+                  step="0.01"
+                  min={editingCharge.paidAmount}
+                  required
+                  autoFocus
+                  value={newAmountInput}
+                  onChange={(e) => {
+                    setNewAmountInput(e.target.value)
+                    setEditChargeError(null)
+                  }}
+                  placeholder="0.00"
+                  disabled={isUpdatingCharge}
+                  className="h-9 text-sm"
+                />
+                {editingCharge.paidAmount > 0 && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    Must be at least {formatCurrency(editingCharge.paidAmount)} (amount already collected).
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="charge-edit-reason" className="text-xs font-semibold">
+                  Reason / Remarks <span className="text-slate-400 font-normal">(Optional)</span>
+                </Label>
+                <Input
+                  id="charge-edit-reason"
+                  type="text"
+                  value={editReasonInput}
+                  onChange={(e) => setEditReasonInput(e.target.value)}
+                  placeholder="e.g. Added second transport route or distance adjustment"
+                  disabled={isUpdatingCharge}
+                  className="h-9 text-sm"
+                  maxLength={120}
+                />
+              </div>
+
+              <DialogFooter className="pt-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUpdatingCharge}
+                  onClick={() => setEditingCharge(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isUpdatingCharge || newAmountInput.trim() === ""}
+                  className="bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                >
+                  {isUpdatingCharge ? (
+                    <>
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Amount"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }
