@@ -392,17 +392,19 @@ export default function ViewAdmissionPage() {
       const group = map.get(monthLabel)!;
       const final = parseFloat(c.finalAmount || "0");
       const paid = parseFloat(c.paidAmount || "0");
+      const effectivePayable = Math.max(final, paid);
+      const balance = Math.max(0, final - paid);
       group.items.push({
         type: "FEE",
         id: c.id,
         description: c.description,
         amount: final,
         paid,
-        balance: final - paid,
+        balance,
         dueDate: c.dueDate,
         status: c.status,
       });
-      group.totalFee += final;
+      group.totalFee += effectivePayable;
       group.totalPaid += paid;
     }
 
@@ -447,24 +449,26 @@ export default function ViewAdmissionPage() {
       const group = map.get(monthLabel)!;
       const amount = f.amount || 0;
       const paid = f.paidAmount || 0;
+      const effectivePayable = Math.max(amount, paid);
+      const balance = Math.max(0, amount - paid);
       group.items.push({
         type: "FINE",
         id: f.id,
         description: `Fine: ${f.fineType} (${f.chargeDescription || f.reason || "Late Fee"})`,
         amount,
         paid,
-        balance: amount - paid,
+        balance,
         dueDate: f.createdAt,
         status: f.isReversed ? "REVERSED" : f.status,
       });
-      group.totalFine += amount;
+      group.totalFine += effectivePayable;
       group.totalPaid += paid;
     }
 
     // 3. Compute group totals
     for (const group of map.values()) {
       group.totalPayable = group.totalFee + group.totalFine;
-      group.totalBalance = group.totalPayable - group.totalPaid;
+      group.totalBalance = Math.max(0, group.totalPayable - group.totalPaid);
     }
 
     return Array.from(map.values());
@@ -489,10 +493,10 @@ export default function ViewAdmissionPage() {
 
   const enrollmentChargesTemplate = enrollmentDetails?.charges ?? [];
 
-  const totalFeesFinal = charges.reduce((sum, c) => sum + parseFloat(c.finalAmount || "0"), 0);
+  const totalFeesFinal = charges.reduce((sum, c) => sum + Math.max(parseFloat(c.finalAmount || "0"), parseFloat(c.paidAmount || "0")), 0);
   const totalFeesPaid = charges.reduce((sum, c) => sum + parseFloat(c.paidAmount || "0"), 0);
 
-  const totalFineAmount = (fines ?? []).reduce((sum, f) => sum + (f.amount || 0), 0);
+  const totalFineAmount = (fines ?? []).reduce((sum, f) => sum + Math.max(f.amount || 0, f.paidAmount || 0), 0);
   const totalFinePaid = (fines ?? []).reduce((sum, f) => sum + (f.paidAmount || 0), 0);
 
   const configuredAcademicYearTotal = enrollmentChargesTemplate.reduce(
@@ -502,7 +506,7 @@ export default function ViewAdmissionPage() {
 
   const academicYearPayable = totalFeesFinal + totalFineAmount;
   const academicYearPaid = totalFeesPaid + totalFinePaid;
-  const academicYearBalance = academicYearPayable - academicYearPaid;
+  const academicYearBalance = Math.max(0, academicYearPayable - academicYearPaid);
 
   return (
     <section className="w-full px-6 py-6 space-y-6 max-w-7xl mx-auto">
@@ -798,7 +802,17 @@ export default function ViewAdmissionPage() {
                     {group.items.map((item) => (
                       <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50">
                         <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
-                          {item.description}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{item.description}</span>
+                            {item.paid > item.amount && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800"
+                              >
+                                Multi-fee Collected: {formatCurrency(item.paid)}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge

@@ -238,7 +238,7 @@ export default function ViewStudentFinePage() {
   const amount = Number(fine.amount) || 0;
   const paidAmount = Number(fine.paidAmount) || 0;
   const balanceAmount = Number(fine.balanceAmount);
-  const safeBalanceAmount = Number.isFinite(balanceAmount) ? balanceAmount : amount - paidAmount;
+  const safeBalanceAmount = Math.max(0, Number.isFinite(balanceAmount) ? balanceAmount : amount - paidAmount);
 
   return (
     <section className="w-full px-3 py-4 sm:px-6">

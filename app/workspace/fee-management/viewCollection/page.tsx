@@ -878,9 +878,16 @@ export default function Page() {
                                   <div className="flex items-center gap-2">
                                     <span>{charge.chargeType}</span>
                                     {isPaid ? (
-                                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                                        Paid
-                                      </span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                          Paid
+                                        </span>
+                                        {charge.paidAmount > charge.finalAmount && (
+                                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800">
+                                            Multi-fee: {formatCurrency(charge.paidAmount)}
+                                          </span>
+                                        )}
+                                      </div>
                                     ) : charge.status === "PARTIALLY_PAID" ? (
                                       <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
                                         Partially Paid
@@ -927,7 +934,7 @@ export default function Page() {
                                   {formatCurrency(charge.paidAmount)}
                                 </td>
                                 <td className="px-3 py-2 text-right font-medium text-slate-950 dark:text-slate-100">
-                                  {formatCurrency(charge.balance)}
+                                  {formatCurrency(Math.max(0, charge.balance))}
                                 </td>
                                 <td className="px-3 py-2 text-right">
                                   <input
