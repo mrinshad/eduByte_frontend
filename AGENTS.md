@@ -1,10 +1,39 @@
+# Engineering & Design System Guidelines
+
+This repository is governed by strict agent skillsets, design craft standards, code discipline, and change tracking.
+
+## 1. Project Context & Authoritative Documents
+- **Brand & Services**: docs/PRODUCT.md
+- **Visual Design & Tokens**: docs/DESIGN.md
+- **Agent Orchestration & Backend Coordination**: docs/ORCHESTRATION.md
+- **Active State & Roadmap**: PROJECT_STATE.md
+- **Version History & Changes**: CHANGELOG.md
+- **Architecture Decisions**: docs/adr/
+- **Codebase Knowledge Graph**: graphify-out/GRAPH_REPORT.md
+
+## 2. Core Agent Rules
+All agents operating in this repository must respect the rules in `.agents/rules/`:
+1. **UI & UX Craft** (`.agents/rules/ui-craft.md`): Reject generic "AI slop", unprompted gradients, low contrast, and unverified mockups.
+2. **Code Discipline** (`.agents/rules/code-discipline.md`): Enforce the Ponytail 7-step Necessity Ladder. Rely on standard library and native features before adding packages.
+3. **Change Tracking** (`.agents/rules/change-tracking.md`): Log modifications in CHANGELOG.md, keep PROJECT_STATE.md updated, and record ADRs for structural changes.
+4. **Knowledge Graph** (`.agents/rules/graphify.md`): Query `graphify-out/` before answering complex codebase architecture questions.
+
+## 3. Available Skill Commands
+- **UI Craft (Impeccable)**: `/audit`, `/critique`, `/polish`, `/typeset`, `/adapt`, `/bolder`, `/quieter`
+- **UX Strategy (Intent)**: `/strategize`, `/wireframe`, `/articulate`, `/evaluate`, `/fortify`
+- **Code Quality (Ponytail)**: `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`
+- **Knowledge Graph (Graphify)**: `/graphify`, `/graphify update`
+- **Change Management**: `/track-changes`
+
+---
+
 # eduByte Frontend — Next.js Agent Architecture & Orchestration Guide
 
 This guide covers the **eduByte Frontend**, a single-page school management application built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
 ---
 
-## 1. Directory Structure & Key Files
+## 4. Directory Structure & Key Files
 
 ```
 frontend/
@@ -40,7 +69,7 @@ frontend/
 
 ---
 
-## 2. The Two-Portal Architecture
+## 5. The Two-Portal Architecture
 
 EduByte separates system capabilities into two distinct operational portals:
 
@@ -55,7 +84,7 @@ EduByte separates system capabilities into two distinct operational portals:
 
 ---
 
-## 3. Data Fetching & Service Conventions
+## 6. Data Fetching & Service Conventions
 
 > [!CRITICAL]
 > **Never call `fetch()` directly in page components or forms.**
@@ -92,18 +121,16 @@ export default function StudentSelector() {
 
 ---
 
-## 4. UI & Styling Rules
+## 7. Dual-Repo Coordination with Backend
 
-All UI implementations must strictly adhere to the project rules in [.agents/rules/frontend-agent.md](file:///Users/apple/Byten/eduByte/.agents/rules/frontend-agent.md):
-
-* **Visual Hierarchy First**: Make primary content clear; use typography scale, weight, and contrast before adding decorative effects.
-* **Reuse Components**: Use primitives from `components/ui/` (Button, Input, Dialog, Select, Table, Badge) rather than custom HTML elements.
-* **Responsive Layouts**: Design layouts that stack naturally on mobile and tablet screens.
-* **No Hardcoded Values**: Academic years, classes, fee amounts, and student statuses must come dynamically from APIs.
+This frontend operates in conjunction with the backend repository at `../backend`:
+1. **API Contracts**: Backend endpoints return `{ success: boolean, data: any, message?: string, errors?: any[] }`. Handled through [`lib/api-error.ts`](file:///Users/apple/Byten/eduByte/frontend/lib/api-error.ts).
+2. **Service Synchronization**: When backend endpoints are updated in `../backend/src/modules/`, update or create matching client methods in [`lib/services/`](file:///Users/apple/Byten/eduByte/frontend/lib/services/).
+3. **No Duplicate Filtering**: Rely on backend query parameters (`page`, `limit`, `search`, `status`, `academicYearId`) rather than client-side array filtering.
 
 ---
 
-## 5. Verification & Quality Checks
+## 8. Verification & Quality Checks
 
 Before completing any frontend task, always execute:
 
