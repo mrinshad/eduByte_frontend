@@ -49,6 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { usePermission } from "@/hooks/usePermission";
 import { formatCurrency, cn } from "@/lib/utils";
 
 const SAGE = "#556043";
@@ -188,6 +189,20 @@ export default function ViewStaffPage() {
         .toUpperCase()
     : "ST";
 
+  const { can } = usePermission();
+  const canViewPayroll =
+    can("salaryslips.listOnNavbar") ||
+    can("salaryslips.viewSalarySlipButton") ||
+    can("salaryslips.viewButton") ||
+    can("salaryslips.createSalarySlipButton") ||
+    can("salaryslips.*") ||
+    can("*");
+
+  const hasPayrollAccess = Boolean(
+    canViewPayroll &&
+    staff.basicSalary !== null &&
+    staff.basicSalary !== undefined
+  );
   const salarySlips = staff.salarySlips || [];
   const totalDisbursed = staff.totalDisbursed || 0;
   const configuredBaseSalary = Number(staff.basicSalary || 0);
@@ -208,10 +223,12 @@ export default function ViewStaffPage() {
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Staff Profile & Pay Details
+              {hasPayrollAccess ? "Staff Profile & Pay Details" : "Staff Profile"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Personal credentials, remuneration structure, and disbursed payroll records
+              {hasPayrollAccess
+                ? "Personal credentials, remuneration structure, and disbursed payroll records"
+                : "Personal credentials and employment details"}
             </p>
           </div>
         </div>
@@ -237,12 +254,16 @@ export default function ViewStaffPage() {
               <Trash2 className="h-4 w-4" /> Delete
             </Button>
           </PermissionGate>
-          <Button
-            onClick={() => router.push(`/workspace/salary-slips/create?staffId=${staff.id}`)}
-            className="h-9 gap-1.5 rounded-xl font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4 text-white dark:text-slate-900" /> Generate Slip
-          </Button>
+          {hasPayrollAccess && (
+            <PermissionGate permission="salaryslips.createSalarySlipButton">
+              <Button
+                onClick={() => router.push(`/workspace/salary-slips/create?staffId=${staff.id}`)}
+                className="h-9 gap-1.5 rounded-xl font-medium shadow bg-[#556043] text-white hover:bg-[#4a533b] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4 text-white dark:text-slate-900" /> Generate Slip
+              </Button>
+            </PermissionGate>
+          )}
         </div>
       </div>
 
@@ -303,9 +324,17 @@ export default function ViewStaffPage() {
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
-            {configuredBaseSalary > 0 ? formatCurrency(configuredBaseSalary) : "Not Set"}
+            {hasPayrollAccess
+              ? configuredBaseSalary > 0
+                ? formatCurrency(configuredBaseSalary)
+                : "Not Set"
+              : "No Access"}
           </div>
-          <p className="mt-1 text-xs text-slate-400">Monthly basic salary set in employee profile</p>
+          <p className="mt-1 text-xs text-slate-400">
+            {hasPayrollAccess
+              ? "Monthly basic salary set in employee profile"
+              : "Payroll permissions required"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
@@ -316,9 +345,13 @@ export default function ViewStaffPage() {
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400 tabular-nums">
-            {formatCurrency(totalDisbursed)}
+            {hasPayrollAccess ? formatCurrency(totalDisbursed) : "No Access"}
           </div>
-          <p className="mt-1 text-xs text-slate-400">Net payout across {salarySlips.length} salary slip(s)</p>
+          <p className="mt-1 text-xs text-slate-400">
+            {hasPayrollAccess
+              ? `Net payout across ${salarySlips.length} salary slip(s)`
+              : "Restricted to authorized payroll personnel"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
@@ -329,9 +362,13 @@ export default function ViewStaffPage() {
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
-            {salarySlips.length}
+            {hasPayrollAccess ? salarySlips.length : "No Access"}
           </div>
-          <p className="mt-1 text-xs text-slate-400">Historical pay vouchers generated</p>
+          <p className="mt-1 text-xs text-slate-400">
+            {hasPayrollAccess
+              ? "Historical pay vouchers generated"
+              : "Restricted to authorized payroll personnel"}
+          </p>
         </div>
       </div>
 
@@ -392,20 +429,32 @@ export default function ViewStaffPage() {
               <div>
                 <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Default Base Salary</span>
                 <p className="mt-0.5 text-base font-bold text-slate-950 dark:text-slate-100">
-                  {configuredBaseSalary > 0 ? formatCurrency(configuredBaseSalary) : "₹ 0.00 (Not configured)"}
+                  {hasPayrollAccess
+                    ? configuredBaseSalary > 0
+                      ? formatCurrency(configuredBaseSalary)
+                      : "₹ 0.00 (Not configured)"
+                    : "No Access"}
                 </p>
                 <p className="text-xs text-slate-400">
-                  This rate is automatically suggested every month when generating salary slips for this employee.
+                  {hasPayrollAccess
+                    ? "This rate is automatically suggested every month when generating salary slips for this employee."
+                    : "Salary structure is restricted to authorized payroll personnel."}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`/admin/staff/createStaff?id=${staff.id}`)}
-                className="h-8 rounded-lg border-slate-300 text-xs shrink-0"
-              >
-                Change Base Salary
-              </Button>
+              {hasPayrollAccess && (
+                <PermissionGate permission="salaryslips.createSalarySlipButton">
+                  <PermissionGate permission="staff.editStaffButton">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/admin/staff/createStaff?id=${staff.id}`)}
+                      className="h-8 rounded-lg border-slate-300 text-xs shrink-0"
+                    >
+                      Change Base Salary
+                    </Button>
+                  </PermissionGate>
+                </PermissionGate>
+              )}
             </div>
           </div>
         </CardContent>
@@ -414,7 +463,17 @@ export default function ViewStaffPage() {
       {/* ── Payroll & Compensation Section (Mirroring Fee Collection on View Student) ── */}
       <InfoSection icon={Receipt} title="Salary Slips & Disbursed Vouchers">
         <CardContent className="p-0">
-          {salarySlips.length === 0 ? (
+          {!hasPayrollAccess ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Payroll Access Restricted</h3>
+              <p className="mt-1 text-xs text-slate-400 max-w-sm">
+                Remuneration records and salary slips are restricted to authorized payroll personnel.
+              </p>
+            </div>
+          ) : salarySlips.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
                 <FileSpreadsheet className="h-6 w-6 text-slate-400" />
