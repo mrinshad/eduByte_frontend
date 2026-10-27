@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import {
   ArrowLeft,
   User,
@@ -47,6 +47,7 @@ import {
 } from "@/lib/services/cca"
 import React from "react"
 import { refreshLateFines } from "@/lib/services/lateFine"
+import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal"
 
 const formatCurrency = (n: number) =>
   `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -304,6 +305,34 @@ export default function Page() {
   const [editReasonInput, setEditReasonInput] = useState<string>("")
   const [isUpdatingCharge, setIsUpdatingCharge] = useState<boolean>(false)
   const [editChargeError, setEditChargeError] = useState<string | null>(null)
+
+  // Advance fee generation modal state
+  const [isManualGenerateModalOpen, setIsManualGenerateModalOpen] = useState(false)
+
+  const reloadCharges = useCallback(async () => {
+    if (!enrollmentId) return
+    try {
+      setChargesLoading(true)
+      setChargesError(null)
+      await refreshLateFines(enrollmentId).catch((err) => {
+        console.warn("Non-fatal: could not refresh late fines", err)
+      })
+
+      const [chargesData, finesData, ccaData] = await Promise.all([
+        getStudentCharges(enrollmentId),
+        getStudentFines(enrollmentId),
+        getStudentCcaCharges(enrollmentId).catch(() => []),
+      ])
+      setCharges(chargesData)
+      setFines(finesData)
+      setCcaCharges(ccaData)
+    } catch (err) {
+      console.error("Charges reload API Error:", err)
+      toast.error(err instanceof Error ? err.message : "Failed to reload updated charges.")
+    } finally {
+      setChargesLoading(false)
+    }
+  }, [enrollmentId])
 
   const chargeKey = (id: string) => `charge:${id}`
   const fineKey = (id: string) => `fine:${id}`
@@ -831,9 +860,22 @@ export default function Page() {
 
               {/* Student Charges table */}
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Student Charges
-                </h3>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Student Charges
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsManualGenerateModalOpen(true)}
+                    disabled={chargesLoading || !enrollmentId}
+                    className="h-7 gap-1.5 px-2.5 text-xs font-medium border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors shadow-2xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-[#556043] dark:text-[#8b9478]" />
+                    <span>Generate Advance Fees</span>
+                  </Button>
+                </div>
                 <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[400px]">
                   <table className="w-full min-w-[640px] text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
@@ -1444,6 +1486,17 @@ export default function Page() {
           )}
         </DialogContent>
       </Dialog>
+
+      {enrollmentId && (
+        <ManualFeeGenerationModal
+          enrollmentId={enrollmentId}
+          isOpen={isManualGenerateModalOpen}
+          onClose={() => setIsManualGenerateModalOpen(false)}
+          onSuccess={() => {
+            void reloadCharges()
+          }}
+        />
+      )}
     </section>
   )
 }

@@ -706,13 +706,13 @@ export default function PrivacyPolicyPage() {
                 >
                   Terms &amp; Conditions
                 </Link>
-                <span className="text-slate-300 dark:text-slate-700">•</span>
+                {/* <span className="text-slate-300 dark:text-slate-700">•</span>
                 <Link
                   href="/"
                   className="underline underline-offset-2 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   Sign In Portal
-                </Link>
+                </Link> */}
               </div>
             </footer>
           </main>

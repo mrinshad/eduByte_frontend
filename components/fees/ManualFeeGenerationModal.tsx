@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
   AlertCircle,
-  CheckCircle2,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,7 +33,6 @@ import {
   getStudentFeeGenerationPreview,
   generateStudentFeesManual,
   type SingleStudentGenerationPlan,
-  type SingleStudentChargeItem,
 } from "@/lib/services/studentCharges";
 import { cn, formatDateOnly } from "@/lib/utils";
 
@@ -59,6 +58,7 @@ export function ManualFeeGenerationModal({
   const [plan, setPlan] = useState<SingleStudentGenerationPlan | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showGeneratedAccordion, setShowGeneratedAccordion] = useState(false);
   const [syncPending, setSyncPending] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -83,9 +83,10 @@ export function ManualFeeGenerationModal({
           }
           setSelectedKeys(defaultSelected);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to fetch student fee generation preview:", err);
-        toast.error(err?.message || "Failed to load fee generation preview");
+        const message = err instanceof Error ? err.message : "Failed to load fee generation preview";
+        toast.error(message);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -97,16 +98,23 @@ export function ManualFeeGenerationModal({
     };
   }, [isOpen, enrollmentId]);
 
-  const displayedItems = useMemo(() => {
+  const ungeneratedItems = useMemo(() => {
     if (!plan?.items) return [];
-    if (showAllMonths) return plan.items;
-    // By default, show charges that are either ungenerated in the current window or already generated
-    return plan.items.filter((item) => item.isAllowedWindow || item.isGenerated);
-  }, [plan, showAllMonths]);
+    return plan.items.filter((item) => !item.isGenerated);
+  }, [plan]);
 
-  const ungeneratedInView = useMemo(() => {
-    return displayedItems.filter((i) => !i.isGenerated);
-  }, [displayedItems]);
+  const alreadyGeneratedItems = useMemo(() => {
+    if (!plan?.items) return [];
+    return plan.items.filter((item) => item.isGenerated);
+  }, [plan]);
+
+  const displayedUngenerated = useMemo(() => {
+    if (showAllMonths) return ungeneratedItems;
+    // By default, show ungenerated charges that are within the allowed window
+    return ungeneratedItems.filter((item) => item.isAllowedWindow);
+  }, [ungeneratedItems, showAllMonths]);
+
+  const ungeneratedInView = displayedUngenerated;
 
   const selectedChargesTotal = useMemo(() => {
     if (!plan?.items) return 0;
@@ -168,9 +176,10 @@ export function ManualFeeGenerationModal({
       );
       onSuccess?.();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to generate student fees:", err);
-      toast.error(err?.message || "Failed to generate student fees");
+      const message = err instanceof Error ? err.message : "Failed to generate student fees";
+      toast.error(message);
     } finally {
       setIsGenerating(false);
     }
@@ -289,7 +298,7 @@ export function ManualFeeGenerationModal({
                     className="border-[#8b9478] data-[state=checked]:bg-white data-[state=checked]:text-[#556043] dark:border-slate-600"
                   />
                   <label htmlFor="showAllMonths" className="text-xs text-slate-200 dark:text-slate-300 cursor-pointer select-none">
-                    Show full year ({plan.summary.totalChargesCount} total)
+                    Show full year ({ungeneratedItems.length} ungenerated)
                   </label>
                 </div>
               </div>
@@ -309,85 +318,188 @@ export function ManualFeeGenerationModal({
               )}
             </div>
 
-            {/* Charges Table */}
-            <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 overflow-hidden shadow-xs">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-[#6a7459] hover:bg-[#6a7459] dark:bg-slate-950/80 dark:hover:bg-slate-950/80 border-none">
-                    <TableHead className="w-10 text-center">
-                      <span className="sr-only">Select</span>
-                    </TableHead>
-                    <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Fee Item</TableHead>
-                    <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Period</TableHead>
-                    <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Due Date</TableHead>
-                    <TableHead className="text-xs font-semibold text-right text-white dark:text-slate-200">Amount</TableHead>
-                    <TableHead className="text-xs font-semibold text-center text-white dark:text-slate-200">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedItems.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-sm text-slate-200 dark:text-slate-400">
-                        No charges found for this enrollment.
-                      </TableCell>
+            {/* Ungenerated Charges Table */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-200 dark:text-slate-400">
+                  Fees Ready To Generate
+                </span>
+                <span className="text-[11px] text-slate-300/80">
+                  {displayedUngenerated.length} charge{displayedUngenerated.length === 1 ? "" : "s"} available
+                </span>
+              </div>
+              <div className="rounded-xl border border-[#8b9478]/40 dark:border-slate-800 overflow-hidden shadow-xs">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#6a7459] hover:bg-[#6a7459] dark:bg-slate-950/80 dark:hover:bg-slate-950/80 border-none">
+                      <TableHead className="w-10 text-center">
+                        <span className="sr-only">Select</span>
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Fee Item</TableHead>
+                      <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Period</TableHead>
+                      <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Due Date</TableHead>
+                      <TableHead className="text-xs font-semibold text-right text-white dark:text-slate-200">Amount</TableHead>
+                      <TableHead className="text-xs font-semibold text-center text-white dark:text-slate-200">Window</TableHead>
                     </TableRow>
-                  ) : (
-                    displayedItems.map((item) => {
-                      const isSelected = selectedKeys.has(item.key);
-                      return (
-                        <TableRow
-                          key={item.key}
-                          className={cn(
-                            "border-b border-[#8b9478]/30 dark:border-slate-800 hover:bg-white/5 dark:hover:bg-slate-800/40 transition-colors",
-                            item.isGenerated && "opacity-75 bg-[#556043]/30 dark:bg-slate-900/40"
+                  </TableHeader>
+                  <TableBody>
+                    {displayedUngenerated.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-6 text-sm text-slate-200 dark:text-slate-400">
+                          {ungeneratedItems.length > 0 ? (
+                            <div className="space-y-1">
+                              <p className="font-medium text-white">All fees in the current window have already been generated.</p>
+                              <p className="text-xs text-slate-300">
+                                Check &quot;Show full year&quot; above to view and generate advance fees for upcoming months.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <p className="font-medium text-white">All fees for this student have been generated.</p>
+                              <p className="text-xs text-slate-300">No additional ungenerated fees remain for this academic year.</p>
+                            </div>
                           )}
-                        >
-                          <TableCell className="text-center py-2.5">
-                            {item.isGenerated ? (
-                              <CheckCircle2 className="h-4 w-4 mx-auto text-emerald-300 dark:text-emerald-400" />
-                            ) : (
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      displayedUngenerated.map((item) => {
+                        const isSelected = selectedKeys.has(item.key);
+                        return (
+                          <TableRow
+                            key={item.key}
+                            className="border-b border-[#8b9478]/30 dark:border-slate-800 hover:bg-white/5 dark:hover:bg-slate-800/40 transition-colors"
+                          >
+                            <TableCell className="text-center py-2.5">
                               <Checkbox
                                 checked={isSelected}
                                 onCheckedChange={() => handleToggleItem(item.key)}
                                 aria-label={`Select ${item.chargeTypeName} for ${item.periodLabel}`}
                                 className="border-[#8b9478] data-[state=checked]:bg-white data-[state=checked]:text-[#556043] dark:border-slate-600"
                               />
-                            )}
-                          </TableCell>
+                            </TableCell>
 
-                          <TableCell className="py-2.5">
-                            <div className="font-medium text-sm text-white dark:text-slate-100">
-                              {item.chargeTypeName}
-                            </div>
-                            <div className="text-[11px] text-slate-200/80 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase font-normal border-[#8b9478]/50 text-slate-200 dark:text-slate-300">
-                                {item.frequency}
-                              </Badge>
-                              {item.canSyncAmount && (
-                                <span className="text-amber-300 dark:text-amber-400 font-medium">
-                                  Template amount changed to {formatCurrency(item.templateFinalAmount)}
-                                </span>
+                            <TableCell className="py-2.5">
+                              <div className="font-medium text-sm text-white dark:text-slate-100">
+                                {item.chargeTypeName}
+                              </div>
+                              <div className="text-[11px] text-slate-200/80 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase font-normal border-[#8b9478]/50 text-slate-200 dark:text-slate-300">
+                                  {item.frequency}
+                                </Badge>
+                                {item.canSyncAmount && (
+                                  <span className="text-amber-300 dark:text-amber-400 font-medium">
+                                    Template amount changed to {formatCurrency(item.templateFinalAmount)}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-2.5 text-xs text-slate-200 dark:text-slate-300">
+                              {item.periodLabel}
+                            </TableCell>
+
+                            <TableCell className="py-2.5 text-xs text-slate-200/80 dark:text-slate-400">
+                              {item.dueDate ? formatDateOnly(item.dueDate) : "—"}
+                            </TableCell>
+
+                            <TableCell
+                              className="py-2.5 text-right font-medium text-sm text-white dark:text-slate-100"
+                              style={{ fontFeatureSettings: '"tnum"' }}
+                            >
+                              {formatCurrency(item.finalAmount)}
+                            </TableCell>
+
+                            <TableCell className="py-2.5 text-center">
+                              {item.isAllowedWindow ? (
+                                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/25 border-transparent">
+                                  Ready
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-slate-300/70 border-[#8b9478]/40 dark:border-slate-800">
+                                  Future
+                                </Badge>
                               )}
-                            </div>
-                          </TableCell>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
 
-                          <TableCell className="py-2.5 text-xs text-slate-200 dark:text-slate-300">
-                            {item.periodLabel}
-                          </TableCell>
+            {/* Already Generated Fees Accordion */}
+            {alreadyGeneratedItems.length > 0 && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowGeneratedAccordion((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#8b9478]/40 bg-[#6a7459]/30 hover:bg-[#6a7459]/50 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/60 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-slate-200 transition-transform duration-200",
+                        showGeneratedAccordion && "rotate-180"
+                      )}
+                    />
+                    <span className="text-xs font-semibold text-white dark:text-slate-200">
+                      Already Generated Fees
+                    </span>
+                    <Badge variant="outline" className="text-[10px] h-4.5 px-2 text-emerald-300 border-emerald-400/30 bg-emerald-500/10">
+                      {alreadyGeneratedItems.length} generated
+                    </Badge>
+                  </div>
+                  <span className="text-[11px] text-slate-200/80 dark:text-slate-400">
+                    {showGeneratedAccordion ? "Click to collapse" : "Click to view"}
+                  </span>
+                </button>
 
-                          <TableCell className="py-2.5 text-xs text-slate-200/80 dark:text-slate-400">
-                            {item.dueDate ? formatDateOnly(item.dueDate) : "—"}
-                          </TableCell>
-
-                          <TableCell
-                            className="py-2.5 text-right font-medium text-sm text-white dark:text-slate-100"
-                            style={{ fontFeatureSettings: '"tnum"' }}
+                {showGeneratedAccordion && (
+                  <div className="mt-2 rounded-xl border border-[#8b9478]/40 dark:border-slate-800 overflow-hidden shadow-xs">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-[#6a7459] hover:bg-[#6a7459] dark:bg-slate-950/80 dark:hover:bg-slate-950/80 border-none">
+                          <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Fee Item</TableHead>
+                          <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Period</TableHead>
+                          <TableHead className="text-xs font-semibold text-white dark:text-slate-200">Due Date</TableHead>
+                          <TableHead className="text-xs font-semibold text-right text-white dark:text-slate-200">Amount</TableHead>
+                          <TableHead className="text-xs font-semibold text-right text-white dark:text-slate-200">Paid</TableHead>
+                          <TableHead className="text-xs font-semibold text-center text-white dark:text-slate-200">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {alreadyGeneratedItems.map((item) => (
+                          <TableRow
+                            key={item.key}
+                            className="border-b border-[#8b9478]/30 dark:border-slate-800 bg-[#556043]/30 dark:bg-slate-900/40 hover:bg-white/5 transition-colors"
                           >
-                            {formatCurrency(item.finalAmount)}
-                          </TableCell>
-
-                          <TableCell className="py-2.5 text-center">
-                            {item.isGenerated ? (
+                            <TableCell className="py-2.5">
+                              <div className="font-medium text-sm text-white dark:text-slate-100">{item.chargeTypeName}</div>
+                              <div className="text-[11px] text-slate-200/80 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase font-normal border-[#8b9478]/50 text-slate-200 dark:text-slate-300">
+                                  {item.frequency}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2.5 text-xs text-slate-200 dark:text-slate-300">{item.periodLabel}</TableCell>
+                            <TableCell className="py-2.5 text-xs text-slate-200/80 dark:text-slate-400">
+                              {item.dueDate ? formatDateOnly(item.dueDate) : "—"}
+                            </TableCell>
+                            <TableCell
+                              className="py-2.5 text-right font-medium text-sm text-white dark:text-slate-100"
+                              style={{ fontFeatureSettings: '"tnum"' }}
+                            >
+                              {formatCurrency(item.finalAmount)}
+                            </TableCell>
+                            <TableCell
+                              className="py-2.5 text-right font-medium text-sm text-emerald-300 dark:text-emerald-400"
+                              style={{ fontFeatureSettings: '"tnum"' }}
+                            >
+                              {formatCurrency(item.paidAmount)}
+                            </TableCell>
+                            <TableCell className="py-2.5 text-center">
                               <Badge
                                 variant="outline"
                                 className={
@@ -400,23 +512,15 @@ export function ManualFeeGenerationModal({
                               >
                                 {item.status}
                               </Badge>
-                            ) : item.isAllowedWindow ? (
-                              <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/25 border-transparent">
-                                Ready
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-slate-300/70 border-[#8b9478]/40 dark:border-slate-800">
-                                Future
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
