@@ -494,34 +494,34 @@ export default function Page() {
                                                                 {item.chargeTypeName}
                                                             </div>
                                                             {breakdown.scheduleType === "9_MONTH_TUITION" && (
-                                                                <div className="rounded-lg border border-[#556043]/20 bg-[#556043]/5 p-2 text-xs text-[#556043] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-                                                                    <div className="font-semibold flex items-center gap-1.5">
+                                                                <div className="rounded-xl border border-[#556043]/20 bg-[#556043]/5 p-2.5 text-xs text-[#556043] dark:border-[#556043]/30 dark:bg-[#556043]/10 dark:text-[#8b9478]">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
                                                                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#556043]"></span>
                                                                         9-Month Installment Schedule:
                                                                     </div>
-                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
                                                                         {breakdown.summaryText}
                                                                     </p>
                                                                 </div>
                                                             )}
                                                             {breakdown.scheduleType === "3_TERM_TUITION" && (
-                                                                <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-2 text-xs text-purple-900 dark:border-purple-800/40 dark:bg-purple-950/20 dark:text-purple-300">
-                                                                    <div className="font-semibold flex items-center gap-1.5">
-                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-purple-600"></span>
+                                                                <div className="rounded-xl border border-[#556043]/20 bg-[#556043]/5 p-2.5 text-xs text-[#556043] dark:border-[#556043]/30 dark:bg-[#556043]/10 dark:text-[#8b9478]">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#556043]"></span>
                                                                         3-Term Direct Schedule:
                                                                     </div>
-                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
                                                                         {breakdown.summaryText}
                                                                     </p>
                                                                 </div>
                                                             )}
                                                             {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
-                                                                <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-2 text-xs text-blue-900 dark:border-blue-800/40 dark:bg-blue-950/20 dark:text-blue-300">
-                                                                    <div className="font-semibold flex items-center gap-1.5">
-                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-600"></span>
-                                                                        10-Month Transport Schedule:
+                                                                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                                                                        10-Month Transport Schedule (June to March):
                                                                     </div>
-                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
                                                                         {breakdown.summaryText}
                                                                     </p>
                                                                 </div>

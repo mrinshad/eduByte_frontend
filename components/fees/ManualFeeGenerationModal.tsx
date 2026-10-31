@@ -398,12 +398,12 @@ export function ManualFeeGenerationModal({
                               <div className="space-y-0.5">
                                 <div>{item.periodLabel}</div>
                                 {item.academicMonth === 9 && item.chargeTypeName.toLowerCase().includes("tuition") && (
-                                  <span className="inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200">
+                                  <span className="inline-block rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200">
                                     Final 9th Installment
                                   </span>
                                 )}
                                 {item.frequency === "QUARTERLY" && (
-                                  <span className="inline-block rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-200">
+                                  <span className="inline-block rounded border border-[#556043]/40 bg-[#556043]/20 px-1.5 py-0.5 text-[10px] font-semibold text-[#8b9478]">
                                     Term {Math.ceil(item.academicMonth / 3)}
                                   </span>
                                 )}

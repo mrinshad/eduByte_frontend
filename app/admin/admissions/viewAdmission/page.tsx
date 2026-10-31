@@ -440,12 +440,12 @@ export default function ViewAdmissionPage() {
                           </div>
                         )}
                         {breakdown.scheduleType === "3_TERM_TUITION" && (
-                          <div className="text-[11px] text-purple-700 dark:text-purple-400 font-normal leading-relaxed">
+                          <div className="text-[11px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
                             {breakdown.summaryText}
                           </div>
                         )}
                         {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
-                          <div className="text-[11px] text-blue-700 dark:text-blue-400 font-normal leading-relaxed">
+                          <div className="text-[11px] text-slate-600 dark:text-slate-400 font-normal leading-relaxed">
                             {breakdown.summaryText}
                           </div>
                         )}

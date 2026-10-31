@@ -859,7 +859,7 @@ export default function FeeGenerationPage() {
                                       </div>
                                     )}
                                     {name.toLowerCase().includes("transport") && (
-                                      <div className="text-[11px] font-normal text-blue-700 dark:text-blue-400">
+                                      <div className="text-[11px] font-normal text-slate-600 dark:text-slate-400">
                                         10-Month Transport Schedule: Month {preview.targetAcademicMonth} of 10 (June to March) • Editable at collection desk
                                       </div>
                                     )}
