@@ -395,7 +395,19 @@ export function ManualFeeGenerationModal({
                             </TableCell>
 
                             <TableCell className="py-2.5 text-xs text-slate-200 dark:text-slate-300">
-                              {item.periodLabel}
+                              <div className="space-y-0.5">
+                                <div>{item.periodLabel}</div>
+                                {item.academicMonth === 9 && item.chargeTypeName.toLowerCase().includes("tuition") && (
+                                  <span className="inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200">
+                                    Final 9th Installment
+                                  </span>
+                                )}
+                                {item.frequency === "QUARTERLY" && (
+                                  <span className="inline-block rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-200">
+                                    Term {Math.ceil(item.academicMonth / 3)}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
 
                             <TableCell className="py-2.5 text-xs text-slate-200/80 dark:text-slate-400">

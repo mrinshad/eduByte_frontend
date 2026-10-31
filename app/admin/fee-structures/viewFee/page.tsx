@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table"
 import { viewFeeStructure, type FeeStructureView } from "@/lib/services/feeStructure"
 import { formatDateOnly } from "@/lib/utils"
+import { getFeeScheduleBreakdown } from "@/lib/feeScheduleHelper"
 
 /* ------------------------------------------------------------------ */
 /*  Shared presentational building blocks (same pattern as the        */
@@ -452,40 +453,94 @@ export default function Page() {
 
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <Table className="w-full min-w-[420px]">
+                                <Table className="w-full min-w-[500px]">
                                     <TableHeader className="bg-slate-50/80 dark:bg-slate-950/40">
                                         <TableRow className="border-slate-100 dark:border-slate-800/60">
-                                            <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
+                                            <TableHead className="w-12 font-semibold text-slate-500 dark:text-slate-400">
                                                 #
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
-                                                Charge Type
+                                                Charge Type & Collection Schedule
                                             </TableHead>
-                                            <TableHead className="text-right font-semibold text-slate-500 dark:text-slate-400">
-                                                Amount
+                                            <TableHead className="w-28 text-center font-semibold text-slate-500 dark:text-slate-400">
+                                                Frequency
+                                            </TableHead>
+                                            <TableHead className="w-36 text-right font-semibold text-slate-500 dark:text-slate-400">
+                                                Scheduled Amount
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
 
                                     <TableBody>
-                                        {feeStructure.items.map((item, index) => (
-                                            <TableRow
-                                                className="border-slate-100 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-950/40"
-                                                key={index}
-                                            >
-                                                <TableCell className="font-medium text-slate-600 dark:text-slate-400">
-                                                    {index + 1}
-                                                </TableCell>
+                                        {feeStructure.items.map((item, index) => {
+                                            const breakdown = getFeeScheduleBreakdown(
+                                                item.chargeTypeName,
+                                                item.frequency,
+                                                Number(item.amount)
+                                            );
 
-                                                <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                                                    {item.chargeTypeName}
-                                                </TableCell>
+                                            return (
+                                                <TableRow
+                                                    className="border-slate-100 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-950/40"
+                                                    key={index}
+                                                >
+                                                    <TableCell className="font-medium text-slate-600 dark:text-slate-400 align-top pt-3.5">
+                                                        {index + 1}
+                                                    </TableCell>
 
-                                                <TableCell className="text-right font-bold text-[#556043]">
-                                                    ₹ {Number(item.amount).toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
+                                                        <div className="space-y-1.5 py-1">
+                                                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                                {item.chargeTypeName}
+                                                            </div>
+                                                            {breakdown.scheduleType === "9_MONTH_TUITION" && (
+                                                                <div className="rounded-lg border border-[#556043]/20 bg-[#556043]/5 p-2 text-xs text-[#556043] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                                                                    <div className="font-semibold flex items-center gap-1.5">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#556043]"></span>
+                                                                        9-Month Installment Schedule:
+                                                                    </div>
+                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {breakdown.scheduleType === "3_TERM_TUITION" && (
+                                                                <div className="rounded-lg border border-purple-200 bg-purple-50/60 p-2 text-xs text-purple-900 dark:border-purple-800/40 dark:bg-purple-950/20 dark:text-purple-300">
+                                                                    <div className="font-semibold flex items-center gap-1.5">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-purple-600"></span>
+                                                                        3-Term Direct Schedule:
+                                                                    </div>
+                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
+                                                                <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-2 text-xs text-blue-900 dark:border-blue-800/40 dark:bg-blue-950/20 dark:text-blue-300">
+                                                                    <div className="font-semibold flex items-center gap-1.5">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-600"></span>
+                                                                        10-Month Transport Schedule:
+                                                                    </div>
+                                                                    <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell className="text-center align-top pt-3.5">
+                                                        <Badge variant="outline" className="text-[10px] font-semibold uppercase">
+                                                            {item.frequency}
+                                                        </Badge>
+                                                    </TableCell>
+
+                                                    <TableCell className="text-right font-bold text-[#556043] align-top pt-3.5">
+                                                        ₹ {Number(item.amount).toLocaleString()}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>

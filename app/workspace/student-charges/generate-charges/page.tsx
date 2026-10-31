@@ -779,6 +779,14 @@ export default function FeeGenerationPage() {
                             }`}>
                             {m.periodName}
                           </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">
+                            {m.academicMonthNumber === 1 && "Term 1 • Tuition M1"}
+                            {m.academicMonthNumber === 4 && "Term 2 • Tuition M4"}
+                            {m.academicMonthNumber === 7 && "Term 3 • Tuition M7"}
+                            {m.academicMonthNumber === 9 && "Final 9th Tuition"}
+                            {m.academicMonthNumber === 10 && "Transport only (Tuition ₹0)"}
+                            {m.academicMonthNumber !== 1 && m.academicMonthNumber !== 4 && m.academicMonthNumber !== 7 && m.academicMonthNumber !== 9 && m.academicMonthNumber !== 10 && `Tuition Month ${m.academicMonthNumber}`}
+                          </p>
                         </div>
 
                         {/* Bottom: Status Tag */}
@@ -833,11 +841,29 @@ export default function FeeGenerationPage() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                           {estimatedByType.map(([name, amount]) => {
                             const count = preview.chargesBreakdown[name] ?? 0;
-                            const freq = preview.frequencyBreakdown[name] || "MONTHLY";
+                            const freq = String(preview.frequencyBreakdown[name] || "MONTHLY");
                             return (
                               <tr key={name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                                 <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
-                                  {name}
+                                  <div className="space-y-0.5">
+                                    <div>{name}</div>
+                                    {name.toLowerCase().includes("tuition") && (
+                                      <div className="text-[11px] font-normal text-[#556043] dark:text-[#8b9478]">
+                                        {freq === "QUARTERLY"
+                                          ? `3-Term Schedule: Term ${Math.ceil(preview.targetAcademicMonth / 3)} of 3`
+                                          : preview.targetAcademicMonth <= 8
+                                          ? `9-Month Installment Schedule: Month ${preview.targetAcademicMonth} of 9 (Approx ${formatCurrency(count > 0 ? Math.round(amount / count) : 0)} / student)`
+                                          : preview.targetAcademicMonth === 9
+                                          ? `9-Month Installment Schedule: Month 9 of 9 (Final remainder balance • Approx ${formatCurrency(count > 0 ? Math.round(amount / count) : 0)} / student)`
+                                          : `Tuition Complete (₹0 scheduled for Month 10)`}
+                                      </div>
+                                    )}
+                                    {name.toLowerCase().includes("transport") && (
+                                      <div className="text-[11px] font-normal text-blue-700 dark:text-blue-400">
+                                        10-Month Transport Schedule: Month {preview.targetAcademicMonth} of 10 (June to March) • Editable at collection desk
+                                      </div>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-2.5 text-center">
                                   <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">

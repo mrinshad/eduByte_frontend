@@ -259,7 +259,7 @@ export type FeeGenerationPreviewData = {
   targetMonthStudents?: TargetMonthStudentItem[];
   classWiseStudents?: ClassWiseStudentItem[];
   chargesBreakdown: Record<string, number>;
-  frequencyBreakdown: Record<string, number>;
+  frequencyBreakdown: Record<string, string | number>;
   financialSummary: {
     byChargeType: Record<string, number>;
     total: number;

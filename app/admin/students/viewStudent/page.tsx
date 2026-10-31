@@ -48,6 +48,7 @@ import {
   type StudentCcaCharge,
 } from "@/lib/services/cca"
 import { individualRelieveStudent } from "@/lib/services/studentRelieving"
+import { getFeeScheduleBreakdown } from "@/lib/feeScheduleHelper"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -666,19 +667,47 @@ export default function Page() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {feeData.enrollmentCharges.map((charge, idx) => (
-                        <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
-                          <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400">{idx + 1}</TableCell>
-                          <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100">{charge.chargeTypeName}</TableCell>
-                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">
-                            <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">{charge.category || "—"}</TableCell>
-                          <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100">
-                            {formatCurrency(charge.amount)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {feeData.enrollmentCharges.map((charge, idx) => {
+                        const breakdown = getFeeScheduleBreakdown(
+                          charge.chargeTypeName,
+                          charge.frequency,
+                          Number(charge.amount),
+                          charge.category || undefined
+                        );
+
+                        return (
+                          <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                            <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400 align-top pt-3">{idx + 1}</TableCell>
+                            <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100">
+                              <div className="space-y-1">
+                                <div>{charge.chargeTypeName}</div>
+                                {breakdown.scheduleType === "9_MONTH_TUITION" && (
+                                  <div className="text-[10px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
+                                    {breakdown.summaryText}
+                                  </div>
+                                )}
+                                {breakdown.scheduleType === "3_TERM_TUITION" && (
+                                  <div className="text-[10px] text-purple-700 dark:text-purple-400 font-normal leading-relaxed">
+                                    {breakdown.summaryText}
+                                  </div>
+                                )}
+                                {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
+                                  <div className="text-[10px] text-blue-700 dark:text-blue-400 font-normal leading-relaxed">
+                                    {breakdown.summaryText}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 dark:text-slate-400 align-top pt-3">
+                              <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 dark:text-slate-400 align-top pt-3">{charge.category || "—"}</TableCell>
+                            <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100 align-top pt-3">
+                              {formatCurrency(charge.amount)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </InfoSection>
