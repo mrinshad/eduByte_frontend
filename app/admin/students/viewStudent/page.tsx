@@ -716,7 +716,7 @@ export default function Page() {
 
                   {/* Dedicated Fee Installment Breakdown Panel */}
                   {(() => {
-                    const schedulePlan = calculateStudentCompleteSchedule(feeData.enrollmentCharges);
+                    const schedulePlan = calculateStudentCompleteSchedule(feeData.enrollmentCharges, feeData.charges);
                     if (!schedulePlan.hasTuition && !schedulePlan.hasTransport) return null;
 
                     return (
@@ -874,19 +874,41 @@ export default function Page() {
                                       {formatCurrency(period.totalScheduled)}
                                     </TableCell>
                                     <TableCell className="pr-4 pl-4 py-2.5">
-                                      {period.isRemainder ? (
-                                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px]">
-                                          Final 9th Installment (Remainder)
-                                        </Badge>
-                                      ) : period.isTuitionFree ? (
-                                        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px]">
-                                          {schedulePlan.scheduleType === "3_TERM_TUITION" ? "Covered in Term 3 (No 4th Quarter)" : "Tuition Complete (₹0)"}
-                                        </Badge>
-                                      ) : (
-                                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                                          {period.notes}
-                                        </span>
-                                      )}
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        {period.generatedStatus === "PAID" && (
+                                          <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px] font-semibold">
+                                            ✓ Paid ({formatCurrency(period.actualPaidAmount || period.totalScheduled)})
+                                          </Badge>
+                                        )}
+                                        {period.generatedStatus === "PARTIAL" && (
+                                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px] font-semibold">
+                                            Partial (Paid {formatCurrency(period.actualPaidAmount || 0)})
+                                          </Badge>
+                                        )}
+                                        {period.generatedStatus === "OVERDUE" && (
+                                          <Badge variant="outline" className="border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-300 text-[10px] font-semibold">
+                                            Overdue ({formatCurrency(period.actualBilledAmount || period.totalScheduled)})
+                                          </Badge>
+                                        )}
+                                        {period.generatedStatus === "PENDING" && (
+                                          <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 text-[10px] font-semibold">
+                                            Pending ({formatCurrency(period.actualBilledAmount || period.totalScheduled)})
+                                          </Badge>
+                                        )}
+                                        {period.isRemainder ? (
+                                          <Badge variant="outline" className="border-amber-300/80 bg-amber-50/60 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px]">
+                                            Final 9th Installment
+                                          </Badge>
+                                        ) : period.isTuitionFree ? (
+                                          <Badge variant="outline" className="border-emerald-300/80 bg-emerald-50/60 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px]">
+                                            {schedulePlan.scheduleType === "3_TERM_TUITION" ? "Covered in Term 3 (No 4th Quarter)" : "Tuition Complete (₹0)"}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {period.notes}
+                                          </span>
+                                        )}
+                                      </div>
                                     </TableCell>
                                   </TableRow>
                                 );
