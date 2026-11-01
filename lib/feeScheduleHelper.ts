@@ -117,8 +117,16 @@ export function getFeeScheduleBreakdown(
   // 2. 3-Term Quarterly Tuition
   if (isTuition && freq === "QUARTERLY") {
     const rawTerm = amount / 3;
-    const roundedTerm = Math.ceil(rawTerm / 100) * 100;
-    const remainder = amount - (roundedTerm * 2);
+    let roundedTerm = Math.ceil(rawTerm / 100) * 100;
+    let remainder = amount - (roundedTerm * 2);
+
+    if (remainder < 0) {
+      while (remainder < 0 && roundedTerm > 0) {
+        roundedTerm -= 100;
+        remainder = amount - (roundedTerm * 2);
+      }
+    }
+
     const least = Math.min(remainder, roundedTerm);
     const regular = Math.max(remainder, roundedTerm);
 
@@ -139,11 +147,21 @@ export function getFeeScheduleBreakdown(
 
   // 2. 9-Month Tuition (ANNUAL or MONTHLY)
   if (isTuition) {
-    if (freq === "ANNUAL" || (freq === "MONTHLY" && amount >= 5000)) {
+    const isAnnualTuition = freq === "ANNUAL" || (freq === "MONTHLY" && ((chargeTypeName || "").toLowerCase().includes("annual") || amount >= 15000));
+    if (isAnnualTuition) {
       // Annual lump sum divided into 9 rounded installments
       const rawMonthly = amount / 9;
-      const roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
-      const remainder = amount - (roundedMonthly * 8);
+      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
+      let baseSum8 = roundedMonthly * 8;
+      let remainder = amount - baseSum8;
+
+      if (remainder < 0) {
+        while (remainder < 0 && roundedMonthly > 0) {
+          roundedMonthly -= 100;
+          baseSum8 = roundedMonthly * 8;
+          remainder = amount - baseSum8;
+        }
+      }
 
       let m1: number, regular: number, m9: number;
       if (remainder <= roundedMonthly) {
@@ -156,23 +174,30 @@ export function getFeeScheduleBreakdown(
         m9 = roundedMonthly;
       }
 
+      const isCaseB = remainder > roundedMonthly;
       return {
         isTuition: true,
         isTransport: false,
         frequency: freq,
         scheduleType: "9_MONTH_TUITION",
         badgeLabel: "9 Monthly Installments",
-        summaryText: remainder <= roundedMonthly
-          ? `Months 1–8: ₹${regular.toLocaleString("en-IN")}/mo • Month 9: ₹${m9.toLocaleString("en-IN")} (Remainder) • Month 10: ₹0 (Complete)`
-          : `Month 1: ₹${m1.toLocaleString("en-IN")} • Months 2–9: ₹${regular.toLocaleString("en-IN")}/mo • Month 10: ₹0 (Complete)`,
-        installments: [
-          { label: "Months 1–8", amount: regular, note: `₹${regular.toLocaleString("en-IN")} / month` },
-          { label: "Month 9 (February)", amount: m9, note: `₹${m9.toLocaleString("en-IN")} (Final balance)` },
-          { label: "Month 10 (March)", amount: 0, note: "₹0 (Tuition completely paid off)" },
-        ],
+        summaryText: isCaseB
+          ? `Month 1: ₹${m1.toLocaleString("en-IN")} • Months 2–9: ₹${regular.toLocaleString("en-IN")}/mo • Month 10: ₹0 (Complete)`
+          : `Months 1–8: ₹${regular.toLocaleString("en-IN")}/mo • Month 9: ₹${m9.toLocaleString("en-IN")} (Remainder) • Month 10: ₹0 (Complete)`,
+        installments: isCaseB
+          ? [
+              { label: "Month 1 (June)", amount: m1, note: `₹${m1.toLocaleString("en-IN")} (Initial balance)` },
+              { label: "Months 2–9", amount: regular, note: `₹${regular.toLocaleString("en-IN")} / month` },
+              { label: "Month 10 (March)", amount: 0, note: "₹0 (Tuition completely paid off)" },
+            ]
+          : [
+              { label: "Months 1–8", amount: regular, note: `₹${regular.toLocaleString("en-IN")} / month` },
+              { label: "Month 9 (February)", amount: m9, note: `₹${m9.toLocaleString("en-IN")} (Final balance)` },
+              { label: "Month 10 (March)", amount: 0, note: "₹0 (Tuition completely paid off)" },
+            ],
       };
     } else {
-      // Flat monthly tuition rate (e.g. ₹2,000/mo) collected across 9 months
+      // Flat monthly tuition rate (e.g. ₹2,000/mo, ₹6,000/mo) collected across 9 months
       const annualTotal = amount * 9;
       return {
         isTuition: true,
@@ -293,8 +318,16 @@ export function calculateStudentCompleteSchedule(
       scheduleType = "3_TERM_TUITION";
       totalAnnualTuition = rawAmt;
       const rawTerm = rawAmt / 3;
-      const roundedTerm = Math.ceil(rawTerm / 100) * 100;
-      const remainder = rawAmt - (roundedTerm * 2);
+      let roundedTerm = Math.ceil(rawTerm / 100) * 100;
+      let remainder = rawAmt - (roundedTerm * 2);
+
+      if (remainder < 0) {
+        while (remainder < 0 && roundedTerm > 0) {
+          roundedTerm -= 100;
+          remainder = rawAmt - (roundedTerm * 2);
+        }
+      }
+
       const least = Math.min(remainder, roundedTerm);
       const regular = Math.max(remainder, roundedTerm);
 
@@ -330,13 +363,22 @@ export function calculateStudentCompleteSchedule(
           note: "Covers through March 31 • Month 10 has no 4th term",
         },
       ];
-    } else if (freq === "ANNUAL" || (freq === "MONTHLY" && rawAmt >= 5000)) {
+    } else if (freq === "ANNUAL" || (freq === "MONTHLY" && (((tuitionCharge.chargeTypeName || tuitionCharge.chargeType || "").toLowerCase().includes("annual")) || rawAmt >= 15000))) {
       tuitionFrequency = freq === "ANNUAL" ? "ANNUAL" : "MONTHLY";
       scheduleType = "9_MONTH_TUITION";
       totalAnnualTuition = rawAmt;
       const rawMonthly = rawAmt / 9;
-      const roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
-      const remainder = rawAmt - (roundedMonthly * 8);
+      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
+      let baseSum8 = roundedMonthly * 8;
+      let remainder = rawAmt - baseSum8;
+
+      if (remainder < 0) {
+        while (remainder < 0 && roundedMonthly > 0) {
+          roundedMonthly -= 100;
+          baseSum8 = roundedMonthly * 8;
+          remainder = rawAmt - baseSum8;
+        }
+      }
 
       let m1: number, regular: number, m9: number;
       if (remainder <= roundedMonthly) {
@@ -354,7 +396,7 @@ export function calculateStudentCompleteSchedule(
 
       formulaSummary = remainder <= roundedMonthly
         ? `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided across 9 months: Months 1–8 @ ₹${regular.toLocaleString("en-IN")}/mo, Month 9 @ ₹${m9.toLocaleString("en-IN")} (final balance), Month 10 @ ₹0 (Tuition Complete).`
-        : `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided across 9 months: Month 1 @ ₹${m1.toLocaleString("en-IN")}, Months 2–9 @ ₹${regular.toLocaleString("en-IN")}/mo, Month 10 @ ₹0 (Tuition Complete).`;
+        : `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided across 9 months: Month 1 @ ₹${m1.toLocaleString("en-IN")} (initial balance), Months 2–9 @ ₹${regular.toLocaleString("en-IN")}/mo, Month 10 @ ₹0 (Tuition Complete).`;
     } else if (freq === "ONE_TIME") {
       tuitionFrequency = "ONE_TIME";
       scheduleType = "STANDARD";
@@ -443,11 +485,21 @@ export function calculateStudentCompleteSchedule(
         notes = `Tuition covered under ${currentTerm}`;
       }
     } else if (scheduleType === "9_MONTH_TUITION") {
-      if (m <= 8) {
+      const isCaseB = totalAnnualTuition > 0 && (totalAnnualTuition - monthlyTuitionRate * 8) > monthlyTuitionRate;
+      if (m === 1) {
+        if (isCaseB) {
+          tuitionAmount = totalAnnualTuition - (monthlyTuitionRate * 8);
+          notes = "Month 1 Installment (Initial Balance)";
+          isRemainder = true;
+        } else {
+          tuitionAmount = monthlyTuitionRate;
+          notes = `Installment 1 of 9`;
+        }
+      } else if (m <= 8) {
         tuitionAmount = monthlyTuitionRate;
         notes = `Installment ${m} of 9`;
       } else if (m === 9) {
-        if (finalRemainderTuition > 0) {
+        if (!isCaseB && finalRemainderTuition > 0) {
           tuitionAmount = finalRemainderTuition;
           notes = "Final 9th Installment (Remainder Balance)";
           isRemainder = true;

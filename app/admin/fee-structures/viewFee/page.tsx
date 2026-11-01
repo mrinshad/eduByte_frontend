@@ -476,7 +476,8 @@ export default function Page() {
                                             const breakdown = getFeeScheduleBreakdown(
                                                 item.chargeTypeName,
                                                 item.frequency,
-                                                Number(item.amount)
+                                                Number(item.amount),
+                                                item.category || undefined
                                             );
 
                                             return (
