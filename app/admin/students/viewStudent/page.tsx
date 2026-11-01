@@ -717,7 +717,7 @@ export default function Page() {
                   {/* Dedicated Fee Installment Breakdown Panel */}
                   {(() => {
                     const schedulePlan = calculateStudentCompleteSchedule(feeData.enrollmentCharges, feeData.charges);
-                    if (!schedulePlan.hasTuition && !schedulePlan.hasTransport) return null;
+                    if (!schedulePlan.hasTuition && !schedulePlan.hasTransport && schedulePlan.totalAnnualOther === 0) return null;
 
                     return (
                       <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5 space-y-4">

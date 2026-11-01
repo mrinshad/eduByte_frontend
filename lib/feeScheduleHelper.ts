@@ -41,7 +41,7 @@ export interface StudentInstallmentPeriod {
 export interface StudentCompleteSchedule {
   hasTuition: boolean;
   hasTransport: boolean;
-  tuitionFrequency: "MONTHLY" | "QUARTERLY" | "ANNUAL" | null;
+  tuitionFrequency: "MONTHLY" | "QUARTERLY" | "ANNUAL" | "ONE_TIME" | null;
   scheduleType: "9_MONTH_TUITION" | "3_TERM_TUITION" | "STANDARD";
   totalAnnualTuition: number;
   totalAnnualTransport: number;
@@ -99,7 +99,22 @@ export function getFeeScheduleBreakdown(
   const freq = (frequency || "").toUpperCase();
   const amount = Number(totalAmount) || 0;
 
-  // 1. 3-Term Quarterly Tuition
+  // 1. One-Time Head (Takes absolute precedence: any head configured as ONE_TIME bills once)
+  if (freq === "ONE_TIME") {
+    return {
+      isTuition,
+      isTransport,
+      frequency: "ONE_TIME",
+      scheduleType: "STANDARD",
+      badgeLabel: "One-Time Fee",
+      summaryText: `One-Time fee of ₹${amount.toLocaleString("en-IN")} • Billed once in the academic year`,
+      installments: [
+        { label: "One-Time", amount, note: "Billed once during the academic year" },
+      ],
+    };
+  }
+
+  // 2. 3-Term Quarterly Tuition
   if (isTuition && freq === "QUARTERLY") {
     const rawTerm = amount / 3;
     const roundedTerm = Math.ceil(rawTerm / 100) * 100;
@@ -259,7 +274,7 @@ export function calculateStudentCompleteSchedule(
   const hasTuition = !!tuitionCharge;
   const hasTransport = !!transportCharge;
 
-  let tuitionFrequency: "MONTHLY" | "QUARTERLY" | "ANNUAL" | null = null;
+  let tuitionFrequency: "MONTHLY" | "QUARTERLY" | "ANNUAL" | "ONE_TIME" | null = null;
   let scheduleType: "9_MONTH_TUITION" | "3_TERM_TUITION" | "STANDARD" = "STANDARD";
   let totalAnnualTuition = 0;
   let monthlyTuitionRate = 0;
@@ -340,6 +355,12 @@ export function calculateStudentCompleteSchedule(
       formulaSummary = remainder <= roundedMonthly
         ? `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided across 9 months: Months 1–8 @ ₹${regular.toLocaleString("en-IN")}/mo, Month 9 @ ₹${m9.toLocaleString("en-IN")} (final balance), Month 10 @ ₹0 (Tuition Complete).`
         : `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided across 9 months: Month 1 @ ₹${m1.toLocaleString("en-IN")}, Months 2–9 @ ₹${regular.toLocaleString("en-IN")}/mo, Month 10 @ ₹0 (Tuition Complete).`;
+    } else if (freq === "ONE_TIME") {
+      tuitionFrequency = "ONE_TIME";
+      scheduleType = "STANDARD";
+      totalAnnualTuition = rawAmt;
+      monthlyTuitionRate = 0;
+      formulaSummary = `One-Time Tuition Fee of ₹${rawAmt.toLocaleString("en-IN")} billed once in Month 1 (June).`;
     } else {
       // Flat monthly tuition rate (e.g. ₹2,000/mo) across 9 months
       tuitionFrequency = "MONTHLY";
@@ -357,9 +378,16 @@ export function calculateStudentCompleteSchedule(
 
   if (transportCharge) {
     const rawAmt = Number(transportCharge.finalAmount ?? transportCharge.amount ?? 0);
-    monthlyTransportRate = rawAmt;
-    totalAnnualTransport = rawAmt * 10;
-    transportSummary = `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month active across all 10 academic months (June through March = Total ₹${totalAnnualTransport.toLocaleString("en-IN")}). Cashier can adjust at collection counter if student visits relatives.`;
+    const freq = (transportCharge.frequency || "").toUpperCase();
+    if (freq === "ONE_TIME") {
+      monthlyTransportRate = 0;
+      totalAnnualTransport = rawAmt;
+      transportSummary = `One-Time Transport Fee: ₹${rawAmt.toLocaleString("en-IN")} billed once in Month 1 (June).`;
+    } else {
+      monthlyTransportRate = rawAmt;
+      totalAnnualTransport = rawAmt * 10;
+      transportSummary = `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month active across all 10 academic months (June through March = Total ₹${totalAnnualTransport.toLocaleString("en-IN")}). Cashier can adjust at collection counter if student visits relatives.`;
+    }
   }
 
   // Calculate Other heads (One-time, Annual, or Monthly)
@@ -433,11 +461,19 @@ export function calculateStudentCompleteSchedule(
         isTuitionFree = true;
       }
     } else if (hasTuition) {
-      tuitionAmount = monthlyTuitionRate;
-      notes = `Monthly Tuition`;
+      if (tuitionFrequency === "ONE_TIME") {
+        tuitionAmount = m === 1 ? totalAnnualTuition : 0;
+        notes = m === 1 ? "One-Time Tuition Fee" : "Tuition Billed in Month 1";
+        if (m > 1) isTuitionFree = true;
+      } else {
+        tuitionAmount = monthlyTuitionRate;
+        notes = `Monthly Tuition`;
+      }
     }
 
-    const transportAmount = hasTransport ? monthlyTransportRate : 0;
+    const transportAmount = hasTransport
+      ? ((transportCharge.frequency || "").toUpperCase() === "ONE_TIME" ? (m === 1 ? totalAnnualTransport : 0) : monthlyTransportRate)
+      : 0;
 
     // Calculate other non-tuition, non-transport heads
     let otherAmount = 0;
