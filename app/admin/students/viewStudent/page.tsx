@@ -1127,10 +1127,15 @@ export default function Page() {
                   const paid = parseFloat(c.paidAmount || "0");
                   const effectivePayable = Math.max(final, paid);
                   const balance = Math.max(0, final - paid);
+                  const feeDescription =
+                    c.description ||
+                    (c.periodMonth && c.periodMonth >= 1 && c.periodMonth <= 12
+                      ? `${monthNames[c.periodMonth - 1]} Fee`
+                      : "Fee Charge");
                   group.items.push({
                     type: "FEE",
                     id: c.id,
-                    description: c.description,
+                    description: feeDescription,
                     amount: final,
                     paid,
                     balance,
@@ -1211,7 +1216,7 @@ export default function Page() {
                     if (a.type !== b.type) {
                       return a.type === "FEE" ? -1 : 1;
                     }
-                    return a.description.localeCompare(b.description);
+                    return (a.description || "").localeCompare(b.description || "");
                   });
                 }
 
@@ -1221,7 +1226,7 @@ export default function Page() {
                     if (b.sortKey === 0) return 1;
                     return a.sortKey - b.sortKey;
                   }
-                  return a.monthLabel.localeCompare(b.monthLabel);
+                  return (a.monthLabel || "").localeCompare(b.monthLabel || "");
                 });
 
                 return (
@@ -1311,7 +1316,7 @@ export default function Page() {
                                 <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50">
                                   <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span>{item.description}</span>
+                                      <span>{item.description || "Fee Charge"}</span>
                                       {item.paid > item.amount && (
                                         <Badge
                                           variant="outline"

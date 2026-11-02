@@ -20,7 +20,8 @@ import {
     Activity,
     Plus,
     Sparkles,
-    CalendarIcon
+    CalendarIcon,
+    AlertTriangle
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -235,7 +236,8 @@ export default function Page() {
     const [selectedNewCCAIds, setSelectedNewCCAIds] = useState<string[]>([]);
     const [isClearFieldsDialogOpen, setIsClearFieldsDialogOpen] = useState(false);
     const [loadingChargeTypes, setLoadingChargeTypes] = useState(false);
-    const [autoGenerateFees, setAutoGenerateFees] = useState(true);
+    const [autoGenerateFees, setAutoGenerateFees] = useState(false);
+    const [isImmediateFeeConfirmOpen, setIsImmediateFeeConfirmOpen] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [loadingStudent, setLoadingStudent] = useState(false);
@@ -736,26 +738,14 @@ export default function Page() {
         return fallback;
     };
 
-    // ── Submit ────────────────────────────────────────────────────────────────
-    const handleSubmit = async () => {
-        const { valid: topValid, errors: topErrors } = validateTopFields();
-        setFieldErrors(topErrors);
+    const cutoffMonthName = useMemo(() => {
+        const now = new Date();
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        return nextMonth.toLocaleString("en-IN", { month: "long", year: "numeric" });
+    }, []);
 
-        const { valid: itemsValid, errors: rowErrors } = validateFeeItems();
-        setItemErrors(rowErrors);
-
-        if (!topValid) {
-            const firstError = Object.values(topErrors)[0];
-            toast.error(firstError ?? "Please complete the required fields");
-            return;
-        }
-
-        if (!itemsValid) {
-            const firstError = Object.values(rowErrors)[0];
-            toast.error(firstError ?? "Please fix the highlighted fee items");
-            return;
-        }
-
+    // ── Execute Submit ─────────────────────────────────────────────────────────
+    const executeSubmit = async () => {
         try {
             setSubmitting(true);
 
@@ -851,6 +841,33 @@ export default function Page() {
             toast.error(getErrorMessage(error, fallback));
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+    const handleSubmit = async () => {
+        const { valid: topValid, errors: topErrors } = validateTopFields();
+        setFieldErrors(topErrors);
+
+        const { valid: itemsValid, errors: rowErrors } = validateFeeItems();
+        setItemErrors(rowErrors);
+
+        if (!topValid) {
+            const firstError = Object.values(topErrors)[0];
+            toast.error(firstError ?? "Please complete the required fields");
+            return;
+        }
+
+        if (!itemsValid) {
+            const firstError = Object.values(rowErrors)[0];
+            toast.error(firstError ?? "Please fix the highlighted fee items");
+            return;
+        }
+
+        if (autoGenerateFees) {
+            setIsImmediateFeeConfirmOpen(true);
+        } else {
+            await executeSubmit();
         }
     };
 
@@ -1909,6 +1926,72 @@ export default function Page() {
                             className="!text-white font-medium shadow-sm hover:!bg-[#5b624f]"
                         >
                             Done ({selectedNewCCAIds.length})
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Confirmation Dialog for Immediate Fee Generation */}
+            <AlertDialog open={isImmediateFeeConfirmOpen} onOpenChange={setIsImmediateFeeConfirmOpen}>
+                <AlertDialogContent className="max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+                    <AlertDialogHeader>
+                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
+                            <Sparkles className="h-5 w-5" />
+                            <AlertDialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                                Immediate Fee Generation Notice
+                            </AlertDialogTitle>
+                        </div>
+                        <AlertDialogDescription asChild>
+                            <div className="text-sm text-slate-600 dark:text-slate-400 space-y-3 pt-1">
+                                <p>
+                                    You have checked <strong className="text-slate-900 dark:text-slate-200 font-semibold">Generate fees immediately</strong> for{" "}
+                                    <span className="text-[#6D755F] font-semibold">{fullStudentData?.studentName || "this student"}</span>.
+                                </p>
+                                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+                                    <div className="font-semibold flex items-center gap-1.5">
+                                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                                        <span>Fees Will Be Generated Up To This Period:</span>
+                                    </div>
+                                    <p className="text-slate-800 dark:text-slate-200">
+                                        All scheduled fee installments from the start of the academic year up to{" "}
+                                        <strong className="underline font-bold text-amber-950 dark:text-amber-100">{cutoffMonthName}</strong> will be generated immediately into the student&apos;s ledger upon submission.
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-800/50 text-xs space-y-1">
+                                    <div className="flex justify-between text-slate-500">
+                                        <span>Admission / Roll No:</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {fullStudentData?.admissionNumber || "—"} {rollNumber ? `(Roll: ${rollNumber})` : ""}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                        <span>Fee Structure:</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {fullFeeStructureData?.name || "Selected Structure"} ({editableFeeItems.length} fee items)
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 italic">
+                                    If you want fees to be generated month-by-month via regular batch billing instead, click Cancel and untick &ldquo;Generate fees immediately&rdquo;.
+                                </p>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-4 gap-2">
+                        <AlertDialogCancel
+                            onClick={() => setIsImmediateFeeConfirmOpen(false)}
+                            className="rounded-xl border-slate-300 dark:border-slate-700"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                setIsImmediateFeeConfirmOpen(false);
+                                executeSubmit();
+                            }}
+                            className="rounded-xl bg-[#6D755F] text-white hover:bg-[#5b624f] shadow-sm font-medium"
+                        >
+                            Confirm & Generate Fees
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

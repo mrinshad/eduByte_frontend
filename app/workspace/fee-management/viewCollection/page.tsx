@@ -12,6 +12,7 @@ import {
   Loader2,
   Trophy,
   Pencil,
+  Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -34,6 +35,7 @@ import {
   getPaymentMethodAccounts,
   collectFee,
   updateChargeAmount,
+  deleteStudentCharge,
   type EnrollmentDetails,
   type StudentCharge,
   type Fine,
@@ -306,6 +308,11 @@ export default function Page() {
   const [isUpdatingCharge, setIsUpdatingCharge] = useState<boolean>(false)
   const [editChargeError, setEditChargeError] = useState<string | null>(null)
 
+  // Delete charge state
+  const [deletingCharge, setDeletingCharge] = useState<StudentCharge | null>(null)
+  const [isDeletingCharge, setIsDeletingCharge] = useState<boolean>(false)
+  const [deleteChargeError, setDeleteChargeError] = useState<string | null>(null)
+
   // Advance fee generation modal state
   const [isManualGenerateModalOpen, setIsManualGenerateModalOpen] = useState(false)
 
@@ -518,6 +525,38 @@ export default function Page() {
       setEditChargeError(err instanceof Error ? err.message : "Failed to update charge amount.")
     } finally {
       setIsUpdatingCharge(false)
+    }
+  }
+
+  function handleOpenDeleteCharge(charge: StudentCharge) {
+    setDeletingCharge(charge)
+    setDeleteChargeError(null)
+  }
+
+  async function handleConfirmDeleteCharge() {
+    if (!deletingCharge) return
+    try {
+      setIsDeletingCharge(true)
+      setDeleteChargeError(null)
+
+      await deleteStudentCharge(deletingCharge.id)
+
+      setCharges((prev) => prev.filter((c) => c.id !== deletingCharge.id))
+
+      setSelected((prev) => {
+        const key = chargeKey(deletingCharge.id)
+        if (!(key in prev)) return prev
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+
+      toast.success(`Deleted ${deletingCharge.chargeType} (${formatCurrency(deletingCharge.finalAmount)})`)
+      setDeletingCharge(null)
+    } catch (err) {
+      setDeleteChargeError(err instanceof Error ? err.message : "Failed to delete fee record.")
+    } finally {
+      setIsDeletingCharge(false)
     }
   }
 
@@ -958,17 +997,32 @@ export default function Page() {
                                   <div className="flex items-center justify-end gap-1.5">
                                     <span>{formatCurrency(charge.finalAmount)}</span>
                                     {!isPaid && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleOpenEditCharge(charge)
-                                        }}
-                                        title="Edit Charge Amount"
-                                        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </button>
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleOpenEditCharge(charge)
+                                          }}
+                                          title="Edit Charge Amount"
+                                          className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                        >
+                                          <Pencil className="h-3 w-3" />
+                                        </button>
+                                        {(Number(charge.paidAmount) || 0) === 0 && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleOpenDeleteCharge(charge)
+                                            }}
+                                            title="Delete Fee Record"
+                                            className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 </td>
@@ -1486,6 +1540,99 @@ export default function Page() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Fee Confirmation Modal */}
+      <Dialog
+        open={deletingCharge !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingCharge) {
+            setDeletingCharge(null)
+            setDeleteChargeError(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 mb-1">
+              <Trash2 className="h-5 w-5" />
+              <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                Delete Fee Record
+              </DialogTitle>
+            </div>
+            <DialogDescription asChild>
+              <div className="text-sm text-slate-600 dark:text-slate-400 space-y-3 pt-1">
+                <p>
+                  Are you sure you want to delete this fee record for{" "}
+                  <strong className="text-slate-900 dark:text-slate-200 font-semibold">
+                    {enrollmentDetails?.student?.studentName || "this student"}
+                  </strong>?
+                </p>
+                <div className="rounded-xl border border-rose-100 bg-rose-50/50 dark:border-rose-900/40 dark:bg-rose-950/20 p-3.5 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Fee Item:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {deletingCharge?.chargeType}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Period:</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {deletingCharge?.periodMonth && deletingCharge?.periodYear
+                        ? new Date(deletingCharge.periodYear, deletingCharge.periodMonth - 1, 1).toLocaleString("default", { month: "long", year: "numeric" })
+                        : "No Period"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Amount to Delete:</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400">
+                      {deletingCharge ? formatCurrency(deletingCharge.finalAmount) : "₹0.00"}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 italic">
+                  This will permanently remove the fee from the student&apos;s ledger for this month. This action cannot be undone.
+                </p>
+                {deleteChargeError && (
+                  <div className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                    {deleteChargeError}
+                  </div>
+                )}
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeletingCharge(null)
+                setDeleteChargeError(null)
+              }}
+              disabled={isDeletingCharge}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDeleteCharge}
+              disabled={isDeletingCharge}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium shadow-sm"
+            >
+              {isDeletingCharge ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Fee Record"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {enrollmentId && (
         <ManualFeeGenerationModal
