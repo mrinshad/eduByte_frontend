@@ -88,6 +88,14 @@ export const ACADEMIC_MONTH_INFO: Array<{ academicMonth: number; monthName: stri
   { academicMonth: 10, monthName: "March", calendarMonth: 3 },
 ];
 
+export const KNOWN_OFFICIAL_TERMS: Record<number, [number, number, number]> = {
+  26500: [9500, 8500, 8500],
+  25500: [8500, 8500, 8500],
+  24000: [8000, 8000, 8000],
+  21000: [8000, 8000, 5000],
+  20000: [8000, 8000, 4000],
+};
+
 export function getFeeScheduleBreakdown(
   chargeTypeName: string,
   frequency: string,
@@ -116,19 +124,25 @@ export function getFeeScheduleBreakdown(
 
   // 2. 3-Term Quarterly Tuition
   if (isTuition && freq === "QUARTERLY") {
-    const rawTerm = amount / 3;
-    let roundedTerm = Math.ceil(rawTerm / 100) * 100;
-    let remainder = amount - (roundedTerm * 2);
+    let t1: number, t2: number, t3: number;
+    if (KNOWN_OFFICIAL_TERMS[amount]) {
+      [t1, t2, t3] = KNOWN_OFFICIAL_TERMS[amount];
+    } else {
+      const rawTerm = amount / 3;
+      let roundedTerm = Math.ceil(rawTerm / 100) * 100;
+      let remainder = amount - (roundedTerm * 2);
 
-    if (remainder < 0) {
-      while (remainder < 0 && roundedTerm > 0) {
-        roundedTerm -= 100;
-        remainder = amount - (roundedTerm * 2);
+      if (remainder < 0) {
+        while (remainder < 0 && roundedTerm > 0) {
+          roundedTerm -= 100;
+          remainder = amount - (roundedTerm * 2);
+        }
       }
-    }
 
-    const least = Math.min(remainder, roundedTerm);
-    const regular = Math.max(remainder, roundedTerm);
+      t1 = Math.min(remainder, roundedTerm);
+      t2 = Math.max(remainder, roundedTerm);
+      t3 = t2;
+    }
 
     return {
       isTuition: true,
@@ -136,11 +150,11 @@ export function getFeeScheduleBreakdown(
       frequency: "QUARTERLY",
       scheduleType: "3_TERM_TUITION",
       badgeLabel: "3 Terms (Direct ÷ 3)",
-      summaryText: `Term 1: ₹${least.toLocaleString("en-IN")} (least amount) • Term 2: ₹${regular.toLocaleString("en-IN")} • Term 3: ₹${regular.toLocaleString("en-IN")} (Total: ₹${amount.toLocaleString("en-IN")})`,
+      summaryText: `Term 1: ₹${t1.toLocaleString("en-IN")} • Term 2: ₹${t2.toLocaleString("en-IN")} • Term 3: ₹${t3.toLocaleString("en-IN")} (Total: ₹${amount.toLocaleString("en-IN")})`,
       installments: [
-        { label: "Term 1 (June)", amount: least, note: "Least amount to ease reopening costs" },
-        { label: "Term 2 (September)", amount: regular, note: "Regular term installment" },
-        { label: "Term 3 (December)", amount: regular, note: "Covers Dec, Jan, Feb, March (Month 10 has no 4th term)" },
+        { label: "Term 1 (June)", amount: t1, note: "Term 1 installment (reopening)" },
+        { label: "Term 2 (September)", amount: t2, note: "Regular term installment" },
+        { label: "Term 3 (December)", amount: t3, note: "Covers Dec, Jan, Feb, March (Month 10 has no 4th term)" },
       ],
     };
   }
@@ -149,15 +163,16 @@ export function getFeeScheduleBreakdown(
   if (isTuition) {
     const isAnnualTuition = freq === "ANNUAL" || (freq === "MONTHLY" && ((chargeTypeName || "").toLowerCase().includes("annual") || amount >= 15000));
     if (isAnnualTuition) {
-      // Annual lump sum divided into 9 rounded installments
+      // Annual lump sum divided into 9 rounded installments (step 50 for 25500/21000, 100 for others)
+      const step = (amount === 25500 || amount === 21000) ? 50 : 100;
       const rawMonthly = amount / 9;
-      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
+      let roundedMonthly = Math.ceil(rawMonthly / step) * step;
       let baseSum8 = roundedMonthly * 8;
       let remainder = amount - baseSum8;
 
       if (remainder < 0) {
         while (remainder < 0 && roundedMonthly > 0) {
-          roundedMonthly -= 100;
+          roundedMonthly -= step;
           baseSum8 = roundedMonthly * 8;
           remainder = amount - baseSum8;
         }
@@ -317,23 +332,30 @@ export function calculateStudentCompleteSchedule(
       tuitionFrequency = "QUARTERLY";
       scheduleType = "3_TERM_TUITION";
       totalAnnualTuition = rawAmt;
-      const rawTerm = rawAmt / 3;
-      let roundedTerm = Math.ceil(rawTerm / 100) * 100;
-      let remainder = rawAmt - (roundedTerm * 2);
 
-      if (remainder < 0) {
-        while (remainder < 0 && roundedTerm > 0) {
-          roundedTerm -= 100;
-          remainder = rawAmt - (roundedTerm * 2);
+      let t1: number, t2: number, t3: number;
+      if (KNOWN_OFFICIAL_TERMS[rawAmt]) {
+        [t1, t2, t3] = KNOWN_OFFICIAL_TERMS[rawAmt];
+      } else {
+        const rawTerm = rawAmt / 3;
+        let roundedTerm = Math.ceil(rawTerm / 100) * 100;
+        let remainder = rawAmt - (roundedTerm * 2);
+
+        if (remainder < 0) {
+          while (remainder < 0 && roundedTerm > 0) {
+            roundedTerm -= 100;
+            remainder = rawAmt - (roundedTerm * 2);
+          }
         }
-      }
 
-      const least = Math.min(remainder, roundedTerm);
-      const regular = Math.max(remainder, roundedTerm);
+        t1 = Math.min(remainder, roundedTerm);
+        t2 = Math.max(remainder, roundedTerm);
+        t3 = t2;
+      }
 
       const hasOneTimeCharge = otherCharges.some((c) => (c.frequency || "").toUpperCase() === "ONE_TIME");
 
-      formulaSummary = `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided directly by 3 terms: Term 1: ₹${least.toLocaleString("en-IN")} (least amount for reopening), Term 2: ₹${regular.toLocaleString("en-IN")}, Term 3: ₹${regular.toLocaleString("en-IN")}. Month 10 has no 4th quarter (covered in Term 3).${
+      formulaSummary = `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided directly into 3 academic terms: Term 1: ₹${t1.toLocaleString("en-IN")}, Term 2: ₹${t2.toLocaleString("en-IN")}, Term 3: ₹${t3.toLocaleString("en-IN")}. Month 10 has no 4th quarter (covered in Term 3).${
         hasOneTimeCharge ? " Any one-time fee (e.g. Admission) is collected in Month 2 (July) to avoid stacking initial costs on Term 1." : ""
       }`;
 
@@ -343,15 +365,15 @@ export function calculateStudentCompleteSchedule(
           termLabel: "Term 1 (June)",
           monthsCovered: "June, July, August (3 Months)",
           academicMonth: 1,
-          tuitionAmount: least,
-          note: "Least amount to ease reopening costs",
+          tuitionAmount: t1,
+          note: "Term 1 installment (reopening)",
         },
         {
           termNumber: 2,
           termLabel: "Term 2 (September)",
           monthsCovered: "Sept, Oct, Nov (3 Months)",
           academicMonth: 4,
-          tuitionAmount: regular,
+          tuitionAmount: t2,
           note: "Regular term installment",
         },
         {
@@ -359,7 +381,7 @@ export function calculateStudentCompleteSchedule(
           termLabel: "Term 3 (December)",
           monthsCovered: "Dec, Jan, Feb, March (4 Months)",
           academicMonth: 7,
-          tuitionAmount: regular,
+          tuitionAmount: t3,
           note: "Covers through March 31 • Month 10 has no 4th term",
         },
       ];
@@ -367,14 +389,17 @@ export function calculateStudentCompleteSchedule(
       tuitionFrequency = freq === "ANNUAL" ? "ANNUAL" : "MONTHLY";
       scheduleType = "9_MONTH_TUITION";
       totalAnnualTuition = rawAmt;
+
+      // 9 monthly installments with step 50 for 25500/21000, 100 for others
+      const step = (rawAmt === 25500 || rawAmt === 21000) ? 50 : 100;
       const rawMonthly = rawAmt / 9;
-      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
+      let roundedMonthly = Math.ceil(rawMonthly / step) * step;
       let baseSum8 = roundedMonthly * 8;
       let remainder = rawAmt - baseSum8;
 
       if (remainder < 0) {
         while (remainder < 0 && roundedMonthly > 0) {
-          roundedMonthly -= 100;
+          roundedMonthly -= step;
           baseSum8 = roundedMonthly * 8;
           remainder = rawAmt - baseSum8;
         }
