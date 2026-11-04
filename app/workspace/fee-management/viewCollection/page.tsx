@@ -912,7 +912,7 @@ export default function Page() {
                     className="h-7 gap-1.5 px-2.5 text-xs font-medium border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors shadow-2xs"
                   >
                     <Plus className="h-3.5 w-3.5 text-[#556043] dark:text-[#8b9478]" />
-                    <span>Generate Advance Fees</span>
+                    <span>Generate Fees</span>
                   </Button>
                 </div>
                 <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800/50 max-h-[400px]">
