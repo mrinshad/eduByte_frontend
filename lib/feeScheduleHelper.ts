@@ -163,16 +163,15 @@ export function getFeeScheduleBreakdown(
   if (isTuition) {
     const isAnnualTuition = freq === "ANNUAL" || (freq === "MONTHLY" && ((chargeTypeName || "").toLowerCase().includes("annual") || amount >= 15000));
     if (isAnnualTuition) {
-      // Annual lump sum divided into 9 rounded installments (step 50 for 25500/21000, 100 for others)
-      const step = (amount === 25500 || amount === 21000) ? 50 : 100;
+      // Annual lump sum divided into 9 rounded installments (rounded to 100 as usual)
       const rawMonthly = amount / 9;
-      let roundedMonthly = Math.ceil(rawMonthly / step) * step;
+      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
       let baseSum8 = roundedMonthly * 8;
       let remainder = amount - baseSum8;
 
       if (remainder < 0) {
         while (remainder < 0 && roundedMonthly > 0) {
-          roundedMonthly -= step;
+          roundedMonthly -= 100;
           baseSum8 = roundedMonthly * 8;
           remainder = amount - baseSum8;
         }
@@ -390,16 +389,15 @@ export function calculateStudentCompleteSchedule(
       scheduleType = "9_MONTH_TUITION";
       totalAnnualTuition = rawAmt;
 
-      // 9 monthly installments with step 50 for 25500/21000, 100 for others
-      const step = (rawAmt === 25500 || rawAmt === 21000) ? 50 : 100;
+      // 9 monthly installments (rounded to 100 as usual)
       const rawMonthly = rawAmt / 9;
-      let roundedMonthly = Math.ceil(rawMonthly / step) * step;
+      let roundedMonthly = Math.ceil(rawMonthly / 100) * 100;
       let baseSum8 = roundedMonthly * 8;
       let remainder = rawAmt - baseSum8;
 
       if (remainder < 0) {
         while (remainder < 0 && roundedMonthly > 0) {
-          roundedMonthly -= step;
+          roundedMonthly -= 100;
           baseSum8 = roundedMonthly * 8;
           remainder = rawAmt - baseSum8;
         }
