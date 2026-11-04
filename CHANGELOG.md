@@ -8,42 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Standalone Production Seeder (`sheets/seed_sheets_data.js`) & Master Configuration**:
-  - Transformed [`sheets/seed_sheets_data.js`](file:///Users/apple/Byten/eduByte/sheets/seed_sheets_data.js) into a 100% self-contained, standalone JavaScript file with inlined dataset, eliminating all external Python runtime requirements.
-  - Configured 2 dedicated Developer Accounts with wildcard `*` access across all 209 permissions:
-    - `superadmin` / `superadmin123` (Role: `SUPER ADMIN`)
-    - `admin` / `admin123` (Role: `ADMIN`)
-    - Plus root organization account `byten2026` / `byten123@palam` (Role: `SUPER ADMIN`).
-  - Generated user credentials and role-based permissions for all 29 staff profiles:
-    - Named accounts: `principal` (`principal123`), `accountant` (`accountant123`), `shahla` (`office123`), `subitha` (`staff@123`), `chairman` (`admin123`).
-    - Dedicated logins for all teachers, drivers, and support personnel via employee code (e.g., `stf-004` to `stf-025`, `stf-drv-001` with `staff@123`).
-  - Initialized master financial infrastructure:
-    - 6 Payment Method Accounts (`Cash`, `Bank Transfer`, `UPI`, `Card`, `Cheque`, `Revolving Cash Fund`).
-    - 15 Chart of Accounts ledger accounts (`acc-inc-*` income and `acc-exp-*` expense accounts).
-    - 6 Expense Categories (`Vehicle`, `Staff Salaries & Payroll`, `Utilities`, `Office`, `Infrastructure`, `Capital Expenditure`) with all operational subcategories mapped to ledger accounts.
-  - Harmonized [`backend/scripts/seed_production_real.js`](file:///Users/apple/Byten/eduByte/backend/scripts/seed_production_real.js) with the verified spreadsheet engine.
-- **PostgreSQL Concurrency Batch Fix in WhatsApp Dispatch**:
-  - Refactored `dispatchFeeRemindersBatch` in [`backend/src/modules/whatsapp/whatsapp.service.js`](file:///Users/apple/Byten/eduByte/backend/src/modules/whatsapp/whatsapp.service.js) to use CTE `WITH target AS (...) UPDATE ... FROM target WHERE ...` preventing PostgreSQL subquery re-evaluation and guaranteeing exact batch limit execution.
 - **CCA Module Student Fee Override**:
   - Added `feeOverride Decimal? @db.Decimal(18, 2)` column to `StudentCcaAssignment` via Prisma migration `20261104052324_add_fee_override_to_student_cca_assignment`.
   - Enhanced backend controllers (`ccaAssignments.controller.js`, `ccaCharges.controller.js`, `stdEnrollment.controller.js`) to support per-student fee overrides during single assignment, bulk assignment, and enrollment, ensuring customized billing without mutating default activity rates.
-  - Updated frontend CCA API client (`frontend/lib/services/cca.ts`) and administrative UI (`/admin/cca` and `/admin/admissions/createAdmission`) with dedicated "Fee Override" inputs, net monthly rate previews, and table status badges.
   - Added automated integration test suite in `backend/tests/integration/ccaFeeOverride.test.js`.
-- **Master Annual Fee Forecast & Demand Projection (2026–2027)**:
-  - Created `sheets/generate_forecast_sheets.py` generating full-year financial projections across all 189 active students and 10 academic months (June 2026 – March 2027).
-  - Generated Master Multi-Tab Excel Spreadsheet: [`sheets/FORECASTED_FEES_2026_2027.xlsx`](file:///Users/apple/Byten/eduByte/sheets/FORECASTED_FEES_2026_2027.xlsx) and [`FORECASTED_FEES_2026_2027.xlsx`](file:///Users/apple/Byten/eduByte/FORECASTED_FEES_2026_2027.xlsx).
-    - Tab 1: `All Students Master Forecast` (189 student rows, Month 1–10 demand breakdown, Actual vs Forecast indicators, Collected & Balance formulas).
-    - Tab 2: `Fee Head Breakdown` (Tuition, Transport, Madrasa, CCA month-by-month totals).
-    - Tab 3: `Class Forecast Summary` (Montessori 1 to Grade 4 B aggregations, student counts, realization %).
-    - Tab 4: `Forecasting Rules & Logic` (Documented 9-month formula, Term schedule, February One-Time Last, Slashed transport rates, 0 future fines).
-  - Generated High-Craft Printable HTML/PDF Report: [`sheets/forecast_report.html`](file:///Users/apple/Byten/eduByte/sheets/forecast_report.html) and [`FORECAST_REPORT.html`](file:///Users/apple/Byten/eduByte/FORECAST_REPORT.html) with executive KPI cards, monthly cash flow charts, class metrics, search & class filtering, and print-to-PDF styles.
-- Added production seeding system in `./sheets/` (`sheets/extract_sheets_data.py`, `sheets/seed_sheets_data.js`, and `sheets/verify_seeded_data.js`) to parse, structure, and populate all school financial records from `./sheets/`:
-  - Enrolled student `Aysha Azwa PK` (Admission No. 86) into Grade 2 - A with Force Cruiser Van (Trip 1), Tuition ₹20,000 (Term), and Transport ₹100.
-  - Setup CCA module activities (`Skating` @ ₹2,300, `Karate - Kungfu` @ ₹2,300, `Swimming` @ ₹0), assigned 65 students, and recorded historical installment receipts totaling ₹72,300.
-  - Applied the 9-month Monthly Tuition formula (June–February, 8 installments + Month 9 remainder with 50/100 rounding) and scheduled ONE TIME(LAST) on February 2027 as PENDING with zero late fines.
-  - Handled flexible tuition fees on active payment months, auto-deactivating zero-balance enrollment charges from future generation runs.
-  - Slashed transportation fees (base recurring monthly demand on enrollment charge, actual variable rates on transactions), multi-vehicle sums (`+`), and advance 10-month fully paid transport.
-  - Added Madrasa monthly fees (₹200/mo) across Grade 2 and Montessori 4.
+- **PostgreSQL Concurrency Batch Fix in WhatsApp Dispatch**:
+  - Refactored `dispatchFeeRemindersBatch` in [`src/modules/whatsapp/whatsapp.service.js`](file:///Users/apple/Byten/eduByte/backend/src/modules/whatsapp/whatsapp.service.js) to use CTE `WITH target AS (...) UPDATE ... FROM target WHERE ...` preventing PostgreSQL subquery re-evaluation and guaranteeing exact batch limit execution.
 - Added "+ Generate Advance Fees" modal action directly to the Fee Collection Desk (`/workspace/fee-management/viewCollection`) enabling immediate advance payment collection for upcoming months.
 - Authorized cashier role (`feecollection.collectButton`) on single student charge generation preview (`GET /api/stdcharge/student/:enrollmentId/generation-preview`) and generation (`POST /api/stdcharge/student/:enrollmentId/generate`).
 - Backend endpoint `PATCH /api/stdcharge/:id/amount` (and alias `PATCH /api/feecollection/charges/:id`) to allow adjusting uncollected and partially collected student charge amounts before payment collection.
