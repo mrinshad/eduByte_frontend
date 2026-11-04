@@ -132,6 +132,7 @@ export interface SelectedCCAItemConfig {
     startDate: string;
     endDate: string;
     discountAmount: number | "";
+    feeOverride?: number | "";
 }
 
 const StepSection = ({ stepNumber, title, description, children }: any) => (
@@ -385,6 +386,7 @@ export default function Page() {
                     startDate: new Date().toISOString().split("T")[0],
                     endDate: "",
                     discountAmount: "",
+                    feeOverride: "",
                 };
             });
             return [...kept, ...newlyAdded];
@@ -394,7 +396,7 @@ export default function Page() {
 
     const handleUpdateCCAItem = (
         activityId: string,
-        field: "startDate" | "endDate" | "discountAmount",
+        field: "startDate" | "endDate" | "discountAmount" | "feeOverride",
         value: any
     ) => {
         setSelectedCCAConfigs((prev) =>
@@ -407,7 +409,10 @@ export default function Page() {
     };
 
     const ccaGrossAmount = useMemo(() => {
-        return selectedCCAConfigs.reduce((sum, item) => sum + (Number(item.fee) || 0), 0);
+        return selectedCCAConfigs.reduce((sum, item) => {
+            const base = item.feeOverride !== "" && item.feeOverride !== undefined ? Number(item.feeOverride) : (Number(item.fee) || 0);
+            return sum + base;
+        }, 0);
     }, [selectedCCAConfigs]);
 
     const ccaTotalDiscount = useMemo(() => {
@@ -807,6 +812,7 @@ export default function Page() {
                                 startDate: config.startDate || new Date().toISOString().split("T")[0],
                                 endDate: config.endDate ? config.endDate : undefined,
                                 discountAmount: config.discountAmount !== "" ? Number(config.discountAmount) : undefined,
+                                feeOverride: config.feeOverride !== "" && config.feeOverride !== undefined ? Number(config.feeOverride) : undefined,
                             };
                             console.log(`==> [Admission CCA Assignment Dispatch - ${config.name}]:`, ccaPayload);
                             await assignStudentToCCAActivities(ccaPayload);
@@ -1584,6 +1590,9 @@ export default function Page() {
                                                     <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[160px]">
                                                         End Date (Optional)
                                                     </TableHead>
+                                                    <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[130px]">
+                                                        Fee Override (₹)
+                                                    </TableHead>
                                                     <TableHead className="text-xs font-medium uppercase tracking-wider text-slate-500 min-w-[140px]">
                                                         Discount (₹)
                                                     </TableHead>
@@ -1597,8 +1606,9 @@ export default function Page() {
                                             </TableHeader>
                                             <TableBody>
                                                 {selectedCCAConfigs.map((item) => {
+                                                    const base = item.feeOverride !== "" && item.feeOverride !== undefined ? Number(item.feeOverride) : item.fee;
                                                     const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
-                                                    const net = Math.max(0, item.fee - disc);
+                                                    const net = Math.max(0, base - disc);
                                                     return (
                                                         <TableRow
                                                             key={item.activityId}
@@ -1677,6 +1687,27 @@ export default function Page() {
                                                                         />
                                                                     </PopoverContent>
                                                                 </Popover>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
+                                                                        ₹
+                                                                    </span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        min={0}
+                                                                        placeholder={`Auto (${item.fee})`}
+                                                                        value={item.feeOverride ?? ""}
+                                                                        onChange={(e) =>
+                                                                            handleUpdateCCAItem(
+                                                                                item.activityId,
+                                                                                "feeOverride",
+                                                                                e.target.value === "" ? "" : Number(e.target.value)
+                                                                            )
+                                                                        }
+                                                                        className="pl-6 h-9 text-xs rounded-lg bg-white dark:bg-slate-950"
+                                                                    />
+                                                                </div>
                                                             </TableCell>
                                                             <TableCell>
                                                                 <div className="relative">
