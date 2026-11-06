@@ -447,11 +447,26 @@ export function calculateStudentCompleteSchedule(
     const rawAmt = Number(transportCharge.finalAmount ?? transportCharge.amount ?? 0);
     const freq = (transportCharge.frequency || "").toUpperCase();
     const transportStart = Number(transportCharge.generationStartAcademicMonth) || 1;
+    const isTransportActive = transportCharge.isActive !== false;
+
+    // Filter existing transport charges
+    const existingTransportCharges = existingCharges
+      ? existingCharges.filter((c) => !c.isDeleted && isTransportHead(c.description || ""))
+      : [];
 
     if (freq === "ONE_TIME") {
       monthlyTransportRate = 0;
       totalAnnualTransport = rawAmt;
       transportSummary = `One-Time Transport Fee: ₹${rawAmt.toLocaleString("en-IN")} billed once in Month 1 (June).`;
+    } else if (!isTransportActive) {
+      monthlyTransportRate = rawAmt;
+      const billedMonthsCount = existingTransportCharges.length;
+      totalAnnualTransport = billedMonthsCount > 0
+        ? existingTransportCharges.reduce((sum, c) => sum + Number(c.finalAmount || 0), 0)
+        : 0;
+      transportSummary = billedMonthsCount > 0
+        ? `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month active for ${billedMonthsCount} academic month${billedMonthsCount === 1 ? "" : "s"} (Total ₹${totalAnnualTransport.toLocaleString("en-IN")}) • Discontinued.`
+        : "Transport Fee: Discontinued (₹0 scheduled).";
     } else {
       monthlyTransportRate = rawAmt;
       const activeMonthsCount = Math.max(0, 11 - transportStart);
@@ -554,10 +569,26 @@ export function calculateStudentCompleteSchedule(
     }
 
     const transportStart = Number(transportCharge?.generationStartAcademicMonth) || 1;
-    const isTransportActiveThisMonth = hasTransport && m >= transportStart;
-    const transportAmount = isTransportActiveThisMonth
-      ? ((transportCharge.frequency || "").toUpperCase() === "ONE_TIME" ? (m === 1 ? totalAnnualTransport : 0) : monthlyTransportRate)
-      : 0;
+    let transportAmount = 0;
+    if (hasTransport) {
+      const isOneTime = (transportCharge.frequency || "").toUpperCase() === "ONE_TIME";
+      if (isOneTime) {
+        transportAmount = m === 1 ? totalAnnualTransport : 0;
+      } else if (transportCharge.isActive === false) {
+        // Discontinued transport: ONLY schedule for months that actually have a billed transport charge
+        const matchingTransportCharge = existingCharges?.find(
+          (c) =>
+            !c.isDeleted &&
+            isTransportHead(c.description || "") &&
+            (c.periodMonth === calendarMonth ||
+              (c.description && c.description.toLowerCase().includes(monthName.toLowerCase())))
+        );
+        transportAmount = matchingTransportCharge ? Number(matchingTransportCharge.finalAmount || monthlyTransportRate) : 0;
+      } else {
+        const isTransportActiveThisMonth = m >= transportStart;
+        transportAmount = isTransportActiveThisMonth ? monthlyTransportRate : 0;
+      }
+    }
 
     // Calculate other non-tuition, non-transport heads
     let otherAmount = 0;
@@ -593,6 +624,14 @@ export function calculateStudentCompleteSchedule(
         notes = `Transport starts Month ${transportStart} (${startMonthName})`;
       } else {
         notes += ` • Transport starts Month ${transportStart} (${startMonthName})`;
+      }
+    }
+
+    if (hasTransport && transportCharge.isActive === false && transportAmount === 0 && m >= transportStart) {
+      if (!notes) {
+        notes = "Transport Discontinued";
+      } else if (!notes.includes("Discontinued")) {
+        notes += " • Transport Discontinued";
       }
     }
 

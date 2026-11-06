@@ -673,7 +673,14 @@ export default function Page() {
                         <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
                           <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400 py-3">{idx + 1}</TableCell>
                           <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100 py-3">
-                            {charge.chargeTypeName}
+                            <div className="flex items-center gap-2">
+                              <span>{charge.chargeTypeName}</span>
+                              {charge.isActive === false && (
+                                <Badge variant="outline" className="text-[10px] border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-medium">
+                                  Discontinued
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">
                             <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
