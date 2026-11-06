@@ -125,6 +125,8 @@ export interface ScheduledEnrollmentChargeItem {
   chargeTypeName: string;
   category?: string | null;
   frequency: string;
+  generationStartAcademicMonth?: number;
+  isActive?: boolean;
   amount: number;
   originalAmount: number;
   discountAmount: number;

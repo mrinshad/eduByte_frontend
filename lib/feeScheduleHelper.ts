@@ -279,6 +279,8 @@ export function calculateStudentCompleteSchedule(
     chargeTypeName?: string;
     chargeType?: string;
     frequency: string;
+    generationStartAcademicMonth?: number;
+    isActive?: boolean;
     amount?: number | string;
     finalAmount?: number | string;
     category?: string | null;
@@ -444,14 +446,19 @@ export function calculateStudentCompleteSchedule(
   if (transportCharge) {
     const rawAmt = Number(transportCharge.finalAmount ?? transportCharge.amount ?? 0);
     const freq = (transportCharge.frequency || "").toUpperCase();
+    const transportStart = Number(transportCharge.generationStartAcademicMonth) || 1;
+
     if (freq === "ONE_TIME") {
       monthlyTransportRate = 0;
       totalAnnualTransport = rawAmt;
       transportSummary = `One-Time Transport Fee: ₹${rawAmt.toLocaleString("en-IN")} billed once in Month 1 (June).`;
     } else {
       monthlyTransportRate = rawAmt;
-      totalAnnualTransport = rawAmt * 10;
-      transportSummary = `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month active across all 10 academic months (June through March = Total ₹${totalAnnualTransport.toLocaleString("en-IN")}). Cashier can adjust at collection counter if student visits relatives.`;
+      const activeMonthsCount = Math.max(0, 11 - transportStart);
+      totalAnnualTransport = rawAmt * activeMonthsCount;
+      transportSummary = transportStart > 1
+        ? `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month starting Month ${transportStart} (${activeMonthsCount} academic month${activeMonthsCount === 1 ? "" : "s"} = Total ₹${totalAnnualTransport.toLocaleString("en-IN")}).`
+        : `Transport Fee: ₹${rawAmt.toLocaleString("en-IN")}/month active across all 10 academic months (June through March = Total ₹${totalAnnualTransport.toLocaleString("en-IN")}). Cashier can adjust at collection counter if student visits relatives.`;
     }
   }
 
@@ -546,7 +553,9 @@ export function calculateStudentCompleteSchedule(
       }
     }
 
-    const transportAmount = hasTransport
+    const transportStart = Number(transportCharge?.generationStartAcademicMonth) || 1;
+    const isTransportActiveThisMonth = hasTransport && m >= transportStart;
+    const transportAmount = isTransportActiveThisMonth
       ? ((transportCharge.frequency || "").toUpperCase() === "ONE_TIME" ? (m === 1 ? totalAnnualTransport : 0) : monthlyTransportRate)
       : 0;
 
@@ -576,6 +585,15 @@ export function calculateStudentCompleteSchedule(
     // In 3-Term Quarterly: if Month 2 has a one-time fee, update notes
     if (scheduleType === "3_TERM_TUITION" && m === 2 && otherAmount > 0) {
       notes = "One-Time Fee Collection • Tuition covered under Term 1";
+    }
+
+    if (hasTransport && transportStart > 1 && m < transportStart) {
+      const startMonthName = ACADEMIC_MONTH_INFO.find((x) => x.academicMonth === transportStart)?.monthName || `Month ${transportStart}`;
+      if (!notes) {
+        notes = `Transport starts Month ${transportStart} (${startMonthName})`;
+      } else {
+        notes += ` • Transport starts Month ${transportStart} (${startMonthName})`;
+      }
     }
 
     const totalScheduled = tuitionAmount + transportAmount + otherAmount;
@@ -612,7 +630,7 @@ export function calculateStudentCompleteSchedule(
           generatedStatus = "PENDING";
         }
       } else {
-        generatedStatus = "UPCOMING";
+        generatedStatus = totalScheduled === 0 ? undefined : "UPCOMING";
       }
     }
 
