@@ -49,7 +49,6 @@ import {
 } from "@/lib/services/cca"
 import { individualRelieveStudent } from "@/lib/services/studentRelieving"
 import {
-  getFeeScheduleBreakdown,
   calculateStudentCompleteSchedule,
 } from "@/lib/feeScheduleHelper"
 
@@ -648,9 +647,9 @@ export default function Page() {
                 );
               })()}
 
-              {/* Enrolled Fee Structure & Schedule Baseline */}
+              {/* Enrolled Fee Structure */}
               {feeData.enrollmentCharges && feeData.enrollmentCharges.length > 0 && (
-                <InfoSection icon={Receipt} title="Enrolled Fee Structure & Schedule">
+                <InfoSection icon={Receipt} title="Enrolled Fee Structure">
                   <div className="px-5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
                     <span className="text-xs text-slate-600 dark:text-slate-400">
                       Fee Plan: <strong className="text-slate-900 dark:text-slate-200">{feeData.feeStructureName || "Standard Fee Plan"}</strong>
@@ -670,54 +669,34 @@ export default function Page() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {feeData.enrollmentCharges.map((charge, idx) => {
-                        const breakdown = getFeeScheduleBreakdown(
-                          charge.chargeTypeName,
-                          charge.frequency,
-                          Number(charge.amount),
-                          charge.category || undefined
-                        );
-
-                        return (
-                          <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
-                            <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400 align-top pt-3">{idx + 1}</TableCell>
-                            <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100">
-                              <div className="space-y-1">
-                                <div>{charge.chargeTypeName}</div>
-                                {breakdown.scheduleType === "9_MONTH_TUITION" && (
-                                  <div className="text-[10px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
-                                    {breakdown.summaryText}
-                                  </div>
-                                )}
-                                {breakdown.scheduleType === "3_TERM_TUITION" && (
-                                  <div className="text-[10px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
-                                    {breakdown.summaryText}
-                                  </div>
-                                )}
-                                {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
-                                  <div className="text-[10px] text-slate-600 dark:text-slate-400 font-normal leading-relaxed">
-                                    {breakdown.summaryText}
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-500 dark:text-slate-400 align-top pt-3">
-                              <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-500 dark:text-slate-400 align-top pt-3">{charge.category || "—"}</TableCell>
-                            <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100 align-top pt-3" style={{ fontFeatureSettings: '"tnum"' }}>
-                              {formatCurrency(charge.amount)}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {feeData.enrollmentCharges.map((charge, idx) => (
+                        <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                          <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400 py-3">{idx + 1}</TableCell>
+                          <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100 py-3">
+                            {charge.chargeTypeName}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">
+                            <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">{charge.category || "—"}</TableCell>
+                          <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100 py-3" style={{ fontFeatureSettings: '"tnum"' }}>
+                            {formatCurrency(charge.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
 
                   {/* Dedicated Fee Installment Breakdown Panel */}
                   {(() => {
                     const schedulePlan = calculateStudentCompleteSchedule(feeData.enrollmentCharges, feeData.charges);
-                    if (!schedulePlan.hasTuition && !schedulePlan.hasTransport && schedulePlan.totalAnnualOther === 0) return null;
+                    // Only show installment schedule breakdown if there is an actual recurring installment plan (9-Month Tuition, 3-Term Quarterly, or Monthly Transport)
+                    const hasInstallmentSchedule = 
+                      schedulePlan.scheduleType === "9_MONTH_TUITION" || 
+                      schedulePlan.scheduleType === "3_TERM_TUITION" || 
+                      (schedulePlan.hasTransport && schedulePlan.monthlyTransportRate > 0);
+
+                    if (!hasInstallmentSchedule) return null;
 
                     return (
                       <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5 space-y-4">
@@ -725,12 +704,12 @@ export default function Page() {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div>
                             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Academic Year Fee Schedule
+                              Fee Schedule Breakdown
                             </div>
                             <div className="mt-0.5 text-sm font-semibold text-slate-950 dark:text-slate-100">
-                              {schedulePlan.scheduleType === "9_MONTH_TUITION" && "9-Month Tuition & 10-Month Transport Installment Breakdown"}
-                              {schedulePlan.scheduleType === "3_TERM_TUITION" && "3-Term Direct Quarterly & 10-Month Transport Breakdown"}
-                              {schedulePlan.scheduleType === "STANDARD" && "Academic Year Billing Schedule Breakdown"}
+                              {schedulePlan.scheduleType === "9_MONTH_TUITION" && "9-Month Installment Schedule"}
+                              {schedulePlan.scheduleType === "3_TERM_TUITION" && "3-Term Quarterly Schedule"}
+                              {schedulePlan.scheduleType === "STANDARD" && "Transport Installment Schedule"}
                             </div>
                           </div>
 
@@ -742,7 +721,7 @@ export default function Page() {
                             )}
                             {schedulePlan.scheduleType === "3_TERM_TUITION" && (
                               <Badge variant="outline" className="border-[#556043]/30 bg-[#556043]/10 text-[#556043] dark:text-[#8b9478] text-[11px] font-medium">
-                                3 Academic Terms (÷ 3)
+                                3 Academic Terms
                               </Badge>
                             )}
                             <Badge variant="outline" className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-[11px] font-medium">
@@ -751,25 +730,9 @@ export default function Page() {
                           </div>
                         </div>
 
-                        {/* Formula explanation callout */}
-                        <div className="rounded-2xl border border-[#556043]/20 bg-[#556043]/5 p-3.5 text-xs text-[#556043] dark:border-[#556043]/30 dark:bg-[#556043]/10 dark:text-[#8b9478] space-y-1">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                            <Receipt className="h-3.5 w-3.5 text-[#556043]" />
-                            <span>Billing Schedule Calculation Formula:</span>
-                          </div>
-                          <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
-                            {schedulePlan.formulaSummary}
-                          </p>
-                          {schedulePlan.transportSummary && (
-                            <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 pt-1 border-t border-[#556043]/15 dark:border-[#556043]/25">
-                              <strong>Transport Commute:</strong> {schedulePlan.transportSummary}
-                            </p>
-                          )}
-                        </div>
-
                         {/* 3-Term Overview Cards if Quarterly */}
                         {schedulePlan.scheduleType === "3_TERM_TUITION" && schedulePlan.termInstallments && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {schedulePlan.termInstallments.map((term) => (
                               <div
                                 key={term.termNumber}
@@ -779,24 +742,17 @@ export default function Page() {
                                   <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                                     {term.termLabel}
                                   </span>
-                                  {term.termNumber === 1 ? (
-                                    <Badge variant="outline" className="border-[#556043]/30 bg-[#556043]/10 text-[#556043] dark:text-[#8b9478] text-[10px]">
-                                      Least Amount
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px]">
-                                      Term {term.termNumber}
-                                    </Badge>
-                                  )}
+                                  <Badge variant="outline" className="border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px]">
+                                    Term {term.termNumber}
+                                  </Badge>
                                 </div>
 
                                 <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
                                   {formatCurrency(term.tuitionAmount)}
                                 </div>
 
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
-                                  <div>{term.monthsCovered}</div>
-                                  <div className="text-[10px] text-slate-400 dark:text-slate-500">{term.note}</div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {term.monthsCovered}
                                 </div>
                               </div>
                             ))}
@@ -897,11 +853,11 @@ export default function Page() {
                                         )}
                                         {period.isRemainder ? (
                                           <Badge variant="outline" className="border-amber-300/80 bg-amber-50/60 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px]">
-                                            Final 9th Installment
+                                            Final Installment
                                           </Badge>
                                         ) : period.isTuitionFree ? (
                                           <Badge variant="outline" className="border-emerald-300/80 bg-emerald-50/60 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px]">
-                                            {schedulePlan.scheduleType === "3_TERM_TUITION" ? "Covered in Term 3 (No 4th Quarter)" : "Tuition Complete (₹0)"}
+                                            Tuition Complete
                                           </Badge>
                                         ) : (
                                           <span className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -938,7 +894,9 @@ export default function Page() {
                                   {formatCurrency(schedulePlan.totalAnnualCommitment)}
                                 </td>
                                 <td className="pr-4 pl-4 text-[10px] text-slate-500 dark:text-slate-400 py-2.5 font-normal">
-                                  10-Month Balanced Academic Plan
+                                  {schedulePlan.scheduleType === "9_MONTH_TUITION" && "9-Month Academic Plan"}
+                                  {schedulePlan.scheduleType === "3_TERM_TUITION" && "3-Term Academic Plan"}
+                                  {schedulePlan.scheduleType === "STANDARD" && "Transport Schedule"}
                                 </td>
                               </tr>
                             </tfoot>

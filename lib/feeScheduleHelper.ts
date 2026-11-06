@@ -115,7 +115,7 @@ export function getFeeScheduleBreakdown(
       frequency: "ONE_TIME",
       scheduleType: "STANDARD",
       badgeLabel: "One-Time Fee",
-      summaryText: `One-Time fee of ₹${amount.toLocaleString("en-IN")} • Billed once in the academic year`,
+      summaryText: `One-Time fee of ₹${amount.toLocaleString("en-IN")} • Single annual commitment (Flexible payments)`,
       installments: [
         { label: "One-Time", amount, note: "Billed once during the academic year" },
       ],
@@ -425,7 +425,7 @@ export function calculateStudentCompleteSchedule(
       scheduleType = "STANDARD";
       totalAnnualTuition = rawAmt;
       monthlyTuitionRate = 0;
-      formulaSummary = `One-Time Tuition Fee of ₹${rawAmt.toLocaleString("en-IN")} billed once in Month 1 (June).`;
+      formulaSummary = `One-Time Tuition Fee of ₹${rawAmt.toLocaleString("en-IN")} billed once as an annual commitment (flexible partial payments).`;
     } else {
       // Flat monthly tuition rate (e.g. ₹2,000/mo) across 9 months
       tuitionFrequency = "MONTHLY";
