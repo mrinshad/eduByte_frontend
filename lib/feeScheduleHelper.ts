@@ -442,17 +442,17 @@ export function calculateStudentCompleteSchedule(
   let monthlyTransportRate = 0;
   let totalAnnualTransport = 0;
   let transportSummary = "";
+  let transportStart = 1;
+  let isTransportActive = true;
+  const existingTransportCharges = existingCharges
+    ? existingCharges.filter((c) => !c.isDeleted && isTransportHead(c.description || ""))
+    : [];
 
   if (transportCharge) {
     const rawAmt = Number(transportCharge.finalAmount ?? transportCharge.amount ?? 0);
     const freq = (transportCharge.frequency || "").toUpperCase();
-    const transportStart = Number(transportCharge.generationStartAcademicMonth) || 1;
-    const isTransportActive = transportCharge.isActive !== false;
-
-    // Filter existing transport charges
-    const existingTransportCharges = existingCharges
-      ? existingCharges.filter((c) => !c.isDeleted && isTransportHead(c.description || ""))
-      : [];
+    transportStart = Number(transportCharge.generationStartAcademicMonth) || 1;
+    isTransportActive = transportCharge.isActive !== false;
 
     if (freq === "ONE_TIME") {
       monthlyTransportRate = 0;
@@ -491,6 +491,7 @@ export function calculateStudentCompleteSchedule(
 
   // Build the 10 Academic Months
   const monthlyPeriods: StudentInstallmentPeriod[] = [];
+  const skippedTransportMonthsList: string[] = [];
 
   for (const info of ACADEMIC_MONTH_INFO) {
     const m = info.academicMonth;
@@ -570,23 +571,50 @@ export function calculateStudentCompleteSchedule(
 
     const transportStart = Number(transportCharge?.generationStartAcademicMonth) || 1;
     let transportAmount = 0;
+    let isTransportSkippedThisMonth = false;
+
     if (hasTransport) {
       const isOneTime = (transportCharge.frequency || "").toUpperCase() === "ONE_TIME";
       if (isOneTime) {
         transportAmount = m === 1 ? totalAnnualTransport : 0;
       } else if (transportCharge.isActive === false) {
         // Discontinued transport: ONLY schedule for months that actually have a billed transport charge
-        const matchingTransportCharge = existingCharges?.find(
+        const matchingTransportCharge = existingTransportCharges.find(
           (c) =>
-            !c.isDeleted &&
-            isTransportHead(c.description || "") &&
-            (c.periodMonth === calendarMonth ||
-              (c.description && c.description.toLowerCase().includes(monthName.toLowerCase())))
+            c.periodMonth === calendarMonth ||
+            (c.description && c.description.toLowerCase().includes(monthName.toLowerCase()))
         );
         transportAmount = matchingTransportCharge ? Number(matchingTransportCharge.finalAmount || monthlyTransportRate) : 0;
       } else {
         const isTransportActiveThisMonth = m >= transportStart;
-        transportAmount = isTransportActiveThisMonth ? monthlyTransportRate : 0;
+        const matchingTransportCharge = existingTransportCharges.find(
+          (c) =>
+            c.periodMonth === calendarMonth ||
+            (c.description && c.description.toLowerCase().includes(monthName.toLowerCase()))
+        );
+
+        if (matchingTransportCharge) {
+          transportAmount = Number(matchingTransportCharge.finalAmount || monthlyTransportRate);
+        } else if (isTransportActiveThisMonth) {
+          // Check if charges for any later academic month already exist in the database
+          const hasLaterCharge = existingTransportCharges.some((c) => {
+            const cMonth = Number(c.periodMonth) || 0;
+            const cAcadMonth = cMonth >= 6 && cMonth <= 12 ? cMonth - 5 : (cMonth >= 1 && cMonth <= 5 ? cMonth + 7 : 0);
+            return cAcadMonth > m;
+          });
+
+          if (hasLaterCharge) {
+            // A later month was billed, but this month has no charge -> explicitly skipped (e.g. 'NA' in register)
+            transportAmount = 0;
+            isTransportSkippedThisMonth = true;
+            skippedTransportMonthsList.push(`${m} (${monthName})`);
+          } else {
+            // Future unbilled month -> project regular rate
+            transportAmount = monthlyTransportRate;
+          }
+        } else {
+          transportAmount = 0;
+        }
       }
     }
 
@@ -632,6 +660,14 @@ export function calculateStudentCompleteSchedule(
         notes = "Transport Discontinued";
       } else if (!notes.includes("Discontinued")) {
         notes += " • Transport Discontinued";
+      }
+    }
+
+    if (hasTransport && isTransportSkippedThisMonth) {
+      if (!notes) {
+        notes = "Transport Skipped (NA)";
+      } else if (!notes.includes("Skipped")) {
+        notes += " • Transport Skipped (NA)";
       }
     }
 
@@ -691,6 +727,16 @@ export function calculateStudentCompleteSchedule(
       actualBilledAmount,
       actualPaidAmount,
     });
+  }
+
+  // If transport is active and monthly, recalculate totalAnnualTransport from scheduled periods
+  if (hasTransport && transportCharge && (transportCharge.frequency || "").toUpperCase() !== "ONE_TIME") {
+    totalAnnualTransport = monthlyPeriods.reduce((sum, p) => sum + p.transportAmount, 0);
+
+    if (transportCharge.isActive !== false && skippedTransportMonthsList.length > 0) {
+      const activeMonthsCount = 10 - skippedTransportMonthsList.length - (transportStart - 1);
+      transportSummary = `Transport Fee: ₹${monthlyTransportRate.toLocaleString("en-IN")}/month active for ${activeMonthsCount} academic month${activeMonthsCount === 1 ? "" : "s"} (Total ₹${totalAnnualTransport.toLocaleString("en-IN")}) • Month ${skippedTransportMonthsList.join(", ")} skipped.`;
+    }
   }
 
   const totalAnnualCommitment = totalAnnualTuition + totalAnnualTransport + totalAnnualOther;
