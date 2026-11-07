@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table"
 import { viewFeeStructure, type FeeStructureView } from "@/lib/services/feeStructure"
 import { formatDateOnly } from "@/lib/utils"
+import { getFeeScheduleBreakdown } from "@/lib/feeScheduleHelper"
 
 /* ------------------------------------------------------------------ */
 /*  Shared presentational building blocks (same pattern as the        */
@@ -452,40 +453,95 @@ export default function Page() {
 
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <Table className="w-full min-w-[420px]">
+                                <Table className="w-full min-w-[500px]">
                                     <TableHeader className="bg-slate-50/80 dark:bg-slate-950/40">
                                         <TableRow className="border-slate-100 dark:border-slate-800/60">
-                                            <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
+                                            <TableHead className="w-12 font-semibold text-slate-500 dark:text-slate-400">
                                                 #
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-500 dark:text-slate-400">
-                                                Charge Type
+                                                Charge Type & Collection Schedule
                                             </TableHead>
-                                            <TableHead className="text-right font-semibold text-slate-500 dark:text-slate-400">
-                                                Amount
+                                            <TableHead className="w-28 text-center font-semibold text-slate-500 dark:text-slate-400">
+                                                Frequency
+                                            </TableHead>
+                                            <TableHead className="w-36 text-right font-semibold text-slate-500 dark:text-slate-400">
+                                                Scheduled Amount
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
 
                                     <TableBody>
-                                        {feeStructure.items.map((item, index) => (
-                                            <TableRow
-                                                className="border-slate-100 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-950/40"
-                                                key={index}
-                                            >
-                                                <TableCell className="font-medium text-slate-600 dark:text-slate-400">
-                                                    {index + 1}
-                                                </TableCell>
+                                        {feeStructure.items.map((item, index) => {
+                                            const breakdown = getFeeScheduleBreakdown(
+                                                item.chargeTypeName,
+                                                item.frequency,
+                                                Number(item.amount),
+                                                item.category || undefined
+                                            );
 
-                                                <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                                                    {item.chargeTypeName}
-                                                </TableCell>
+                                            return (
+                                                <TableRow
+                                                    className="border-slate-100 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-950/40"
+                                                    key={index}
+                                                >
+                                                    <TableCell className="font-medium text-slate-600 dark:text-slate-400 align-top pt-3.5">
+                                                        {index + 1}
+                                                    </TableCell>
 
-                                                <TableCell className="text-right font-bold text-[#556043]">
-                                                    ₹ {Number(item.amount).toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
+                                                        <div className="space-y-1.5 py-1">
+                                                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                                {item.chargeTypeName}
+                                                            </div>
+                                                            {breakdown.scheduleType === "9_MONTH_TUITION" && (
+                                                                <div className="rounded-xl border border-[#556043]/20 bg-[#556043]/5 p-2.5 text-xs text-[#556043] dark:border-[#556043]/30 dark:bg-[#556043]/10 dark:text-[#8b9478]">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#556043]"></span>
+                                                                        9-Month Installment Schedule:
+                                                                    </div>
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {breakdown.scheduleType === "3_TERM_TUITION" && (
+                                                                <div className="rounded-xl border border-[#556043]/20 bg-[#556043]/5 p-2.5 text-xs text-[#556043] dark:border-[#556043]/30 dark:bg-[#556043]/10 dark:text-[#8b9478]">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#556043]"></span>
+                                                                        3-Term Direct Schedule:
+                                                                    </div>
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
+                                                                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
+                                                                    <div className="font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                                                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                                                                        10-Month Transport Schedule (June to March):
+                                                                    </div>
+                                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+                                                                        {breakdown.summaryText}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell className="text-center align-top pt-3.5">
+                                                        <Badge variant="outline" className="text-[10px] font-semibold uppercase">
+                                                            {item.frequency}
+                                                        </Badge>
+                                                    </TableCell>
+
+                                                    <TableCell className="text-right font-bold text-[#556043] align-top pt-3.5">
+                                                        ₹ {Number(item.amount).toLocaleString()}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>

@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "skills": {
+    "articulate": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/articulate/SKILL.md",
+      "computedHash": "908d82cbe2ff8fad6bed093cf229b02326adc0ced97288bf9f904d4cf6973ef7"
+    },
+    "blueprint": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/blueprint/SKILL.md",
+      "computedHash": "6e7678b26f4ceaee32723d1252a48984149ec37c07790e2ca6ceb0782a04548c"
+    },
+    "evaluate": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/evaluate/SKILL.md",
+      "computedHash": "88f534534ec629d004972318957bce6ee16eff58340ddbf3459b45fca3644902"
+    },
+    "fortify": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/fortify/SKILL.md",
+      "computedHash": "ae4f422c7c5b5b3fac552cdf434e9073c1ae1b1662d564a27251773be22d5cb8"
+    },
+    "graphify": {
+      "source": "graphify-labs/graphify",
+      "sourceType": "github",
+      "skillPath": "graphify/SKILL.md",
+      "computedHash": "e8a378ed623d7cb2b8273e9ee0ae6fdd4d89ca4a7898d283f78b5f05466a878e"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "e3bb18720f45bb007f97042d0eaf0253531af1f85f9425a89f87bc22708bc3b4"
+    },
+    "include": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/include/SKILL.md",
+      "computedHash": "b551385bf81676f3d7ba126b1a9c00bc3ead2ac508dd4a7f468604cc1f65af5f"
+    },
+    "intent": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/intent/SKILL.md",
+      "computedHash": "a2a08ea5fd246e0ec7a85e743aa4a943aa67307b1b31df7cf036fe6e6f12b849"
+    },
+    "investigate": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/investigate/SKILL.md",
+      "computedHash": "305e0cb60523f5f663cc98e6e46d955a5042ff5afeb81edb2d7a784478ae3df0"
+    },
+    "journey": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/journey/SKILL.md",
+      "computedHash": "4456ce0cd1832fdd2f3d42465910a3d85136cc7fcb003992a3cd80ef69c4c227"
+    },
+    "localize": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/localize/SKILL.md",
+      "computedHash": "16a6b47897d70c97ff63c3185cc2aa27a499b1c33efcd1cbac34661f4acb09db"
+    },
+    "measure": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/measure/SKILL.md",
+      "computedHash": "f64db3a758dac32be65bb2104ae9c1e8d4833a591d64b0aed38b0f807e468e65"
+    },
+    "organize": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/organize/SKILL.md",
+      "computedHash": "764d529bc36390d1a1be9b86ead597f270c0e786c92088b6d552172726241626"
+    },
+    "philosopher": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/philosopher/SKILL.md",
+      "computedHash": "49d81ec6e795dbd0070faf82557917c44cfac6a8fc01d42f0bc37bbd7f05476a"
+    },
+    "ponytail": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "061f887d9e3e735f85db3be3655a8936a00f24d5fb65ac4ab74a968a770fe342"
+    },
+    "ponytail-audit": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-audit/SKILL.md",
+      "computedHash": "1d718f893dabc01caad0dacef86444b5b4b3e1e59409527d66e8b5dd0cd85ae0"
+    },
+    "ponytail-debt": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-debt/SKILL.md",
+      "computedHash": "f5d1d2ab891ff0a650a90b67235e487828e7d2a189de08a1ae073032de379407"
+    },
+    "ponytail-gain": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-gain/SKILL.md",
+      "computedHash": "fca2297cf7b5fd26692f6bd94d398b522e19fa81ad6e2aaebf1933575f7a6803"
+    },
+    "ponytail-help": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-help/SKILL.md",
+      "computedHash": "4582025c3923072fb6c35b8cbd75adf4f7ce47df0eff43cc9a2a39808537fd61"
+    },
+    "ponytail-review": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-review/SKILL.md",
+      "computedHash": "800dc0c86402978e12359f701b9e0c81ba4607a0cd0027f4596d0f835a67eadc"
+    },
+    "present": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/present/SKILL.md",
+      "computedHash": "2778b69a785c829c3bfa62f48f2a0ba1a62128236f983e581e965a1b0f6234c7"
+    },
+    "specify": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/specify/SKILL.md",
+      "computedHash": "9e7a31b2165fb6a618d369e19014eaad0ce071e5394b12f317ce9ca221d7e1ef"
+    },
+    "storytelling": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/storytelling/SKILL.md",
+      "computedHash": "0e0696705e6fd1731354d14f3e7ce246cd24fd86e9fcee2e47361369769aeb12"
+    },
+    "strategize": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/strategize/SKILL.md",
+      "computedHash": "4c1412fcfcf07f3512550225e423f402065991c99f0a15dc8942d780e0e9dcd1"
+    },
+    "transpose": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/transpose/SKILL.md",
+      "computedHash": "11034bf26790ac97aea7c3606a5d9a6c122baf7310702f3ed0971bb98fd7b76b"
+    },
+    "wireframe": {
+      "source": "ghaida/intent",
+      "sourceType": "github",
+      "skillPath": "skills/wireframe/SKILL.md",
+      "computedHash": "e811992fc47c1eb6873fa134a5309b9f90718e68c31dc1f050c1d22e35e08c8c"
+    }
+  }
+}

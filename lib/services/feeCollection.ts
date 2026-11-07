@@ -313,3 +313,24 @@ export async function getFeeCollectionPrint(
   )) as { success: boolean; data: FeeCollectionPrintResponse };
   return payload.data;
 }
+
+export async function updateChargeAmount(
+  chargeId: string,
+  data: { newAmount: number; reason?: string }
+): Promise<StudentCharge> {
+  const payload = (await apiFetch(`/api/feecollection/charges/${chargeId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })) as { success: boolean; data: StudentCharge; message?: string };
+  return payload.data;
+}
+
+export async function deleteStudentCharge(chargeId: string): Promise<boolean> {
+  const payload = (await apiFetch(`/api/feecollection/charges/${chargeId}`, {
+    method: "DELETE",
+  })) as { success: boolean; message?: string };
+  return payload.success;
+}

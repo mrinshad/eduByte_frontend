@@ -125,6 +125,8 @@ export interface ScheduledEnrollmentChargeItem {
   chargeTypeName: string;
   category?: string | null;
   frequency: string;
+  generationStartAcademicMonth?: number;
+  isActive?: boolean;
   amount: number;
   originalAmount: number;
   discountAmount: number;
@@ -259,7 +261,7 @@ export type FeeGenerationPreviewData = {
   targetMonthStudents?: TargetMonthStudentItem[];
   classWiseStudents?: ClassWiseStudentItem[];
   chargesBreakdown: Record<string, number>;
-  frequencyBreakdown: Record<string, number>;
+  frequencyBreakdown: Record<string, string | number>;
   financialSummary: {
     byChargeType: Record<string, number>;
     total: number;
@@ -463,4 +465,19 @@ export async function generateStudentFeesManual(
   );
 
   return payload.data ?? null;
+}
+
+export async function updateStudentChargeAmount(
+  chargeId: string,
+  data: { newAmount: number; reason?: string }
+) {
+  const payload = (await apiFetch(`/api/stdcharge/${chargeId}/amount`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })) as ApiSuccess<Record<string, unknown>>;
+
+  return payload.data;
 }

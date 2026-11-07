@@ -139,13 +139,13 @@ export default function Page() {
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.15),_transparent_40%)] text-white dark:bg-[radial-gradient(circle_at_top_left,_rgba(88,129,173,0.15),_transparent_30%),linear-gradient(135deg,_#0b1020_0%,_#111827_55%,_#1b2433_100%)] dark:text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-4 sm:px-6 lg:px-8">
         <div className="grid w-full gap-4 grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] lg:gap-5">
-          
+
           {/* KidsCove Management Info Section - ONLY visible on desktop/large views */}
           <section className="hidden lg:flex lg:h-[calc(100vh-2rem)] flex-col justify-between overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-6 shadow-[0_24px_90px_rgba(40,50,38,0.15)] backdrop-blur dark:border-white/10 dark:bg-slate-950/70 lg:p-7">
             <div className="max-w-2xl space-y-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-white/90 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-                   KidsCove Portal
+                  KidsCove Portal
                 </div>
 
                 <Button
@@ -184,14 +184,15 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/10 bg-black/10 p-4 text-sm leading-6 text-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-              A focused school interface for administrators, office teams, teachers, accountants, and staff.
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-[1.5rem] border border-white/10 bg-black/10 p-4 text-xs leading-relaxed text-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+              <span>A focused school interface for administrators, office teams, teachers, accountants, and staff.</span>
+
             </div>
           </section>
 
           {/* Sign In Portal Section - Fully responsive and matches background layout */}
           <section className="relative flex min-h-[calc(100vh-2rem)] lg:h-[calc(100vh-2rem)] items-center justify-center overflow-hidden rounded-[2rem] border border-white/10 bg-black/15 dark:bg-slate-950 p-6 text-white shadow-[0_24px_90px_rgba(0,0,0,0.1)] dark:border-white/10">
-            
+
             {/* Mobile-only Theme Switcher floating button */}
             <div className="absolute top-6 right-6 lg:hidden">
               <Button
@@ -319,22 +320,31 @@ export default function Page() {
                   </form>
 
                   {/* Status / Error Feedback */}
-                  {statusMessage && statusMessage !== "Sign in to continue" ? (
+                  {statusMessage && statusMessage !== "Sign in to continue" && (
                     <div
-                      className={`flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs ${
-                        isError
+                      className={`flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs ${isError
                           ? "border border-red-500/30 bg-red-500/10 text-red-200"
                           : "border border-white/15 bg-white/5 text-white/80"
-                      }`}
+                        }`}
                     >
                       {isError ? <AlertCircle className="h-4 w-4 shrink-0 text-red-400" /> : null}
                       <span className="leading-snug">{statusMessage}</span>
                     </div>
-                  ) : (
-                    <p className="text-center text-xs text-white/50">
-                      KidsCove School Management System
-                    </p>
                   )}
+
+                  {/* Legal Footer Links */}
+                  <div className="flex flex-col items-center gap-1.5 text-center text-xs text-white/50 pt-1">
+                    <p>KidsCove School Management System • Powered by Byten Solutions</p>
+                    <div className="flex items-center gap-3 text-white/60 text-[11px]">
+                      <Link href="/privacy" className="hover:text-white underline underline-offset-2 transition-colors">
+                        Privacy Policy
+                      </Link>
+                      <span>•</span>
+                      <Link href="/terms" className="hover:text-white underline underline-offset-2 transition-colors">
+                        Terms & Conditions
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

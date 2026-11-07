@@ -218,7 +218,7 @@ export default function StudentChargesListPage() {
                 </TableRow>
               ) : (
                 paginatedCharges.map((charge) => {
-                  const balance = (charge.totalAmount ?? 0) - (charge.totalPaidAmount ?? 0);
+                  const balance = Math.max(0, (charge.totalAmount ?? 0) - (charge.totalPaidAmount ?? 0));
                   return (
                     <TableRow
                       key={charge.admissionNumber}

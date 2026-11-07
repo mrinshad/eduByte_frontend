@@ -64,19 +64,17 @@ export function storeAccessToken(token: string) {
 }
 
 export function getStoredRefreshToken() {
-  if (!isBrowser()) {
-    return null
-  }
-
-  return window.localStorage.getItem(REFRESH_TOKEN_KEY)
+  // Rely on secure httpOnly cookie instead of localStorage to prevent XSS exfiltration
+  return null
 }
 
-export function storeRefreshToken(token: string) {
+export function storeRefreshToken(_token: string) {
   if (!isBrowser()) {
     return
   }
 
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, token)
+  // Clear legacy tokens from localStorage if any exist
+  window.localStorage.removeItem(REFRESH_TOKEN_KEY)
 }
 
 export function clearAccessToken() {

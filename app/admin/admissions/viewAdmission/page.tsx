@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { refreshLateFines } from "@/lib/services/lateFine";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ManualFeeGenerationModal } from "@/components/fees/ManualFeeGenerationModal";
+import { AadhaarInfoItem } from "@/components/common/AadhaarInfoItem";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ import {
   type CompleteEnrollmentRecord,
 } from "@/lib/services/admissions";
 import { formatDateOnly } from "@/lib/utils";
+import { getFeeScheduleBreakdown } from "@/lib/feeScheduleHelper";
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -318,7 +320,7 @@ export default function ViewAdmissionPage() {
             <InfoItem label="Gender" value={student.gender} />
             <InfoItem label="Date of birth" value={formatDob(student.dob)} />
             <InfoItem label="Blood group" value={student.bloodGroup} />
-            <InfoItem label="Aadhaar no." value={student.adharNo || "—"} />
+            <AadhaarInfoItem value={student.adharNo} />
             <InfoItem label="Religion" value={student.religion || "—"} />
             <InfoItem label="Community" value={student.community || "—"} />
             <InfoItem label="Category" value={student.category || "—"} />
@@ -415,31 +417,57 @@ export default function ViewAdmissionPage() {
             </TableHeader>
 
             <TableBody>
-              {charges.map((charge, index) => (
-                <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
-                  <TableCell className="pl-4 text-sm text-slate-500 dark:text-slate-400">
-                    {index + 1}
-                  </TableCell>
+              {charges.map((charge, index) => {
+                const breakdown = getFeeScheduleBreakdown(
+                  charge.chargeType,
+                  charge.frequency,
+                  Number(charge.finalAmount),
+                  charge.category || undefined
+                );
 
-                  <TableCell className="pl-4 text-sm font-medium text-slate-950 dark:text-slate-100">
-                    {charge.chargeType}
-                  </TableCell>
+                return (
+                  <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
+                    <TableCell className="pl-4 text-sm text-slate-500 dark:text-slate-400 align-top pt-3">
+                      {index + 1}
+                    </TableCell>
 
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                    {charge.frequency}
-                  </TableCell>
+                    <TableCell className="pl-4 text-sm font-medium text-slate-950 dark:text-slate-100">
+                      <div className="space-y-1">
+                        <div>{charge.chargeType}</div>
+                        {breakdown.scheduleType === "9_MONTH_TUITION" && (
+                          <div className="text-[11px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
+                            {breakdown.summaryText}
+                          </div>
+                        )}
+                        {breakdown.scheduleType === "3_TERM_TUITION" && (
+                          <div className="text-[11px] text-[#556043] dark:text-[#8b9478] font-normal leading-relaxed">
+                            {breakdown.summaryText}
+                          </div>
+                        )}
+                        {breakdown.scheduleType === "10_MONTH_TRANSPORT" && (
+                          <div className="text-[11px] text-slate-600 dark:text-slate-400 font-normal leading-relaxed">
+                            {breakdown.summaryText}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
 
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                    {charge.category || (
-                      <span className="text-slate-300 dark:text-slate-600">—</span>
-                    )}
-                  </TableCell>
+                    <TableCell className="text-sm text-slate-500 dark:text-slate-400 align-top pt-3">
+                      <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                    </TableCell>
 
-                  <TableCell className="pr-4 text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
-                    ₹{charge.finalAmount.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell className="text-sm text-slate-500 dark:text-slate-400 align-top pt-3">
+                      {charge.category || (
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="pr-4 text-right text-sm font-semibold text-slate-950 dark:text-slate-100 align-top pt-3">
+                      ₹{charge.finalAmount.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </InfoSection>

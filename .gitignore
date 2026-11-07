@@ -38,3 +38,9 @@ pnpm-debug.log*
 next-env.d.ts
 
 public/manual*
+
+# graphify cache
+graphify-out/cache/
+
+# local native binaries
+.agents/skills/impeccable/scripts/bin/

@@ -170,6 +170,7 @@ export default function CCAManagementPage() {
       startDate: string;
       endDate: string;
       discountAmount: number | "";
+      feeOverride: number | "";
     }>
   >([]);
   const [isSavingAllocation, setIsSavingAllocation] = useState(false);
@@ -182,6 +183,7 @@ export default function CCAManagementPage() {
   const [bulkStartDate, setBulkStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [bulkEndDate, setBulkEndDate] = useState("");
   const [bulkDiscount, setBulkDiscount] = useState<number | "">(0);
+  const [bulkFeeOverride, setBulkFeeOverride] = useState<number | "">("");
   const [bulkSelectedStudentIds, setBulkSelectedStudentIds] = useState<string[]>([]);
   const [isSavingBulkAssign, setIsSavingBulkAssign] = useState(false);
 
@@ -192,6 +194,8 @@ export default function CCAManagementPage() {
     admissionNumber: string;
     activityName: string;
     feeAmount: number | "";
+    defaultFeeAmount: number;
+    feeOverride: number | "";
     frequency: string;
     startDate: string;
     endDate: string;
@@ -312,7 +316,7 @@ export default function CCAManagementPage() {
   // ── Modal Fee Calculations ────────────────────────────────────────────────
   const modalFeeSummary = useMemo(() => {
     const grossFee = selectedAssignConfigs.reduce(
-      (sum, item) => sum + (Number(item.fee) || 0),
+      (sum, item) => sum + (item.feeOverride !== "" ? Number(item.feeOverride) : (Number(item.fee) || 0)),
       0
     );
     const discount = selectedAssignConfigs.reduce(
@@ -458,6 +462,7 @@ export default function CCAManagementPage() {
     setBulkStartDate(new Date().toISOString().split("T")[0]);
     setBulkEndDate("");
     setBulkDiscount(0);
+    setBulkFeeOverride("");
     setBulkSelectedStudentIds([]);
     setBulkAssignModalOpen(true);
   };
@@ -506,11 +511,13 @@ export default function CCAManagementPage() {
         startDate: bulkStartDate,
         endDate: bulkEndDate || null,
         discountAmount: bulkDiscount === "" ? 0 : Number(bulkDiscount),
+        feeOverride: bulkFeeOverride === "" ? null : Number(bulkFeeOverride),
       });
 
       toast.success(res.message || `Successfully assigned ${bulkSelectedStudentIds.length} student(s).`);
       setBulkAssignModalOpen(false);
       setBulkSelectedStudentIds([]);
+      setBulkFeeOverride("");
       loadAllocations();
     } catch (err: any) {
       console.error("Bulk assign failed:", err);
@@ -543,6 +550,7 @@ export default function CCAManagementPage() {
             startDate: new Date().toISOString().split("T")[0],
             endDate: "",
             discountAmount: "",
+            feeOverride: "",
           },
         ];
       }
@@ -551,7 +559,7 @@ export default function CCAManagementPage() {
 
   const handleUpdateAssignItem = (
     activityId: string,
-    field: "startDate" | "endDate" | "discountAmount",
+    field: "startDate" | "endDate" | "discountAmount" | "feeOverride",
     value: any
   ) => {
     setSelectedAssignConfigs((prev) =>
@@ -584,6 +592,7 @@ export default function CCAManagementPage() {
           startDate: config.startDate || new Date().toISOString().split("T")[0],
           endDate: config.endDate ? config.endDate : undefined,
           discountAmount: config.discountAmount !== "" ? Number(config.discountAmount) : undefined,
+          feeOverride: config.feeOverride !== "" ? Number(config.feeOverride) : undefined,
         };
 
         console.log(`Submitting CCA Assignment for ${config.name}:`, payload);
@@ -603,11 +612,14 @@ export default function CCAManagementPage() {
   };
 
   const handleOpenEditAssignment = (item: CCAAssignmentItem) => {
+    const defaultFee = item.defaultFeeAmount ?? (item.feeAmount || 0);
     setEditingAssignment({
       id: item.id,
       studentName: item.studentName,
       admissionNumber: item.admissionNumber,
       activityName: item.activityName || "CCA Activity",
+      defaultFeeAmount: defaultFee,
+      feeOverride: item.feeOverride !== null && item.feeOverride !== undefined ? item.feeOverride : "",
       feeAmount: item.feeAmount !== undefined && item.feeAmount !== null ? item.feeAmount : "",
       frequency: "MONTHLY",
       startDate: item.startDate ? (item.startDate.includes("T") ? item.startDate.split("T")[0] : item.startDate) : new Date().toISOString().split("T")[0],
@@ -633,7 +645,7 @@ export default function CCAManagementPage() {
         startDate: editingAssignment.startDate,
         endDate: editingAssignment.endDate ? editingAssignment.endDate : null,
         discountAmount: editingAssignment.discountAmount !== "" ? Number(editingAssignment.discountAmount) : 0,
-        feeAmount: editingAssignment.feeAmount !== "" ? Number(editingAssignment.feeAmount) : 0,
+        feeOverride: editingAssignment.feeOverride === "" ? null : Number(editingAssignment.feeOverride),
       });
       toast.success("CCA Assignment updated successfully");
       setEditingAssignment(null);
@@ -1166,8 +1178,13 @@ export default function CCAManagementPage() {
                               <span className="font-bold text-slate-900 dark:text-slate-100">
                                 ₹{net.toLocaleString()} / mo
                               </span>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
                                 <span>Base: ₹{totalGross.toLocaleString()}</span>
+                                {item.feeOverride !== null && item.feeOverride !== undefined && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400 font-semibold rounded">
+                                    Override
+                                  </Badge>
+                                )}
                                 {discount > 0 && (
                                   <span className="text-emerald-600 font-semibold">
                                     (−₹{discount.toLocaleString()})
@@ -1470,8 +1487,9 @@ export default function CCAManagementPage() {
                 {/* Mobile View: Cards */}
                 <div className="block sm:hidden divide-y divide-[#8b9478]/30 dark:divide-slate-800 max-h-64 overflow-y-auto p-2 space-y-2">
                   {selectedAssignConfigs.map((item) => {
+                    const effectiveBase = item.feeOverride !== "" ? Number(item.feeOverride) : item.fee;
                     const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
-                    const net = Math.max(0, item.fee - disc);
+                    const net = Math.max(0, effectiveBase - disc);
                     return (
                       <div key={item.activityId} className="p-3 bg-[#667155]/40 dark:bg-slate-900/60 border border-[#8b9478]/30 dark:border-slate-800 rounded-xl space-y-2.5">
                         <div className="flex items-center justify-between">
@@ -1560,24 +1578,46 @@ export default function CCAManagementPage() {
                           </div>
                         </div>
 
-                        <div>
-                          <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Discount Amount (₹)</Label>
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">₹</span>
-                            <Input
-                              type="number"
-                              min={0}
-                              placeholder="0"
-                              value={item.discountAmount}
-                              onChange={(e) =>
-                                handleUpdateAssignItem(
-                                  item.activityId,
-                                  "discountAmount",
-                                  e.target.value === "" ? "" : Number(e.target.value)
-                                )
-                              }
-                              className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                            />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Fee Override (₹)</Label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">₹</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder={`Auto (${item.fee})`}
+                                value={item.feeOverride}
+                                onChange={(e) =>
+                                  handleUpdateAssignItem(
+                                    item.activityId,
+                                    "feeOverride",
+                                    e.target.value === "" ? "" : Number(e.target.value)
+                                  )
+                                }
+                                className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-slate-200 dark:text-slate-400 block mb-0.5 font-medium">Discount (₹)</Label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">₹</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="0"
+                                value={item.discountAmount}
+                                onChange={(e) =>
+                                  handleUpdateAssignItem(
+                                    item.activityId,
+                                    "discountAmount",
+                                    e.target.value === "" ? "" : Number(e.target.value)
+                                  )
+                                }
+                                className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1600,6 +1640,9 @@ export default function CCAManagementPage() {
                           End Date
                         </TableHead>
                         <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[90px]">
+                          Override (₹)
+                        </TableHead>
+                        <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[90px]">
                           Discount (₹)
                         </TableHead>
                         <TableHead className="text-[11px] font-medium uppercase tracking-wider text-slate-200 dark:text-slate-400 min-w-[70px]">
@@ -1612,8 +1655,9 @@ export default function CCAManagementPage() {
                     </TableHeader>
                     <TableBody>
                       {selectedAssignConfigs.map((item) => {
+                        const effectiveBase = item.feeOverride !== "" ? Number(item.feeOverride) : item.fee;
                         const disc = item.discountAmount !== "" ? Number(item.discountAmount) : 0;
-                        const net = Math.max(0, item.fee - disc);
+                        const net = Math.max(0, effectiveBase - disc);
                         return (
                           <TableRow
                             key={item.activityId}
@@ -1692,6 +1736,27 @@ export default function CCAManagementPage() {
                                 <Input
                                   type="number"
                                   min={0}
+                                  placeholder={`Auto (${item.fee})`}
+                                  value={item.feeOverride}
+                                  onChange={(e) =>
+                                    handleUpdateAssignItem(
+                                      item.activityId,
+                                      "feeOverride",
+                                      e.target.value === "" ? "" : Number(e.target.value)
+                                    )
+                                  }
+                                  className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 min-w-[85px]"
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-300 text-xs">
+                                  ₹
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={0}
                                   placeholder="0"
                                   value={item.discountAmount}
                                   onChange={(e) =>
@@ -1701,7 +1766,7 @@ export default function CCAManagementPage() {
                                       e.target.value === "" ? "" : Number(e.target.value)
                                     )
                                   }
-                                  className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                                  className="pl-5 h-8 text-xs rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 min-w-[80px]"
                                 />
                               </div>
                             </TableCell>
@@ -1887,6 +1952,21 @@ export default function CCAManagementPage() {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-white dark:text-slate-200">Fee Override per Student (₹)</Label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs font-semibold">₹</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Auto (Standard Fee)"
+                    value={bulkFeeOverride}
+                    onChange={(e) => setBulkFeeOverride(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="pl-6 h-10 text-xs sm:text-sm rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -2107,9 +2187,14 @@ export default function CCAManagementPage() {
               {/* Editable Amount & Discount Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-white dark:text-slate-200">
-                    Base Charge Amount (₹) <span className="text-red-500 ml-0.5">*</span>
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-white dark:text-slate-200">
+                      Fee Override (₹)
+                    </Label>
+                    <span className="text-[10px] text-slate-300 dark:text-slate-400">
+                      Standard: ₹{editingAssignment.defaultFeeAmount.toLocaleString()}
+                    </span>
+                  </div>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm">
                       ₹
@@ -2117,14 +2202,14 @@ export default function CCAManagementPage() {
                     <Input
                       type="number"
                       min={0}
-                      placeholder="0"
-                      value={editingAssignment.feeAmount}
+                      placeholder={`Auto (₹${editingAssignment.defaultFeeAmount})`}
+                      value={editingAssignment.feeOverride}
                       onChange={(e) =>
                         setEditingAssignment((prev) =>
                           prev
                             ? {
                                 ...prev,
-                                feeAmount:
+                                feeOverride:
                                   e.target.value === "" ? "" : Number(e.target.value),
                               }
                             : null
@@ -2133,6 +2218,9 @@ export default function CCAManagementPage() {
                       className="pl-7 h-10 text-xs sm:text-sm font-medium rounded-xl bg-[#667155] border-[#8b9478] text-white placeholder:text-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-white/40"
                     />
                   </div>
+                  <p className="text-[10px] text-slate-300 dark:text-slate-400">
+                    Leave blank to use standard activity fee.
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -2247,10 +2335,10 @@ export default function CCAManagementPage() {
 
               {/* Net Rate Summary Box */}
               {(() => {
-                const base =
-                  editingAssignment.feeAmount !== ""
-                    ? Number(editingAssignment.feeAmount)
-                    : 0;
+                const isOverridden = editingAssignment.feeOverride !== "" && editingAssignment.feeOverride !== undefined && editingAssignment.feeOverride !== null;
+                const base = isOverridden
+                  ? Number(editingAssignment.feeOverride)
+                  : (editingAssignment.defaultFeeAmount || Number(editingAssignment.feeAmount) || 0);
                 const disc =
                   editingAssignment.discountAmount !== ""
                     ? Number(editingAssignment.discountAmount)
@@ -2263,7 +2351,7 @@ export default function CCAManagementPage() {
                         Net Monthly Rate
                       </span>
                       <span className="text-[11px] text-slate-200 dark:text-slate-400">
-                        Base: ₹{base.toLocaleString()}
+                        Base: ₹{base.toLocaleString()} {isOverridden ? "(Custom Override)" : "(Standard Fee)"}
                         {disc > 0 && ` − Discount: ₹${disc.toLocaleString()}`}
                       </span>
                     </div>

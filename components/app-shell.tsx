@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 import { Navbar } from "@/components/navbar"
 import { Sidebar } from "@/components/sidebar"
@@ -18,12 +18,18 @@ type AppShellProps = {
 
 export function AppShell({ area, title, subtitle, children }: AppShellProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const currentAcademicYear = useCurrentAcademicYear()
-  const [collapsed, setCollapsed] = React.useState(true)
+  const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [userLabel, setUserLabel] = React.useState<string | undefined>()
   const [role, setRole] = React.useState<string | null>(null)
   const [permissions, setPermissions] = React.useState<string[]>([])
+
+  // Ensure sidebar is always expanded in desktop view on mount and across all navigations
+  React.useEffect(() => {
+    setCollapsed(false)
+  }, [pathname])
 
   React.useEffect(() => {
     let active = true
