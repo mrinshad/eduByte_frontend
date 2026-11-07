@@ -61,6 +61,8 @@ export interface CCAAssignmentItem {
   endDate?: string | null;
   status: "ACTIVE" | "DROPPED" | "INACTIVE" | string;
   discountAmount?: number | null;
+  feeOverride?: number | null;
+  defaultFeeAmount?: number;
   studentName: string;
   admissionNumber: string;
   activityName: string;
@@ -89,6 +91,7 @@ export interface CCAAssignmentPayload {
   startDate: string;
   endDate?: string | null;
   discountAmount?: number | null;
+  feeOverride?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +219,13 @@ export async function assignStudentToCCAActivities(
   ) {
     body.discountAmount = Number(payload.discountAmount);
   }
+  if (
+    payload.feeOverride !== undefined &&
+    payload.feeOverride !== null &&
+    !isNaN(Number(payload.feeOverride))
+  ) {
+    body.feeOverride = Number(payload.feeOverride);
+  }
 
   return (await apiFetch("/api/cca-assignments", {
     method: "POST",
@@ -229,6 +239,7 @@ export async function bulkAssignStudentToCCAActivity(payload: {
   startDate: string;
   endDate?: string | null;
   discountAmount?: number | null;
+  feeOverride?: number | null;
 }): Promise<ApiSuccess<{ assignedCount: number; skippedCount: number }>> {
   const body: Record<string, any> = {
     ccaActivityId: payload.ccaActivityId,
@@ -245,6 +256,13 @@ export async function bulkAssignStudentToCCAActivity(payload: {
   ) {
     body.discountAmount = Number(payload.discountAmount);
   }
+  if (
+    payload.feeOverride !== undefined &&
+    payload.feeOverride !== null &&
+    !isNaN(Number(payload.feeOverride))
+  ) {
+    body.feeOverride = Number(payload.feeOverride);
+  }
 
   return (await apiFetch("/api/cca-assignments/bulk", {
     method: "POST",
@@ -259,6 +277,7 @@ export async function updateCCAAssignment(
     endDate?: string | null;
     discountAmount?: number | "";
     feeAmount?: number | "";
+    feeOverride?: number | "" | null;
   }
 ): Promise<ApiSuccess<any>> {
   const body: Record<string, any> = {};
@@ -271,8 +290,10 @@ export async function updateCCAAssignment(
   if (payload.discountAmount !== undefined && payload.discountAmount !== null) {
     body.discountAmount = payload.discountAmount === "" ? 0 : Number(payload.discountAmount);
   }
-  if (payload.feeAmount !== undefined && payload.feeAmount !== null) {
-    body.feeAmount = payload.feeAmount === "" ? 0 : Number(payload.feeAmount);
+  if (payload.feeOverride !== undefined) {
+    body.feeOverride = payload.feeOverride === "" || payload.feeOverride === null ? null : Number(payload.feeOverride);
+  } else if (payload.feeAmount !== undefined && payload.feeAmount !== null) {
+    body.feeAmount = payload.feeAmount === "" ? null : Number(payload.feeAmount);
   }
 
   return (await apiFetch(`/api/cca-assignments/${id}`, {

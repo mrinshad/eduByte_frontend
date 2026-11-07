@@ -327,3 +327,10 @@ export async function updateChargeAmount(
   })) as { success: boolean; data: StudentCharge; message?: string };
   return payload.data;
 }
+
+export async function deleteStudentCharge(chargeId: string): Promise<boolean> {
+  const payload = (await apiFetch(`/api/feecollection/charges/${chargeId}`, {
+    method: "DELETE",
+  })) as { success: boolean; message?: string };
+  return payload.success;
+}

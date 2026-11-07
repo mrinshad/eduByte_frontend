@@ -112,6 +112,7 @@ export default function ViewStaffPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const staffId = searchParams.get("id");
+  const { can } = usePermission();
 
   const [staff, setStaff] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
@@ -189,7 +190,6 @@ export default function ViewStaffPage() {
         .toUpperCase()
     : "ST";
 
-  const { can } = usePermission();
   const canViewPayroll =
     can("salaryslips.listOnNavbar") ||
     can("salaryslips.viewSalarySlipButton") ||

@@ -125,6 +125,8 @@ export interface ScheduledEnrollmentChargeItem {
   chargeTypeName: string;
   category?: string | null;
   frequency: string;
+  generationStartAcademicMonth?: number;
+  isActive?: boolean;
   amount: number;
   originalAmount: number;
   discountAmount: number;
@@ -259,7 +261,7 @@ export type FeeGenerationPreviewData = {
   targetMonthStudents?: TargetMonthStudentItem[];
   classWiseStudents?: ClassWiseStudentItem[];
   chargesBreakdown: Record<string, number>;
-  frequencyBreakdown: Record<string, number>;
+  frequencyBreakdown: Record<string, string | number>;
   financialSummary: {
     byChargeType: Record<string, number>;
     total: number;

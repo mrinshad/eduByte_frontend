@@ -48,6 +48,9 @@ import {
   type StudentCcaCharge,
 } from "@/lib/services/cca"
 import { individualRelieveStudent } from "@/lib/services/studentRelieving"
+import {
+  calculateStudentCompleteSchedule,
+} from "@/lib/feeScheduleHelper"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -602,8 +605,11 @@ export default function Page() {
                 const totalFineAmount = (feeData.fines ?? []).reduce((sum, f) => sum + Math.max(f.amount || 0, f.paidAmount || 0), 0);
                 const totalFinePaid = (feeData.fines ?? []).reduce((sum, f) => sum + (f.paidAmount || 0), 0);
 
-                const academicYearPayable = totalFeesFinal + totalFineAmount;
-                const academicYearPaid = totalFeesPaid + totalFinePaid;
+                const totalCcaAmount = (ccaCharges ?? []).reduce((sum, c) => sum + Math.max(Number(c.finalAmount || 0), Number(c.paidAmount || 0)), 0);
+                const totalCcaPaid = (ccaCharges ?? []).reduce((sum, c) => sum + Number(c.paidAmount || 0), 0);
+
+                const academicYearPayable = totalFeesFinal + totalFineAmount + totalCcaAmount;
+                const academicYearPaid = totalFeesPaid + totalFinePaid + totalCcaPaid;
                 const academicYearBalance = Math.max(0, academicYearPayable - academicYearPaid);
 
                 return (
@@ -613,19 +619,34 @@ export default function Page() {
                       <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
                         {formatCurrency(totalFeesFinal)}
                       </p>
+                      {totalCcaAmount > 0 && (
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                          + CCA Charges: <strong className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(totalCcaAmount)}</strong>
+                        </div>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Academic Payable</span>
-                        <span className="text-[10px] text-slate-400">Fees + Fines</span>
+                        <span className="text-[10px] text-slate-400">{totalCcaAmount > 0 ? "Fees + CCA + Fines" : "Fees + Fines"}</span>
                       </div>
                       <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
                         {formatCurrency(academicYearPayable)}
                       </p>
-                      <div className="flex items-center gap-2 pt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                         <span>Fees: <strong className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(totalFeesFinal)}</strong></span>
-                        <span>•</span>
-                        <span>Fine: <strong className="font-semibold text-amber-700 dark:text-amber-400">{formatCurrency(totalFineAmount)}</strong></span>
+                        {totalCcaAmount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>CCA: <strong className="font-semibold text-[#556043] dark:text-[#8b9478]">{formatCurrency(totalCcaAmount)}</strong></span>
+                          </>
+                        )}
+                        {totalFineAmount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>Fine: <strong className="font-semibold text-amber-700 dark:text-amber-400">{formatCurrency(totalFineAmount)}</strong></span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/10 space-y-1">
@@ -633,6 +654,11 @@ export default function Page() {
                       <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 pt-0.5">
                         {formatCurrency(academicYearPaid)}
                       </p>
+                      {totalCcaPaid > 0 && (
+                        <div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 pt-0.5">
+                          Fees: {formatCurrency(totalFeesPaid)} • CCA: {formatCurrency(totalCcaPaid)}
+                        </div>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Outstanding Balance</span>
@@ -644,9 +670,9 @@ export default function Page() {
                 );
               })()}
 
-              {/* Enrolled Fee Structure & Schedule Baseline */}
+              {/* Enrolled Fee Structure */}
               {feeData.enrollmentCharges && feeData.enrollmentCharges.length > 0 && (
-                <InfoSection icon={Receipt} title="Enrolled Fee Structure & Schedule">
+                <InfoSection icon={Receipt} title="Enrolled Fee Structure">
                   <div className="px-5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
                     <span className="text-xs text-slate-600 dark:text-slate-400">
                       Fee Plan: <strong className="text-slate-900 dark:text-slate-200">{feeData.feeStructureName || "Standard Fee Plan"}</strong>
@@ -668,91 +694,273 @@ export default function Page() {
                     <TableBody>
                       {feeData.enrollmentCharges.map((charge, idx) => (
                         <TableRow key={charge.id} className="border-slate-100 dark:border-slate-800/50">
-                          <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400">{idx + 1}</TableCell>
-                          <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100">{charge.chargeTypeName}</TableCell>
-                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">
-                            <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                          <TableCell className="pl-4 text-xs text-slate-500 dark:text-slate-400 py-3">{idx + 1}</TableCell>
+                          <TableCell className="pl-4 text-xs font-medium text-slate-950 dark:text-slate-100 py-3">
+                            <div className="flex items-center gap-2">
+                              <span>{charge.chargeTypeName}</span>
+                              {charge.isActive === false && (
+                                <Badge variant="outline" className="text-[10px] border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-medium">
+                                  Discontinued
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-xs text-slate-500 dark:text-slate-400">{charge.category || "—"}</TableCell>
-                          <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100">
+                          <TableCell className="text-xs text-slate-700 dark:text-slate-300 py-3">
+                            <Badge variant="outline" className="text-[10px] font-semibold text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800">
+                              {charge.frequency}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">{charge.category || "—"}</TableCell>
+                          <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100 py-3" style={{ fontFeatureSettings: '"tnum"' }}>
                             {formatCurrency(charge.amount)}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+
+                  {/* Dedicated Fee Installment Breakdown Panel */}
+                  {(() => {
+                    const schedulePlan = calculateStudentCompleteSchedule(feeData.enrollmentCharges, feeData.charges);
+                    // Only show installment schedule breakdown if there is an actual recurring installment plan (9-Month Tuition, 3-Term Quarterly, or Monthly Transport)
+                    const hasInstallmentSchedule = 
+                      schedulePlan.scheduleType === "9_MONTH_TUITION" || 
+                      schedulePlan.scheduleType === "3_TERM_TUITION" || 
+                      (schedulePlan.hasTransport && schedulePlan.monthlyTransportRate > 0);
+
+                    if (!hasInstallmentSchedule) return null;
+
+                    return (
+                      <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5 space-y-4">
+                        {/* Header bar */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Fee Schedule Breakdown
+                            </div>
+                            <div className="mt-0.5 text-sm font-semibold text-slate-950 dark:text-slate-100">
+                              {schedulePlan.scheduleType === "9_MONTH_TUITION" && "9-Month Installment Schedule"}
+                              {schedulePlan.scheduleType === "3_TERM_TUITION" && "3-Term Quarterly Schedule"}
+                              {schedulePlan.scheduleType === "STANDARD" && "Transport Installment Schedule"}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {schedulePlan.scheduleType === "9_MONTH_TUITION" && (
+                              <Badge variant="outline" className="border-[#556043]/30 bg-[#556043]/10 text-[#556043] dark:text-[#8b9478] text-[11px] font-medium">
+                                9 Monthly Installments
+                              </Badge>
+                            )}
+                            {schedulePlan.scheduleType === "3_TERM_TUITION" && (
+                              <Badge variant="outline" className="border-[#556043]/30 bg-[#556043]/10 text-[#556043] dark:text-[#8b9478] text-[11px] font-medium">
+                                3 Academic Terms
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-[11px] font-medium">
+                              Annual Commitment: <strong className="ml-1 text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>{formatCurrency(schedulePlan.totalAnnualCommitment)}</strong>
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* 3-Term Overview Cards if Quarterly */}
+                        {schedulePlan.scheduleType === "3_TERM_TUITION" && schedulePlan.termInstallments && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {schedulePlan.termInstallments.map((term) => (
+                              <div
+                                key={term.termNumber}
+                                className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-2"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                    {term.termLabel}
+                                  </span>
+                                  <Badge variant="outline" className="border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px]">
+                                    Term {term.termNumber}
+                                  </Badge>
+                                </div>
+
+                                <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                  {formatCurrency(term.tuitionAmount)}
+                                </div>
+
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {term.monthsCovered}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 9-Month Overview Cards if Monthly Tuition */}
+                        {schedulePlan.scheduleType === "9_MONTH_TUITION" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Monthly Installment
+                              </span>
+                              <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.monthlyTuitionRate)}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Installments 1 to 8 (June – Jan)
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Final 9th Installment
+                              </span>
+                              <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.finalRemainderTuition || schedulePlan.monthlyTuitionRate)}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Month 9 (February Remainder)
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Month 10 (March 31)
+                              </span>
+                              <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                ₹0 (Complete)
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Full Tuition Satisfied
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Transport Overview Card if hasTransport */}
+                        {schedulePlan.hasTransport && schedulePlan.monthlyTransportRate > 0 && (
+                          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Transport Fee Overview
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {schedulePlan.transportSummary || `₹${schedulePlan.monthlyTransportRate.toLocaleString("en-IN")}/month billed across active academic months.`}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-base font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.monthlyTransportRate)}<span className="text-xs font-normal text-slate-500">/mo</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </InfoSection>
               )}
 
               {/* Payment & Transaction History */}
               <InfoSection icon={History} title="Payment & Transaction History">
-                {(!feeData.transactions || feeData.transactions.length === 0) ? (
-                  <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                    No payment transactions recorded for this student yet.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Receipt / Ref No
-                        </TableHead>
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Date
-                        </TableHead>
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Fee & Fine Items Covered
-                        </TableHead>
-                        <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Amount Paid
-                        </TableHead>
-                        <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Status
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {feeData.transactions.map((tx) => (
-                        <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
-                          <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
-                            {tx.receiptNumber || tx.transactionNumber}
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                            {formatDateOnly(tx.transactionDate)}
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                            <div className="flex flex-wrap gap-1">
-                              {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
-                                tx.itemsCovered.map((item, idx) => (
-                                  <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                                    {item}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="text-xs text-slate-400">{tx.description || "Fee Payment"}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                            {formatCurrency(tx.totalAmount)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge
-                              variant="outline"
-                              className={
-                                tx.isCancelled
-                                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
-                              }
-                            >
-                              {tx.isCancelled ? "Cancelled" : "Completed"}
-                            </Badge>
-                          </TableCell>
+                {(() => {
+                  const combinedTransactions = [
+                    ...(feeData.transactions || []).map((tx) => ({
+                      id: tx.id,
+                      refNo: tx.receiptNumber || tx.transactionNumber,
+                      date: tx.transactionDate,
+                      itemsCovered: tx.itemsCovered,
+                      description: tx.description || "Fee Payment",
+                      amount: tx.totalAmount,
+                      isCancelled: tx.isCancelled,
+                      isCca: false,
+                    })),
+                    ...(ccaCharges || []).filter((c) => Number(c.paidAmount || 0) > 0).map((c) => ({
+                      id: `cca-${c.id}`,
+                      refNo: `CCA-${c.activityCode || "REC"}-${c.periodYear || 2026}`,
+                      date: c.createdAt,
+                      itemsCovered: [`${c.activityName || "CCA Activity"} (${formatCurrency(c.paidAmount)})`],
+                      description: `Co-Curricular Payment - ${c.activityName || "Activity"}`,
+                      amount: Number(c.paidAmount),
+                      isCancelled: false,
+                      isCca: true,
+                    }))
+                  ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
+                  if (combinedTransactions.length === 0) {
+                    return (
+                      <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                        No payment transactions recorded for this student yet.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Receipt / Ref No
+                          </TableHead>
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Date
+                          </TableHead>
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Fee & Fine Items Covered
+                          </TableHead>
+                          <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Amount Paid
+                          </TableHead>
+                          <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Status
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                      </TableHeader>
+                      <TableBody>
+                        {combinedTransactions.map((tx) => (
+                          <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
+                            <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
+                              <div className="flex items-center gap-1.5">
+                                <span>{tx.refNo}</span>
+                                {tx.isCca && (
+                                  <Badge variant="outline" className="text-[10px] bg-[#556043]/10 text-[#556043] border-[#556043]/30">
+                                    CCA
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                              {formatDateOnly(tx.date)}
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                              <div className="flex flex-wrap gap-1">
+                                {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
+                                  tx.itemsCovered.map((item, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                      {item}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-slate-400">{tx.description}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(tx.amount)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  tx.isCancelled
+                                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                                }
+                              >
+                                {tx.isCancelled ? "Cancelled" : "Completed"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
               </InfoSection>
 
               {/* Itemized Fee & Fine Charges (Grouped by Month) */}
@@ -861,10 +1069,15 @@ export default function Page() {
                   const paid = parseFloat(c.paidAmount || "0");
                   const effectivePayable = Math.max(final, paid);
                   const balance = Math.max(0, final - paid);
+                  const feeDescription =
+                    c.description ||
+                    (c.periodMonth && c.periodMonth >= 1 && c.periodMonth <= 12
+                      ? `${monthNames[c.periodMonth - 1]} Fee`
+                      : "Fee Charge");
                   group.items.push({
                     type: "FEE",
                     id: c.id,
-                    description: c.description,
+                    description: feeDescription,
                     amount: final,
                     paid,
                     balance,
@@ -945,7 +1158,7 @@ export default function Page() {
                     if (a.type !== b.type) {
                       return a.type === "FEE" ? -1 : 1;
                     }
-                    return a.description.localeCompare(b.description);
+                    return (a.description || "").localeCompare(b.description || "");
                   });
                 }
 
@@ -955,7 +1168,7 @@ export default function Page() {
                     if (b.sortKey === 0) return 1;
                     return a.sortKey - b.sortKey;
                   }
-                  return a.monthLabel.localeCompare(b.monthLabel);
+                  return (a.monthLabel || "").localeCompare(b.monthLabel || "");
                 });
 
                 return (
@@ -1045,7 +1258,7 @@ export default function Page() {
                                 <TableRow key={item.id} className="border-slate-100 dark:border-slate-800/50">
                                   <TableCell className="text-sm font-medium text-slate-950 dark:text-slate-100">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span>{item.description}</span>
+                                      <span>{item.description || "Fee Charge"}</span>
                                       {item.paid > item.amount && (
                                         <Badge
                                           variant="outline"
