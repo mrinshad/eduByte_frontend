@@ -605,8 +605,11 @@ export default function Page() {
                 const totalFineAmount = (feeData.fines ?? []).reduce((sum, f) => sum + Math.max(f.amount || 0, f.paidAmount || 0), 0);
                 const totalFinePaid = (feeData.fines ?? []).reduce((sum, f) => sum + (f.paidAmount || 0), 0);
 
-                const academicYearPayable = totalFeesFinal + totalFineAmount;
-                const academicYearPaid = totalFeesPaid + totalFinePaid;
+                const totalCcaAmount = (ccaCharges ?? []).reduce((sum, c) => sum + Math.max(Number(c.finalAmount || 0), Number(c.paidAmount || 0)), 0);
+                const totalCcaPaid = (ccaCharges ?? []).reduce((sum, c) => sum + Number(c.paidAmount || 0), 0);
+
+                const academicYearPayable = totalFeesFinal + totalFineAmount + totalCcaAmount;
+                const academicYearPaid = totalFeesPaid + totalFinePaid + totalCcaPaid;
                 const academicYearBalance = Math.max(0, academicYearPayable - academicYearPaid);
 
                 return (
@@ -616,19 +619,34 @@ export default function Page() {
                       <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
                         {formatCurrency(totalFeesFinal)}
                       </p>
+                      {totalCcaAmount > 0 && (
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                          + CCA Charges: <strong className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(totalCcaAmount)}</strong>
+                        </div>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Academic Payable</span>
-                        <span className="text-[10px] text-slate-400">Fees + Fines</span>
+                        <span className="text-[10px] text-slate-400">{totalCcaAmount > 0 ? "Fees + CCA + Fines" : "Fees + Fines"}</span>
                       </div>
                       <p className="text-lg font-bold text-slate-950 dark:text-white pt-0.5">
                         {formatCurrency(academicYearPayable)}
                       </p>
-                      <div className="flex items-center gap-2 pt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                         <span>Fees: <strong className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(totalFeesFinal)}</strong></span>
-                        <span>•</span>
-                        <span>Fine: <strong className="font-semibold text-amber-700 dark:text-amber-400">{formatCurrency(totalFineAmount)}</strong></span>
+                        {totalCcaAmount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>CCA: <strong className="font-semibold text-[#556043] dark:text-[#8b9478]">{formatCurrency(totalCcaAmount)}</strong></span>
+                          </>
+                        )}
+                        {totalFineAmount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>Fine: <strong className="font-semibold text-amber-700 dark:text-amber-400">{formatCurrency(totalFineAmount)}</strong></span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/10 space-y-1">
@@ -636,6 +654,11 @@ export default function Page() {
                       <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 pt-0.5">
                         {formatCurrency(academicYearPaid)}
                       </p>
+                      {totalCcaPaid > 0 && (
+                        <div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 pt-0.5">
+                          Fees: {formatCurrency(totalFeesPaid)} • CCA: {formatCurrency(totalCcaPaid)}
+                        </div>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 space-y-1">
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Outstanding Balance</span>
@@ -682,8 +705,10 @@ export default function Page() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">
-                            <Badge variant="outline" className="text-[10px]">{charge.frequency}</Badge>
+                          <TableCell className="text-xs text-slate-700 dark:text-slate-300 py-3">
+                            <Badge variant="outline" className="text-[10px] font-semibold text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800">
+                              {charge.frequency}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3">{charge.category || "—"}</TableCell>
                           <TableCell className="pr-4 text-right text-xs font-semibold text-slate-950 dark:text-slate-100 py-3" style={{ fontFeatureSettings: '"tnum"' }}>
@@ -766,149 +791,65 @@ export default function Page() {
                           </div>
                         )}
 
-                        {/* Month-by-Month Installment Table */}
-                        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800/60 dark:bg-slate-950/50">
-                          <Table className="table-fixed w-full min-w-[620px]">
-                            <TableHeader>
-                              <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
-                                <TableHead className="h-9 w-12 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">#</TableHead>
-                                <TableHead className="h-9 w-48 pl-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Academic Period</TableHead>
-                                {schedulePlan.hasTuition && (
-                                  <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Tuition Fee</TableHead>
-                                )}
-                                {schedulePlan.hasTransport && (
-                                  <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Transport Fee</TableHead>
-                                )}
-                                {schedulePlan.totalAnnualOther > 0 && (
-                                  <TableHead className="h-9 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Other Heads</TableHead>
-                                )}
-                                <TableHead className="h-9 pr-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Total Scheduled</TableHead>
-                                <TableHead className="h-9 pr-4 pl-4 text-xs font-semibold text-slate-500 dark:text-slate-400">Schedule Status / Notes</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {schedulePlan.monthlyPeriods.map((period) => {
-                                return (
-                                  <TableRow
-                                    key={period.academicMonthNumber}
-                                    className={cn(
-                                      "border-slate-100 dark:border-slate-800/50",
-                                      period.isRemainder && "bg-amber-50/40 dark:bg-amber-950/10",
-                                      period.isTuitionFree && "bg-slate-50/60 dark:bg-slate-900/40"
-                                    )}
-                                  >
-                                    <TableCell className="pl-4 text-xs text-slate-400 dark:text-slate-500 py-2.5">
-                                      {period.academicMonthNumber}
-                                    </TableCell>
-                                    <TableCell className="pl-3 text-xs font-medium text-slate-950 dark:text-slate-100 py-2.5">
-                                      {period.periodLabel}
-                                    </TableCell>
-                                    {schedulePlan.hasTuition && (
-                                      <TableCell
-                                        className={cn(
-                                          "text-right text-xs py-2.5 font-medium",
-                                          period.tuitionAmount > 0 ? "text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"
-                                        )}
-                                        style={{ fontFeatureSettings: '"tnum"' }}
-                                      >
-                                        {formatCurrency(period.tuitionAmount)}
-                                      </TableCell>
-                                    )}
-                                    {schedulePlan.hasTransport && (
-                                      <TableCell
-                                        className="text-right text-xs text-slate-700 dark:text-slate-300 py-2.5 font-medium"
-                                        style={{ fontFeatureSettings: '"tnum"' }}
-                                      >
-                                        {formatCurrency(period.transportAmount)}
-                                      </TableCell>
-                                    )}
-                                    {schedulePlan.totalAnnualOther > 0 && (
-                                      <TableCell
-                                        className="text-right text-xs text-slate-700 dark:text-slate-300 py-2.5 font-medium"
-                                        style={{ fontFeatureSettings: '"tnum"' }}
-                                      >
-                                        {period.otherAmount > 0 ? formatCurrency(period.otherAmount) : "—"}
-                                      </TableCell>
-                                    )}
-                                    <TableCell
-                                      className="pr-3 text-right text-xs font-bold text-[#556043] dark:text-[#8b9478] py-2.5"
-                                      style={{ fontFeatureSettings: '"tnum"' }}
-                                    >
-                                      {formatCurrency(period.totalScheduled)}
-                                    </TableCell>
-                                    <TableCell className="pr-4 pl-4 py-2.5">
-                                      <div className="flex flex-wrap items-center gap-1.5">
-                                        {period.generatedStatus === "PAID" && (
-                                          <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px] font-semibold">
-                                            ✓ Paid ({formatCurrency(period.actualPaidAmount || period.totalScheduled)})
-                                          </Badge>
-                                        )}
-                                        {period.generatedStatus === "PARTIAL" && (
-                                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px] font-semibold">
-                                            Partial (Paid {formatCurrency(period.actualPaidAmount || 0)})
-                                          </Badge>
-                                        )}
-                                        {period.generatedStatus === "OVERDUE" && (
-                                          <Badge variant="outline" className="border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-300 text-[10px] font-semibold">
-                                            Overdue ({formatCurrency(period.actualBilledAmount || period.totalScheduled)})
-                                          </Badge>
-                                        )}
-                                        {period.generatedStatus === "PENDING" && (
-                                          <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 text-[10px] font-semibold">
-                                            Pending ({formatCurrency(period.actualBilledAmount || period.totalScheduled)})
-                                          </Badge>
-                                        )}
-                                        {period.isRemainder ? (
-                                          <Badge variant="outline" className="border-amber-300/80 bg-amber-50/60 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 text-[10px]">
-                                            Final Installment
-                                          </Badge>
-                                        ) : period.isTuitionFree ? (
-                                          <Badge variant="outline" className="border-emerald-300/80 bg-emerald-50/60 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-[10px]">
-                                            Tuition Complete
-                                          </Badge>
-                                        ) : (
-                                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                                            {period.notes}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                            <tfoot>
-                              <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-bold dark:border-slate-800 dark:bg-slate-950/80">
-                                <td colSpan={2} className="pl-4 py-2.5 text-xs text-slate-900 dark:text-slate-100">
-                                  Total Academic Year Commitment
-                                </td>
-                                {schedulePlan.hasTuition && (
-                                  <td className="text-right text-xs text-slate-900 dark:text-slate-100 py-2.5" style={{ fontFeatureSettings: '"tnum"' }}>
-                                    {formatCurrency(schedulePlan.totalAnnualTuition)}
-                                  </td>
-                                )}
-                                {schedulePlan.hasTransport && (
-                                  <td className="text-right text-xs text-slate-900 dark:text-slate-100 py-2.5" style={{ fontFeatureSettings: '"tnum"' }}>
-                                    {formatCurrency(schedulePlan.totalAnnualTransport)}
-                                  </td>
-                                )}
-                                {schedulePlan.totalAnnualOther > 0 && (
-                                  <td className="text-right text-xs text-slate-900 dark:text-slate-100 py-2.5" style={{ fontFeatureSettings: '"tnum"' }}>
-                                    {formatCurrency(schedulePlan.totalAnnualOther)}
-                                  </td>
-                                )}
-                                <td className="pr-3 text-right text-xs font-bold text-[#556043] dark:text-[#8b9478] py-2.5" style={{ fontFeatureSettings: '"tnum"' }}>
-                                  {formatCurrency(schedulePlan.totalAnnualCommitment)}
-                                </td>
-                                <td className="pr-4 pl-4 text-[10px] text-slate-500 dark:text-slate-400 py-2.5 font-normal">
-                                  {schedulePlan.scheduleType === "9_MONTH_TUITION" && "9-Month Academic Plan"}
-                                  {schedulePlan.scheduleType === "3_TERM_TUITION" && "3-Term Academic Plan"}
-                                  {schedulePlan.scheduleType === "STANDARD" && "Transport Schedule"}
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </Table>
-                        </div>
+                        {/* 9-Month Overview Cards if Monthly Tuition */}
+                        {schedulePlan.scheduleType === "9_MONTH_TUITION" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Monthly Installment
+                              </span>
+                              <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.monthlyTuitionRate)}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Installments 1 to 8 (June – Jan)
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Final 9th Installment
+                              </span>
+                              <div className="text-lg font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.finalRemainderTuition || schedulePlan.monthlyTuitionRate)}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Month 9 (February Remainder)
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 space-y-1.5">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Month 10 (March 31)
+                              </span>
+                              <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                ₹0 (Complete)
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Full Tuition Satisfied
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Transport Overview Card if hasTransport */}
+                        {schedulePlan.hasTransport && schedulePlan.monthlyTransportRate > 0 && (
+                          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                Transport Fee Overview
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {schedulePlan.transportSummary || `₹${schedulePlan.monthlyTransportRate.toLocaleString("en-IN")}/month billed across active academic months.`}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-base font-bold text-slate-950 dark:text-white" style={{ fontFeatureSettings: '"tnum"' }}>
+                                {formatCurrency(schedulePlan.monthlyTransportRate)}<span className="text-xs font-normal text-slate-500">/mo</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -917,73 +858,109 @@ export default function Page() {
 
               {/* Payment & Transaction History */}
               <InfoSection icon={History} title="Payment & Transaction History">
-                {(!feeData.transactions || feeData.transactions.length === 0) ? (
-                  <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                    No payment transactions recorded for this student yet.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Receipt / Ref No
-                        </TableHead>
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Date
-                        </TableHead>
-                        <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Fee & Fine Items Covered
-                        </TableHead>
-                        <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Amount Paid
-                        </TableHead>
-                        <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Status
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {feeData.transactions.map((tx) => (
-                        <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
-                          <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
-                            {tx.receiptNumber || tx.transactionNumber}
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                            {formatDateOnly(tx.transactionDate)}
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                            <div className="flex flex-wrap gap-1">
-                              {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
-                                tx.itemsCovered.map((item, idx) => (
-                                  <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                                    {item}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="text-xs text-slate-400">{tx.description || "Fee Payment"}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                            {formatCurrency(tx.totalAmount)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge
-                              variant="outline"
-                              className={
-                                tx.isCancelled
-                                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
-                              }
-                            >
-                              {tx.isCancelled ? "Cancelled" : "Completed"}
-                            </Badge>
-                          </TableCell>
+                {(() => {
+                  const combinedTransactions = [
+                    ...(feeData.transactions || []).map((tx) => ({
+                      id: tx.id,
+                      refNo: tx.receiptNumber || tx.transactionNumber,
+                      date: tx.transactionDate,
+                      itemsCovered: tx.itemsCovered,
+                      description: tx.description || "Fee Payment",
+                      amount: tx.totalAmount,
+                      isCancelled: tx.isCancelled,
+                      isCca: false,
+                    })),
+                    ...(ccaCharges || []).filter((c) => Number(c.paidAmount || 0) > 0).map((c) => ({
+                      id: `cca-${c.id}`,
+                      refNo: `CCA-${c.activityCode || "REC"}-${c.periodYear || 2026}`,
+                      date: c.createdAt,
+                      itemsCovered: [`${c.activityName || "CCA Activity"} (${formatCurrency(c.paidAmount)})`],
+                      description: `Co-Curricular Payment - ${c.activityName || "Activity"}`,
+                      amount: Number(c.paidAmount),
+                      isCancelled: false,
+                      isCca: true,
+                    }))
+                  ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
+                  if (combinedTransactions.length === 0) {
+                    return (
+                      <div className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                        No payment transactions recorded for this student yet.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-100 bg-slate-50 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-950/50">
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Receipt / Ref No
+                          </TableHead>
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Date
+                          </TableHead>
+                          <TableHead className="h-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Fee & Fine Items Covered
+                          </TableHead>
+                          <TableHead className="h-10 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Amount Paid
+                          </TableHead>
+                          <TableHead className="h-10 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Status
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                      </TableHeader>
+                      <TableBody>
+                        {combinedTransactions.map((tx) => (
+                          <TableRow key={tx.id} className="border-slate-100 dark:border-slate-800/50">
+                            <TableCell className="text-sm font-semibold font-mono text-slate-950 dark:text-slate-100">
+                              <div className="flex items-center gap-1.5">
+                                <span>{tx.refNo}</span>
+                                {tx.isCca && (
+                                  <Badge variant="outline" className="text-[10px] bg-[#556043]/10 text-[#556043] border-[#556043]/30">
+                                    CCA
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                              {formatDateOnly(tx.date)}
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                              <div className="flex flex-wrap gap-1">
+                                {tx.itemsCovered && tx.itemsCovered.length > 0 ? (
+                                  tx.itemsCovered.map((item, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-[10px] bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                      {item}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-slate-400">{tx.description}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(tx.amount)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  tx.isCancelled
+                                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                                }
+                              >
+                                {tx.isCancelled ? "Cancelled" : "Completed"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
               </InfoSection>
 
               {/* Itemized Fee & Fine Charges (Grouped by Month) */}

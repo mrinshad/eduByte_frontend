@@ -33,9 +33,16 @@ export interface StudentInstallmentPeriod {
   isTermDue?: boolean;
   termNumber?: number; // 1, 2, 3
   // Live billing status if student charges are provided
-  generatedStatus?: "PAID" | "PARTIAL" | "OVERDUE" | "PENDING" | "UPCOMING";
+  generatedStatus?: "PAID" | "PARTIAL" | "OVERDUE" | "PENDING" | "UPCOMING" | "COVERED";
   actualBilledAmount?: number;
   actualPaidAmount?: number;
+  // Specific head breakdowns for disambiguating multi-head months
+  tuitionStatus?: "PAID" | "PARTIAL" | "OVERDUE" | "PENDING";
+  tuitionPaid?: number;
+  tuitionBilled?: number;
+  transportStatus?: "PAID" | "PARTIAL" | "OVERDUE" | "PENDING";
+  transportPaid?: number;
+  transportBilled?: number;
 }
 
 export interface StudentCompleteSchedule {
@@ -698,9 +705,15 @@ export function calculateStudentCompleteSchedule(
     }
 
     // Match with existingCharges if provided
-    let generatedStatus: StudentInstallmentPeriod["generatedStatus"] = undefined;
+    let generatedStatus: StudentInstallmentPeriod["generatedStatus"] = totalScheduled === 0 ? "COVERED" : undefined;
     let actualBilledAmount: number | undefined = undefined;
     let actualPaidAmount: number | undefined = undefined;
+    let tuitionStatus: StudentInstallmentPeriod["tuitionStatus"] = undefined;
+    let tuitionPaid: number | undefined = undefined;
+    let tuitionBilled: number | undefined = undefined;
+    let transportStatus: StudentInstallmentPeriod["transportStatus"] = undefined;
+    let transportPaid: number | undefined = undefined;
+    let transportBilled: number | undefined = undefined;
 
     if (existingCharges && existingCharges.length > 0) {
       const matching = existingCharges.filter(
@@ -714,6 +727,37 @@ export function calculateStudentCompleteSchedule(
         actualBilledAmount = matching.reduce((s, c) => s + Number(c.finalAmount || 0), 0);
         actualPaidAmount = matching.reduce((s, c) => s + Number(c.paidAmount || 0), 0);
 
+        const matchingTuition = matching.filter((c) => isTuitionHead(c.description || ""));
+        const matchingTransport = matching.filter((c) => isTransportHead(c.description || ""));
+
+        if (matchingTuition.length > 0) {
+          tuitionBilled = matchingTuition.reduce((s, c) => s + Number(c.finalAmount || 0), 0);
+          tuitionPaid = matchingTuition.reduce((s, c) => s + Number(c.paidAmount || 0), 0);
+          if (tuitionPaid >= tuitionBilled && tuitionBilled > 0) {
+            tuitionStatus = "PAID";
+          } else if (tuitionPaid > 0) {
+            tuitionStatus = "PARTIAL";
+          } else if (matchingTuition.some((c) => c.status === "OVERDUE")) {
+            tuitionStatus = "OVERDUE";
+          } else {
+            tuitionStatus = "PENDING";
+          }
+        }
+
+        if (matchingTransport.length > 0) {
+          transportBilled = matchingTransport.reduce((s, c) => s + Number(c.finalAmount || 0), 0);
+          transportPaid = matchingTransport.reduce((s, c) => s + Number(c.paidAmount || 0), 0);
+          if (transportPaid >= transportBilled && transportBilled > 0) {
+            transportStatus = "PAID";
+          } else if (transportPaid > 0) {
+            transportStatus = "PARTIAL";
+          } else if (matchingTransport.some((c) => c.status === "OVERDUE")) {
+            transportStatus = "OVERDUE";
+          } else {
+            transportStatus = "PENDING";
+          }
+        }
+
         if (actualPaidAmount >= actualBilledAmount && actualBilledAmount > 0) {
           generatedStatus = "PAID";
         } else if (actualPaidAmount > 0) {
@@ -724,7 +768,7 @@ export function calculateStudentCompleteSchedule(
           generatedStatus = "PENDING";
         }
       } else {
-        generatedStatus = totalScheduled === 0 ? undefined : "UPCOMING";
+        generatedStatus = totalScheduled === 0 ? "COVERED" : "UPCOMING";
       }
     }
 
@@ -745,6 +789,12 @@ export function calculateStudentCompleteSchedule(
       generatedStatus,
       actualBilledAmount,
       actualPaidAmount,
+      tuitionStatus,
+      tuitionPaid,
+      tuitionBilled,
+      transportStatus,
+      transportPaid,
+      transportBilled,
     });
   }
 
