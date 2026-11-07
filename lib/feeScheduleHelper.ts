@@ -354,6 +354,25 @@ export function calculateStudentCompleteSchedule(
         t3 = t2;
       }
 
+      // Check if student has actual custom term charges generated
+      if (existingCharges && existingCharges.length > 0) {
+        const existingTuitionCharges = existingCharges.filter((c) => !c.isDeleted && isTuitionHead(c.description || ""));
+        const ecT1 = existingTuitionCharges.find((c) => c.periodMonth === 6);
+        const ecT2 = existingTuitionCharges.find((c) => c.periodMonth === 9);
+        const ecT3 = existingTuitionCharges.find((c) => c.periodMonth === 12);
+        if (ecT1 && Number(ecT1.finalAmount) > 0) {
+          t1 = Number(ecT1.finalAmount);
+        }
+        if (ecT2 && Number(ecT2.finalAmount) > 0) {
+          t2 = Number(ecT2.finalAmount);
+        }
+        if (ecT3 && Number(ecT3.finalAmount) > 0) {
+          t3 = Number(ecT3.finalAmount);
+        } else if (ecT1 || ecT2) {
+          t3 = Math.max(0, rawAmt - t1 - t2);
+        }
+      }
+
       const hasOneTimeCharge = otherCharges.some((c) => (c.frequency || "").toUpperCase() === "ONE_TIME");
 
       formulaSummary = `Annual Tuition ₹${rawAmt.toLocaleString("en-IN")} divided directly into 3 academic terms: Term 1: ₹${t1.toLocaleString("en-IN")}, Term 2: ₹${t2.toLocaleString("en-IN")}, Term 3: ₹${t3.toLocaleString("en-IN")}. Month 10 has no 4th quarter (covered in Term 3).${
