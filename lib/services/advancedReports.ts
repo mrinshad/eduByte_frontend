@@ -67,8 +67,53 @@ export async function getDaybookReport(params: {
 // 2. Fee Defaulters & Aging Types
 // =========================================================================
 
+export interface FeeDefaulterChargeItem {
+    id: string;
+    name: string;
+    finalAmount: number;
+    paidAmount: number;
+    balance: number;
+    dueDate?: string | null;
+    createdAt?: string;
+    periodMonth?: number;
+    periodYear?: number;
+    chargeType?: { id?: string; name: string; category?: string };
+    frequency?: string;
+}
+
+export interface FeeDefaulterFineItem {
+    id: string;
+    name: string;
+    amount: number;
+    paidAmount: number;
+    balance: number;
+    reason?: string | null;
+    createdAt?: string;
+    fineType?: { id?: string; name: string };
+}
+
+export interface FeeReminderDetails {
+    templateName: string;
+    periodDescription: string;
+    currentFeesText: string;
+    previousDuesText: string;
+    finesText: string;
+    totalPayableText: string;
+    dueDateText: string;
+    parameters: string[];
+    currentAmount: number;
+    previousAmount: number;
+    fineAmount: number;
+    totalAmount: number;
+    currentChargesCount: number;
+    pastChargesCount: number;
+    finesCount: number;
+}
+
 export interface FeeDefaulterItem {
     studentId: string;
+    enrollmentId?: string;
+    academicYearId?: string;
     admissionNumber: string;
     studentName: string;
     gender: string;
@@ -90,6 +135,9 @@ export interface FeeDefaulterItem {
     maxDaysOverdue: number;
     unpaidItemsCount: number;
     riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    charges?: FeeDefaulterChargeItem[];
+    fines?: FeeDefaulterFineItem[];
+    reminderDetails?: FeeReminderDetails;
 }
 
 export interface FeeDefaultersReportResponse {

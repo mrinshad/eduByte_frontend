@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Defaulters Table Full Charge Ledger & Itemized Parent WhatsApp Reminders**:
+  - Added expandable charge ledger rows in the Defaulters table (`app/workspace/reports/fee-defaulters/page.tsx`), allowing staff to toggle and inspect the student's itemized charges (Tuition, Transport, Madrasa, etc.) and fines ledger directly in the table.
+  - Updated `SendWhatsAppDialog.tsx` to display live Fee Notice breakdown preview matching official WhatsApp template parameters and pass accurate itemized values on dispatch.
+  - Updated `FeeDefaulterItem` interface in `lib/services/advancedReports.ts` to include `charges`, `fines`, and `reminderDetails`.
 - **CCA Module Student Fee Override**:
   - Added `feeOverride Decimal? @db.Decimal(18, 2)` column to `StudentCcaAssignment` via Prisma migration `20261104052324_add_fee_override_to_student_cca_assignment`.
   - Enhanced backend controllers (`ccaAssignments.controller.js`, `ccaCharges.controller.js`, `stdEnrollment.controller.js`) to support per-student fee overrides during single assignment, bulk assignment, and enrollment, ensuring customized billing without mutating default activity rates.

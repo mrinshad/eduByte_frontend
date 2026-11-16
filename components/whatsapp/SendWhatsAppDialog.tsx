@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,15 +23,24 @@ import {
   sendIndividualWhatsAppMessage,
   type SendIndividualMessagePayload,
 } from "@/lib/services/whatsapp";
+import type {
+  FeeDefaulterChargeItem,
+  FeeDefaulterFineItem,
+  FeeReminderDetails,
+} from "@/lib/services/advancedReports";
 
 export interface StudentContextData {
   studentId?: string;
+  enrollmentId?: string;
   admissionNumber?: string;
   studentName?: string;
   className?: string;
   whatsappNumber?: string;
   totalDue?: number;
   agingBracket?: string;
+  charges?: FeeDefaulterChargeItem[];
+  fines?: FeeDefaulterFineItem[];
+  reminderDetails?: FeeReminderDetails;
 }
 
 interface SendWhatsAppDialogProps {
@@ -57,11 +65,12 @@ export function SendWhatsAppDialog({
   useEffect(() => {
     if (isOpen) {
       const phone = student?.whatsappNumber?.trim() || "";
+      const initialTemplate = student?.reminderDetails?.templateName || "fee_payment_monthly";
       queueMicrotask(() => {
         setRecipientPhone(phone);
         setCustomText("");
         setMode("TEMPLATE");
-        setTemplateName("fee_payment_monthly");
+        setTemplateName(initialTemplate);
       });
     }
   }, [isOpen, student]);
@@ -85,6 +94,38 @@ export function SendWhatsAppDialog({
     setIsSending(true);
 
     try {
+      const reminder = student?.reminderDetails;
+      const fallbackDueDate = `${new Date().getDate()}th ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`;
+      const fallbackPeriod = `${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`;
+
+      const templateParams = mode === "TEMPLATE"
+        ? templateName === "hello_world"
+          ? []
+          : templateName === "fee_payment_quarterly"
+            ? (reminder && reminder.templateName === "fee_payment_quarterly" && reminder.parameters?.length === 7)
+              ? reminder.parameters
+              : [
+                  student?.studentName || "Student",
+                  reminder?.periodDescription || "Third Quarter",
+                  reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
+                  reminder?.previousDuesText || "Rs. 0",
+                  reminder?.finesText || "None",
+                  reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
+                  reminder?.dueDateText || fallbackDueDate,
+                ]
+            : (reminder && reminder.parameters && reminder.parameters.length === 7 && reminder.templateName !== "fee_payment_quarterly")
+              ? reminder.parameters
+              : [
+                  student?.studentName || "Student",
+                  reminder?.periodDescription || fallbackPeriod,
+                  reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
+                  reminder?.previousDuesText || "Rs. 0",
+                  reminder?.finesText || "None",
+                  reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
+                  reminder?.dueDateText || fallbackDueDate,
+                ]
+        : undefined;
+
       const payload: SendIndividualMessagePayload = {
         studentId: student?.studentId,
         recipientPhone: recipientPhone.trim(),
@@ -97,22 +138,7 @@ export function SendWhatsAppDialog({
               ? "en"
               : "en_US"
             : undefined,
-        parameters:
-          mode === "TEMPLATE"
-            ? templateName === "hello_world"
-              ? []
-              : [
-                student?.studentName || "Student",
-                templateName === "fee_payment_quarterly"
-                  ? "Third Quarter"
-                  : `month of ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`,
-                formattedDue.replace("₹", "Rs. "),
-                "Rs. 0",
-                "None",
-                formattedDue.replace("₹", "Rs. "),
-                `${new Date().getDate()}th ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`,
-              ]
-            : undefined,
+        parameters: templateParams,
       };
 
       const result = await sendIndividualWhatsAppMessage(payload);
@@ -240,14 +266,59 @@ export function SendWhatsAppDialog({
               </p>
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3 space-y-1 text-xs">
-              <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                Official Fee Notice
+            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Official Fee Notice Preview
+                </div>
+                {student?.reminderDetails?.periodDescription && (
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                    {student.reminderDetails.periodDescription}
+                  </span>
+                )}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Will send {formattedDue} outstanding notice for <strong>{student?.studentName || "student"}</strong> with breakdown and school contact details.
-              </div>
+
+              {student?.reminderDetails ? (
+                <div className="space-y-1.5 text-[11px] bg-white dark:bg-slate-950 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 leading-relaxed font-sans">
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400">Current Fees: </span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      {student.reminderDetails.currentFeesText}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400">Previous Dues: </span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      {student.reminderDetails.previousDuesText}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400">Existing Fines: </span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      {student.reminderDetails.finesText}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1.5 flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">Total Payable: </span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        {student.reminderDetails.totalPayableText}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">Due Date: </span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        {student.reminderDetails.dueDateText}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Will send {formattedDue} outstanding notice for <strong>{student?.studentName || "student"}</strong> with breakdown and school contact details.
+                </div>
+              )}
             </div>
           )}
         </div>
