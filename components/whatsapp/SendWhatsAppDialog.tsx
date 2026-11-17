@@ -1,52 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Phone, Send, Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, Send, MessageSquare, Phone, CheckCircle2 } from "lucide-react";
 import {
   sendIndividualWhatsAppMessage,
   type SendIndividualMessagePayload,
 } from "@/lib/services/whatsapp";
-import type {
-  FeeDefaulterChargeItem,
-  FeeDefaulterFineItem,
-  FeeReminderDetails,
-} from "@/lib/services/advancedReports";
+import type { FeeReminderDetails } from "@/lib/services/advancedReports";
 
 export interface StudentContextData {
-  studentId?: string;
+  studentId: string;
   enrollmentId?: string;
+  studentName: string;
   admissionNumber?: string;
-  studentName?: string;
   className?: string;
   whatsappNumber?: string;
   totalDue?: number;
   agingBracket?: string;
-  charges?: FeeDefaulterChargeItem[];
-  fines?: FeeDefaulterFineItem[];
+  charges?: any[];
+  fines?: any[];
   reminderDetails?: FeeReminderDetails;
 }
 
 interface SendWhatsAppDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  student?: StudentContextData | null;
+  student: StudentContextData | null;
   onSuccess?: () => void;
 }
 
@@ -57,20 +44,13 @@ export function SendWhatsAppDialog({
   onSuccess,
 }: SendWhatsAppDialogProps) {
   const [recipientPhone, setRecipientPhone] = useState("");
-  const [mode, setMode] = useState<"TEMPLATE" | "TEXT">("TEMPLATE");
-  const [templateName, setTemplateName] = useState("fee_payment_monthly");
-  const [customText, setCustomText] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       const phone = student?.whatsappNumber?.trim() || "";
-      const initialTemplate = student?.reminderDetails?.templateName || "fee_payment_monthly";
       queueMicrotask(() => {
         setRecipientPhone(phone);
-        setCustomText("");
-        setMode("TEMPLATE");
-        setTemplateName(initialTemplate);
       });
     }
   }, [isOpen, student]);
@@ -86,58 +66,44 @@ export function SendWhatsAppDialog({
       return;
     }
 
-    if (mode === "TEXT" && !customText.trim()) {
-      toast.error("Please enter message text.");
-      return;
-    }
-
     setIsSending(true);
 
     try {
       const reminder = student?.reminderDetails;
+      const templateName = reminder?.templateName || "fee_payment_monthly";
       const fallbackDueDate = `${new Date().getDate()}th ${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`;
       const fallbackPeriod = `${new Date().toLocaleString("en-US", { month: "long" })} ${new Date().getFullYear()}`;
 
-      const templateParams = mode === "TEMPLATE"
-        ? templateName === "hello_world"
-          ? []
-          : templateName === "fee_payment_quarterly"
-            ? (reminder && reminder.templateName === "fee_payment_quarterly" && reminder.parameters?.length === 7)
-              ? reminder.parameters
-              : [
-                  student?.studentName || "Student",
-                  reminder?.periodDescription || "Third Quarter",
-                  reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
-                  reminder?.previousDuesText || "Rs. 0",
-                  reminder?.finesText || "None",
-                  reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
-                  reminder?.dueDateText || fallbackDueDate,
-                ]
-            : (reminder && reminder.parameters && reminder.parameters.length === 7 && reminder.templateName !== "fee_payment_quarterly")
-              ? reminder.parameters
-              : [
-                  student?.studentName || "Student",
-                  reminder?.periodDescription || fallbackPeriod,
-                  reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
-                  reminder?.previousDuesText || "Rs. 0",
-                  reminder?.finesText || "None",
-                  reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
-                  reminder?.dueDateText || fallbackDueDate,
-                ]
-        : undefined;
+      const templateParams = templateName === "fee_payment_quarterly"
+        ? (reminder && reminder.templateName === "fee_payment_quarterly" && reminder.parameters?.length === 7)
+          ? reminder.parameters
+          : [
+              student?.studentName || "Student",
+              reminder?.periodDescription || "Third Quarter",
+              reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
+              reminder?.previousDuesText || "Rs. 0",
+              reminder?.finesText || "None",
+              reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
+              reminder?.dueDateText || fallbackDueDate,
+            ]
+        : (reminder && reminder.parameters && reminder.parameters.length === 7 && reminder.templateName !== "fee_payment_quarterly")
+          ? reminder.parameters
+          : [
+              student?.studentName || "Student",
+              reminder?.periodDescription || fallbackPeriod,
+              reminder?.currentFeesText || formattedDue.replace("₹", "Rs. "),
+              reminder?.previousDuesText || "Rs. 0",
+              reminder?.finesText || "None",
+              reminder?.totalPayableText || formattedDue.replace("₹", "Rs. "),
+              reminder?.dueDateText || fallbackDueDate,
+            ];
 
       const payload: SendIndividualMessagePayload = {
         studentId: student?.studentId,
         recipientPhone: recipientPhone.trim(),
-        mode,
-        message: mode === "TEXT" ? customText.trim() : undefined,
-        templateName: mode === "TEMPLATE" ? templateName : undefined,
-        languageCode:
-          mode === "TEMPLATE"
-            ? templateName === "fee_payment_quarterly"
-              ? "en"
-              : "en_US"
-            : undefined,
+        mode: "TEMPLATE",
+        templateName,
+        languageCode: templateName === "fee_payment_quarterly" ? "en" : "en_US",
         parameters: templateParams,
       };
 
@@ -164,29 +130,24 @@ export function SendWhatsAppDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md w-[95vw] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl overflow-hidden [&>button:last-child]:text-slate-400 hover:[&>button:last-child]:text-slate-700 dark:hover:[&>button:last-child]:text-slate-200 [&>button:last-child]:top-4 [&>button:last-child]:right-4">
         {/* Header */}
-        <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-start gap-3.5">
-          <div className="p-2.5 rounded-xl bg-[#556043]/10 text-[#556043] dark:bg-emerald-950/50 dark:text-emerald-400 shrink-0 mt-0.5">
+        <div className="p-5 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-[#556043]/10 text-[#556043] dark:bg-emerald-950/50 dark:text-emerald-400 shrink-0">
             <MessageSquare className="h-5 w-5" />
           </div>
-          <div>
-            <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
-              Send WhatsApp Reminder
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Send an official fee reminder or custom message directly to parent WhatsApp.
-            </DialogDescription>
-          </div>
+          <DialogTitle className="text-base font-semibold text-slate-950 dark:text-white">
+            Send WhatsApp Reminder
+          </DialogTitle>
         </div>
 
-        <div className="p-5 space-y-4 text-xs sm:text-sm">
-          {/* Compact Student Summary */}
+        <div className="p-5 space-y-4">
+          {/* Student Info */}
           {student && (
             <div className="flex items-center justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 p-3">
               <div className="min-w-0 pr-2">
-                <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs sm:text-sm">
+                <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-sm">
                   {student.studentName}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                   {student.admissionNumber && <span>Adm: {student.admissionNumber}</span>}
                   {student.admissionNumber && student.className && <span> • </span>}
                   {student.className && <span>{student.className}</span>}
@@ -203,11 +164,10 @@ export function SendWhatsAppDialog({
             </div>
           )}
 
-          {/* Recipient Phone */}
+          {/* Recipient Phone with Edit Option */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>Phone Number</span>
-              <span className="text-[11px] font-normal text-slate-400">e.g. 919876543210</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              WhatsApp Number
             </label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -216,113 +176,13 @@ export function SendWhatsAppDialog({
                 placeholder="e.g. 919876543210"
                 value={recipientPhone}
                 onChange={(e) => setRecipientPhone(e.target.value)}
-                className="h-10 pl-9 font-mono text-xs sm:text-sm rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20"
+                className="h-10 pl-9 font-mono text-sm rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20"
               />
             </div>
           </div>
-
-          {/* Message Template / Custom Text selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Message Template
-            </label>
-            <Select
-              value={mode === "TEXT" ? "custom_text" : templateName}
-              onValueChange={(val) => {
-                if (val === "custom_text") {
-                  setMode("TEXT");
-                } else {
-                  setMode("TEMPLATE");
-                  setTemplateName(val);
-                }
-              }}
-            >
-              <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-[#556043]/20 focus:border-[#556043]">
-                <SelectValue placeholder="Select a template" />
-              </SelectTrigger>
-              <SelectContent className=" dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 shadow-lg">
-                <SelectItem value="fee_payment_monthly">Monthly Fee Notice (Standard)</SelectItem>
-                <SelectItem value="fee_payment_quarterly">Quarterly Fee Notice</SelectItem>
-                <SelectItem value="custom_text">Custom Text Message (24h Window)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Minimal Content Preview or Textarea */}
-          {mode === "TEXT" ? (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Message Content
-              </label>
-              <Textarea
-                rows={3}
-                placeholder="Type your message here..."
-                value={customText}
-                onChange={(e) => setCustomText(e.target.value)}
-                className="rounded-lg border-slate-300 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-xs sm:text-sm focus-visible:border-[#556043] focus-visible:ring-2 focus-visible:ring-[#556043]/20 resize-none"
-              />
-              <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                Custom text requires the recipient to have messaged within 24 hours.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  Official Fee Notice Preview
-                </div>
-                {student?.reminderDetails?.periodDescription && (
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                    {student.reminderDetails.periodDescription}
-                  </span>
-                )}
-              </div>
-
-              {student?.reminderDetails ? (
-                <div className="space-y-1.5 text-[11px] bg-white dark:bg-slate-950 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 leading-relaxed font-sans">
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Current Fees: </span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {student.reminderDetails.currentFeesText}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Previous Dues: </span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {student.reminderDetails.previousDuesText}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Existing Fines: </span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {student.reminderDetails.finesText}
-                    </span>
-                  </div>
-                  <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1.5 flex items-center justify-between">
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400">Total Payable: </span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {student.reminderDetails.totalPayableText}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400">Due Date: </span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">
-                        {student.reminderDetails.dueDateText}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Will send {formattedDue} outstanding notice for <strong>{student?.studentName || "student"}</strong> with breakdown and school contact details.
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
+        {/* Actions */}
         <div className="p-3.5 px-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-end gap-2.5">
           <Button
             type="button"
@@ -349,7 +209,7 @@ export function SendWhatsAppDialog({
             ) : (
               <>
                 <Send className="w-3.5 h-3.5 mr-1.5" />
-                Send WhatsApp
+                Send Reminder
               </>
             )}
           </Button>

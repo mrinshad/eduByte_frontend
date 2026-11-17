@@ -140,12 +140,12 @@ export default function Page() {
       <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-4 sm:px-6 lg:px-8">
         <div className="grid w-full gap-4 grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] lg:gap-5">
 
-          {/* KidsCove Management Info Section - ONLY visible on desktop/large views */}
+          {/* KidscovE Management Info Section - ONLY visible on desktop/large views */}
           <section className="hidden lg:flex lg:h-[calc(100vh-2rem)] flex-col justify-between overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-6 shadow-[0_24px_90px_rgba(40,50,38,0.15)] backdrop-blur dark:border-white/10 dark:bg-slate-950/70 lg:p-7">
             <div className="max-w-2xl space-y-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-white/90 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-                  KidsCove Portal
+                  KidscovE Portal
                 </div>
 
                 <Button
@@ -211,7 +211,7 @@ export default function Page() {
               <div className="flex h-full min-h-0 items-center justify-center">
                 <div className="flex items-center gap-3 text-white/80 dark:text-slate-300">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Opening the KidsCove portal...</span>
+                  <span>Opening the KidscovE portal...</span>
                 </div>
               </div>
             ) : session ? (
@@ -225,7 +225,7 @@ export default function Page() {
                   <div className="space-y-2">
                     <p className="text-sm uppercase tracking-[0.24em] text-white/70 dark:text-slate-400">Welcome back</p>
                     <h2 className="font-heading text-3xl sm:text-4xl leading-tight font-semibold text-white">{session.user.name}</h2>
-                    <p className="text-sm text-white/80 dark:text-slate-300">{session.user.role || "KidsCove user"}</p>
+                    <p className="text-sm text-white/80 dark:text-slate-300">{session.user.role || "KidscovE user"}</p>
                   </div>
 
                   <p className="max-w-md text-sm leading-6 text-white/80 dark:text-slate-300">
@@ -240,7 +240,7 @@ export default function Page() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
-                  <p className="text-center text-xs uppercase tracking-[0.24em] text-white/60 dark:text-slate-400">KidsCove portal access confirmed</p>
+                  <p className="text-center text-xs uppercase tracking-[0.24em] text-white/60 dark:text-slate-400">KidscovE portal access confirmed</p>
                 </div>
               </div>
             ) : (
@@ -248,7 +248,7 @@ export default function Page() {
                 <div className="mx-auto w-full max-w-md space-y-6">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70 dark:text-slate-400">Sign in</p>
-                    <h2 className="mt-3 font-heading text-2xl sm:text-3xl font-semibold text-white">Access KidsCove portal</h2>
+                    <h2 className="mt-3 font-heading text-2xl sm:text-3xl font-semibold text-white">Access KidscovE portal</h2>
                     <p className="mt-2 text-sm leading-6 text-white/80 dark:text-slate-300">
                       Use your school credentials to continue. The portal will open the correct area for your role.
                     </p>
@@ -334,7 +334,7 @@ export default function Page() {
 
                   {/* Legal Footer Links */}
                   <div className="flex flex-col items-center gap-1.5 text-center text-xs text-white/50 pt-1">
-                    <p>KidsCove School Management System • Powered by Byten Solutions</p>
+                    <p>KidscovE School Management System • Powered by Byten Solutions</p>
                     <div className="flex items-center gap-3 text-white/60 text-[11px]">
                       <Link href="/privacy" className="hover:text-white underline underline-offset-2 transition-colors">
                         Privacy Policy
