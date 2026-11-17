@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Cross-Domain Token Persistence & Proactive Session Refresh**:
+  - Restored `localStorage` fallback persistence for `REFRESH_TOKEN_KEY` in `lib/auth.ts` (`getStoredRefreshToken` & `storeRefreshToken`) to protect cross-domain production environments (e.g. Vercel frontend to Render backend) against third-party cookie blocking.
+  - Enhanced `authFetch` to proactively refresh if the access token is missing before sending unauthenticated requests that trigger `401 Missing access token`.
+- **Staff Directory Default Sorting**:
+  - Set default sort column to `employeeCode` (`asc`) in `app/admin/staff/page.tsx`.
+- **Branding Update**:
+  - Changed portal branding from `KidsCove` to `KidscovE` across `app/page.tsx`.
+- **Cleaned Send Reminder Dialog**:
+  - Simplified `components/whatsapp/SendWhatsAppDialog.tsx` to display only the student details, editable WhatsApp recipient number, and dispatch action, removing template dropdowns, custom textareas, 24-hour window notices, and verbose helper text.
+- **Salary Slip Generation Month Default**:
+  - Configured `salaryMonth` in `app/workspace/salary-slips/create/page.tsx` to default to the previous calendar month since payroll is disbursed in the upcoming month (e.g., generating November salary in December).
+
 ### Added
+- **Defaulters Table Full Charge Ledger & Itemized Parent WhatsApp Reminders**:
+  - Added expandable charge ledger rows in the Defaulters table (`app/workspace/reports/fee-defaulters/page.tsx`), allowing staff to toggle and inspect the student's itemized charges (Tuition, Transport, Madrasa, etc.) and fines ledger directly in the table.
+  - Updated `SendWhatsAppDialog.tsx` to display live Fee Notice breakdown preview matching official WhatsApp template parameters and pass accurate itemized values on dispatch.
+  - Updated `FeeDefaulterItem` interface in `lib/services/advancedReports.ts` to include `charges`, `fines`, and `reminderDetails`.
 - **CCA Module Student Fee Override**:
   - Added `feeOverride Decimal? @db.Decimal(18, 2)` column to `StudentCcaAssignment` via Prisma migration `20261104052324_add_fee_override_to_student_cca_assignment`.
   - Enhanced backend controllers (`ccaAssignments.controller.js`, `ccaCharges.controller.js`, `stdEnrollment.controller.js`) to support per-student fee overrides during single assignment, bulk assignment, and enrollment, ensuring customized billing without mutating default activity rates.

@@ -99,7 +99,7 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortBy, setSortBy] = useState<string>("employeeCode");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [pagination, setPagination] = useState<StaffPagination>({
     page: 1,

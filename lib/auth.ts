@@ -286,7 +286,17 @@ export async function getCurrentSession(forceRefresh = false): Promise<AuthSessi
 
 export async function authFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {})
-  const storedToken = getStoredAccessToken()
+  let storedToken = getStoredAccessToken()
+
+  // Proactively refresh if access token is missing but refresh token exists
+  if (!storedToken && getStoredRefreshToken()) {
+    try {
+      const session = await refreshSession()
+      storedToken = session.accessToken
+    } catch {
+      // Continue to unauthenticated fetch attempt
+    }
+  }
 
   if (storedToken && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${storedToken}`)
@@ -301,12 +311,16 @@ export async function authFetch(path: string, init: RequestInit = {}) {
     return response
   }
 
-  const session = await refreshSession()
-  const retryHeaders = new Headers(init.headers || {})
-  retryHeaders.set("Authorization", `Bearer ${session.accessToken}`)
+  try {
+    const session = await refreshSession()
+    const retryHeaders = new Headers(init.headers || {})
+    retryHeaders.set("Authorization", `Bearer ${session.accessToken}`)
 
-  return apiFetch(path, {
-    ...init,
-    headers: retryHeaders,
-  })
+    return await apiFetch(path, {
+      ...init,
+      headers: retryHeaders,
+    })
+  } catch {
+    return response
+  }
 }

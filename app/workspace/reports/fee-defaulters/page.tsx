@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
     getFeeDefaultersReport,
@@ -22,7 +21,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    AlertTriangle,
     ArrowLeft,
     RefreshCcw,
     Search,
@@ -31,8 +29,8 @@ import {
     AlertCircle,
     Clock,
     UserX,
-    ChevronLeft,
     ChevronRight,
+    ChevronDown,
     X,
     Download,
     Loader2,
@@ -88,6 +86,7 @@ export default function FeeDefaultersReportPage() {
     const [exporting, setExporting] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<FeeDefaultersReportResponse | null>(null);
+    const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
     // Initial Filter Options
     useEffect(() => {
@@ -152,11 +151,16 @@ export default function FeeDefaultersReportPage() {
     const handleWhatsAppReminder = (st: FeeDefaulterItem) => {
         setSelectedWhatsAppStudent({
             studentId: st.studentId,
+            enrollmentId: st.enrollmentId,
             admissionNumber: st.admissionNumber,
             studentName: st.studentName,
             className: st.className,
             whatsappNumber: st.whatsappNumber,
             totalDue: st.totalOutstanding,
+            agingBracket: st.riskLevel,
+            charges: st.charges,
+            fines: st.fines,
+            reminderDetails: st.reminderDetails,
         });
         setIsWhatsAppDialogOpen(true);
     };
@@ -516,6 +520,7 @@ export default function FeeDefaultersReportPage() {
                     <table className="w-full text-left text-sm font-sans">
                         <thead className="bg-[#556043] text-xs font-semibold uppercase tracking-wider text-white dark:bg-background dark:text-foreground border-none">
                             <tr>
+                                <th className="w-9 px-2 py-3 text-center"></th>
                                 <th className="px-4 py-3">Admission No</th>
                                 <th className="px-4 py-3">Student Name</th>
                                 <th className="px-4 py-3">Class</th>
@@ -531,6 +536,7 @@ export default function FeeDefaultersReportPage() {
                             {loading ? (
                                 Array.from({ length: 6 }).map((_, i) => (
                                     <tr key={i}>
+                                        <td className="w-9 px-2 py-3"><Skeleton className="h-4 w-4 mx-auto" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-32" /></td>
                                         <td className="px-4 py-3"><Skeleton className="h-5 w-16" /></td>
@@ -544,63 +550,181 @@ export default function FeeDefaultersReportPage() {
                                 ))
                             ) : !data?.defaulters || data.defaulters.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <td colSpan={10} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
                                         No fee defaulters found matching the selected filters.
                                     </td>
                                 </tr>
                             ) : (
                                 data.defaulters.map((st) => (
-                                    <tr key={st.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
-                                        <td className="px-4 py-3 text-xs font-semibold text-slate-900 dark:text-slate-100">
-                                            {st.admissionNumber}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{st.studentName}</div>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400">Father: {st.fatherName}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
-                                                {st.className}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="text-xs font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                                                <Phone className="h-3 w-3 text-slate-400" /> {st.fatherMobile || st.motherMobile || "-"}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(st.feeDues)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
-                                            {formatCurrency(st.fineDues)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-bold text-rose-600 dark:text-rose-400 text-sm">
-                                            {formatCurrency(st.totalOutstanding)}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <Badge
-                                                variant="outline"
-                                                className={`text-[11px] font-semibold ${
-                                                    st.maxDaysOverdue > 90
-                                                        ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
-                                                        : st.maxDaysOverdue > 60
-                                                        ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400"
-                                                        : "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-400"
-                                                }`}
-                                            >
-                                                {st.maxDaysOverdue} Days Overdue
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleWhatsAppReminder(st)}
-                                                className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs inline-flex items-center gap-1"
-                                            >
-                                                <MessageSquare className="h-3 w-3" /> Reminder
-                                            </Button>
-                                        </td>
-                                    </tr>
+                                    <React.Fragment key={st.studentId}>
+                                        <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                                            <td className="w-9 px-2 py-3 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setExpandedStudentId((prev) => (prev === st.studentId ? null : st.studentId))}
+                                                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition cursor-pointer"
+                                                    title={expandedStudentId === st.studentId ? "Collapse charge ledger" : "View full charge ledger"}
+                                                >
+                                                    {expandedStudentId === st.studentId ? (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                                {st.admissionNumber}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{st.studentName}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">Father: {st.fatherName}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                                <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                    {st.className}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-xs font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                                                    <Phone className="h-3 w-3 text-slate-400" /> {st.fatherMobile || st.motherMobile || "-"}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                                                {formatCurrency(st.feeDues)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right text-slate-700 dark:text-slate-300">
+                                                {formatCurrency(st.fineDues)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right font-bold text-rose-600 dark:text-rose-400 text-sm">
+                                                {formatCurrency(st.totalOutstanding)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-[11px] font-semibold ${
+                                                        st.maxDaysOverdue > 90
+                                                            ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400"
+                                                            : st.maxDaysOverdue > 60
+                                                            ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400"
+                                                            : "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-400"
+                                                    }`}
+                                                >
+                                                    {st.maxDaysOverdue} Days Overdue
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleWhatsAppReminder(st)}
+                                                    className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs inline-flex items-center gap-1 cursor-pointer"
+                                                >
+                                                    <MessageSquare className="h-3 w-3" /> Reminder
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                        {expandedStudentId === st.studentId && (
+                                            <tr className="bg-slate-50/70 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-800">
+                                                <td colSpan={10} className="px-5 py-4">
+                                                    <div className="space-y-3">
+                                                        {/* Notice Breakdown Summary Pill */}
+                                                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                                                            <span className="font-semibold text-slate-700 dark:text-slate-300">Notice Breakdown:</span>
+                                                            {st.reminderDetails?.periodDescription && (
+                                                                <Badge variant="outline" className="text-[11px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                    Period: {st.reminderDetails.periodDescription}
+                                                                </Badge>
+                                                            )}
+                                                            <Badge variant="outline" className="text-[11px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                Current: {st.reminderDetails?.currentFeesText || formatCurrency(st.feeDues)}
+                                                            </Badge>
+                                                            <Badge variant="outline" className="text-[11px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                Previous: {st.reminderDetails?.previousDuesText || "Rs. 0"}
+                                                            </Badge>
+                                                            <Badge variant="outline" className="text-[11px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                Fines: {st.reminderDetails?.finesText || "None"}
+                                                            </Badge>
+                                                            <Badge variant="outline" className="text-[11px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                Due Date: {st.reminderDetails?.dueDateText || "-"}
+                                                            </Badge>
+                                                        </div>
+
+                                                        {/* Full Ledger Grids */}
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
+                                                            {/* Charges */}
+                                                            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3">
+                                                                <div className="font-semibold text-slate-800 dark:text-slate-200 mb-2 flex items-center justify-between">
+                                                                    <span>Unpaid Charges Ledger (Tuition, Transport, Madrasa, etc.)</span>
+                                                                    <span className="text-[11px] text-slate-500 font-normal">{st.charges?.length || 0} item(s)</span>
+                                                                </div>
+                                                                {st.charges && st.charges.length > 0 ? (
+                                                                    <div className="overflow-x-auto">
+                                                                        <table className="w-full text-[11px]">
+                                                                            <thead>
+                                                                                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 text-left">
+                                                                                    <th className="pb-1.5 font-medium">Head</th>
+                                                                                    <th className="pb-1.5 font-medium">Period</th>
+                                                                                    <th className="pb-1.5 font-medium">Due Date</th>
+                                                                                    <th className="pb-1.5 font-medium text-right">Balance</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                                                {st.charges.map((c) => (
+                                                                                    <tr key={c.id} className="text-slate-700 dark:text-slate-300">
+                                                                                        <td className="py-1.5 font-medium">{c.name}</td>
+                                                                                        <td className="py-1.5 text-slate-500">{c.periodMonth ? `${c.periodMonth}/${c.periodYear}` : "-"}</td>
+                                                                                        <td className="py-1.5 text-slate-500">{c.dueDate ? new Date(c.dueDate).toLocaleDateString("en-IN") : "-"}</td>
+                                                                                        <td className="py-1.5 text-right font-semibold text-slate-900 dark:text-slate-100">
+                                                                                            {formatCurrency(c.balance)}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-[11px] text-slate-400 py-2">No pending charges recorded.</div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Fines */}
+                                                            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3">
+                                                                <div className="font-semibold text-slate-800 dark:text-slate-200 mb-2 flex items-center justify-between">
+                                                                    <span>Unpaid Fines Ledger</span>
+                                                                    <span className="text-[11px] text-slate-500 font-normal">{st.fines?.length || 0} item(s)</span>
+                                                                </div>
+                                                                {st.fines && st.fines.length > 0 ? (
+                                                                    <div className="overflow-x-auto">
+                                                                        <table className="w-full text-[11px]">
+                                                                            <thead>
+                                                                                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 text-left">
+                                                                                    <th className="pb-1.5 font-medium">Fine Type / Reason</th>
+                                                                                    <th className="pb-1.5 font-medium">Date Issued</th>
+                                                                                    <th className="pb-1.5 font-medium text-right">Balance</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                                                {st.fines.map((f) => (
+                                                                                    <tr key={f.id} className="text-slate-700 dark:text-slate-300">
+                                                                                        <td className="py-1.5 font-medium">{f.name}</td>
+                                                                                        <td className="py-1.5 text-slate-500">{f.createdAt ? new Date(f.createdAt).toLocaleDateString("en-IN") : "-"}</td>
+                                                                                        <td className="py-1.5 text-right font-semibold text-rose-600 dark:text-rose-400">
+                                                                                            {formatCurrency(f.balance)}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-[11px] text-slate-400 py-2">No active fines recorded.</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))
                             )}
                         </tbody>

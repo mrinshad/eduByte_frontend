@@ -105,6 +105,8 @@ export default function CreateSalarySlipPage() {
     const [disbursementDate, setDisbursementDate] = useState<Date>(new Date());
     const [salaryMonth, setSalaryMonth] = useState<string>(() => {
         const d = new Date();
+        // Payroll is disbursed in the upcoming month for the completed period (e.g. generating Nov salary on Dec 5th)
+        d.setMonth(d.getMonth() - 1);
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, "0");
         return `${y}-${m}`;
