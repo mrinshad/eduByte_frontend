@@ -33,10 +33,19 @@ type ApiError = {
   errors?: unknown;
 };
 
-export async function getStudentCharges(params?: { academicYearId?: string; academicYear?: string }) {
+export async function getStudentCharges(params?: {
+  academicYearId?: string;
+  academicYear?: string;
+  limit?: number;
+  page?: number;
+  search?: string;
+}) {
   const query = new URLSearchParams();
   if (params?.academicYearId) query.set("academicYearId", params.academicYearId);
   if (params?.academicYear) query.set("academicYear", params.academicYear);
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.page !== undefined) query.set("page", String(params.page));
+  if (params?.search) query.set("search", params.search);
   const payload = (await apiFetch(
     `/api/stdcharge/admission-no${query.toString() ? `?${query.toString()}` : ""}`
   )) as ApiSuccess<StudentCharge[]>;
