@@ -439,7 +439,7 @@ export default function TransportProfitabilityReportPage() {
                                             <div className="flex flex-wrap gap-1">
                                                 {v.expenseBreakdown && v.expenseBreakdown.length > 0 ? (
                                                     v.expenseBreakdown.map((cat) => (
-                                                        <span key={cat.category} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-medium bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                        <span key={cat.category} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-semibold bg-slate-100 text-slate-900 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                                             {((cat as any).subCategory || (cat as any).subCategoryName || cat.category)}: {formatCurrency(cat.amount)}
                                                         </span>
                                                     ))

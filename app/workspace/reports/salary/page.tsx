@@ -519,7 +519,7 @@ export default function SalaryExpenseReportPage() {
                                             {item.subCategoryName !== "-" ? item.subCategoryName : item.categoryName}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 whitespace-nowrap">
-                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                            <Badge variant="outline" className="text-xs font-semibold text-slate-900 bg-slate-100 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                                 {item.paymentMethod || (item.cashAmount > 0 ? "Cash" : "Bank")}
                                             </Badge>
                                         </TableCell>

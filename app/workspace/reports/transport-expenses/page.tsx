@@ -564,13 +564,13 @@ export default function TransportationExpensesReportPage() {
                                         <TableCell className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                             {item.driverName}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                                            <Badge variant="outline" className="font-medium bg-slate-50 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                        <TableCell className="px-4 py-3 text-xs whitespace-nowrap">
+                                            <Badge variant="outline" className="font-semibold text-slate-900 bg-slate-100 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                                 {getSubCategoryLabel(item)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 whitespace-nowrap">
-                                            <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                            <Badge variant="outline" className="text-xs font-semibold text-slate-900 bg-slate-100 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                                 {item.paymentMethod || (item.cashAmount > 0 ? "Cash" : "Bank")}
                                             </Badge>
                                         </TableCell>
