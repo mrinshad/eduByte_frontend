@@ -253,7 +253,7 @@ export default function TransportationExpensesReportPage() {
                         </Button>
                         <div className="min-w-0">
                             <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                                Transportation Expenses
+                                Vehicle Operating Expenses
                             </h1>
                             <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                 View detailed fuel, repairs, maintenance, and vehicle operating expenses.
@@ -548,7 +548,9 @@ export default function TransportationExpensesReportPage() {
                                             {item.driverName}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                                            <Badge variant="outline">{item.subCategoryName !== "-" ? item.subCategoryName : item.categoryName}</Badge>
+                                            <Badge variant="outline" className="font-medium bg-slate-50 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                {item.subCategoryName && item.subCategoryName !== "-" ? item.subCategoryName : (item.categoryName || "-")}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 whitespace-nowrap">
                                             <Badge variant="outline" className="text-xs font-semibold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">

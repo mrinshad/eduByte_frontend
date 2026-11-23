@@ -85,6 +85,14 @@ const toId = (value: unknown): string => {
     return String(value);
 };
 
+function get30thOfSalaryMonth(monthStr: string): Date {
+    const [y, m] = monthStr.split("-").map(Number);
+    if (!y || !m) return new Date();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const day = Math.min(30, daysInMonth);
+    return new Date(y, m - 1, day, 10, 0, 0);
+}
+
 export default function CreateSalarySlipPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -102,15 +110,15 @@ export default function CreateSalarySlipPage() {
     // ── Form State ──────────────────────────────────────────────────────────
     const [selectedStaffId, setSelectedStaffId] = useState<string>("");
     const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-    const [disbursementDate, setDisbursementDate] = useState<Date>(new Date());
-    const [salaryMonth, setSalaryMonth] = useState<string>(() => {
+    const initialMonth = (() => {
         const d = new Date();
-        // Payroll is disbursed in the upcoming month for the completed period (e.g. generating Nov salary on Dec 5th)
         d.setMonth(d.getMonth() - 1);
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, "0");
         return `${y}-${m}`;
-    });
+    })();
+    const [salaryMonth, setSalaryMonth] = useState<string>(initialMonth);
+    const [disbursementDate, setDisbursementDate] = useState<Date>(() => get30thOfSalaryMonth(initialMonth));
 
     // Earnings
     const [basicSalary, setBasicSalary] = useState<number | "">("");
@@ -468,7 +476,11 @@ export default function CreateSalarySlipPage() {
                                 data-testid="salary-month-input"
                                 value={salaryMonth}
                                 onChange={(e) => {
-                                    setSalaryMonth(e.target.value);
+                                    const newMonth = e.target.value;
+                                    setSalaryMonth(newMonth);
+                                    if (newMonth) {
+                                        setDisbursementDate(get30thOfSalaryMonth(newMonth));
+                                    }
                                     if (errors.salaryMonth) setErrors((prev) => ({ ...prev, salaryMonth: undefined }));
                                 }}
                                 className={cn("h-11", fieldClass, errors.salaryMonth && fieldErrorClass)}
