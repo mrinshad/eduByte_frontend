@@ -116,6 +116,23 @@ function toISODate(date: Date) {
     return format(date, "yyyy-MM-dd");
 }
 
+function getSubCategoryLabel(item: any): string {
+    if (!item) return "-";
+    const sub =
+        item.subCategoryName ||
+        (typeof item.subCategory === "string" ? item.subCategory : item.subCategory?.name) ||
+        (typeof item.subcategory === "string" ? item.subcategory : item.subcategory?.name) ||
+        (typeof item.sub_category === "string" ? item.sub_category : item.sub_category?.name);
+
+    if (sub && sub !== "-" && sub !== "null" && sub !== "undefined") {
+        return sub;
+    }
+    const cat =
+        item.categoryName ||
+        (typeof item.category === "string" ? item.category : item.category?.name);
+    return cat && cat !== "-" && cat !== "null" && cat !== "undefined" ? cat : "-";
+}
+
 export default function TransportationExpensesReportPage() {
     const router = useRouter();
 
@@ -549,7 +566,7 @@ export default function TransportationExpensesReportPage() {
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                             <Badge variant="outline" className="font-medium bg-slate-50 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
-                                                {item.subCategoryName && item.subCategoryName !== "-" ? item.subCategoryName : (item.categoryName || "-")}
+                                                {getSubCategoryLabel(item)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 whitespace-nowrap">

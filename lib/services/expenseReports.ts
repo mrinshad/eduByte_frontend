@@ -103,8 +103,11 @@ export interface TransportationExpenseItem {
     vehicleName: string;
     vehicleNumber: string;
     driverName: string;
+    category?: string;
     categoryName: string;
-    subCategoryName: string;
+    subCategory?: string | { id?: string; name?: string };
+    subCategoryName?: string;
+    subcategory?: string;
     amount: number;
     cashAmount: number;
     bankAmount: number;
